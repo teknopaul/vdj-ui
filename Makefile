@@ -231,6 +231,19 @@ vdj-cdj/fast:
 .PHONY : vdj-cdj/fast
 
 #=============================================================================
+# Target rules for targets named vdj-dbserver
+
+# Build rule for target.
+vdj-dbserver: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-dbserver
+.PHONY : vdj-dbserver
+
+# fast build rule for target.
+vdj-dbserver/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/build
+.PHONY : vdj-dbserver/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui
 
 # Build rule for target.
@@ -294,6 +307,32 @@ vdj-cdj_autogen: cmake_check_build_system
 vdj-cdj_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj_autogen.dir/build.make src/CMakeFiles/vdj-cdj_autogen.dir/build
 .PHONY : vdj-cdj_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-dbserver_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-dbserver_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-dbserver_autogen_timestamp_deps
+.PHONY : vdj-dbserver_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-dbserver_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/build.make src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/build
+.PHONY : vdj-dbserver_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-dbserver_autogen
+
+# Build rule for target.
+vdj-dbserver_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-dbserver_autogen
+.PHONY : vdj-dbserver_autogen
+
+# fast build rule for target.
+vdj-dbserver_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver_autogen.dir/build.make src/CMakeFiles/vdj-dbserver_autogen.dir/build
+.PHONY : vdj-dbserver_autogen/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui_autogen_timestamp_deps
@@ -463,6 +502,110 @@ vdj-ui-difflock-test: cmake_check_build_system
 vdj-ui-difflock-test/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test.dir/build
 .PHONY : vdj-ui-difflock-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbcodec-test
+
+# Build rule for target.
+vdj-ui-dbcodec-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbcodec-test
+.PHONY : vdj-ui-dbcodec-test
+
+# fast build rule for target.
+vdj-ui-dbcodec-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build
+.PHONY : vdj-ui-dbcodec-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rblibrary-test
+
+# Build rule for target.
+vdj-ui-rblibrary-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rblibrary-test
+.PHONY : vdj-ui-rblibrary-test
+
+# fast build rule for target.
+vdj-ui-rblibrary-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build
+.PHONY : vdj-ui-rblibrary-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbhandler-test
+
+# Build rule for target.
+vdj-ui-dbhandler-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbhandler-test
+.PHONY : vdj-ui-dbhandler-test
+
+# fast build rule for target.
+vdj-ui-dbhandler-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build
+.PHONY : vdj-ui-dbhandler-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbserver-test
+
+# Build rule for target.
+vdj-ui-dbserver-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbserver-test
+.PHONY : vdj-ui-dbserver-test
+
+# fast build rule for target.
+vdj-ui-dbserver-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/build
+.PHONY : vdj-ui-dbserver-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpackets-test
+
+# Build rule for target.
+vdj-ui-rbpackets-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpackets-test
+.PHONY : vdj-ui-rbpackets-test
+
+# fast build rule for target.
+vdj-ui-rbpackets-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build
+.PHONY : vdj-ui-rbpackets-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpresence-test
+
+# Build rule for target.
+vdj-ui-rbpresence-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpresence-test
+.PHONY : vdj-ui-rbpresence-test
+
+# fast build rule for target.
+vdj-ui-rbpresence-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build
+.PHONY : vdj-ui-rbpresence-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbmode-test
+
+# Build rule for target.
+vdj-ui-rbmode-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbmode-test
+.PHONY : vdj-ui-rbmode-test
+
+# fast build rule for target.
+vdj-ui-rbmode-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/build
+.PHONY : vdj-ui-rbmode-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpanel-test
+
+# Build rule for target.
+vdj-ui-rbpanel-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpanel-test
+.PHONY : vdj-ui-rbpanel-test
+
+# fast build rule for target.
+vdj-ui-rbpanel-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build
+.PHONY : vdj-ui-rbpanel-test/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
@@ -750,6 +893,214 @@ vdj-ui-difflock-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build
 .PHONY : vdj-ui-difflock-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-dbcodec-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-dbcodec-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbcodec-test_autogen_timestamp_deps
+.PHONY : vdj-ui-dbcodec-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-dbcodec-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-dbcodec-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbcodec-test_autogen
+
+# Build rule for target.
+vdj-ui-dbcodec-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbcodec-test_autogen
+.PHONY : vdj-ui-dbcodec-test_autogen
+
+# fast build rule for target.
+vdj-ui-dbcodec-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/build
+.PHONY : vdj-ui-dbcodec-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rblibrary-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-rblibrary-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rblibrary-test_autogen_timestamp_deps
+.PHONY : vdj-ui-rblibrary-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rblibrary-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rblibrary-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rblibrary-test_autogen
+
+# Build rule for target.
+vdj-ui-rblibrary-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rblibrary-test_autogen
+.PHONY : vdj-ui-rblibrary-test_autogen
+
+# fast build rule for target.
+vdj-ui-rblibrary-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/build
+.PHONY : vdj-ui-rblibrary-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbhandler-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-dbhandler-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbhandler-test_autogen_timestamp_deps
+.PHONY : vdj-ui-dbhandler-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-dbhandler-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-dbhandler-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbhandler-test_autogen
+
+# Build rule for target.
+vdj-ui-dbhandler-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbhandler-test_autogen
+.PHONY : vdj-ui-dbhandler-test_autogen
+
+# fast build rule for target.
+vdj-ui-dbhandler-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/build
+.PHONY : vdj-ui-dbhandler-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbserver-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-dbserver-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbserver-test_autogen_timestamp_deps
+.PHONY : vdj-ui-dbserver-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-dbserver-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-dbserver-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-dbserver-test_autogen
+
+# Build rule for target.
+vdj-ui-dbserver-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-dbserver-test_autogen
+.PHONY : vdj-ui-dbserver-test_autogen
+
+# fast build rule for target.
+vdj-ui-dbserver-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/build
+.PHONY : vdj-ui-dbserver-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpackets-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-rbpackets-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpackets-test_autogen_timestamp_deps
+.PHONY : vdj-ui-rbpackets-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbpackets-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbpackets-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpackets-test_autogen
+
+# Build rule for target.
+vdj-ui-rbpackets-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpackets-test_autogen
+.PHONY : vdj-ui-rbpackets-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbpackets-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/build
+.PHONY : vdj-ui-rbpackets-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpresence-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-rbpresence-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpresence-test_autogen_timestamp_deps
+.PHONY : vdj-ui-rbpresence-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbpresence-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbpresence-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpresence-test_autogen
+
+# Build rule for target.
+vdj-ui-rbpresence-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpresence-test_autogen
+.PHONY : vdj-ui-rbpresence-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbpresence-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/build
+.PHONY : vdj-ui-rbpresence-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbmode-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-rbmode-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbmode-test_autogen_timestamp_deps
+.PHONY : vdj-ui-rbmode-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbmode-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbmode-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbmode-test_autogen
+
+# Build rule for target.
+vdj-ui-rbmode-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbmode-test_autogen
+.PHONY : vdj-ui-rbmode-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbmode-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/build
+.PHONY : vdj-ui-rbmode-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpanel-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-rbpanel-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpanel-test_autogen_timestamp_deps
+.PHONY : vdj-ui-rbpanel-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbpanel-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbpanel-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-rbpanel-test_autogen
+
+# Build rule for target.
+vdj-ui-rbpanel-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-rbpanel-test_autogen
+.PHONY : vdj-ui-rbpanel-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbpanel-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build
+.PHONY : vdj-ui-rbpanel-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -768,6 +1119,8 @@ help:
 	@echo "... deb"
 	@echo "... vdj-cdj_autogen"
 	@echo "... vdj-cdj_autogen_timestamp_deps"
+	@echo "... vdj-dbserver_autogen"
+	@echo "... vdj-dbserver_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test_autogen"
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatgrid-test_autogen"
@@ -776,12 +1129,28 @@ help:
 	@echo "... vdj-ui-config-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-controls-test_autogen"
 	@echo "... vdj-ui-controls-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-dbcodec-test_autogen"
+	@echo "... vdj-ui-dbcodec-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-dbhandler-test_autogen"
+	@echo "... vdj-ui-dbhandler-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-dbserver-test_autogen"
+	@echo "... vdj-ui-dbserver-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-difflock-test_autogen"
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-integration-test_autogen"
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rblibrary-test_autogen"
+	@echo "... vdj-ui-rblibrary-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbmode-test_autogen"
+	@echo "... vdj-ui-rbmode-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbpackets-test_autogen"
+	@echo "... vdj-ui-rbpackets-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbpanel-test_autogen"
+	@echo "... vdj-ui-rbpanel-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbpresence-test_autogen"
+	@echo "... vdj-ui-rbpresence-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rekordbox-test_autogen"
 	@echo "... vdj-ui-rekordbox-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-test_autogen"
@@ -795,14 +1164,23 @@ help:
 	@echo "... xdj-nfs_autogen"
 	@echo "... xdj-nfs_autogen_timestamp_deps"
 	@echo "... vdj-cdj"
+	@echo "... vdj-dbserver"
 	@echo "... vdj-ui"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-beatgrid-test"
 	@echo "... vdj-ui-config-test"
 	@echo "... vdj-ui-controls-test"
+	@echo "... vdj-ui-dbcodec-test"
+	@echo "... vdj-ui-dbhandler-test"
+	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-difflock-test"
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-nfsmount-test"
+	@echo "... vdj-ui-rblibrary-test"
+	@echo "... vdj-ui-rbmode-test"
+	@echo "... vdj-ui-rbpackets-test"
+	@echo "... vdj-ui-rbpanel-test"
+	@echo "... vdj-ui-rbpresence-test"
 	@echo "... vdj-ui-rekordbox-test"
 	@echo "... vdj-ui-test"
 	@echo "... vdj-ui-tracks-test"

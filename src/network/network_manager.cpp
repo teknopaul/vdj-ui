@@ -2,6 +2,8 @@
 #include "debug/packet_logger.h"
 #include <arpa/inet.h>
 #include <cstring>
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <QThread>
 #include <QTimer>
 extern "C" {
@@ -13,6 +15,26 @@ namespace vdj {
 static NetworkManager* instanceFrom(vdj_t* v)
 {
     return v ? static_cast<NetworkManager*>(v->client) : nullptr;
+}
+
+// Runs on the thread that calls vdj_exec_discovery() (the GUI thread, it blocks for about four seconds): let the status bar
+// repaint between the packets, but never take user input in the middle of the join.
+static void onProgress(vdj_s* v, int phase, int step, int steps, int playerId)
+{
+    NetworkManager* nm = instanceFrom(reinterpret_cast<vdj_t*>(v));
+    if (!nm) return;
+    QString text;
+    switch (phase) {
+    case VDJ_PHASE_HELLO:   text = QStringLiteral("Joining the link: announcing (packet %1 of %2)").arg(step).arg(steps); break;
+    case VDJ_PHASE_MAC:     text = QStringLiteral("Joining the link: claiming by MAC address (stage 1, packet %1 of %2)").arg(step).arg(steps); break;
+    case VDJ_PHASE_NUMBER:  text = QStringLiteral("Joining the link: asking for player number %1 (stage 2, packet %2 of %3)").arg(playerId).arg(step).arg(steps); break;
+    case VDJ_PHASE_CONFIRM: text = QStringLiteral("Joining the link: taking player number %1 (stage 3, packet %2 of %3)").arg(playerId).arg(step).arg(steps); break;
+    case VDJ_PHASE_DONE:    text = QStringLiteral("Joined the link as player %1").arg(playerId); break;
+    default:                text = QStringLiteral("Joining the link (phase %1)").arg(phase); break;
+    }
+    PacketLogger::instance().log(QStringLiteral("USER"), text);
+    emit nm->discoveryPhase(text);
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 static void onUpdate(vdj_t* v, cdj_cdj_status_packet_t* cs_pkt)
@@ -38,8 +60,11 @@ static void onUpdate(vdj_t* v, cdj_cdj_status_packet_t* cs_pkt)
         .arg(QString::fromUtf8(cdj_status_model(cs_pkt)));
     PacketLogger::instance().log(QStringLiteral("UPDATE"), detail);
 
-    // the lib's update handler has already folded this packet into the backline (sync counter, master id)
-    if (v->backline && v->backline->master_id) nm->startStatusThread();
+    // the lib's update handler has already folded this packet into the backline (sync counter, master id): we now know what
+    // the link agrees on. Real players start their status within a second of joining (capture prolink-3-boots), so do not wait
+    // for a master to appear; an idle link has none.
+    if (v->backline) nm->startStatusThread();
+    if (nm->isJoining()) return;
     emit nm->statusUpdated(pid, bpm, pitch, flags, masterState, active);
     // only report a master when someone is one: ourselves after a handoff (v->master), or a deck flagging itself
     if (v->master) emit nm->masterChanged(v->player_id);
@@ -97,6 +122,9 @@ void onDiscovery(vdj_t* v, cdj_discovery_packet_t* d_pkt)
         .arg(ip.isEmpty() ? QStringLiteral("?") : ip);
     PacketLogger::instance().log(QStringLiteral("DISCOVERY"), detail);
 
+    // Not while we join: the GUI only sets its deck rows up in the connected() handler, which would throw these away. The next
+    // keepalive of the deck (2 s) announces it.
+    if (nm->isJoining()) return;
     if (!nm->knownMembers_.contains(pid)) {
         nm->knownMembers_.insert(pid);
         emit nm->deckJoined(pid, ip, model);
@@ -126,6 +154,7 @@ bool NetworkManager::connectToLink(const QString& iface, uint32_t flags)
     }
 
     v_->client = this;
+    PacketLogger::instance().log(QStringLiteral("USER"), QStringLiteral("announcing as %1DJ-1000").arg(QChar(v_->model)));
 
     if (vdj_open_sockets(v_) != VDJ_OK) {
         emit errorOccurred("Failed to open ProLink sockets");
@@ -138,13 +167,18 @@ bool NetworkManager::connectToLink(const QString& iface, uint32_t flags)
     vdj_init_managed_beat_thread(v_, onBeat);
     if (vdj_init_managed_beat_unicast_thread(v_, onBeatUnicast) != CDJ_OK)
         emit errorOccurred("Failed to start master handoff (beat unicast) thread");
+    v_->progress_h = onProgress;
+    joining_ = true;
     vdj_exec_discovery(v_);
+    v_->progress_h = nullptr;
     // Our status (master flag, handoff, sync counter) must reach the players or they never see us become master,
-    // but sending it before we have seen the link's sync counter and master upsets the players ("older firmware").
-    // onUpdate starts it once a master is known; this is the fallback for a link with no master.
+    // but sending it before we have seen the link's sync counter and master upsets the players ("older firmware"), and so
+    // does staying silent for several seconds after joining. onUpdate starts it with the first deck status (about half a
+    // second after our first keepalive); this is the fallback for a link where no deck sends status.
     statusStarted_ = false;
     QTimer::singleShot(kStatusStartTimeoutMs, this, [this]() { startStatusThread(); });
 
+    joining_ = false;
     emit connected();
     return true;
 }
@@ -175,6 +209,7 @@ void NetworkManager::teardown()
         vdj_destroy(v_);
         v_ = nullptr;
         knownMembers_.clear();
+        joining_ = false;
         statusStarted_ = true;   // nothing to start until the next connect
     }
 }

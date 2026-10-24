@@ -346,6 +346,118 @@ vdj-ui-difflock-test/fast:
 .PHONY : vdj-ui-difflock-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbcodec-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbcodec-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbcodec-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbcodec-test: tests/CMakeFiles/vdj-ui-dbcodec-test.dir/rule
+.PHONY : vdj-ui-dbcodec-test
+
+# fast build rule for target.
+vdj-ui-dbcodec-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build
+.PHONY : vdj-ui-dbcodec-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rblibrary-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rblibrary-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rblibrary-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-rblibrary-test: tests/CMakeFiles/vdj-ui-rblibrary-test.dir/rule
+.PHONY : vdj-ui-rblibrary-test
+
+# fast build rule for target.
+vdj-ui-rblibrary-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build
+.PHONY : vdj-ui-rblibrary-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbhandler-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbhandler-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbhandler-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbhandler-test: tests/CMakeFiles/vdj-ui-dbhandler-test.dir/rule
+.PHONY : vdj-ui-dbhandler-test
+
+# fast build rule for target.
+vdj-ui-dbhandler-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build
+.PHONY : vdj-ui-dbhandler-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbserver-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbserver-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbserver-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbserver-test: tests/CMakeFiles/vdj-ui-dbserver-test.dir/rule
+.PHONY : vdj-ui-dbserver-test
+
+# fast build rule for target.
+vdj-ui-dbserver-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/build
+.PHONY : vdj-ui-dbserver-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpackets-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpackets-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpackets-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpackets-test: tests/CMakeFiles/vdj-ui-rbpackets-test.dir/rule
+.PHONY : vdj-ui-rbpackets-test
+
+# fast build rule for target.
+vdj-ui-rbpackets-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build
+.PHONY : vdj-ui-rbpackets-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpresence-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpresence-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpresence-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpresence-test: tests/CMakeFiles/vdj-ui-rbpresence-test.dir/rule
+.PHONY : vdj-ui-rbpresence-test
+
+# fast build rule for target.
+vdj-ui-rbpresence-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build
+.PHONY : vdj-ui-rbpresence-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbmode-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbmode-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbmode-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbmode-test: tests/CMakeFiles/vdj-ui-rbmode-test.dir/rule
+.PHONY : vdj-ui-rbmode-test
+
+# fast build rule for target.
+vdj-ui-rbmode-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/build
+.PHONY : vdj-ui-rbmode-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpanel-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpanel-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpanel-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpanel-test: tests/CMakeFiles/vdj-ui-rbpanel-test.dir/rule
+.PHONY : vdj-ui-rbpanel-test
+
+# fast build rule for target.
+vdj-ui-rbpanel-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build
+.PHONY : vdj-ui-rbpanel-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -653,6 +765,230 @@ vdj-ui-difflock-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build
 .PHONY : vdj-ui-difflock-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbcodec-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-dbcodec-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-dbcodec-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-dbcodec-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbcodec-test_autogen: tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/rule
+.PHONY : vdj-ui-dbcodec-test_autogen
+
+# fast build rule for target.
+vdj-ui-dbcodec-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test_autogen.dir/build
+.PHONY : vdj-ui-dbcodec-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-rblibrary-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-rblibrary-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rblibrary-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rblibrary-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-rblibrary-test_autogen: tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/rule
+.PHONY : vdj-ui-rblibrary-test_autogen
+
+# fast build rule for target.
+vdj-ui-rblibrary-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test_autogen.dir/build
+.PHONY : vdj-ui-rblibrary-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbhandler-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-dbhandler-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-dbhandler-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-dbhandler-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbhandler-test_autogen: tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/rule
+.PHONY : vdj-ui-dbhandler-test_autogen
+
+# fast build rule for target.
+vdj-ui-dbhandler-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test_autogen.dir/build
+.PHONY : vdj-ui-dbhandler-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbserver-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-dbserver-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-dbserver-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-dbserver-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-dbserver-test_autogen: tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/rule
+.PHONY : vdj-ui-dbserver-test_autogen
+
+# fast build rule for target.
+vdj-ui-dbserver-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test_autogen.dir/build
+.PHONY : vdj-ui-dbserver-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpackets-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-rbpackets-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbpackets-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbpackets-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpackets-test_autogen: tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/rule
+.PHONY : vdj-ui-rbpackets-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbpackets-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test_autogen.dir/build
+.PHONY : vdj-ui-rbpackets-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpresence-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-rbpresence-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbpresence-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbpresence-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpresence-test_autogen: tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/rule
+.PHONY : vdj-ui-rbpresence-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbpresence-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test_autogen.dir/build
+.PHONY : vdj-ui-rbpresence-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbmode-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-rbmode-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbmode-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbmode-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbmode-test_autogen: tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/rule
+.PHONY : vdj-ui-rbmode-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbmode-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test_autogen.dir/build
+.PHONY : vdj-ui-rbmode-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpanel-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-rbpanel-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-rbpanel-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-rbpanel-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-rbpanel-test_autogen: tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/rule
+.PHONY : vdj-ui-rbpanel-test_autogen
+
+# fast build rule for target.
+vdj-ui-rbpanel-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build
+.PHONY : vdj-ui-rbpanel-test_autogen/fast
+
 test_audio.o: test_audio.cpp.o
 .PHONY : test_audio.o
 
@@ -749,6 +1085,78 @@ test_controls.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-controls-test.dir/build.make tests/CMakeFiles/vdj-ui-controls-test.dir/test_controls.cpp.s
 .PHONY : test_controls.cpp.s
 
+test_db_codec.o: test_db_codec.cpp.o
+.PHONY : test_db_codec.o
+
+# target to build an object file
+test_db_codec.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/test_db_codec.cpp.o
+.PHONY : test_db_codec.cpp.o
+
+test_db_codec.i: test_db_codec.cpp.i
+.PHONY : test_db_codec.i
+
+# target to preprocess a source file
+test_db_codec.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/test_db_codec.cpp.i
+.PHONY : test_db_codec.cpp.i
+
+test_db_codec.s: test_db_codec.cpp.s
+.PHONY : test_db_codec.s
+
+# target to generate assembly for a file
+test_db_codec.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/test_db_codec.cpp.s
+.PHONY : test_db_codec.cpp.s
+
+test_db_handler.o: test_db_handler.cpp.o
+.PHONY : test_db_handler.o
+
+# target to build an object file
+test_db_handler.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/test_db_handler.cpp.o
+.PHONY : test_db_handler.cpp.o
+
+test_db_handler.i: test_db_handler.cpp.i
+.PHONY : test_db_handler.i
+
+# target to preprocess a source file
+test_db_handler.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/test_db_handler.cpp.i
+.PHONY : test_db_handler.cpp.i
+
+test_db_handler.s: test_db_handler.cpp.s
+.PHONY : test_db_handler.s
+
+# target to generate assembly for a file
+test_db_handler.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/test_db_handler.cpp.s
+.PHONY : test_db_handler.cpp.s
+
+test_db_server.o: test_db_server.cpp.o
+.PHONY : test_db_server.o
+
+# target to build an object file
+test_db_server.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/test_db_server.cpp.o
+.PHONY : test_db_server.cpp.o
+
+test_db_server.i: test_db_server.cpp.i
+.PHONY : test_db_server.i
+
+# target to preprocess a source file
+test_db_server.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/test_db_server.cpp.i
+.PHONY : test_db_server.cpp.i
+
+test_db_server.s: test_db_server.cpp.s
+.PHONY : test_db_server.s
+
+# target to generate assembly for a file
+test_db_server.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/test_db_server.cpp.s
+.PHONY : test_db_server.cpp.s
+
 test_diff_lock.o: test_diff_lock.cpp.o
 .PHONY : test_diff_lock.o
 
@@ -844,6 +1252,126 @@ test_nfs_mount.s: test_nfs_mount.cpp.s
 test_nfs_mount.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-nfsmount-test.dir/build.make tests/CMakeFiles/vdj-ui-nfsmount-test.dir/test_nfs_mount.cpp.s
 .PHONY : test_nfs_mount.cpp.s
+
+test_rb_library.o: test_rb_library.cpp.o
+.PHONY : test_rb_library.o
+
+# target to build an object file
+test_rb_library.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/test_rb_library.cpp.o
+.PHONY : test_rb_library.cpp.o
+
+test_rb_library.i: test_rb_library.cpp.i
+.PHONY : test_rb_library.i
+
+# target to preprocess a source file
+test_rb_library.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/test_rb_library.cpp.i
+.PHONY : test_rb_library.cpp.i
+
+test_rb_library.s: test_rb_library.cpp.s
+.PHONY : test_rb_library.s
+
+# target to generate assembly for a file
+test_rb_library.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/test_rb_library.cpp.s
+.PHONY : test_rb_library.cpp.s
+
+test_rb_mode.o: test_rb_mode.cpp.o
+.PHONY : test_rb_mode.o
+
+# target to build an object file
+test_rb_mode.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/test_rb_mode.cpp.o
+.PHONY : test_rb_mode.cpp.o
+
+test_rb_mode.i: test_rb_mode.cpp.i
+.PHONY : test_rb_mode.i
+
+# target to preprocess a source file
+test_rb_mode.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/test_rb_mode.cpp.i
+.PHONY : test_rb_mode.cpp.i
+
+test_rb_mode.s: test_rb_mode.cpp.s
+.PHONY : test_rb_mode.s
+
+# target to generate assembly for a file
+test_rb_mode.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/test_rb_mode.cpp.s
+.PHONY : test_rb_mode.cpp.s
+
+test_rb_packets.o: test_rb_packets.cpp.o
+.PHONY : test_rb_packets.o
+
+# target to build an object file
+test_rb_packets.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/test_rb_packets.cpp.o
+.PHONY : test_rb_packets.cpp.o
+
+test_rb_packets.i: test_rb_packets.cpp.i
+.PHONY : test_rb_packets.i
+
+# target to preprocess a source file
+test_rb_packets.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/test_rb_packets.cpp.i
+.PHONY : test_rb_packets.cpp.i
+
+test_rb_packets.s: test_rb_packets.cpp.s
+.PHONY : test_rb_packets.s
+
+# target to generate assembly for a file
+test_rb_packets.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/test_rb_packets.cpp.s
+.PHONY : test_rb_packets.cpp.s
+
+test_rb_panel.o: test_rb_panel.cpp.o
+.PHONY : test_rb_panel.o
+
+# target to build an object file
+test_rb_panel.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/test_rb_panel.cpp.o
+.PHONY : test_rb_panel.cpp.o
+
+test_rb_panel.i: test_rb_panel.cpp.i
+.PHONY : test_rb_panel.i
+
+# target to preprocess a source file
+test_rb_panel.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/test_rb_panel.cpp.i
+.PHONY : test_rb_panel.cpp.i
+
+test_rb_panel.s: test_rb_panel.cpp.s
+.PHONY : test_rb_panel.s
+
+# target to generate assembly for a file
+test_rb_panel.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/test_rb_panel.cpp.s
+.PHONY : test_rb_panel.cpp.s
+
+test_rb_presence.o: test_rb_presence.cpp.o
+.PHONY : test_rb_presence.o
+
+# target to build an object file
+test_rb_presence.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/test_rb_presence.cpp.o
+.PHONY : test_rb_presence.cpp.o
+
+test_rb_presence.i: test_rb_presence.cpp.i
+.PHONY : test_rb_presence.i
+
+# target to preprocess a source file
+test_rb_presence.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/test_rb_presence.cpp.i
+.PHONY : test_rb_presence.cpp.i
+
+test_rb_presence.s: test_rb_presence.cpp.s
+.PHONY : test_rb_presence.s
+
+# target to generate assembly for a file
+test_rb_presence.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/test_rb_presence.cpp.s
+.PHONY : test_rb_presence.cpp.s
 
 test_rekordbox.o: test_rekordbox.cpp.o
 .PHONY : test_rekordbox.o
@@ -1013,6 +1541,78 @@ vdj-ui-controls-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-controls-test.dir/build.make tests/CMakeFiles/vdj-ui-controls-test.dir/vdj-ui-controls-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-controls-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-dbcodec-test_autogen/mocs_compilation.o: vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-dbcodec-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-dbcodec-test_autogen/mocs_compilation.i: vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-dbcodec-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-dbcodec-test_autogen/mocs_compilation.s: vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-dbcodec-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbcodec-test.dir/build.make tests/CMakeFiles/vdj-ui-dbcodec-test.dir/vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-dbcodec-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-dbhandler-test_autogen/mocs_compilation.o: vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-dbhandler-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-dbhandler-test_autogen/mocs_compilation.i: vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-dbhandler-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-dbhandler-test_autogen/mocs_compilation.s: vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-dbhandler-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbhandler-test.dir/build.make tests/CMakeFiles/vdj-ui-dbhandler-test.dir/vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-dbhandler-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-dbserver-test_autogen/mocs_compilation.o: vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-dbserver-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-dbserver-test_autogen/mocs_compilation.i: vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-dbserver-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-dbserver-test_autogen/mocs_compilation.s: vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-dbserver-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-dbserver-test.dir/build.make tests/CMakeFiles/vdj-ui-dbserver-test.dir/vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-dbserver-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-difflock-test_autogen/mocs_compilation.o: vdj-ui-difflock-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-difflock-test_autogen/mocs_compilation.o
 
@@ -1084,6 +1684,126 @@ vdj-ui-nfsmount-test_autogen/mocs_compilation.s: vdj-ui-nfsmount-test_autogen/mo
 vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-nfsmount-test.dir/build.make tests/CMakeFiles/vdj-ui-nfsmount-test.dir/vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-rblibrary-test_autogen/mocs_compilation.o: vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rblibrary-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-rblibrary-test_autogen/mocs_compilation.i: vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rblibrary-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-rblibrary-test_autogen/mocs_compilation.s: vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rblibrary-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rblibrary-test.dir/build.make tests/CMakeFiles/vdj-ui-rblibrary-test.dir/vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-rbmode-test_autogen/mocs_compilation.o: vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbmode-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-rbmode-test_autogen/mocs_compilation.i: vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbmode-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-rbmode-test_autogen/mocs_compilation.s: vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbmode-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbmode-test.dir/build.make tests/CMakeFiles/vdj-ui-rbmode-test.dir/vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbmode-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-rbpackets-test_autogen/mocs_compilation.o: vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbpackets-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-rbpackets-test_autogen/mocs_compilation.i: vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbpackets-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-rbpackets-test_autogen/mocs_compilation.s: vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbpackets-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpackets-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpackets-test.dir/vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbpackets-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-rbpanel-test_autogen/mocs_compilation.o: vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbpanel-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-rbpanel-test_autogen/mocs_compilation.i: vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbpanel-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-rbpanel-test_autogen/mocs_compilation.s: vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbpanel-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbpanel-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-rbpresence-test_autogen/mocs_compilation.o: vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbpresence-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-rbpresence-test_autogen/mocs_compilation.i: vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbpresence-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-rbpresence-test_autogen/mocs_compilation.s: vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbpresence-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpresence-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpresence-test.dir/vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-rbpresence-test_autogen/mocs_compilation.cpp.s
 
 vdj-ui-rekordbox-test_autogen/mocs_compilation.o: vdj-ui-rekordbox-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-rekordbox-test_autogen/mocs_compilation.o
@@ -1204,12 +1924,28 @@ help:
 	@echo "... vdj-ui-config-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-controls-test_autogen"
 	@echo "... vdj-ui-controls-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-dbcodec-test_autogen"
+	@echo "... vdj-ui-dbcodec-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-dbhandler-test_autogen"
+	@echo "... vdj-ui-dbhandler-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-dbserver-test_autogen"
+	@echo "... vdj-ui-dbserver-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-difflock-test_autogen"
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-integration-test_autogen"
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rblibrary-test_autogen"
+	@echo "... vdj-ui-rblibrary-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbmode-test_autogen"
+	@echo "... vdj-ui-rbmode-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbpackets-test_autogen"
+	@echo "... vdj-ui-rbpackets-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbpanel-test_autogen"
+	@echo "... vdj-ui-rbpanel-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-rbpresence-test_autogen"
+	@echo "... vdj-ui-rbpresence-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rekordbox-test_autogen"
 	@echo "... vdj-ui-rekordbox-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-test_autogen"
@@ -1222,9 +1958,17 @@ help:
 	@echo "... vdj-ui-beatgrid-test"
 	@echo "... vdj-ui-config-test"
 	@echo "... vdj-ui-controls-test"
+	@echo "... vdj-ui-dbcodec-test"
+	@echo "... vdj-ui-dbhandler-test"
+	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-difflock-test"
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-nfsmount-test"
+	@echo "... vdj-ui-rblibrary-test"
+	@echo "... vdj-ui-rbmode-test"
+	@echo "... vdj-ui-rbpackets-test"
+	@echo "... vdj-ui-rbpanel-test"
+	@echo "... vdj-ui-rbpresence-test"
 	@echo "... vdj-ui-rekordbox-test"
 	@echo "... vdj-ui-test"
 	@echo "... vdj-ui-tracks-test"
@@ -1241,6 +1985,15 @@ help:
 	@echo "... test_controls.o"
 	@echo "... test_controls.i"
 	@echo "... test_controls.s"
+	@echo "... test_db_codec.o"
+	@echo "... test_db_codec.i"
+	@echo "... test_db_codec.s"
+	@echo "... test_db_handler.o"
+	@echo "... test_db_handler.i"
+	@echo "... test_db_handler.s"
+	@echo "... test_db_server.o"
+	@echo "... test_db_server.i"
+	@echo "... test_db_server.s"
 	@echo "... test_diff_lock.o"
 	@echo "... test_diff_lock.i"
 	@echo "... test_diff_lock.s"
@@ -1253,6 +2006,21 @@ help:
 	@echo "... test_nfs_mount.o"
 	@echo "... test_nfs_mount.i"
 	@echo "... test_nfs_mount.s"
+	@echo "... test_rb_library.o"
+	@echo "... test_rb_library.i"
+	@echo "... test_rb_library.s"
+	@echo "... test_rb_mode.o"
+	@echo "... test_rb_mode.i"
+	@echo "... test_rb_mode.s"
+	@echo "... test_rb_packets.o"
+	@echo "... test_rb_packets.i"
+	@echo "... test_rb_packets.s"
+	@echo "... test_rb_panel.o"
+	@echo "... test_rb_panel.i"
+	@echo "... test_rb_panel.s"
+	@echo "... test_rb_presence.o"
+	@echo "... test_rb_presence.i"
+	@echo "... test_rb_presence.s"
 	@echo "... test_rekordbox.o"
 	@echo "... test_rekordbox.i"
 	@echo "... test_rekordbox.s"
@@ -1274,6 +2042,15 @@ help:
 	@echo "... vdj-ui-controls-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-controls-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-controls-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-dbcodec-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-dbcodec-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-dbcodec-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-dbhandler-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-dbhandler-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-dbhandler-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-dbserver-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-dbserver-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-dbserver-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.s"
@@ -1283,6 +2060,21 @@ help:
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-rblibrary-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-rblibrary-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-rblibrary-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-rbmode-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-rbmode-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-rbmode-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-rbpackets-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-rbpackets-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-rbpackets-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-rbpanel-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-rbpanel-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-rbpanel-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-rbpresence-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-rbpresence-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-rbpresence-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.s"

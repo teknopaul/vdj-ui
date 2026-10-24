@@ -77,6 +77,7 @@ add_library(vdj-cdj STATIC
     ui/hud_window.cpp
     ui/pendrive_clone_dialog.cpp
     ui/recording_panel.cpp
+    ui/rekordbox_mode_panel.cpp
     ui/instrument_config_dialog.cpp
     ui/main_window.cpp
     network/network_manager.cpp
@@ -92,6 +93,32 @@ find_package(Threads REQUIRED)
 pkg_check_modules(AUDIO REQUIRED IMPORTED_TARGET libavformat libavcodec libswresample libavutil libpulse libpulse-simple)
 target_link_libraries(vdj-cdj PUBLIC PkgConfig::AUDIO Threads::Threads)
 target_link_libraries(vdj-cdj PUBLIC xdj-nfs cdj_imported vdj_imported)
+
+# rekordbox mode: dbserver protocol (see .planning/plans/rekordbox-pc-mode_PLAN.md)
+add_library(vdj-dbserver STATIC
+    dbserver/db_codec.cpp
+    dbserver/rb_library.cpp
+    dbserver/db_handler.cpp
+    dbserver/db_blobs.cpp
+    dbserver/db_server.cpp
+    dbserver/rb_packets.cpp
+    dbserver/rb_presence.cpp
+    dbserver/rb_mode_options.cpp
+    dbserver/rb_netif.cpp
+    dbserver/nfs_observer.cpp
+    dbserver/rb_mode.cpp
+)
+set_target_properties(vdj-dbserver PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(vdj-dbserver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# pdb/anlz parsers come from the installed libcdj (<cdj/pdb.h>, <cdj/anlz.h>), as for the track browser
+target_link_libraries(vdj-dbserver PUBLIC cdj_imported)
+if(Qt6_FOUND)
+    target_link_libraries(vdj-dbserver PUBLIC Qt6::Network)
+else()
+    target_link_libraries(vdj-dbserver PUBLIC Qt5::Network)
+endif()
+target_link_libraries(vdj-cdj PUBLIC vdj-dbserver)
+# end rekordbox mode
 
 find_library(ASOUND_LIBRARY asound PATHS /usr/lib /lib /usr/lib/x86_64-linux-gnu REQUIRED)
 if(ASOUND_LIBRARY)

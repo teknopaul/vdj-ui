@@ -220,6 +220,20 @@ vdj-cdj/fast:
 .PHONY : vdj-cdj/fast
 
 # Convenience name for target.
+src/CMakeFiles/vdj-dbserver.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-dbserver.dir/rule
+.PHONY : src/CMakeFiles/vdj-dbserver.dir/rule
+
+# Convenience name for target.
+vdj-dbserver: src/CMakeFiles/vdj-dbserver.dir/rule
+.PHONY : vdj-dbserver
+
+# fast build rule for target.
+vdj-dbserver/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/build
+.PHONY : vdj-dbserver/fast
+
+# Convenience name for target.
 src/CMakeFiles/vdj-ui.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-ui.dir/rule
 .PHONY : src/CMakeFiles/vdj-ui.dir/rule
@@ -288,6 +302,34 @@ vdj-cdj_autogen: src/CMakeFiles/vdj-cdj_autogen.dir/rule
 vdj-cdj_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj_autogen.dir/build.make src/CMakeFiles/vdj-cdj_autogen.dir/build
 .PHONY : vdj-cdj_autogen/fast
+
+# Convenience name for target.
+src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/rule
+.PHONY : src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-dbserver_autogen_timestamp_deps: src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-dbserver_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-dbserver_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/build.make src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/build
+.PHONY : vdj-dbserver_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+src/CMakeFiles/vdj-dbserver_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-dbserver_autogen.dir/rule
+.PHONY : src/CMakeFiles/vdj-dbserver_autogen.dir/rule
+
+# Convenience name for target.
+vdj-dbserver_autogen: src/CMakeFiles/vdj-dbserver_autogen.dir/rule
+.PHONY : vdj-dbserver_autogen
+
+# fast build rule for target.
+vdj-dbserver_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver_autogen.dir/build.make src/CMakeFiles/vdj-dbserver_autogen.dir/build
+.PHONY : vdj-dbserver_autogen/fast
 
 # Convenience name for target.
 src/CMakeFiles/vdj-ui_autogen_timestamp_deps.dir/rule:
@@ -628,6 +670,270 @@ config/config_manager.s: config/config_manager.cpp.s
 config/config_manager.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/config/config_manager.cpp.s
 .PHONY : config/config_manager.cpp.s
+
+dbserver/db_blobs.o: dbserver/db_blobs.cpp.o
+.PHONY : dbserver/db_blobs.o
+
+# target to build an object file
+dbserver/db_blobs.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_blobs.cpp.o
+.PHONY : dbserver/db_blobs.cpp.o
+
+dbserver/db_blobs.i: dbserver/db_blobs.cpp.i
+.PHONY : dbserver/db_blobs.i
+
+# target to preprocess a source file
+dbserver/db_blobs.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_blobs.cpp.i
+.PHONY : dbserver/db_blobs.cpp.i
+
+dbserver/db_blobs.s: dbserver/db_blobs.cpp.s
+.PHONY : dbserver/db_blobs.s
+
+# target to generate assembly for a file
+dbserver/db_blobs.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_blobs.cpp.s
+.PHONY : dbserver/db_blobs.cpp.s
+
+dbserver/db_codec.o: dbserver/db_codec.cpp.o
+.PHONY : dbserver/db_codec.o
+
+# target to build an object file
+dbserver/db_codec.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_codec.cpp.o
+.PHONY : dbserver/db_codec.cpp.o
+
+dbserver/db_codec.i: dbserver/db_codec.cpp.i
+.PHONY : dbserver/db_codec.i
+
+# target to preprocess a source file
+dbserver/db_codec.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_codec.cpp.i
+.PHONY : dbserver/db_codec.cpp.i
+
+dbserver/db_codec.s: dbserver/db_codec.cpp.s
+.PHONY : dbserver/db_codec.s
+
+# target to generate assembly for a file
+dbserver/db_codec.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_codec.cpp.s
+.PHONY : dbserver/db_codec.cpp.s
+
+dbserver/db_handler.o: dbserver/db_handler.cpp.o
+.PHONY : dbserver/db_handler.o
+
+# target to build an object file
+dbserver/db_handler.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_handler.cpp.o
+.PHONY : dbserver/db_handler.cpp.o
+
+dbserver/db_handler.i: dbserver/db_handler.cpp.i
+.PHONY : dbserver/db_handler.i
+
+# target to preprocess a source file
+dbserver/db_handler.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_handler.cpp.i
+.PHONY : dbserver/db_handler.cpp.i
+
+dbserver/db_handler.s: dbserver/db_handler.cpp.s
+.PHONY : dbserver/db_handler.s
+
+# target to generate assembly for a file
+dbserver/db_handler.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_handler.cpp.s
+.PHONY : dbserver/db_handler.cpp.s
+
+dbserver/db_server.o: dbserver/db_server.cpp.o
+.PHONY : dbserver/db_server.o
+
+# target to build an object file
+dbserver/db_server.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_server.cpp.o
+.PHONY : dbserver/db_server.cpp.o
+
+dbserver/db_server.i: dbserver/db_server.cpp.i
+.PHONY : dbserver/db_server.i
+
+# target to preprocess a source file
+dbserver/db_server.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_server.cpp.i
+.PHONY : dbserver/db_server.cpp.i
+
+dbserver/db_server.s: dbserver/db_server.cpp.s
+.PHONY : dbserver/db_server.s
+
+# target to generate assembly for a file
+dbserver/db_server.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/db_server.cpp.s
+.PHONY : dbserver/db_server.cpp.s
+
+dbserver/nfs_observer.o: dbserver/nfs_observer.cpp.o
+.PHONY : dbserver/nfs_observer.o
+
+# target to build an object file
+dbserver/nfs_observer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/nfs_observer.cpp.o
+.PHONY : dbserver/nfs_observer.cpp.o
+
+dbserver/nfs_observer.i: dbserver/nfs_observer.cpp.i
+.PHONY : dbserver/nfs_observer.i
+
+# target to preprocess a source file
+dbserver/nfs_observer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/nfs_observer.cpp.i
+.PHONY : dbserver/nfs_observer.cpp.i
+
+dbserver/nfs_observer.s: dbserver/nfs_observer.cpp.s
+.PHONY : dbserver/nfs_observer.s
+
+# target to generate assembly for a file
+dbserver/nfs_observer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/nfs_observer.cpp.s
+.PHONY : dbserver/nfs_observer.cpp.s
+
+dbserver/rb_library.o: dbserver/rb_library.cpp.o
+.PHONY : dbserver/rb_library.o
+
+# target to build an object file
+dbserver/rb_library.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_library.cpp.o
+.PHONY : dbserver/rb_library.cpp.o
+
+dbserver/rb_library.i: dbserver/rb_library.cpp.i
+.PHONY : dbserver/rb_library.i
+
+# target to preprocess a source file
+dbserver/rb_library.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_library.cpp.i
+.PHONY : dbserver/rb_library.cpp.i
+
+dbserver/rb_library.s: dbserver/rb_library.cpp.s
+.PHONY : dbserver/rb_library.s
+
+# target to generate assembly for a file
+dbserver/rb_library.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_library.cpp.s
+.PHONY : dbserver/rb_library.cpp.s
+
+dbserver/rb_mode.o: dbserver/rb_mode.cpp.o
+.PHONY : dbserver/rb_mode.o
+
+# target to build an object file
+dbserver/rb_mode.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_mode.cpp.o
+.PHONY : dbserver/rb_mode.cpp.o
+
+dbserver/rb_mode.i: dbserver/rb_mode.cpp.i
+.PHONY : dbserver/rb_mode.i
+
+# target to preprocess a source file
+dbserver/rb_mode.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_mode.cpp.i
+.PHONY : dbserver/rb_mode.cpp.i
+
+dbserver/rb_mode.s: dbserver/rb_mode.cpp.s
+.PHONY : dbserver/rb_mode.s
+
+# target to generate assembly for a file
+dbserver/rb_mode.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_mode.cpp.s
+.PHONY : dbserver/rb_mode.cpp.s
+
+dbserver/rb_mode_options.o: dbserver/rb_mode_options.cpp.o
+.PHONY : dbserver/rb_mode_options.o
+
+# target to build an object file
+dbserver/rb_mode_options.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_mode_options.cpp.o
+.PHONY : dbserver/rb_mode_options.cpp.o
+
+dbserver/rb_mode_options.i: dbserver/rb_mode_options.cpp.i
+.PHONY : dbserver/rb_mode_options.i
+
+# target to preprocess a source file
+dbserver/rb_mode_options.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_mode_options.cpp.i
+.PHONY : dbserver/rb_mode_options.cpp.i
+
+dbserver/rb_mode_options.s: dbserver/rb_mode_options.cpp.s
+.PHONY : dbserver/rb_mode_options.s
+
+# target to generate assembly for a file
+dbserver/rb_mode_options.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_mode_options.cpp.s
+.PHONY : dbserver/rb_mode_options.cpp.s
+
+dbserver/rb_netif.o: dbserver/rb_netif.cpp.o
+.PHONY : dbserver/rb_netif.o
+
+# target to build an object file
+dbserver/rb_netif.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_netif.cpp.o
+.PHONY : dbserver/rb_netif.cpp.o
+
+dbserver/rb_netif.i: dbserver/rb_netif.cpp.i
+.PHONY : dbserver/rb_netif.i
+
+# target to preprocess a source file
+dbserver/rb_netif.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_netif.cpp.i
+.PHONY : dbserver/rb_netif.cpp.i
+
+dbserver/rb_netif.s: dbserver/rb_netif.cpp.s
+.PHONY : dbserver/rb_netif.s
+
+# target to generate assembly for a file
+dbserver/rb_netif.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_netif.cpp.s
+.PHONY : dbserver/rb_netif.cpp.s
+
+dbserver/rb_packets.o: dbserver/rb_packets.cpp.o
+.PHONY : dbserver/rb_packets.o
+
+# target to build an object file
+dbserver/rb_packets.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_packets.cpp.o
+.PHONY : dbserver/rb_packets.cpp.o
+
+dbserver/rb_packets.i: dbserver/rb_packets.cpp.i
+.PHONY : dbserver/rb_packets.i
+
+# target to preprocess a source file
+dbserver/rb_packets.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_packets.cpp.i
+.PHONY : dbserver/rb_packets.cpp.i
+
+dbserver/rb_packets.s: dbserver/rb_packets.cpp.s
+.PHONY : dbserver/rb_packets.s
+
+# target to generate assembly for a file
+dbserver/rb_packets.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_packets.cpp.s
+.PHONY : dbserver/rb_packets.cpp.s
+
+dbserver/rb_presence.o: dbserver/rb_presence.cpp.o
+.PHONY : dbserver/rb_presence.o
+
+# target to build an object file
+dbserver/rb_presence.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_presence.cpp.o
+.PHONY : dbserver/rb_presence.cpp.o
+
+dbserver/rb_presence.i: dbserver/rb_presence.cpp.i
+.PHONY : dbserver/rb_presence.i
+
+# target to preprocess a source file
+dbserver/rb_presence.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_presence.cpp.i
+.PHONY : dbserver/rb_presence.cpp.i
+
+dbserver/rb_presence.s: dbserver/rb_presence.cpp.s
+.PHONY : dbserver/rb_presence.s
+
+# target to generate assembly for a file
+dbserver/rb_presence.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/dbserver/rb_presence.cpp.s
+.PHONY : dbserver/rb_presence.cpp.s
 
 debug/packet_logger.o: debug/packet_logger.cpp.o
 .PHONY : debug/packet_logger.o
@@ -1469,6 +1775,30 @@ ui/recording_panel.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/recording_panel.cpp.s
 .PHONY : ui/recording_panel.cpp.s
 
+ui/rekordbox_mode_panel.o: ui/rekordbox_mode_panel.cpp.o
+.PHONY : ui/rekordbox_mode_panel.o
+
+# target to build an object file
+ui/rekordbox_mode_panel.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/rekordbox_mode_panel.cpp.o
+.PHONY : ui/rekordbox_mode_panel.cpp.o
+
+ui/rekordbox_mode_panel.i: ui/rekordbox_mode_panel.cpp.i
+.PHONY : ui/rekordbox_mode_panel.i
+
+# target to preprocess a source file
+ui/rekordbox_mode_panel.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/rekordbox_mode_panel.cpp.i
+.PHONY : ui/rekordbox_mode_panel.cpp.i
+
+ui/rekordbox_mode_panel.s: ui/rekordbox_mode_panel.cpp.s
+.PHONY : ui/rekordbox_mode_panel.s
+
+# target to generate assembly for a file
+ui/rekordbox_mode_panel.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/rekordbox_mode_panel.cpp.s
+.PHONY : ui/rekordbox_mode_panel.cpp.s
+
 ui/toolbar.o: ui/toolbar.cpp.o
 .PHONY : ui/toolbar.o
 
@@ -1685,6 +2015,30 @@ vdj-cdj_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/vdj-cdj_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-cdj_autogen/mocs_compilation.cpp.s
 
+vdj-dbserver_autogen/mocs_compilation.o: vdj-dbserver_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-dbserver_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-dbserver_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/vdj-dbserver_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-dbserver_autogen/mocs_compilation.cpp.o
+
+vdj-dbserver_autogen/mocs_compilation.i: vdj-dbserver_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-dbserver_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-dbserver_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/vdj-dbserver_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-dbserver_autogen/mocs_compilation.cpp.i
+
+vdj-dbserver_autogen/mocs_compilation.s: vdj-dbserver_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-dbserver_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-dbserver_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/vdj-dbserver_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-dbserver_autogen/mocs_compilation.cpp.s
+
 vdj-ui_autogen/mocs_compilation.o: vdj-ui_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui_autogen/mocs_compilation.o
 
@@ -1798,11 +2152,14 @@ help:
 	@echo "... test"
 	@echo "... vdj-cdj_autogen"
 	@echo "... vdj-cdj_autogen_timestamp_deps"
+	@echo "... vdj-dbserver_autogen"
+	@echo "... vdj-dbserver_autogen_timestamp_deps"
 	@echo "... vdj-ui_autogen"
 	@echo "... vdj-ui_autogen_timestamp_deps"
 	@echo "... xdj-nfs_autogen"
 	@echo "... xdj-nfs_autogen_timestamp_deps"
 	@echo "... vdj-cdj"
+	@echo "... vdj-dbserver"
 	@echo "... vdj-ui"
 	@echo "... xdj-nfs"
 	@echo "... __/references/libcdj/src/nfs/mount_client.o"
@@ -1844,6 +2201,39 @@ help:
 	@echo "... config/config_manager.o"
 	@echo "... config/config_manager.i"
 	@echo "... config/config_manager.s"
+	@echo "... dbserver/db_blobs.o"
+	@echo "... dbserver/db_blobs.i"
+	@echo "... dbserver/db_blobs.s"
+	@echo "... dbserver/db_codec.o"
+	@echo "... dbserver/db_codec.i"
+	@echo "... dbserver/db_codec.s"
+	@echo "... dbserver/db_handler.o"
+	@echo "... dbserver/db_handler.i"
+	@echo "... dbserver/db_handler.s"
+	@echo "... dbserver/db_server.o"
+	@echo "... dbserver/db_server.i"
+	@echo "... dbserver/db_server.s"
+	@echo "... dbserver/nfs_observer.o"
+	@echo "... dbserver/nfs_observer.i"
+	@echo "... dbserver/nfs_observer.s"
+	@echo "... dbserver/rb_library.o"
+	@echo "... dbserver/rb_library.i"
+	@echo "... dbserver/rb_library.s"
+	@echo "... dbserver/rb_mode.o"
+	@echo "... dbserver/rb_mode.i"
+	@echo "... dbserver/rb_mode.s"
+	@echo "... dbserver/rb_mode_options.o"
+	@echo "... dbserver/rb_mode_options.i"
+	@echo "... dbserver/rb_mode_options.s"
+	@echo "... dbserver/rb_netif.o"
+	@echo "... dbserver/rb_netif.i"
+	@echo "... dbserver/rb_netif.s"
+	@echo "... dbserver/rb_packets.o"
+	@echo "... dbserver/rb_packets.i"
+	@echo "... dbserver/rb_packets.s"
+	@echo "... dbserver/rb_presence.o"
+	@echo "... dbserver/rb_presence.i"
+	@echo "... dbserver/rb_presence.s"
 	@echo "... debug/packet_logger.o"
 	@echo "... debug/packet_logger.i"
 	@echo "... debug/packet_logger.s"
@@ -1949,6 +2339,9 @@ help:
 	@echo "... ui/recording_panel.o"
 	@echo "... ui/recording_panel.i"
 	@echo "... ui/recording_panel.s"
+	@echo "... ui/rekordbox_mode_panel.o"
+	@echo "... ui/rekordbox_mode_panel.i"
+	@echo "... ui/rekordbox_mode_panel.s"
 	@echo "... ui/toolbar.o"
 	@echo "... ui/toolbar.i"
 	@echo "... ui/toolbar.s"
@@ -1976,6 +2369,9 @@ help:
 	@echo "... vdj-cdj_autogen/mocs_compilation.o"
 	@echo "... vdj-cdj_autogen/mocs_compilation.i"
 	@echo "... vdj-cdj_autogen/mocs_compilation.s"
+	@echo "... vdj-dbserver_autogen/mocs_compilation.o"
+	@echo "... vdj-dbserver_autogen/mocs_compilation.i"
+	@echo "... vdj-dbserver_autogen/mocs_compilation.s"
 	@echo "... vdj-ui_autogen/mocs_compilation.o"
 	@echo "... vdj-ui_autogen/mocs_compilation.i"
 	@echo "... vdj-ui_autogen/mocs_compilation.s"

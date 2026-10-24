@@ -11,3 +11,22 @@ references/
 .sstignore
 .qt/
 CMakeFiles/
+
+# CMake in-source build leftovers (the real build dir is build/)
+*_autogen/
+/CMakeCache.txt
+/cmake_install.cmake
+/CPackConfig.cmake
+/CPackSourceConfig.cmake
+/CTestTestfile.cmake
+/Makefile
+/Testing/
+/src/Makefile
+/src/cmake_install.cmake
+/src/vdj-ui
+/src/*.a
+/tests/Makefile
+/tests/cmake_install.cmake
+/tests/CTestTestfile.cmake
+/tests/vdj-ui-*-test
+/tests/vdj-ui-test

@@ -57,6 +57,8 @@
 #include <QGuiApplication>
 #include <QNetworkInterface>
 #include <QFile>
+#include "ui/rekordbox_mode_panel.h"
+#include "dbserver/rb_mode_options.h"
 
 namespace vdj {
 
@@ -128,6 +130,10 @@ MainWindow::MainWindow(QWidget* parent)
         statusDecks_->setText(QString("Decks: %1").arg(deckArea_->deckCount()));
         if (autoIp_ && autoIp_->active())
             autoIp_->stop();
+    });
+    QObject::connect(network_, &NetworkManager::discoveryPhase, this, [this](const QString& text) {
+        statusBar()->showMessage(text, text.startsWith(QLatin1String("Joined")) ? 6000 : 0);
+        statusNetwork_->setText(QStringLiteral("Network: joining"));
     });
     QObject::connect(network_, &NetworkManager::errorOccurred, this,
                      [this](const QString& msg) {
@@ -248,7 +254,6 @@ MainWindow::MainWindow(QWidget* parent)
     sequencerTimer_->setInterval(16);
     connect(sequencerTimer_, &QTimer::timeout, this, &MainWindow::updateSequencerPlayhead);
     sequencerTimer_->start();
-    setupKeepalive();
     setupDebugPanel();
     setupRecording();
     setupMidi();
@@ -375,10 +380,16 @@ void MainWindow::setupMenus()
     connect(debugAction, &QAction::toggled, this, &MainWindow::setDebugMode);
 
     QMenu* network = menuBar()->addMenu("&Network");
-    QAction* connectAction = network->addAction("&Connect");
+    connectAction_ = network->addAction("&Connect");
     QAction* disconnectAction = network->addAction("&Disconnect");
-    connect(connectAction, &QAction::triggered, this, &MainWindow::connectToNetwork);
+    connect(connectAction_, &QAction::triggered, this, &MainWindow::connectToNetwork);
     connect(disconnectAction, &QAction::triggered, this, &MainWindow::disconnectFromNetwork);
+
+    network->addSeparator();
+    rbAction_ = network->addAction("&Rekordbox PC Mode...");
+    rbAction_->setCheckable(true);
+    rbAction_->setToolTip("Pretend to be a rekordbox PC and serve a local export to the decks (experimental)");
+    connect(rbAction_, &QAction::toggled, this, [this](bool on) { rekordboxDock()->setVisible(on); });
 
     network->addSeparator();
     // The players serve NFS v2 over UDP, which the kernel cannot mount: files are read with libcdj's own client
@@ -672,18 +683,6 @@ void MainWindow::setupShortcuts()
     });
 }
 
-void MainWindow::setupKeepalive()
-{
-    keepaliveTimer_ = new QTimer(this);
-    keepaliveTimer_->setInterval(1000);
-    connect(keepaliveTimer_, &QTimer::timeout, this, [this]() {
-        if (network_ && network_->isConnected()) {
-            network_->sendKeepalive();
-        }
-    });
-    keepaliveTimer_->start();
-}
-
 void MainWindow::setupDemoDecks()
 {
     deckArea_ = new DeckArea(this);
@@ -797,13 +796,23 @@ void MainWindow::startDemoClocks()
 
 void MainWindow::connectToNetwork()
 {
+    if (rbPanel_ && rbPanel_->isRunning()) {
+        QMessageBox::information(this, QStringLiteral("Connect"),
+            QStringLiteral("Rekordbox PC mode is running and uses the same UDP ports. Stop it first."));
+        return;
+    }
     NetworkConfigDialog dialog(this);
     if (!currentInterface_.isEmpty())
         dialog.setInterface(currentInterface_);   // e.g. the one AutoIP just ran on
     if (dialog.exec() != QDialog::Accepted)
         return;
     rememberInterface(dialog.interface());
-    network_->connectToLink(currentInterface_);
+    // The model name goes into every claim, keep-alive and status packet. VDJ_UI_MODEL=XDJ announces an XDJ-1000 instead of
+    // the default CDJ-1000 (experiment: the players show an "older firmware" warning after we join).
+    uint32_t flags = VDJ_FLAG_AUTO_ID | VDJ_FLAG_DEV_CDJ;
+    if (qgetenv("VDJ_UI_MODEL").trimmed().toUpper() == "XDJ") flags = VDJ_FLAG_AUTO_ID | VDJ_FLAG_DEV_XDJ;
+    statusBar()->showMessage(QStringLiteral("Announcing as %1").arg(flags & VDJ_FLAG_DEV_XDJ ? "XDJ-1000" : "CDJ-1000"), 3000);
+    network_->connectToLink(currentInterface_, flags);
 }
 
 void MainWindow::rememberInterface(const QString& iface)
@@ -982,6 +991,8 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 void MainWindow::shutdown()
 {
+    if (rbPanel_)
+        rbPanel_->stopMode();
     stopBpmRamp();
     if (recorder_ && recorder_->isRecording())
         recorder_->stop();
@@ -996,9 +1007,6 @@ void MainWindow::shutdown()
     // threads and closes sockets) and release any active NFS mounts.
     if (demoClock_) {
         demoClock_->stop();
-    }
-    if (keepaliveTimer_) {
-        keepaliveTimer_->stop();
     }
     if (autoIp_ && autoIp_->active()) {
         autoIp_->stop();
@@ -1175,6 +1183,35 @@ void MainWindow::setupRecording()
             [this](const QString& p) { statusBar()->showMessage(QStringLiteral("Recording to %1").arg(p), 5000); });
     connect(recorder_, &AudioRecorder::recordingStopped, this,
             [this](const QString& p) { statusBar()->showMessage(QStringLiteral("Recording saved: %1").arg(p), 5000); });
+}
+
+// ---- rekordbox PC mode ----
+
+QDockWidget* MainWindow::rekordboxDock()
+{
+    if (rbDock_) return rbDock_;
+    rbPanel_ = new RekordboxModePanel(config_);
+    rbPanel_->setLinkConnectedProbe([this]() { return network_ && network_->isConnected(); });
+    rbDock_ = new QDockWidget(QStringLiteral("Rekordbox PC mode"), this);
+    rbDock_->setObjectName(QStringLiteral("rekordboxDock"));
+    rbDock_->setWidget(rbPanel_);
+    addDockWidget(Qt::RightDockWidgetArea, rbDock_);
+    rbDock_->hide();
+    connect(rbDock_, &QDockWidget::visibilityChanged, rbAction_, &QAction::setChecked);
+    // both modes need UDP 50000-50002
+    connect(rbPanel_, &RekordboxModePanel::runningChanged, this, [this](bool running) {
+        if (connectAction_) connectAction_->setEnabled(!running);
+    });
+    return rbDock_;
+}
+
+void MainWindow::startRekordboxMode(const RbModeOptions& opts)
+{
+    rekordboxDock()->show();
+    rbPanel_->applyOptions(opts);
+    QString err;
+    if (!rbPanel_->startMode(&err))
+        QMessageBox::warning(this, QStringLiteral("Rekordbox PC mode"), err);
 }
 
 // ---- HUD ----

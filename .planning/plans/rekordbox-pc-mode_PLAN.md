@@ -1,6 +1,6 @@
 # "Pretend to be a rekordbox PC" mode (dbserver + presence) in vdj-ui
 
-Goal: a mode (shipped as a **separate binary, `vdj-rbmode`, built from the vdj-ui tree**) where the machine looks like a rekordbox PC (device 17) on the Pro DJ Link network and acts as a
+Goal: a mode **inside the existing vdj-ui GUI** (a dock panel plus a `--rekordbox-mode` command-line shortcut) where the machine looks like a rekordbox PC (device 17) on the Pro DJ Link network and acts as a
 **dbserver** that answers a real deck's library browsing from a local rekordbox export (pendrive/`PIONEER` folder made by
 rekordbox PC, so the data is known valid). We then connect a real deck and observe what it asks for next:
 
@@ -19,24 +19,21 @@ so a software server of our own is the only way to see this exchange.
   and what the decks do), `references/adj/doc/tcp-protocol-notes.md` (dbserver framing, captured request types).
   Protocol reference pages: <https://djl-analysis.deepsymmetry.org/djl-analysis/track_metadata.html> and `menus.html`.
   **Section "Protocol cheat sheet" below is a condensed copy so you do not have to refetch.**
-- Directories: vdj-ui is `/home/teknopaul/bzr_workspace/vdj-ui` (no git here). libcdj is `references/libcdj`
-  (symlink). **libcdj: never use git; `make install` needs sudo - ask the human.** To avoid needing installs, vdj-ui compiles libcdj
+- Directories: vdj-ui is `/home/teknopaul/bzr_workspace/vdj-ui`. libcdj is `references/libcdj`
+  (symlink). **git: see Version control below; `make install` needs sudo - ask the human.** To avoid needing installs, vdj-ui compiles libcdj
   C sources directly (see how `src/CMakeLists.txt` builds `xdj-nfs` from `${CDJ_SOURCE_DIR}/src/nfs/*.c`). Do the same for
   `pdb.c`, `utf16.c` and `src/anlz/anlz.c`. Do not modify libcdj unless a phase says so; if it does, the change must not
   require an install for vdj-ui to build.
-- New code lives in `src/dbserver/` (new static lib `vdj-dbserver`) and is linked **only** into a new executable `vdj-rbmode`
-  (`src/dbserver/rbmode_main.cpp`) and its tests. It is **not** linked into `vdj-cdj`/`vdj-ui`, and `src/main.cpp`, the GUI sources
-  and `vdj-cdj` stay untouched, so GUI work can continue in parallel without merge conflicts or a larger GUI binary. The library depends
-  on QtCore/QtNetwork only (no QtWidgets). Keep the **core
-  (codec, library model, request handlers) free of Qt** so it can be unit tested without a GUI. Only the socket layer uses Qt.
-  Style: match `src/nfs/*.cpp` (namespaces `vdj`, plain C++17, short functions, same comment density).
-- Tests: Qt Test, one executable per area, registered in `tests/CMakeLists.txt` like `vdj-ui-nfsmount-test`.
-  **No external dependencies in tests**: only committed fixtures under `tests/fixtures/dbserver/`. `/var/tmp/rekordbox-example`
-  and `references/libcdj/rekordbox` are temporary developer data for manual runs, never for `make test`.
-- Only shared files with GUI work: `src/CMakeLists.txt` and `tests/CMakeLists.txt` (append-only edits in a clearly marked `# rekordbox mode` block).
+- New protocol code lives in `src/dbserver/` (new static lib `vdj-dbserver`, linked into `vdj-cdj` and so into `vdj-ui`). Keep the **core (codec, library model,
+  request handlers, packet builders) free of Qt Widgets, and the codec/library/handlers free of Qt entirely**, so they can be unit tested without a GUI. Sockets use QtNetwork.
+  GUI code is limited to **one new panel class** (`src/ui/rekordbox_mode_panel.h/.cpp`, Phase 7) plus a small hook in `src/ui/main_window.cpp` and `src/main.cpp`.
+  The GUI work is going on in parallel: keep edits to shared files (`main_window.*`, `main.cpp`, both `CMakeLists.txt`) minimal and self-contained (a menu action, a dock, one
+  CLI branch; CMake additions in a clearly marked `# rekordbox mode` block), and put all behaviour in the new files.
+- **Version control:** the human does all git operations. **Do not run any git command in vdj-ui or libcdj** (no add, commit, stash, checkout, reset, etc.). Just edit files; other uncommitted GUI work may be present in the tree, so touch only the files this plan names.
+- Only shared build files with GUI work: `src/CMakeLists.txt` and `tests/CMakeLists.txt`.
 - Safety: this mode talks to real DJ hardware. Never send anything to a deck that was not seen from a real device or
-  described in the docs, until Phase 9. All servers are read-only. The mode is **opt-in** (you have to run the separate `vdj-rbmode` binary), and exclusive
-  (it must not run next to the normal virtual CDJ or ADJ: same UDP ports).
+  described in the docs, until Phase 9. All servers are read-only. The mode is **opt-in** (menu action or `--rekordbox-mode`, never automatic), and exclusive
+  (it must not run next to the GUI's normal virtual CDJ connection or ADJ: same UDP ports; the panel enforces this).
 - Build: `cd build && cmake .. && make -j` (existing build dirs `build`, `build-asan`, `build-debug`). Run tests with `ctest`.
 - Record unknowns honestly. Any field we guess is marked `// GUESS` in code and listed in the final doc.
 
@@ -278,30 +275,37 @@ geany-progress done 6 -r src/dbserver/rb_packets.cpp -r src/dbserver/rb_presence
 
 ---
 
-## Phase 7 - `vdj-rbmode` executable, interface selection, NFS observer
+## Phase 7 - GUI panel in vdj-ui, interface selection, NFS observer
 
-Context to load: `src/CMakeLists.txt`, `src/network/network_manager.h`, `auto_ip_manager.h`, `src/nfs/nfs_mount_manager.h`, `references/libcdj/src/nfs/nfs_server.h`,
-`rpc.h`, `mount_server.h`, `portmap_client.h` (headers only), `src/session_log.h`, this plan's ground rules.
+Context to load: `src/ui/main_window.h/.cpp` (menu construction around line 340-415, the `recordDock_` dock at ~1166 as the pattern to copy, and how `Connect`/`Disconnect` use `NetworkManager`),
+`src/main.cpp`, `src/network/network_manager.h`, `auto_ip_manager.h`, `src/nfs/nfs_mount_manager.h`, `references/libcdj/src/nfs/rpc.h`, `xdr.h`,
+`src/session_log.h`, `src/ui/recording_panel.h/.cpp` (a small dock widget to imitate), this plan's ground rules.
 
-1. New executable `vdj-rbmode` (`src/dbserver/rbmode_main.cpp`, target added in `src/CMakeLists.txt`, linking `vdj-dbserver` + Qt Core/Network only; installed next to `vdj-ui`):
-   `vdj-rbmode <export-root> [--iface IFACE] [--name NAME] [--device N] [--log-dir DIR] [--unknown-policy ignore|empty|close] [--probe ...]`.
-   It uses `QCoreApplication`, **no GUI, no virtual CDJ, no ADJ/NFS mount manager, no audio**: construct `RbLibrary`, `DbServer`, `RbPresence`, `NfsObserver`;
-   log to stdout and `--log-dir`; clean shutdown on SIGINT/SIGTERM. Refuse to start if UDP 50000 is already bound by someone else and say so.
-   Do **not** touch `src/main.cpp`. (Later, vdj-ui may launch it as a child process or embed the library, via a separate plan.)
-2. Interface/IP: reuse the logic of `NetworkManager`/`AutoIpManager` for choosing the link-local interface and address. They live in the `vdj-cdj` library together with
-   Qt Widgets code, so **do not link `vdj-cdj`**: copy the small interface-selection function into `src/dbserver/` (comment where it came from) rather than editing GUI code.
-   Print the chosen IP, MAC, device number and slot info at startup.
-3. Optional live view: a one-line-per-event status on stdout (decks seen, connections, unknown requests). A small Qt window can be a later, separate plan.
+1. `src/ui/rekordbox_mode_panel.h/.cpp`, class `RekordboxModePanel : QWidget` (shown in a `QDockWidget`, same pattern as `recordDock_`):
+   - Controls: export folder chooser (default: the folder last used by "Open Rekordbox Folder..." if `MainWindow` exposes it, else remembered via `ConfigManager`), interface combo
+     (reuse the logic of `NetworkManager`/`AutoIpManager` for choosing the link-local interface/address; call the existing code, do not edit it), device number (default 17),
+     display name (default host name), unknown-request policy (ignore / empty reply / close), log directory (default `~/.local/share/vdj-ui/rbmode`), Start/Stop button.
+   - Live view (updated from `DbServer`/`RbPresence` signals, throttled): our IP/MAC/device number, decks seen (IP, name, last seen), TCP connections, request counters by type,
+     a list of **unknown requests** (type, args, time; double-click shows full hex), NFS observer events, and a scrolling log. A "Copy unknown requests" button puts them on the clipboard.
+   - Start: validates the export (loads `RbLibrary` in a worker thread, shows track count), starts `DbServer`, `RbPresence`, `NfsObserver`. Stop: stops them and closes sockets.
+   - **Exclusive with the normal link connection.** If `NetworkManager::isConnected()` the Start button explains and refuses; while the mode runs, the Network -> Connect action is disabled
+     (and re-enabled on stop). Also check at start that UDP 50000 is not already bound by someone else (e.g. ADJ) and say so.
+   - Persist panel settings in `ConfigManager` (follow its existing key patterns).
+2. Hook (minimal edits): in `main_window.cpp` add `Network -> Rekordbox PC Mode...` (checkable, toggles the dock) and create the dock lazily; in `main.cpp` add one branch
+   `--rekordbox-mode <export-root>` (plus optional `--rb-iface`, `--rb-name`, `--rb-device`, `--rb-log-dir`, `--rb-unknown-policy ...`) that opens the dock, fills the fields and starts the mode after the window is shown
+   (a call such as `window.startRekordboxMode(opts)` that just forwards to the panel). The argument parsing lives in `vdj-dbserver` (`RbModeOptions parseRbModeArgs(...)`) so it can be unit tested.
+   With the flag, the GUI otherwise behaves normally (decks area stays empty because no virtual CDJ is connected).
+3. Everything the panel shows must also be written to the log files from Phase 5, so a run without the GUI visible is still fully analysable.
 4. **NFS observer.** The question is whether the deck asks for audio over NFS. Implement `src/dbserver/nfs_observer.h/.cpp`: UDP listeners on portmap 111 (if bindable;
    else log "needs root" and skip) and on configurable mountd/nfs ports, which only **decode and log** ONC-RPC calls (xid, program, version, procedure, first args e.g. the GETPORT program, MNT
    path, LOOKUP name, READ offset/count) using libcdj `rpc.c`/`xdr.c` (compile them in), answering **portmap GETPORT** with our mountd/nfs ports and replying to unknown programs with `PROG_UNAVAIL` so the deck does not hang. 
    It does **not** serve file data in this phase. TCP 111/2049 listeners also log and close. Report on stdout: "NFS observer: deck 169.254.x.y asked portmap GETPORT for MOUNT v1".
    Binding 111 needs root or `setcap cap_net_bind_service`; document the exact command, never run sudo yourself.
-5. Docs: add `doc/rekordbox-mode.md` (usage, safety, how to read the logs) and `--help` output for `vdj-rbmode`. Check whether `make-deb.sh`/CPack should include the new binary; if so add it as an install target.
-6. Tests: argument parsing unit test (put the parser in `vdj-dbserver` so it can be tested); NFS observer decodes a canned portmap GETPORT RPC call (build one with libcdj's xdr helpers) and replies correctly; observer never writes data replies for NFS READ.
+5. Docs: add `doc/rekordbox-mode.md` (usage, safety, how to read the logs, description of the panel) and a paragraph in `doc/vdj-ui.1`.
+6. Tests: argument parsing unit test; a panel smoke test under `QT_QPA_PLATFORM=offscreen` (construct the panel with a fixture library, press Start with ephemeral ports through a test hook, assert the status labels, stop it) like `vdj-ui-integration-test`; NFS observer decodes a canned portmap GETPORT RPC call (build one with libcdj's xdr helpers) and replies correctly; observer never writes data replies for NFS READ.
 
 ```sh
-geany-progress done 7 -r src/dbserver/rbmode_main.cpp -r src/dbserver/nfs_observer.cpp -r doc/rekordbox-mode.md -w "vdj-rbmode is exclusive: must not run together with ADJ or the normal vdj-ui" -w "Portmap on 111 needs root or setcap; ask the human"
+geany-progress done 7 -r src/ui/rekordbox_mode_panel.cpp -r src/ui/main_window.cpp -r src/dbserver/nfs_observer.cpp -r doc/rekordbox-mode.md -w "Rekordbox mode is exclusive with the normal Network > Connect and with ADJ" -w "Small hooks in main_window.cpp/main.cpp are shared with ongoing GUI work: check for merge conflicts" -w "Portmap on 111 needs root or setcap; ask the human"
 ```
 
 ---
@@ -312,7 +316,7 @@ Context to load: `doc/rekordbox-mode.md`, `references/adj/doc/tcp-capture-runboo
 
 Human steps (Claude writes the runbook `references/adj/doc/rekordbox-mode-experiment.md`, human executes):
 1. Network: one deck (XDJ-700 or XDJ-1000) and the laptop on the mirrored switch. **No other rekordbox/ADJ/vdj on the network. The old rekordbox PC is switched off.** Start `tcpdump -w /var/tmp/rb-mode-1.pcap` on the mirror port 
-   before starting the mode. Start the mode: `vdj-rbmode /var/tmp/rekordbox-example --log-dir /var/tmp/rbmode-logs` (a real export from the user's pendrive).
+   before starting the mode. Start the mode: `vdj-ui --rekordbox-mode /var/tmp/rekordbox-example --rb-log-dir /var/tmp/rbmode-logs` (or Network > Rekordbox PC Mode...) (a real export from the user's pendrive).
 2. On the deck: wait for the PC to appear in the source list ("DIRTBOX"-like name), open it, browse: root, a playlist, artists, albums, tracks, search, sort (one label per action, note times in `steps.txt` with `tcp-scenario-log.sh` if available),
    then **load a track** from it and press play.
 3. Stop everything; collect the pcap and logs.
@@ -335,7 +339,7 @@ geany-progress done 8 -r references/adj/doc/rekordbox-mode-experiment.md -r refe
 
 Context to load: Phase 8 findings, `src/dbserver/db_codec.h`, `db_server.h`, `references/libcdj/src/c/cdj_tcp.h`, the `Safety` ground rule.
 
-1. Client tool `src/dbserver/db_client.h/.cpp` and a `--probe` mode of `vdj-rbmode` (`vdj-rbmode --probe <deck-ip> [--device N] [--send HEXFILE|--request ...]`): does the 12523 port query, connects to the returned port, greets, sends setup (requester number 1-4, **a number that is on the network and not the target**,
+1. Client tool `src/dbserver/db_client.h/.cpp` and a `Probe` section in the same panel and a CLI form `vdj-ui --db-probe <deck-ip> [--device N] [--send HEXFILE|--request ...]` (with `--no-gui` it prints to stdout and exits without showing the main window, otherwise the result appears in the panel): does the 12523 port query, connects to the returned port, greets, sends setup (requester number 1-4, **a number that is on the network and not the target**,
    see cheat sheet), then sends the requests given on the command line (documented names like `root-menu`, `track-metadata <id>` and the raw hex of an *unknown* request captured in Phase 8) and prints/decodes every reply with `describe()`. Always finishes with the disconnect message; global timeout; refuses to send more than a handful of unseen requests per run;
    prints "ONLY RUN ON AN IDLE DECK".
 2. First, **self-validation against hardware**: run the same documented requests (root menu, artist/track menus, one track's metadata, waveform preview) against a real deck that has the **same pendrive** as our server's library, dump both replies, and diff them (`tools/db-diff` script): item order, flags, args 11/12, unknown fields, blob headers. Fix every difference in the handlers (Phase 3/4 code) and add the fixed cases as regression tests built from the real reply bytes (small excerpts only).

@@ -2,6 +2,8 @@
 #include <QStringList>
 #include "ui/main_window.h"
 #include "debug/packet_logger.h"
+#include "dbserver/rb_mode_options.h"
+#include <cstdio>
 
 int main(int argc, char *argv[])
 {
@@ -12,6 +14,13 @@ int main(int argc, char *argv[])
     const QStringList args = app.arguments();
     const bool debug = args.contains(QStringLiteral("--debug"));
 
+    vdj::RbModeOptions rb;
+    QString rbError;
+    if (!vdj::parseRbModeArgs(args, &rb, &rbError)) {
+        std::fprintf(stderr, "vdj-ui: %s\n", qPrintable(rbError));
+        return 2;
+    }
+
     vdj::MainWindow window;
     window.show();
     if (args.contains(QStringLiteral("--mock-beat")))
@@ -19,5 +28,8 @@ int main(int argc, char *argv[])
     if (debug) {
         window.setDebugModeFromCli();
     }
+    // --rekordbox-mode <export>: open the rekordbox PC mode panel and start serving (see doc/rekordbox-mode.md)
+    if (!rb.exportRoot.isEmpty())
+        window.startRekordboxMode(rb);
     return app.exec();
 }

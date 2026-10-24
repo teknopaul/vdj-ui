@@ -36,6 +36,8 @@ class AudioRecorder;
 class InstrumentManager;
 class MidiRouter;
 class MidiMapInput;
+class RekordboxModePanel;      // rekordbox PC mode (src/ui/rekordbox_mode_panel.h)
+struct RbModeOptions;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -44,6 +46,7 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
     void setDebugModeFromCli();
+    void startRekordboxMode(const RbModeOptions& opts);   // --rekordbox-mode: open the panel and start serving
     void addDemoDecks();                             // placeholder remote decks (--mock-beat)
     AlsaClock* alsaClock() const { return clock_; }   // the VDJ's ALSA sequencer (MIDI clock)
 
@@ -64,7 +67,6 @@ private:
     void setupDemoDecks();
     void setupDemoTrackBrowser();
     void startDemoClocks();
-    void setupKeepalive();
     void setupDebugPanel();
     void connectDeckSignals();
     void setDebugMode(bool enabled);
@@ -142,6 +144,12 @@ private:
     QAction* hudAction_ = nullptr;
     QAction* recordAction_ = nullptr;
     QDockWidget* recordDock_ = nullptr;
+    // rekordbox PC mode: the dock is created on first use
+    QDockWidget* rekordboxDock();
+    RekordboxModePanel* rbPanel_ = nullptr;
+    QDockWidget* rbDock_ = nullptr;
+    QAction* rbAction_ = nullptr;
+    QAction* connectAction_ = nullptr;
     AudioRecorder* recorder_ = nullptr;
     RecordingPanel* recordingPanel_ = nullptr;
     MidiRouter* midiRouter_ = nullptr;
@@ -150,7 +158,6 @@ private:
     QLabel* statusDecks_;
     QTimer* demoClock_;
     QTimer* sequencerTimer_ = nullptr;
-    QTimer* keepaliveTimer_;
     QElapsedTimer demoElapsed_;
     QVector<int> deckOrder_; // player ids in the deck area, top = VDJ
     int activeDeckIndex_ = 0;

@@ -61,3 +61,54 @@ add_executable(vdj-ui-difflock-test test_diff_lock.cpp)
 target_link_libraries(vdj-ui-difflock-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-difflock-test COMMAND vdj-ui-difflock-test)
 set_tests_properties(vdj-ui-difflock-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+# rekordbox mode
+set(VDJ_DBSERVER_FIXTURES "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/dbserver")
+add_executable(vdj-ui-dbcodec-test test_db_codec.cpp)
+target_compile_definitions(vdj-ui-dbcodec-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-dbcodec-test PRIVATE ${QT_TEST} vdj-dbserver)
+add_test(NAME vdj-ui-dbcodec-test COMMAND vdj-ui-dbcodec-test)
+# end rekordbox mode
+# rekordbox mode
+add_executable(vdj-ui-rblibrary-test test_rb_library.cpp)
+target_compile_definitions(vdj-ui-rblibrary-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-rblibrary-test PRIVATE ${QT_TEST} vdj-dbserver)
+add_test(NAME vdj-ui-rblibrary-test COMMAND vdj-ui-rblibrary-test)
+# end rekordbox mode
+# rekordbox mode
+add_executable(vdj-ui-dbhandler-test test_db_handler.cpp)
+target_compile_definitions(vdj-ui-dbhandler-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-dbhandler-test PRIVATE ${QT_TEST} vdj-dbserver)
+add_test(NAME vdj-ui-dbhandler-test COMMAND vdj-ui-dbhandler-test)
+# end rekordbox mode
+# rekordbox mode
+add_executable(vdj-ui-dbserver-test test_db_server.cpp)
+target_compile_definitions(vdj-ui-dbserver-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-dbserver-test PRIVATE ${QT_TEST} vdj-dbserver)
+add_test(NAME vdj-ui-dbserver-test COMMAND vdj-ui-dbserver-test)
+# end rekordbox mode
+# rekordbox mode
+add_executable(vdj-ui-rbpackets-test test_rb_packets.cpp)
+target_compile_definitions(vdj-ui-rbpackets-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-rbpackets-test PRIVATE ${QT_TEST} vdj-dbserver)
+add_test(NAME vdj-ui-rbpackets-test COMMAND vdj-ui-rbpackets-test)
+# end rekordbox mode
+# rekordbox mode
+add_executable(vdj-ui-rbpresence-test test_rb_presence.cpp)
+target_compile_definitions(vdj-ui-rbpresence-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-rbpresence-test PRIVATE ${QT_TEST} vdj-dbserver)
+add_test(NAME vdj-ui-rbpresence-test COMMAND vdj-ui-rbpresence-test)
+# end rekordbox mode
+# rekordbox mode
+add_executable(vdj-ui-rbmode-test test_rb_mode.cpp)
+target_compile_definitions(vdj-ui-rbmode-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-rbmode-test PRIVATE ${QT_TEST} vdj-dbserver)
+add_test(NAME vdj-ui-rbmode-test COMMAND vdj-ui-rbmode-test)
+# end rekordbox mode
+# rekordbox mode
+add_executable(vdj-ui-rbpanel-test test_rb_panel.cpp)
+target_compile_definitions(vdj-ui-rbpanel-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-rbpanel-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-rbpanel-test COMMAND vdj-ui-rbpanel-test)
+set_tests_properties(vdj-ui-rbpanel-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+# end rekordbox mode

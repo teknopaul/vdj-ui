@@ -27,7 +27,7 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=33
+current_page=34
 FILE_NAME_0=3664;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2FREADME.md;0;4
 FILE_NAME_1=0;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fstate%2FVDJ_UI___QT_GUI_FOR_VDJ_PROGRESS.md;0;4
 FILE_NAME_2=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Fvdj-ui_PROJECT_PLAN.md;0;2
@@ -61,7 +61,8 @@ FILE_NAME_29=0;None;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%
 FILE_NAME_30=1906;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fdoc%2Ftcp-logging.md;0;2
 FILE_NAME_31=20428;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fdoc%2Ftcp-protocol-notes.md;0;3
 FILE_NAME_32=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Flibcdj%2Fdoc-internal%2Fhow-to-pose-as-rekordbox.md;0;3
-FILE_NAME_33=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Frekordbox-pc-mode_PLAN.md;0;3
+FILE_NAME_33=23642;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Frekordbox-pc-mode_PLAN.md;0;3
+FILE_NAME_34=2607;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fproblems-with-nudge.prompt.md;0;4
 
 [VTE]
 last_dir=/home/teknopaul

@@ -41,6 +41,7 @@ public:
     bool connectToLink(const QString& iface, uint32_t flags = VDJ_FLAG_AUTO_ID | VDJ_FLAG_DEV_CDJ);
     void disconnectFromLink();
     bool isConnected() const { return v_ != nullptr; }
+    bool isJoining() const { return joining_; }     // the claim sequence is running, connected() is not emitted yet
     uint8_t localPlayerId() const;
     QString ipForPlayer(int playerId) const;
     // Called on the network thread for every beat packet; returns false when there is nothing to report.
@@ -55,6 +56,9 @@ signals:
     void connected();
     void disconnected();
     void errorOccurred(const QString& message);
+    // What the join of the link is doing right now ("Claiming player number 2 (stage 2, packet 1 of 3)"); the real players
+    // flash the number while this runs
+    void discoveryPhase(const QString& text);
     void deckJoined(int playerId, const QString& ip, const QString& model);
     void deckLeft(int playerId);
     void statusUpdated(int playerId, double bpm, int pitch, int flags, int masterState, int active);
@@ -86,6 +90,7 @@ private:
     vdj_beat_unicast_ph beatUnicastPh_ = nullptr;
     QSet<int> knownMembers_;
     std::atomic<bool> statusStarted_{true};
+    std::atomic<bool> joining_{false};   // vdj_exec_discovery() is running: deck events wait until connected() has been emitted
     std::function<bool(double*)> beatProbe_;
 };
 
