@@ -1,0 +1,30 @@
+# adj midi map — default / generic controller
+#
+# Copy this to /etc/adj-midimap.adjmm and edit to match your controller.
+# Use `aconnect -l` to list MIDI ports and `aconnect <src> vdj-midi-in:midi-in`
+# to connect your controller.
+#
+# name          ch  ctrl  val   # comment
+start           *   N     0     # play
+stop            *   N     1     # cue / stop
+toggle          *   N     2     # play/pause toggle
+q_restart       *   N     3     # quantized restart (snap to downbeat)
+
+nudge_fwd       *   48    +     # jog wheel forward (nudge)
+nudge_rew       *   48    -     # jog wheel backward
+nudge_ffwd      *   48    ++    # jog wheel fast forward
+nudge_frew      *   48    --    # jog wheel fast reverse
+
+tempo_inc_1     *   N     10    # tempo +1.0 BPM
+tempo_inc       *   N     11    # tempo +0.1 BPM
+tempo_inc_min   *   N     12    # tempo +0.01 BPM
+tempo_dec_1     *   N     13    # tempo -1.0 BPM
+tempo_dec       *   N     14    # tempo -0.1 BPM
+tempo_dec_min   *   N     15    # tempo -0.01 BPM
+
+#slider_on      *   N     20    # enable pitch slider mode
+#slider_off     *   N     21    # disable pitch slider mode
+#slider         *   7     *     # mod wheel as pitch slider (when slider_on)
+
+copy_master     *   N     16    # copy BPM from master CDJ
+become_master   *   N     17    # become tempo master

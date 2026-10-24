@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=VDJ-UI
+GenericName=DJ Controller Interface
+Comment=Qt GUI for Pioneer ProLink networks
+Exec=vdj-ui
+Icon=vdj-ui
+Type=Application
+Categories=AudioVideo;Audio;Midi;
+Keywords=dj;cdj;prolink;pioneer;rekordbox;
+StartupNotify=true

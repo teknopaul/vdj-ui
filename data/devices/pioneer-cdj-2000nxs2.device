@@ -1,0 +1,7 @@
+# Pioneer CDJ-2000 NXS2
+name=Pioneer CDJ-2000 NXS2
+vendor=0x2b73
+product=0x000a
+midi_input=yes
+midi_output=yes
+joystick=no

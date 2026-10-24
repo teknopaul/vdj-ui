@@ -1,0 +1,7 @@
+# Pioneer DDJ-400 (entry-level controller)
+name=Pioneer DDJ-400
+vendor=0x2b73
+product=0x001b
+midi_input=yes
+midi_output=yes
+joystick=no

@@ -1,0 +1,17 @@
+# Pioneer DDJ-SX3
+name=Pioneer DDJ-SX3
+vendor=0x2b73
+product=0x0017
+midi_input=yes
+midi_output=yes
+joystick=yes
+# Default joystick button/axis mappings (action=control)
+joystick_play_pause=button_0
+joystick_sync=button_1
+joystick_master=button_2
+joystick_copy_bpm=button_3
+joystick_broadcast_beat=button_4
+joystick_midi_clock_toggle=button_8
+joystick_midi_clock_qrestart=button_9
+joystick_midi_clock_tempo_up=button_10
+joystick_midi_clock_tempo_down=button_11

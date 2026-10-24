@@ -1,0 +1,94 @@
+#ifndef NETWORK_MANAGER_H
+#define NETWORK_MANAGER_H
+
+#include <QObject>
+#include <QString>
+#include <QSet>
+#include <cstdint>
+#include <cmath>
+#include <functional>
+
+extern "C" {
+#include <atomic>
+#include <cdj/vdj.h>
+#include <cdj/vdj_discovery.h>
+}
+
+namespace vdj {
+
+struct LinkMemberInfo {
+    uint8_t playerId = 0;
+    float   bpm = 0.0f;
+    int32_t pitch = 0;
+    uint8_t barPos = 0;
+    uint8_t active = 0;
+    uint8_t masterState = 0;
+    uint8_t playState = 0;
+    bool    onair = false;
+    QString ip;
+};
+
+class NetworkManager : public QObject {
+    Q_OBJECT
+
+public:
+    explicit NetworkManager(QObject* parent = nullptr);
+    ~NetworkManager() override;
+
+    NetworkManager(const NetworkManager&) = delete;
+    NetworkManager& operator=(const NetworkManager&) = delete;
+
+    bool connectToLink(const QString& iface, uint32_t flags = VDJ_FLAG_AUTO_ID | VDJ_FLAG_DEV_CDJ);
+    void disconnectFromLink();
+    bool isConnected() const { return v_ != nullptr; }
+    uint8_t localPlayerId() const;
+    QString ipForPlayer(int playerId) const;
+    // Called on the network thread for every beat packet; returns false when there is nothing to report.
+    void setBeatProbe(std::function<bool(double*)> probe) { beatProbe_ = std::move(probe); }
+    double sequencerOffsetNow() const
+    {
+        double ms = 0.0;
+        return (beatProbe_ && beatProbe_(&ms)) ? ms : std::nan("");
+    }
+
+signals:
+    void connected();
+    void disconnected();
+    void errorOccurred(const QString& message);
+    void deckJoined(int playerId, const QString& ip, const QString& model);
+    void deckLeft(int playerId);
+    void statusUpdated(int playerId, double bpm, int pitch, int flags, int masterState, int active);
+    // sequencerOffsetMs: where the deck's beat fell relative to the VDJ sequencer's beat, measured the moment the
+    // packet arrived (NaN when no probe is set or the sequencer is not running)
+    void beatReceived(int playerId, double bpm, int barPos, double sequencerOffsetMs);
+    void masterChanged(int playerId);
+
+public slots:
+    void setLocalBpm(double bpm);
+    void setLocalPitch(double percentage);
+    void setLocalPlaying(bool playing);
+    void broadcastBeat(double bpm, int barPos);
+    void requestMaster();
+    void sendKeepalive();
+    // start sending our status to the link, once; called when a master is known or the wait times out
+    void startStatusThread();
+
+private:
+    static constexpr int kStatusStartTimeoutMs = 5000;
+    friend void onDiscovery(vdj_t* v, cdj_discovery_packet_t* d_pkt);
+    void teardown();
+
+    vdj_t* v_ = nullptr;
+    vdj_discovery_ph discoveryPh_ = nullptr;
+    vdj_discovery_unicast_ph discoveryUnicastPh_ = nullptr;
+    vdj_update_ph updatePh_ = nullptr;
+    vdj_beat_ph beatPh_ = nullptr;
+    vdj_beat_unicast_ph beatUnicastPh_ = nullptr;
+    QSet<int> knownMembers_;
+    std::atomic<bool> statusStarted_{true};
+    std::function<bool(double*)> beatProbe_;
+};
+
+} // namespace vdj
+
+#endif // NETWORK_MANAGER_H

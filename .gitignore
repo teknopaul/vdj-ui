@@ -1,0 +1,13 @@
+target/
+build/
+build-debug/
+build-asan/
+.idea
+*.iml
+.git/
+.bzr/
+references/
+.sst/
+.sstignore
+.qt/
+CMakeFiles/

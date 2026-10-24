@@ -1,0 +1,7 @@
+# Pioneer XDJ-RX2
+name=Pioneer XDJ-RX2
+vendor=0x2b73
+product=0x000d
+midi_input=yes
+midi_output=yes
+joystick=no
