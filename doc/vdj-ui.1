@@ -29,12 +29,17 @@ Provide a mock VDJ so deck controls can be exercised without hardware.
 Enable debug mode at startup: show the packet log dock panel and enable
 packet logging to the configured log file.
 .TP
+.B \fB\-\-link\-export\fR \fIFOLDER\fR
+Experimental. Open the rekordbox export in \fIFOLDER\fR in the browser and serve it to the other decks like a player with a USB stick in it, once connected
+(the Network menu has a checkbox "Export the Loaded Database as a LINK Player" for the database that is open; off by default). See doc/link\-export.md.
+.TP
 .B \fB\-\-rekordbox\-mode\fR \fIEXPORT\fR
 Experimental. Open the Rekordbox PC mode panel and start pretending to be a rekordbox PC that serves the rekordbox export
 in the folder \fIEXPORT\fR (the one containing PIONEER/rekordbox/export.pdb) to the decks. The same mode can be started
 from the Network menu. Options: \fB\-\-rb\-iface\fR \fINAME\fR, \fB\-\-rb\-name\fR \fINAME\fR (computer name shown on the decks),
 \fB\-\-rb\-device\fR \fIN\fR (default 17), \fB\-\-rb\-log\-dir\fR \fIDIR\fR,
-\fB\-\-rb\-unknown\-policy\fR \fIignore|empty|close\fR. Do not use together with Network > Connect or ADJ (same UDP ports).
+\fB\-\-rb\-unknown\-policy\fR \fIignore|empty|close\fR, \fB\-\-rb\-nfs\-exports\fR \fIA,B\fR (mount names offered to the decks, default /), \fB\-\-rb\-nfs\-export\-style\fR \fIlist|group|empty|unavailable\fR (how mountd EXPORT is answered), \fB\-\-rb\-no\-serve\fR (do not serve the files over NFS; by default the
+export folder is served read-only, portmapper on UDP 50111, mountd 50112, nfs 2049). Do not use together with Network > Connect or ADJ (same UDP ports).
 See doc/rekordbox\-mode.md.
 .SH KEYBOARD SHORTCUTS
 .TP
@@ -59,8 +64,8 @@ routing.
 .SH NETWORK
 .B vdj-ui
 can listen on a selectable network interface for ProLink packets, optionally
-participate as a VDJ in sync, NFS read, and NFS publish. An AutoIP toolbar
-button starts the avahi-autoipd based link-local address helper (via a polkit
+participate as a VDJ in sync, NFS read, and NFS publish. The Network > AutoIP
+menu item starts the avahi-autoipd based link-local address helper (via a polkit
 GUI prompt for root). NFS mounts from connected players are managed
 automatically and released on shutdown.
 .SH FILES

@@ -30,6 +30,9 @@ public:
         int claimIntervalMs = 110;                      // pacing of the real rekordbox PC (a deck uses 300)
         bool deckStyleClaim = false;                    // true: hello-less deck sequence, stage 1/2/3 x 3; false: rekordbox PC sequence
         int keepAliveMs = 2000;
+        int announceMs = 3000;                          // unsolicited type 0x16 to each deck (the real PC sent it just before a deck's media query); 0 = off
+        int statusMs = 100;                             // the PC's own status broadcast (type 0x29)
+        quint16 bpmX100 = 12000;                        // tempo that status announces
         int deckTimeoutMs = 10000;                      // a deck whose keep-alives stop for this long is lost
     };
 
@@ -67,6 +70,8 @@ signals:
 private slots:
     void onClaimTimer();
     void onKeepAliveTimer();
+    void onStatusTimer();
+    void onAnnounceTimer();
     void onLivenessTimer();
     void onAnnounce();
     void onBeat();
@@ -79,6 +84,7 @@ private:
     bool isOwn(const QHostAddress& a) const;
     void count(const QHostAddress& from, quint16 port, int type);
     void renumber();
+    void sendName(const QHostAddress& to);
     void log(const QString& s) { emit logLine(s); }
 
     Config cfg_;
@@ -86,7 +92,7 @@ private:
     int claimStep_ = 0;
     std::vector<uint8_t> candidates_;                   // device numbers tried in stage 2, first is the one we keep
     QUdpSocket announce_, beat_, status_;
-    QTimer claimTimer_, keepAliveTimer_, livenessTimer_;
+    QTimer claimTimer_, keepAliveTimer_, livenessTimer_, statusTimer_, announceTimer_;
     QMap<QString, Deck> decks_;
     QMap<QString, quint64> counts_;
 };

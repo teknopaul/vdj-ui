@@ -8,6 +8,12 @@
 #include <QUdpSocket>
 
 #include "dbserver/nfs_observer.h"
+extern "C" {
+#include "mount_client.h"
+#include "nfs_client.h"
+#include "rpc.h"
+#include "utf16.h"
+}
 #include "dbserver/rb_mode.h"
 #include "dbserver/rb_mode_options.h"
 
@@ -183,6 +189,21 @@ private slots:
         QCOMPARE(int(obs.calls()), 2);
     }
 
+    // The decks send their GETPORT for mountd to UDP 50111 (capture prolink-vdj-ui-as-rekordbox), which needs no root
+    void observerAnswersOnThePortTheDecksUse()
+    {
+        NfsObserver obs;
+        NfsObserver::Config c;
+        c.portmapPort = 0; c.mountPort = 0; c.nfsPort = 0; c.altPortmapPort = 50111; c.bindAddress = QHostAddress::LocalHost;
+        QString warn;
+        QVERIFY(obs.start(c, &warn));
+        if (warn.contains("50111")) QSKIP("UDP 50111 is in use (is vdj-ui running?)");
+        QByteArray args;
+        put32(args, 100005); put32(args, 1); put32(args, 17); put32(args, 0);
+        const QByteArray r = udpCall(50111, rpcCall(12, 100000, 2, 3, args));
+        QCOMPARE(get32(r, 24), quint32(obs.mountPort()));
+    }
+
     void observerReportsWhenPortmapNeedsRoot()
     {
         NfsObserver obs;
@@ -190,13 +211,72 @@ private slots:
         c.portmapPort = 111; c.mountPort = 0; c.nfsPort = 0; c.bindAddress = QHostAddress::LocalHost;
         QString warn;
         QVERIFY(obs.start(c, &warn));               // mount and nfs still work
-        if (getuid() != 0) {
+        QFile lowest(QStringLiteral("/proc/sys/net/ipv4/ip_unprivileged_port_start"));      // 1024 normally; sysctl can lower it
+        const int firstFree = lowest.open(QIODevice::ReadOnly) ? lowest.readAll().trimmed().toInt() : 1024;
+        if (getuid() != 0 && firstFree > 111) {
             QVERIFY(!obs.portmapActive());
             QVERIFY(warn.contains("setcap"));
         }
     }
 
     // The whole mode on loopback with ephemeral ports
+    // The whole mode serving a real export folder: a deck asks the portmapper, mounts /C/ and reads export.pdb over NFS
+    void modeServesTheExportOverNfs()
+    {
+        QTemporaryDir logs;
+        RbModeOptions o;
+        o.exportRoot = QStringLiteral(VDJ_DBSERVER_FIXTURES "/export7");
+        o.logDir = logs.path();
+        o.ipOverride = QHostAddress(QStringLiteral("127.0.0.2"));
+        o.broadcastOverride = QHostAddress::LocalHost;
+        o.bindAddress = QHostAddress::LocalHost;
+        o.queryPort = o.dbPort = 0;
+        o.bindAnnounce = o.bindBeat = o.bindStatus = 0;
+        o.destAnnounce = o.destStatus = 9;
+        o.altPortmapPort = 53211; o.portmapPort = 0; o.mountPort = 53212; o.nfsPort = 53249;
+        o.nfsExports = QStringList{QStringLiteral("/C/"), QStringLiteral("/")};
+        o.checkPortFree = false;
+
+        RbMode mode;
+        QString err;
+        QVERIFY2(mode.start(o, &err), qPrintable(err));
+        QVERIFY2(mode.nfsServing(), "the file service did not start (are UDP 53211/53212/53249 in use?)");
+
+        rpc_client_t pm, mc, nc;
+        QVERIFY(rpc_client_init(&pm, "127.0.0.1", 53211, 100000, 2, 2000) == 0);
+        QByteArray args;
+        put32(args, 100005); put32(args, 1); put32(args, 17); put32(args, 0);
+        const QByteArray r = udpCall(53211, rpcCall(20, 100000, 2, 3, args));
+        QCOMPARE(get32(r, 24), 53212u);                                    // the portmapper names our mountd
+        rpc_client_destroy(&pm);
+
+        QVERIFY(rpc_client_init(&mc, "127.0.0.1", 53212, 100005, 1, 2000) == 0);
+        QVERIFY(rpc_client_init(&nc, "127.0.0.1", 53249, 100003, 2, 2000) == 0);
+        uint8_t path[16]; uint32_t plen = 0;
+        utf8_to_utf16le("/C/", path, sizeof path, &plen);
+        dirpath_t dp = { path, plen };
+        fhstatus_t fhs;
+        QVERIFY(mount_mnt(&mc, &dp, &fhs) == 0 && fhs.status == 0);
+        fhandle_t f1, f2, f3;
+        fattr_t a;
+        QVERIFY(nfs_path_lookup(&nc, &fhs.directory, "pioneer/REKORDBOX/export.pdb", &f3, &a) == 0);     // other case than on disk
+        QCOMPARE(int(a.type), int(NFREG));
+        readargs_t ra; readres_t rr;
+        memset(&rr, 0, sizeof rr);
+        ra.file = f3; ra.offset = 0; ra.count = 8192; ra.totalcount = 0;
+        QVERIFY(nfs_read(&nc, &ra, &rr) == 0 && rr.status == 0 && rr.data_len == 8192);
+        QFile pdb(QStringLiteral(VDJ_DBSERVER_FIXTURES "/export7/PIONEER/rekordbox/export.pdb"));
+        QVERIFY(pdb.open(QIODevice::ReadOnly));
+        QCOMPARE(QByteArray(reinterpret_cast<const char*>(rr.data), int(rr.data_len)), pdb.read(8192));     // the bytes of the file
+        nfs_readres_free(&rr);
+        QVERIFY(mode.nfsBytesServed() >= 8192);
+        (void)f1; (void)f2;
+        rpc_client_destroy(&mc);
+        rpc_client_destroy(&nc);
+        mode.stop();
+        QVERIFY(!mode.nfsServing());
+    }
+
     void modeServesAndClosesConnectionsOfLostDecks()
     {
         QTemporaryDir logs;
@@ -210,6 +290,7 @@ private slots:
         o.bindAnnounce = o.bindBeat = o.bindStatus = 0;
         o.destAnnounce = o.destStatus = 9;           // discard port: nobody listens
         o.portmapPort = 0; o.mountPort = 0; o.nfsPort = 0;
+        o.serveNfs = false;                          // the observer on ephemeral ports; serving has its own test
         o.checkPortFree = false;
         o.claimIntervalMs = 10; o.keepAliveMs = 50; o.deckTimeoutMs = 300;
 

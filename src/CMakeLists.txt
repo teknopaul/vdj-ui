@@ -58,7 +58,6 @@ add_library(vdj-cdj STATIC
     ui/keyboard_shortcuts.cpp
     ui/beat_grid_widget.cpp
     ui/deck_area.cpp
-    ui/toolbar.cpp
     ui/usb_config_dialog.cpp
     ui/joystick_config_dialog.cpp
     ui/track_browser.cpp
@@ -81,6 +80,7 @@ add_library(vdj-cdj STATIC
     ui/instrument_config_dialog.cpp
     ui/main_window.cpp
     network/network_manager.cpp
+    network/link_export.cpp
     network/network_config_dialog.cpp
     network/auto_ip_manager.cpp
 )
@@ -95,6 +95,19 @@ target_link_libraries(vdj-cdj PUBLIC PkgConfig::AUDIO Threads::Threads)
 target_link_libraries(vdj-cdj PUBLIC xdj-nfs cdj_imported vdj_imported)
 
 # rekordbox mode: dbserver protocol (see .planning/plans/rekordbox-pc-mode_PLAN.md)
+# NFS file service (portmap + mountd + NFS v2, read-only) from the libcdj tree; its xdr/rpc/utf16/mount code is in xdj-nfs
+add_library(vdj-nfsd STATIC
+    ${CDJ_NFS_DIR}/nfs_server.c
+    ${CDJ_NFS_DIR}/mount_server.c
+    ${CDJ_NFS_DIR}/nfs_dirfs.c
+    ${CDJ_NFS_DIR}/portmap_server.c
+    ${CDJ_NFS_DIR}/nfsd.c
+)
+set_target_properties(vdj-nfsd PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(vdj-nfsd PUBLIC ${CDJ_NFS_DIR})
+find_package(Threads REQUIRED)
+target_link_libraries(vdj-nfsd PUBLIC xdj-nfs Threads::Threads)
+
 add_library(vdj-dbserver STATIC
     dbserver/db_codec.cpp
     dbserver/rb_library.cpp
@@ -111,7 +124,7 @@ add_library(vdj-dbserver STATIC
 set_target_properties(vdj-dbserver PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(vdj-dbserver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # pdb/anlz parsers come from the installed libcdj (<cdj/pdb.h>, <cdj/anlz.h>), as for the track browser
-target_link_libraries(vdj-dbserver PUBLIC cdj_imported)
+target_link_libraries(vdj-dbserver PUBLIC cdj_imported vdj-nfsd)
 if(Qt6_FOUND)
     target_link_libraries(vdj-dbserver PUBLIC Qt6::Network)
 else()

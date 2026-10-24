@@ -1,9 +1,12 @@
 #include "network_manager.h"
 #include "debug/packet_logger.h"
+#include "network/link_export.h"
 #include <arpa/inet.h>
 #include <cstring>
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QDir>
+#include <QStandardPaths>
 #include <QThread>
 #include <QTimer>
 extern "C" {
@@ -35,6 +38,13 @@ static void onProgress(vdj_s* v, int phase, int step, int steps, int playerId)
     PacketLogger::instance().log(QStringLiteral("USER"), text);
     emit nm->discoveryPhase(text);
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+}
+
+// A packet on the status port that is not a status: hand it to the LINK export (a media query for our USB slot)
+static void onRawUpdate(vdj_s* v, const unsigned char* packet, unsigned short len)
+{
+    NetworkManager* nm = instanceFrom(reinterpret_cast<vdj_t*>(v));
+    if (nm) nm->rawStatusPortPacket(QByteArray(reinterpret_cast<const char*>(packet), len));
 }
 
 static void onUpdate(vdj_t* v, cdj_cdj_status_packet_t* cs_pkt)
@@ -180,6 +190,7 @@ bool NetworkManager::connectToLink(const QString& iface, uint32_t flags)
 
     joining_ = false;
     emit connected();
+    startLinkExport();
     return true;
 }
 
@@ -194,18 +205,22 @@ void NetworkManager::startStatusThread()
 
 void NetworkManager::disconnectFromLink()
 {
+    const bool wasConnected = v_ != nullptr;
     teardown();
+    // Only here, not in teardown(): that also runs from the destructor and before a reconnect.
+    if (wasConnected) emit disconnected();
 }
 
 void NetworkManager::teardown()
 {
     if (v_) {
+        stopLinkExport();
+        // The stop calls wait for their threads (libcdj joins them), so nothing touches the sockets or v_ after this.
         vdj_stop_managed_discovery_thread(v_);
         vdj_stop_managed_beat_unicast_thread(v_);
         vdj_stop_threads(v_);
-        QThread::msleep(300);   // let the unicast thread leave its poll before the sockets close
-        vdj_close_sockets(v_);
         v_->client = nullptr;
+        vdj_close_sockets(v_);
         vdj_destroy(v_);
         v_ = nullptr;
         knownMembers_.clear();
@@ -293,6 +308,71 @@ void NetworkManager::requestMaster()
 void NetworkManager::sendKeepalive()
 {
     if (v_) vdj_send_keepalive(v_);
+}
+
+} // namespace vdj
+
+namespace vdj {
+
+void NetworkManager::setLinkExportFolder(const QString& folder)
+{
+    linkExportFolder_ = folder;
+    if (v_) {
+        stopLinkExport();
+        startLinkExport();
+    }
+}
+
+bool NetworkManager::linkExportRunning() const
+{
+    return linkExport_ && linkExport_->running();
+}
+
+void NetworkManager::rawStatusPortPacket(const QByteArray& packet)
+{
+    LinkExport* le = linkExport_;                  // set and cleared on the GUI thread; the update thread is stopped before it is deleted
+    if (le) le->onStatusPortPacket(packet);
+}
+
+void NetworkManager::startLinkExport()
+{
+    if (!v_ || linkExportFolder_.isEmpty() || linkExport_) return;
+    auto* le = new LinkExport(this);
+    connect(le, &LinkExport::logLine, this, [this](const QString& line) {
+        PacketLogger::instance().log(QStringLiteral("LINK"), line);
+        emit linkExportLog(line);
+    });
+    connect(le, &LinkExport::portmapNotBound, this, &NetworkManager::linkExportNeedsPort111);
+    LinkExport::Config c;
+    c.folder = linkExportFolder_;
+    c.deviceNumber = v_->player_id;
+    std::memcpy(c.mac, v_->mac, 6);
+    std::memcpy(c.ip, v_->ip, 4);
+    c.modelName = QString::fromLatin1(v_->model == CDJ_XDJ ? "XDJ-1000" : v_->model == CDJ_VDJ ? "VDJ-1000" : "CDJ-1000");
+    c.logDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/linkexport");
+    QDir().mkpath(c.logDir);
+    QString err;
+    if (!le->start(c, &err)) {
+        emit linkExportLog(QStringLiteral("LINK export did not start: %1").arg(err));
+        delete le;
+        emit linkExportChanged(false);
+        return;
+    }
+    linkExport_ = le;
+    v_->raw_update_h = onRawUpdate;                // media queries
+    v_->usb_loaded = 1;                            // our status now says a stick is mounted
+    emit linkExportChanged(true);
+}
+
+void NetworkManager::stopLinkExport()
+{
+    if (!linkExport_) return;
+    if (v_) { v_->usb_loaded = 0; v_->raw_update_h = nullptr; }
+    LinkExport* le = linkExport_;
+    linkExport_ = nullptr;
+    le->stop();
+    delete le;
+    emit linkExportChanged(false);
 }
 
 } // namespace vdj

@@ -231,6 +231,19 @@ vdj-cdj/fast:
 .PHONY : vdj-cdj/fast
 
 #=============================================================================
+# Target rules for targets named vdj-nfsd
+
+# Build rule for target.
+vdj-nfsd: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-nfsd
+.PHONY : vdj-nfsd
+
+# fast build rule for target.
+vdj-nfsd/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/build
+.PHONY : vdj-nfsd/fast
+
+#=============================================================================
 # Target rules for targets named vdj-dbserver
 
 # Build rule for target.
@@ -307,6 +320,32 @@ vdj-cdj_autogen: cmake_check_build_system
 vdj-cdj_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj_autogen.dir/build.make src/CMakeFiles/vdj-cdj_autogen.dir/build
 .PHONY : vdj-cdj_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-nfsd_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-nfsd_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-nfsd_autogen_timestamp_deps
+.PHONY : vdj-nfsd_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-nfsd_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/build.make src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/build
+.PHONY : vdj-nfsd_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-nfsd_autogen
+
+# Build rule for target.
+vdj-nfsd_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-nfsd_autogen
+.PHONY : vdj-nfsd_autogen
+
+# fast build rule for target.
+vdj-nfsd_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd_autogen.dir/build.make src/CMakeFiles/vdj-nfsd_autogen.dir/build
+.PHONY : vdj-nfsd_autogen/fast
 
 #=============================================================================
 # Target rules for targets named vdj-dbserver_autogen_timestamp_deps
@@ -606,6 +645,19 @@ vdj-ui-rbpanel-test: cmake_check_build_system
 vdj-ui-rbpanel-test/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test.dir/build
 .PHONY : vdj-ui-rbpanel-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-linkexport-test
+
+# Build rule for target.
+vdj-ui-linkexport-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-linkexport-test
+.PHONY : vdj-ui-linkexport-test
+
+# fast build rule for target.
+vdj-ui-linkexport-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/build
+.PHONY : vdj-ui-linkexport-test/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
@@ -1101,6 +1153,32 @@ vdj-ui-rbpanel-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build
 .PHONY : vdj-ui-rbpanel-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-linkexport-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-linkexport-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-linkexport-test_autogen_timestamp_deps
+.PHONY : vdj-ui-linkexport-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-linkexport-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-linkexport-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-linkexport-test_autogen
+
+# Build rule for target.
+vdj-ui-linkexport-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-linkexport-test_autogen
+.PHONY : vdj-ui-linkexport-test_autogen
+
+# fast build rule for target.
+vdj-ui-linkexport-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build
+.PHONY : vdj-ui-linkexport-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1121,6 +1199,8 @@ help:
 	@echo "... vdj-cdj_autogen_timestamp_deps"
 	@echo "... vdj-dbserver_autogen"
 	@echo "... vdj-dbserver_autogen_timestamp_deps"
+	@echo "... vdj-nfsd_autogen"
+	@echo "... vdj-nfsd_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test_autogen"
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatgrid-test_autogen"
@@ -1139,6 +1219,8 @@ help:
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-integration-test_autogen"
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-linkexport-test_autogen"
+	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rblibrary-test_autogen"
@@ -1165,6 +1247,7 @@ help:
 	@echo "... xdj-nfs_autogen_timestamp_deps"
 	@echo "... vdj-cdj"
 	@echo "... vdj-dbserver"
+	@echo "... vdj-nfsd"
 	@echo "... vdj-ui"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-beatgrid-test"
@@ -1175,6 +1258,7 @@ help:
 	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-difflock-test"
 	@echo "... vdj-ui-integration-test"
+	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-nfsmount-test"
 	@echo "... vdj-ui-rblibrary-test"
 	@echo "... vdj-ui-rbmode-test"

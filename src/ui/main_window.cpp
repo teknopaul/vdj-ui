@@ -2,7 +2,6 @@
 #include "deck_area.h"
 #include "deck_widget.h"
 #include "beat_grid_widget.h"
-#include "toolbar.h"
 #include "dark_theme.h"
 #include "network/network_manager.h"
 #include "network/auto_ip_manager.h"
@@ -98,7 +97,6 @@ MainWindow::MainWindow(QWidget* parent)
     nowPlaying_ = nullptr;
     QObject::connect(network_, &NetworkManager::connected, this, [this]() {
         statusNetwork_->setText("Network: connected");
-        setToolbarConnected(true);
         updateRampEnabled();
         // The VDJ row takes the player id the link gave us; placeholder decks go, real ones announce themselves.
         const int localId = int(network_->localPlayerId());
@@ -119,7 +117,6 @@ MainWindow::MainWindow(QWidget* parent)
     });
     QObject::connect(network_, &NetworkManager::disconnected, this, [this]() {
         statusNetwork_->setText("Network: down");
-        setToolbarConnected(false);
         updateRampEnabled();
         for (int i = deckArea_->deckCount() - 1; i >= 0; --i) {      // the other decks are no longer visible
             DeckWidget* d = deckArea_->deckAt(i);
@@ -128,6 +125,25 @@ MainWindow::MainWindow(QWidget* parent)
         }
         deckOrder_ = { 5 };
         statusDecks_->setText(QString("Decks: %1").arg(deckArea_->deckCount()));
+        // Everything that came from the link: the master, the sync to a deck, ramps, NFS shares, the track being shown.
+        stopBpmRamp();
+        masterPid_ = -1;
+        masterBpm_ = 0.0;
+        statusMaster_->setText(QStringLiteral("Master: none"));
+        difflock_.off();                       // also unlocks the BPM spinner
+        refreshDiffLock();
+        for (DeckWidget* d : deckArea_->findChildren<DeckWidget*>())
+            if (isVdjRow(d)) d->setMaster(false);
+        if (nfs_) {
+            const auto players = nfs_->mountedPlayerIds();
+            for (int pid : players) nfs_->unmountPlayer(pid);
+        }
+        if (nowPlaying_) {
+            nowPlaying_->setNfsStatus(false);
+            nowPlaying_->setDeck(5);
+        }
+        updateRampEnabled();
+        statusBar()->showMessage(QStringLiteral("Disconnected from the link"), 4000);
         if (autoIp_ && autoIp_->active())
             autoIp_->stop();
     });
@@ -176,6 +192,7 @@ MainWindow::MainWindow(QWidget* parent)
                 masterBpm_ = bpm;
         }
         updateDeckOverlays(pid, bpm, pitch, flags, masterState, active);
+        if (pid == bpmLockedTo()) followLockedBpm();
         if (flags & CDJ_STAT_FLAG_MASTER) {
             difflock_.masterChanged(pid);              // follows the master when that is on
             refreshDiffLock();
@@ -200,6 +217,7 @@ MainWindow::MainWindow(QWidget* parent)
                 deck->setBeatTimestamp(QDateTime::currentMSecsSinceEpoch());
             }
         }
+        if (pid == bpmLockedTo()) followLockedBpm();
         if (nowPlaying_)
             nowPlaying_->setBpm(bpm);
     });
@@ -243,11 +261,31 @@ MainWindow::MainWindow(QWidget* parent)
     });
 
     setupMenus();
-    setupToolbar();
+    QObject::connect(network_, &NetworkManager::linkExportNeedsPort111, this, [this]() {
+        // The players mount a player's USB stick first (portmapper on UDP 111, then mountd) and only then ask for its media and library:
+        // without port 111 they never get further, so say it plainly and once.
+        auto* box = new QMessageBox(QMessageBox::Warning, QStringLiteral("LINK export needs UDP port 111"),
+            QStringLiteral("The decks look for the NFS portmapper of a player on UDP port 111, a privileged port, and it could not be opened. "
+                           "Until it can, no deck will list or load tracks from this export.\n\n"
+                           "Run ONE of these once, then switch the export off and on:\n\n"
+                           "  sudo sysctl -w net.ipv4.ip_unprivileged_port_start=111\n"
+                           "      (until the next reboot, survives rebuilds)\n\n"
+                           "  sudo setcap cap_net_bind_service=+ep %1\n"
+                           "      (lost whenever vdj-ui is rebuilt)").arg(QCoreApplication::applicationFilePath()),
+            QMessageBox::Ok, this);
+        box->setAttribute(Qt::WA_DeleteOnClose);
+        box->open();
+    });
+    QObject::connect(network_, &NetworkManager::linkExportLog, this, [this](const QString& line) { statusBar()->showMessage(line, 8000); });
+    if (config_->loadValue(QStringLiteral("link_export"), QStringLiteral("enabled")) == QLatin1String("1")) {
+        linkExportWanted_ = true;                       // exports the database once one is loaded
+        if (linkExportAction_) linkExportAction_->setChecked(true);
+    }
     setupStatusBar();
     setupShortcuts();
     setupDemoDecks();
     setupDemoTrackBrowser();
+    QObject::connect(trackBrowser_, &TrackBrowser::databaseLoaded, this, [this](const QString&) { if (linkExportWanted_) applyLinkExport(); });
     connectDeckSignals();
     startDemoClocks();
     sequencerTimer_ = new QTimer(this);
@@ -296,6 +334,12 @@ void MainWindow::connectDeckSignals()
         else lockDiffLockTo(pid);                      // Sync on another deck: difflock the sequencer to it
     });
     QObject::connect(deckArea_, &DeckArea::setBpmClicked, this, [this](int pid, double bpm) {
+        if (bpmLockedTo()) {                    // synced to a real deck: the tempo is theirs, put the spinner back
+            setVdjBpm(bpm);                     // says so in the status bar
+            if (auto* d = deckAt(pid); d && clock_ && std::abs(d->controls()->bpm() - clock_->bpm()) > 0.004)
+                d->controls()->setBpm(clock_->bpm());
+            return;
+        }
         setVdjBpm(bpm);
         markDeckBpm(pid, bpm);
     });
@@ -386,6 +430,12 @@ void MainWindow::setupMenus()
     connect(disconnectAction, &QAction::triggered, this, &MainWindow::disconnectFromNetwork);
 
     network->addSeparator();
+    linkExportAction_ = network->addAction("E&xport the Loaded Database as a LINK Player");
+    linkExportAction_->setCheckable(true);
+    linkExportAction_->setToolTip("Serve the rekordbox database that is open in the browser (File > Open Rekordbox Folder) to the other decks like a "
+                                  "player with a USB stick in it (experimental, off by default). Takes effect while connected.");
+    connect(linkExportAction_, &QAction::triggered, this, [this](bool on) { setLinkExportEnabled(on); });
+    network->addSeparator();
     rbAction_ = network->addAction("&Rekordbox PC Mode...");
     rbAction_->setCheckable(true);
     rbAction_->setToolTip("Pretend to be a rekordbox PC and serve a local export to the decks (experimental)");
@@ -430,31 +480,6 @@ void MainWindow::setupMenus()
                            "<p>A Qt GUI for a virtual DJ on the Pioneer ProLink network: beat grids of all decks, "
                            "rekordbox track browsing and a local track preview player.</p>")
                 .arg(QCoreApplication::applicationVersion()));
-    });
-}
-
-void MainWindow::setupToolbar()
-{
-    toolbar_ = new Toolbar(this);
-    addToolBar(Qt::TopToolBarArea, toolbar_);
-    connect(toolbar_, &Toolbar::connectTriggered, this, &MainWindow::connectToNetwork);
-    connect(toolbar_, &Toolbar::disconnectTriggered, this, &MainWindow::disconnectFromNetwork);
-    connect(toolbar_, &Toolbar::playPauseTriggered, this, [this]() {
-        auto* deck = deckArea_->deckAt(activeDeckIndex_);
-        if (!deck) return;
-        bool playing = !deck->isPlaying();
-        deck->setPlaying(playing);
-        network_->setLocalPlaying(playing);
-        if (isVdjDeck(deck->playerId())) setVdjPlaying(playing);
-    });
-    connect(toolbar_, &Toolbar::syncTriggered, this, [this]() {
-        syncToMaster();
-    });
-    connect(toolbar_, &Toolbar::bpmUpTriggered, this, [this]() {
-        nudgeLocalBpm(1.0);
-    });
-    connect(toolbar_, &Toolbar::bpmDownTriggered, this, [this]() {
-        nudgeLocalBpm(-1.0);
     });
 }
 
@@ -590,6 +615,13 @@ void MainWindow::refreshDiffLock()
         if (d && !isVdjRow(d))
             d->controls()->setSyncLocked(difflock_.locked() && d->playerId() == difflock_.player());
     }
+    const int lockedTo = bpmLockedTo();
+    for (int i = 0; i < deckArea_->deckCount(); ++i) {
+        DeckWidget* d = deckArea_->deckAt(i);
+        if (d && isVdjRow(d))
+            d->controls()->setBpmLocked(lockedTo != 0, QStringLiteral("Synced to deck %1: the BPM follows it").arg(lockedTo));
+    }
+    followLockedBpm();
     DiffLockBar* bar = vdjDiffLockBar();
     if (!bar) return;
     bar->setFollowMaster(difflock_.followMaster());
@@ -606,12 +638,6 @@ void MainWindow::refreshDiffLock()
         if (!clock_ || !clock_->running()) text += QStringLiteral("  (VDJ stopped)");
     }
     bar->setStatus(text);
-}
-
-void MainWindow::setToolbarConnected(bool connected)
-{
-    if (toolbar_)
-        toolbar_->setConnectedState(connected);
 }
 
 QString MainWindow::activeInterface() const
@@ -822,6 +848,39 @@ void MainWindow::rememberInterface(const QString& iface)
         config_->saveValue(QStringLiteral("network"), QStringLiteral("interface"), iface);
 }
 
+// The LINK export serves the database that the browser shows (the last local one), so there is nothing to choose: tick it or not.
+void MainWindow::setLinkExportEnabled(bool on)
+{
+    linkExportWanted_ = on;
+    config_->saveValue(QStringLiteral("link_export"), QStringLiteral("enabled"), on ? QStringLiteral("1") : QStringLiteral("0"));
+    if (linkExportAction_) linkExportAction_->setChecked(on);
+    applyLinkExport();
+}
+
+void MainWindow::applyLinkExport()
+{
+    const QString root = trackBrowser_ ? trackBrowser_->exportRoot() : QString();
+    if (linkExportWanted_ && root.isEmpty()) {
+        statusBar()->showMessage(QStringLiteral("LINK export: open a rekordbox folder first (File > Open Rekordbox Folder), it exports that database"), 8000);
+        network_->setLinkExportFolder(QString());
+        return;
+    }
+    network_->setLinkExportFolder(linkExportWanted_ ? root : QString());
+    if (!linkExportWanted_) { statusBar()->showMessage(QStringLiteral("LINK export off"), 4000); return; }
+    statusBar()->showMessage(QStringLiteral("LINK export: serving %1%2").arg(root, network_->isConnected() ? QString()
+                                                                              : QStringLiteral(" (starts when you connect)")), 6000);
+}
+
+void MainWindow::setLinkExport(const QString& folder)         // --link-export DIR: open that folder in the browser and switch the export on
+{
+    QString err;
+    if (!trackBrowser_->openRekordboxFolder(folder, &err)) {
+        statusBar()->showMessage(QStringLiteral("LINK export: %1").arg(err), 8000);
+        return;
+    }
+    setLinkExportEnabled(true);
+}
+
 void MainWindow::disconnectFromNetwork()
 {
     network_->disconnectFromLink();
@@ -881,7 +940,7 @@ void MainWindow::nudgeLocalBpm(double delta)
     auto* deck = deckAt(pid);
     double bpm = deck ? deck->bpm() : 128.0;
     bpm = qBound(60.0, bpm + delta, 200.0);
-    setVdjBpm(bpm);
+    if (!setVdjBpm(bpm) && bpmLockedTo()) return;
     if (deck) deck->setBpm(bpm);
     statusBar()->showMessage(QStringLiteral("BPM %1").arg(bpm, 0, 'f', 2), 2000);
 }
@@ -912,7 +971,8 @@ void MainWindow::copyBpmFromMaster(int playerId)
         return;
     }
     if (!setVdjBpm(bpm)) {
-        statusBar()->showMessage(QStringLiteral("BPM %1 is out of range").arg(bpm, 0, 'f', 2), 4000);
+        if (!bpmLockedTo())       // locked: setVdjBpm has said so in the status bar
+            statusBar()->showMessage(QStringLiteral("BPM %1 is out of range").arg(bpm, 0, 'f', 2), 4000);
         return;
     }
     statusBar()->showMessage(remote ? QStringLiteral("Copied BPM %1 from deck %2 to the VDJ and the ALSA clock")
@@ -920,9 +980,25 @@ void MainWindow::copyBpmFromMaster(int playerId)
                                     : QStringLiteral("Copied master BPM %1").arg(bpm, 0, 'f', 2), 4000);
 }
 
+// The VDJ's tempo, as the user asks for it. While we are synced to a real deck (difflock) the tempo is that deck's and
+// nothing else: the request is refused. Master or free-running, it is applied and the other players follow.
+bool MainWindow::setVdjBpm(double bpm)
+{
+    if (const int locked = bpmLockedTo()) {
+        statusBar()->showMessage(QStringLiteral("BPM is locked to deck %1 (turn Difflock off to set it)").arg(locked), 3000);
+        return false;
+    }
+    return applyVdjBpm(bpm);
+}
+
+int MainWindow::bpmLockedTo() const
+{
+    return difflock_.locked() ? difflock_.player() : 0;
+}
+
 // The one place the VDJ's tempo changes: the ProLink beats we send, the ALSA sequencer queue that drum machines
 // follow, and the VDJ's own deck row.
-bool MainWindow::setVdjBpm(double bpm)
+bool MainWindow::applyVdjBpm(double bpm)
 {
     if (!(bpm > 0.0))
         return false;
@@ -936,6 +1012,18 @@ bool MainWindow::setVdjBpm(double bpm)
             d->setBpm(bpm);
     }
     return clockOk || !clock_;
+}
+
+// Synced to a real deck: the sequencer and the link tempo are that deck's BPM, whatever it does.
+void MainWindow::followLockedBpm()
+{
+    const int locked = bpmLockedTo();
+    if (!locked) return;
+    DeckWidget* src = deckAt(locked);
+    if (!src || isVdjRow(src)) return;
+    const double bpm = src->bpm();
+    if (!(bpm > 0.0) || (clock_ && std::abs(clock_->bpm() - bpm) < 0.004)) return;
+    applyVdjBpm(bpm);
 }
 
 bool MainWindow::isVdjRow(const DeckWidget* d) const

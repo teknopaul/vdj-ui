@@ -22,7 +22,8 @@ class NfsObserver : public QObject {
 public:
     struct Config {
         quint16 portmapPort = 111;        // needs root (or setcap cap_net_bind_service); 0 = any free port
-        quint16 mountPort = 0;            // 0 = any free port, advertised through GETPORT
+        quint16 altPortmapPort = 50111;   // where the decks look for a rekordbox PC's portmapper (seen in captures); no root needed, 0 = off
+        quint16 mountPort = 50112;        // fixed, advertised through GETPORT (a deck keeps using the port it was told); 0 = any free port
         quint16 nfsPort = 2049;
         QHostAddress bindAddress = QHostAddress::Any;
         QString logFile;                  // optional
@@ -56,7 +57,7 @@ private:
     void say(const QString& line);
 
     Config cfg_;
-    QUdpSocket portmap_, mount_, nfs_;
+    QUdpSocket portmap_, altPortmap_, mount_, nfs_;
     QTcpServer tcpPortmap_, tcpNfs_;
     quint64 calls_ = 0;
     QStringList mountPaths_, nfsFiles_;

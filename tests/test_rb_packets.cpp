@@ -142,6 +142,28 @@ private slots:
         QVERIFY(!parseMediaQuery(q.data(), 20, &m));
     }
 
+    // A player (the captured XDJ-700, device 1) describing the stick in slot 3
+    void deckMediaResponseMatchesTheCapture()
+    {
+        Identity d = Identity::deck();
+        d.device = 1;
+        MediaInfo m;
+        m.slot = 3; m.name = ""; m.trackCount = 0x0896; m.playlistCount = 0x78;
+        m.fromPlayer = true; m.date = "2025-04-11"; m.version = "1000";
+        m.totalBytes = 0x0e66fe8000ULL; m.freeBytes = 0x06c8d98000ULL;
+        COMPARE_PKT(mediaResponse(d, m), fixture("deck_media_response.bin"));
+    }
+
+    void pcStatusMatchesTheCapture()
+    {
+        COMPARE_PKT(pcStatus(rekordbox(), 0x33d2), fixture("rb_status.bin"));
+        const auto m = pcStatus(rekordbox(), 12000, true, 2);
+        QCOMPARE(int(m.size()), 56);
+        QCOMPARE(int(m[0x27]), 0xe0);                // master: flags e0 and byte 0x34 = 1, as at 66.3 s of the capture
+        QCOMPARE(int(m[0x34]), 1);
+        QCOMPARE(int(m[0x37]), 2);
+    }
+
     void pollReplyMatchesTheCapture()
     {
         COMPARE_PKT(pollReply(rekordbox()), fixture("rb_poll_reply.bin"));

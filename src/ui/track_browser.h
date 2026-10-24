@@ -37,6 +37,9 @@ public:
     // Tracks (in playlist order) of a playlist item, empty for any other item.
     QList<ExportTrack> playlistTracks(const QTreeWidgetItem* item) const;
     bool hasPdb() const { return hasPdb_; }
+    // The folder of the last local rekordbox database that was loaded (the one with PIONEER/rekordbox/export.pdb), empty if none yet.
+    // It stays when the view switches to a deck's database. The LINK export serves this folder.
+    QString exportRoot() const { return exportRoot_; }
 
     QTreeWidget* treeWidget() const { return tree_; }
     TrackDetails* detailsWidget() const { return details_; }
@@ -48,6 +51,7 @@ signals:
                        const QString& bpm, const QString& key);
     // Double click on a track: load it in the preview player.
     void previewRequested(const TrackInfo& info);
+    void databaseLoaded(const QString& exportRoot);       // a local rekordbox folder with a database was loaded
 
 private:
     void showContextMenu(const QPoint& pos);
@@ -60,6 +64,7 @@ private:
     bool openFolder(const QString& folder, QString* error);
     std::shared_ptr<RemoteDeck> remote_;   // set while the shown database is a deck's
     bool hasPdb_ = false;
+    QString exportRoot_;
     int playerId_ = 0;
     QString mountPoint_;
     QTreeWidget* tree_;

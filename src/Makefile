@@ -220,6 +220,20 @@ vdj-cdj/fast:
 .PHONY : vdj-cdj/fast
 
 # Convenience name for target.
+src/CMakeFiles/vdj-nfsd.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-nfsd.dir/rule
+.PHONY : src/CMakeFiles/vdj-nfsd.dir/rule
+
+# Convenience name for target.
+vdj-nfsd: src/CMakeFiles/vdj-nfsd.dir/rule
+.PHONY : vdj-nfsd
+
+# fast build rule for target.
+vdj-nfsd/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/build
+.PHONY : vdj-nfsd/fast
+
+# Convenience name for target.
 src/CMakeFiles/vdj-dbserver.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-dbserver.dir/rule
 .PHONY : src/CMakeFiles/vdj-dbserver.dir/rule
@@ -304,6 +318,34 @@ vdj-cdj_autogen/fast:
 .PHONY : vdj-cdj_autogen/fast
 
 # Convenience name for target.
+src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/rule
+.PHONY : src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-nfsd_autogen_timestamp_deps: src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-nfsd_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-nfsd_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/build.make src/CMakeFiles/vdj-nfsd_autogen_timestamp_deps.dir/build
+.PHONY : vdj-nfsd_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+src/CMakeFiles/vdj-nfsd_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-nfsd_autogen.dir/rule
+.PHONY : src/CMakeFiles/vdj-nfsd_autogen.dir/rule
+
+# Convenience name for target.
+vdj-nfsd_autogen: src/CMakeFiles/vdj-nfsd_autogen.dir/rule
+.PHONY : vdj-nfsd_autogen
+
+# fast build rule for target.
+vdj-nfsd_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd_autogen.dir/build.make src/CMakeFiles/vdj-nfsd_autogen.dir/build
+.PHONY : vdj-nfsd_autogen/fast
+
+# Convenience name for target.
 src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/rule
 .PHONY : src/CMakeFiles/vdj-dbserver_autogen_timestamp_deps.dir/rule
@@ -383,6 +425,30 @@ __/references/libcdj/src/nfs/mount_client.c.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/xdj-nfs.dir/build.make src/CMakeFiles/xdj-nfs.dir/__/references/libcdj/src/nfs/mount_client.c.s
 .PHONY : __/references/libcdj/src/nfs/mount_client.c.s
 
+__/references/libcdj/src/nfs/mount_server.o: __/references/libcdj/src/nfs/mount_server.c.o
+.PHONY : __/references/libcdj/src/nfs/mount_server.o
+
+# target to build an object file
+__/references/libcdj/src/nfs/mount_server.c.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/mount_server.c.o
+.PHONY : __/references/libcdj/src/nfs/mount_server.c.o
+
+__/references/libcdj/src/nfs/mount_server.i: __/references/libcdj/src/nfs/mount_server.c.i
+.PHONY : __/references/libcdj/src/nfs/mount_server.i
+
+# target to preprocess a source file
+__/references/libcdj/src/nfs/mount_server.c.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/mount_server.c.i
+.PHONY : __/references/libcdj/src/nfs/mount_server.c.i
+
+__/references/libcdj/src/nfs/mount_server.s: __/references/libcdj/src/nfs/mount_server.c.s
+.PHONY : __/references/libcdj/src/nfs/mount_server.s
+
+# target to generate assembly for a file
+__/references/libcdj/src/nfs/mount_server.c.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/mount_server.c.s
+.PHONY : __/references/libcdj/src/nfs/mount_server.c.s
+
 __/references/libcdj/src/nfs/nfs_client.o: __/references/libcdj/src/nfs/nfs_client.c.o
 .PHONY : __/references/libcdj/src/nfs/nfs_client.o
 
@@ -407,6 +473,78 @@ __/references/libcdj/src/nfs/nfs_client.c.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/xdj-nfs.dir/build.make src/CMakeFiles/xdj-nfs.dir/__/references/libcdj/src/nfs/nfs_client.c.s
 .PHONY : __/references/libcdj/src/nfs/nfs_client.c.s
 
+__/references/libcdj/src/nfs/nfs_dirfs.o: __/references/libcdj/src/nfs/nfs_dirfs.c.o
+.PHONY : __/references/libcdj/src/nfs/nfs_dirfs.o
+
+# target to build an object file
+__/references/libcdj/src/nfs/nfs_dirfs.c.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfs_dirfs.c.o
+.PHONY : __/references/libcdj/src/nfs/nfs_dirfs.c.o
+
+__/references/libcdj/src/nfs/nfs_dirfs.i: __/references/libcdj/src/nfs/nfs_dirfs.c.i
+.PHONY : __/references/libcdj/src/nfs/nfs_dirfs.i
+
+# target to preprocess a source file
+__/references/libcdj/src/nfs/nfs_dirfs.c.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfs_dirfs.c.i
+.PHONY : __/references/libcdj/src/nfs/nfs_dirfs.c.i
+
+__/references/libcdj/src/nfs/nfs_dirfs.s: __/references/libcdj/src/nfs/nfs_dirfs.c.s
+.PHONY : __/references/libcdj/src/nfs/nfs_dirfs.s
+
+# target to generate assembly for a file
+__/references/libcdj/src/nfs/nfs_dirfs.c.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfs_dirfs.c.s
+.PHONY : __/references/libcdj/src/nfs/nfs_dirfs.c.s
+
+__/references/libcdj/src/nfs/nfs_server.o: __/references/libcdj/src/nfs/nfs_server.c.o
+.PHONY : __/references/libcdj/src/nfs/nfs_server.o
+
+# target to build an object file
+__/references/libcdj/src/nfs/nfs_server.c.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfs_server.c.o
+.PHONY : __/references/libcdj/src/nfs/nfs_server.c.o
+
+__/references/libcdj/src/nfs/nfs_server.i: __/references/libcdj/src/nfs/nfs_server.c.i
+.PHONY : __/references/libcdj/src/nfs/nfs_server.i
+
+# target to preprocess a source file
+__/references/libcdj/src/nfs/nfs_server.c.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfs_server.c.i
+.PHONY : __/references/libcdj/src/nfs/nfs_server.c.i
+
+__/references/libcdj/src/nfs/nfs_server.s: __/references/libcdj/src/nfs/nfs_server.c.s
+.PHONY : __/references/libcdj/src/nfs/nfs_server.s
+
+# target to generate assembly for a file
+__/references/libcdj/src/nfs/nfs_server.c.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfs_server.c.s
+.PHONY : __/references/libcdj/src/nfs/nfs_server.c.s
+
+__/references/libcdj/src/nfs/nfsd.o: __/references/libcdj/src/nfs/nfsd.c.o
+.PHONY : __/references/libcdj/src/nfs/nfsd.o
+
+# target to build an object file
+__/references/libcdj/src/nfs/nfsd.c.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfsd.c.o
+.PHONY : __/references/libcdj/src/nfs/nfsd.c.o
+
+__/references/libcdj/src/nfs/nfsd.i: __/references/libcdj/src/nfs/nfsd.c.i
+.PHONY : __/references/libcdj/src/nfs/nfsd.i
+
+# target to preprocess a source file
+__/references/libcdj/src/nfs/nfsd.c.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfsd.c.i
+.PHONY : __/references/libcdj/src/nfs/nfsd.c.i
+
+__/references/libcdj/src/nfs/nfsd.s: __/references/libcdj/src/nfs/nfsd.c.s
+.PHONY : __/references/libcdj/src/nfs/nfsd.s
+
+# target to generate assembly for a file
+__/references/libcdj/src/nfs/nfsd.c.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/nfsd.c.s
+.PHONY : __/references/libcdj/src/nfs/nfsd.c.s
+
 __/references/libcdj/src/nfs/portmap_client.o: __/references/libcdj/src/nfs/portmap_client.c.o
 .PHONY : __/references/libcdj/src/nfs/portmap_client.o
 
@@ -430,6 +568,30 @@ __/references/libcdj/src/nfs/portmap_client.s: __/references/libcdj/src/nfs/port
 __/references/libcdj/src/nfs/portmap_client.c.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/xdj-nfs.dir/build.make src/CMakeFiles/xdj-nfs.dir/__/references/libcdj/src/nfs/portmap_client.c.s
 .PHONY : __/references/libcdj/src/nfs/portmap_client.c.s
+
+__/references/libcdj/src/nfs/portmap_server.o: __/references/libcdj/src/nfs/portmap_server.c.o
+.PHONY : __/references/libcdj/src/nfs/portmap_server.o
+
+# target to build an object file
+__/references/libcdj/src/nfs/portmap_server.c.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/portmap_server.c.o
+.PHONY : __/references/libcdj/src/nfs/portmap_server.c.o
+
+__/references/libcdj/src/nfs/portmap_server.i: __/references/libcdj/src/nfs/portmap_server.c.i
+.PHONY : __/references/libcdj/src/nfs/portmap_server.i
+
+# target to preprocess a source file
+__/references/libcdj/src/nfs/portmap_server.c.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/portmap_server.c.i
+.PHONY : __/references/libcdj/src/nfs/portmap_server.c.i
+
+__/references/libcdj/src/nfs/portmap_server.s: __/references/libcdj/src/nfs/portmap_server.c.s
+.PHONY : __/references/libcdj/src/nfs/portmap_server.s
+
+# target to generate assembly for a file
+__/references/libcdj/src/nfs/portmap_server.c.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/__/references/libcdj/src/nfs/portmap_server.c.s
+.PHONY : __/references/libcdj/src/nfs/portmap_server.c.s
 
 __/references/libcdj/src/nfs/rpc.o: __/references/libcdj/src/nfs/rpc.c.o
 .PHONY : __/references/libcdj/src/nfs/rpc.o
@@ -1151,6 +1313,30 @@ network/auto_ip_manager.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/auto_ip_manager.cpp.s
 .PHONY : network/auto_ip_manager.cpp.s
 
+network/link_export.o: network/link_export.cpp.o
+.PHONY : network/link_export.o
+
+# target to build an object file
+network/link_export.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/link_export.cpp.o
+.PHONY : network/link_export.cpp.o
+
+network/link_export.i: network/link_export.cpp.i
+.PHONY : network/link_export.i
+
+# target to preprocess a source file
+network/link_export.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/link_export.cpp.i
+.PHONY : network/link_export.cpp.i
+
+network/link_export.s: network/link_export.cpp.s
+.PHONY : network/link_export.s
+
+# target to generate assembly for a file
+network/link_export.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/link_export.cpp.s
+.PHONY : network/link_export.cpp.s
+
 network/network_config_dialog.o: network/network_config_dialog.cpp.o
 .PHONY : network/network_config_dialog.o
 
@@ -1799,30 +1985,6 @@ ui/rekordbox_mode_panel.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/rekordbox_mode_panel.cpp.s
 .PHONY : ui/rekordbox_mode_panel.cpp.s
 
-ui/toolbar.o: ui/toolbar.cpp.o
-.PHONY : ui/toolbar.o
-
-# target to build an object file
-ui/toolbar.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/toolbar.cpp.o
-.PHONY : ui/toolbar.cpp.o
-
-ui/toolbar.i: ui/toolbar.cpp.i
-.PHONY : ui/toolbar.i
-
-# target to preprocess a source file
-ui/toolbar.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/toolbar.cpp.i
-.PHONY : ui/toolbar.cpp.i
-
-ui/toolbar.s: ui/toolbar.cpp.s
-.PHONY : ui/toolbar.s
-
-# target to generate assembly for a file
-ui/toolbar.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/toolbar.cpp.s
-.PHONY : ui/toolbar.cpp.s
-
 ui/track_analysis.o: ui/track_analysis.cpp.o
 .PHONY : ui/track_analysis.o
 
@@ -2039,6 +2201,30 @@ vdj-dbserver_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver.dir/build.make src/CMakeFiles/vdj-dbserver.dir/vdj-dbserver_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-dbserver_autogen/mocs_compilation.cpp.s
 
+vdj-nfsd_autogen/mocs_compilation.o: vdj-nfsd_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-nfsd_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-nfsd_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/vdj-nfsd_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-nfsd_autogen/mocs_compilation.cpp.o
+
+vdj-nfsd_autogen/mocs_compilation.i: vdj-nfsd_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-nfsd_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-nfsd_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/vdj-nfsd_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-nfsd_autogen/mocs_compilation.cpp.i
+
+vdj-nfsd_autogen/mocs_compilation.s: vdj-nfsd_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-nfsd_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-nfsd_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/vdj-nfsd_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-nfsd_autogen/mocs_compilation.cpp.s
+
 vdj-ui_autogen/mocs_compilation.o: vdj-ui_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui_autogen/mocs_compilation.o
 
@@ -2154,23 +2340,41 @@ help:
 	@echo "... vdj-cdj_autogen_timestamp_deps"
 	@echo "... vdj-dbserver_autogen"
 	@echo "... vdj-dbserver_autogen_timestamp_deps"
+	@echo "... vdj-nfsd_autogen"
+	@echo "... vdj-nfsd_autogen_timestamp_deps"
 	@echo "... vdj-ui_autogen"
 	@echo "... vdj-ui_autogen_timestamp_deps"
 	@echo "... xdj-nfs_autogen"
 	@echo "... xdj-nfs_autogen_timestamp_deps"
 	@echo "... vdj-cdj"
 	@echo "... vdj-dbserver"
+	@echo "... vdj-nfsd"
 	@echo "... vdj-ui"
 	@echo "... xdj-nfs"
 	@echo "... __/references/libcdj/src/nfs/mount_client.o"
 	@echo "... __/references/libcdj/src/nfs/mount_client.i"
 	@echo "... __/references/libcdj/src/nfs/mount_client.s"
+	@echo "... __/references/libcdj/src/nfs/mount_server.o"
+	@echo "... __/references/libcdj/src/nfs/mount_server.i"
+	@echo "... __/references/libcdj/src/nfs/mount_server.s"
 	@echo "... __/references/libcdj/src/nfs/nfs_client.o"
 	@echo "... __/references/libcdj/src/nfs/nfs_client.i"
 	@echo "... __/references/libcdj/src/nfs/nfs_client.s"
+	@echo "... __/references/libcdj/src/nfs/nfs_dirfs.o"
+	@echo "... __/references/libcdj/src/nfs/nfs_dirfs.i"
+	@echo "... __/references/libcdj/src/nfs/nfs_dirfs.s"
+	@echo "... __/references/libcdj/src/nfs/nfs_server.o"
+	@echo "... __/references/libcdj/src/nfs/nfs_server.i"
+	@echo "... __/references/libcdj/src/nfs/nfs_server.s"
+	@echo "... __/references/libcdj/src/nfs/nfsd.o"
+	@echo "... __/references/libcdj/src/nfs/nfsd.i"
+	@echo "... __/references/libcdj/src/nfs/nfsd.s"
 	@echo "... __/references/libcdj/src/nfs/portmap_client.o"
 	@echo "... __/references/libcdj/src/nfs/portmap_client.i"
 	@echo "... __/references/libcdj/src/nfs/portmap_client.s"
+	@echo "... __/references/libcdj/src/nfs/portmap_server.o"
+	@echo "... __/references/libcdj/src/nfs/portmap_server.i"
+	@echo "... __/references/libcdj/src/nfs/portmap_server.s"
 	@echo "... __/references/libcdj/src/nfs/rpc.o"
 	@echo "... __/references/libcdj/src/nfs/rpc.i"
 	@echo "... __/references/libcdj/src/nfs/rpc.s"
@@ -2261,6 +2465,9 @@ help:
 	@echo "... network/auto_ip_manager.o"
 	@echo "... network/auto_ip_manager.i"
 	@echo "... network/auto_ip_manager.s"
+	@echo "... network/link_export.o"
+	@echo "... network/link_export.i"
+	@echo "... network/link_export.s"
 	@echo "... network/network_config_dialog.o"
 	@echo "... network/network_config_dialog.i"
 	@echo "... network/network_config_dialog.s"
@@ -2342,9 +2549,6 @@ help:
 	@echo "... ui/rekordbox_mode_panel.o"
 	@echo "... ui/rekordbox_mode_panel.i"
 	@echo "... ui/rekordbox_mode_panel.s"
-	@echo "... ui/toolbar.o"
-	@echo "... ui/toolbar.i"
-	@echo "... ui/toolbar.s"
 	@echo "... ui/track_analysis.o"
 	@echo "... ui/track_analysis.i"
 	@echo "... ui/track_analysis.s"
@@ -2372,6 +2576,9 @@ help:
 	@echo "... vdj-dbserver_autogen/mocs_compilation.o"
 	@echo "... vdj-dbserver_autogen/mocs_compilation.i"
 	@echo "... vdj-dbserver_autogen/mocs_compilation.s"
+	@echo "... vdj-nfsd_autogen/mocs_compilation.o"
+	@echo "... vdj-nfsd_autogen/mocs_compilation.i"
+	@echo "... vdj-nfsd_autogen/mocs_compilation.s"
 	@echo "... vdj-ui_autogen/mocs_compilation.o"
 	@echo "... vdj-ui_autogen/mocs_compilation.i"
 	@echo "... vdj-ui_autogen/mocs_compilation.s"

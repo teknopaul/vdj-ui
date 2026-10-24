@@ -36,18 +36,17 @@ Other facts seen in the captures:
 
 ## What was wrong
 
-| Where | Problem | Fix |
-|---|---|---|
-| libcdj managed discovery thread | started before the claim, so its first keep-alive (after 2 s) landed in the middle of stage 2 | `claiming` flag, keep-alives are silent until the claim is done, the first one goes out right after |
-| vdj-ui main window | a second keep-alive timer (1 s) ran next to the library's | timer removed |
-| libcdj `vdj_link_member_count` | counted `active`, which is the player's playing state and is overwritten by every status packet, so byte 0x30 flapped 3,2,1 | counts members that have not timed out (`!gone`) |
-| libcdj stage-3 reply | the `0x05` acknowledgement went out late (the loop read the socket every 2 s) and from an ephemeral port | loop polls every 50 ms, reply sent from the discovery socket (port 50000) |
-| vdj-ui status start | status waited for a master, or 5 s; an idle link has no master | starts on the first deck status (sync counter and master are known by then) |
-| libcdj idle status | claimed a track loaded from ourselves. The players answered with an RPC portmapper `GETPORT` for mountd to our UDP 111 every second (we have no NFS server) and the warning followed | when not playing, report an empty player byte for byte like an idle XDJ-700 |
-| rekordbox mode presence | single stage-2 number, a stage 3, no poll reply, constant peer count | follows the real PC (see above) and answers the `0x10` poll |
+| Where                           | Problem                                                                                                                                                                              | Fix                                                                                                 |
+|---------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| libcdj managed discovery thread | started before the claim, so its first keep-alive (after 2 s) landed in the middle of stage 2                                                                                        | `claiming` flag, keep-alives are silent until the claim is done, the first one goes out right after |
+| vdj-ui main window              | a second keep-alive timer (1 s) ran next to the library's                                                                                                                            | timer removed                                                                                       |
+| libcdj `vdj_link_member_count`  | counted `active`, which is the player's playing state and is overwritten by every status packet, so byte 0x30 flapped 3,2,1                                                          | counts members that have not timed out (`!gone`)                                                    |
+| libcdj stage-3 reply            | the `0x05` acknowledgement went out late (the loop read the socket every 2 s) and from an ephemeral port                                                                             | loop polls every 50 ms, reply sent from the discovery socket (port 50000)                           |
+| vdj-ui status start             | status waited for a master, or 5 s; an idle link has no master                                                                                                                       | starts on the first deck status (sync counter and master are known by then)                         |
+| libcdj idle status              | claimed a track loaded from ourselves. The players answered with an RPC portmapper `GETPORT` for mountd to our UDP 111 every second (we have no NFS server) and the warning followed | when not playing, report an empty player byte for byte like an idle XDJ-700                         |
+| rekordbox mode presence         | single stage-2 number, a stage 3, no poll reply, constant peer count                                                                                                                 | follows the real PC (see above) and answers the `0x10` poll                                         |
 
-Not causes: the model name (CDJ-1000 against XDJ-1000 made no difference), the firmware string, the packet
-sequencing of status.
+Not causes: the model name (CDJ-1000 against XDJ-1000 made no difference), the firmware string, the packet sequencing of status.
 
 ## GUI changes in vdj-ui
 

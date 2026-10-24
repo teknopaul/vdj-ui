@@ -18,7 +18,6 @@ namespace vdj {
 class NetworkManager;
 class AutoIpManager;
 class DeckArea;
-class Toolbar;
 class DeckWidget;
 class ConfigManager;
 class NfsMountManager;
@@ -46,6 +45,9 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
     void setDebugModeFromCli();
+    void setLinkExport(const QString& folder);        // --link-export DIR: open that rekordbox folder in the browser and export it
+    void setLinkExportEnabled(bool on);               // the Network menu checkbox: export the database the browser shows
+    void applyLinkExport();
     void startRekordboxMode(const RbModeOptions& opts);   // --rekordbox-mode: open the panel and start serving
     void addDemoDecks();                             // placeholder remote decks (--mock-beat)
     AlsaClock* alsaClock() const { return clock_; }   // the VDJ's ALSA sequencer (MIDI clock)
@@ -61,7 +63,6 @@ private slots:
 private:
     void openRekordboxFolder();
     void setupMenus();
-    void setupToolbar();
     void setupStatusBar();
     void setupShortcuts();
     void setupDemoDecks();
@@ -73,8 +74,10 @@ private:
     void updateDeckOverlays(int pid, double bpm, int pitch, int flags,
                             int masterState, int active);
     void nudgeLocalBpm(double delta);
-    void setToolbarConnected(bool connected);
-    bool setVdjBpm(double bpm);
+    bool setVdjBpm(double bpm);                  // user changes: refused while synced to a real deck
+    bool applyVdjBpm(double bpm);                // the one place the tempo is applied (clock, link, rows)
+    int bpmLockedTo() const;                     // the deck whose BPM we must follow (difflock), 0 = free
+    void followLockedBpm();                      // adopt the locked deck's BPM
     void setVdjPlaying(bool playing);
     void updateSequencerPlayhead();
     // difflock (see DiffLock): the sequencer keeps a fixed offset from one deck's beat
@@ -116,7 +119,6 @@ private:
     void cycleActiveDeck();
 
     DeckArea* deckArea_;
-    Toolbar* toolbar_;
     QAction* autoIpMenuAction_ = nullptr;
     QMenu* deckFilesMenu_ = nullptr;
     NetworkManager* network_;
@@ -149,6 +151,8 @@ private:
     RekordboxModePanel* rbPanel_ = nullptr;
     QDockWidget* rbDock_ = nullptr;
     QAction* rbAction_ = nullptr;
+    QAction* linkExportAction_ = nullptr;
+    bool linkExportWanted_ = false;
     QAction* connectAction_ = nullptr;
     AudioRecorder* recorder_ = nullptr;
     RecordingPanel* recordingPanel_ = nullptr;

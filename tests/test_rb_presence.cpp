@@ -126,9 +126,20 @@ private slots:
         QVERIFY(parseKeepAlive(announceOut.packets[39].data(), announceOut.packets[39].size(), &k));
         QCOMPARE(int(k.device), 17);
         QCOMPARE(QString::fromStdString(k.name), QStringLiteral("rekordbox"));
-        // the computer name goes out once the number is claimed
-        QVERIFY(waitFor([&] { return statusOut.count(PktName) >= 1; }));
+        // the PC's own status goes out every 100 ms (10 ms here is not used: statusMs default) once claimed
+        QVERIFY(waitFor([&] { return statusOut.count(PktPcStatus) >= 3; }, 2000));
+        QCOMPARE(int(statusOut.count(PktName)), 0);          // the name is for decks, sent to each of them: none known yet
         QVERIFY(p.claimed());
+    }
+
+    void namesTheComputerToADeckSeenBeforeTheClaimEnds()
+    {
+        reset();
+        RbPresence p;
+        QVERIFY(p.start(config()));
+        sendTo(p.localAnnouncePort(), fixture("deck_keepalive_xdj700.bin"));        // during the claim
+        QVERIFY(waitFor([&] { return p.claimed(); }));
+        QVERIFY(waitFor([&] { return statusOut.count(PktName) >= 1; }));
     }
 
     void deckStyleClaimIsNineClaimPackets()
@@ -156,6 +167,18 @@ private slots:
         QCOMPARE(lastCount(), 1);                                    // alone
         sendTo(p.localAnnouncePort(), fixture("deck_keepalive_xdj700.bin"));
         QVERIFY(waitFor([&] { return announceOut.packets.back()[10] == PktKeepAlive && lastCount() == 2; }));
+    }
+
+    void announcesItselfToKnownDecksUnasked()
+    {
+        reset();
+        RbPresence p;
+        auto cfg = config();
+        cfg.announceMs = 60;
+        QVERIFY(p.start(cfg));
+        QVERIFY(waitFor([&] { return p.claimed(); }));
+        sendTo(p.localAnnouncePort(), fixture("deck_keepalive_xdj700.bin"));
+        QVERIFY(waitFor([&] { return statusOut.count(PktPollReply) >= 2; }, 2000));     // nobody polled: these are unasked
     }
 
     void answersTheDecksPoll()

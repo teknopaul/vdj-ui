@@ -51,6 +51,31 @@ bool parseRbModeArgs(const QStringList& args, RbModeOptions* out, QString* error
                 return false;
             }
             out->device = n;
+        } else if (a == QLatin1String("--rb-nfs-exports")) {
+            if (!need(i, a, &v)) return false;
+            out->nfsExports = v.split(QLatin1Char(','), Qt::SkipEmptyParts);
+            if (out->nfsExports.isEmpty()) {
+                if (error) *error = QStringLiteral("--rb-nfs-exports needs at least one path, e.g. / or /C/,/");
+                return false;
+            }
+        } else if (a == QLatin1String("--rb-nfs-export-style")) {
+            if (!need(i, a, &v)) return false;
+            const QStringList names{QStringLiteral("list"), QStringLiteral("group"), QStringLiteral("empty"), QStringLiteral("unavailable")};
+            out->nfsExportStyle = names.indexOf(v);
+            if (out->nfsExportStyle < 0) {
+                if (error) *error = QStringLiteral("--rb-nfs-export-style must be list, group, empty or unavailable (got \"%1\")").arg(v);
+                return false;
+            }
+        } else if (a == QLatin1String("--rb-announce-ms")) {
+            if (!need(i, a, &v)) return false;
+            bool ok = false;
+            out->announceMs = v.toInt(&ok);
+            if (!ok || out->announceMs < 0) {
+                if (error) *error = QStringLiteral("--rb-announce-ms needs a number of milliseconds (0 = off), got \"%1\"").arg(v);
+                return false;
+            }
+        } else if (a == QLatin1String("--rb-no-serve")) {
+            out->serveNfs = false;
         } else if (a == QLatin1String("--rb-unknown-policy")) {
             if (!need(i, a, &v)) return false;
             if (!unknownPolicyFromName(v, &out->unknownPolicy)) {

@@ -20,7 +20,7 @@ constexpr uint16_t kPortStatus = 50002;
 enum PacketType : uint8_t {
     PktClaim1 = 0x00, PktClaim2 = 0x02, PktClaim3 = 0x04, PktKeepAlive = 0x06,
     PktMediaQuery = 0x05, PktMediaResponse = 0x06,      // on 50002 (the same number as the keep-alive on 50000)
-    PktPoll = 0x10, PktPollReply = 0x16, PktName = 0x11, PktCdjStatus = 0x0a, PktBeat = 0x28, PktMixerStatus = 0x29, PktMasterRequest = 0x26, PktMasterResponse = 0x27
+    PktPcStatus = 0x29, PktPoll = 0x10, PktPollReply = 0x16, PktName = 0x11, PktCdjStatus = 0x0a, PktBeat = 0x28, PktMixerStatus = 0x29, PktMasterRequest = 0x26, PktMasterResponse = 0x27
 };
 
 // Who we pretend to be. The defaults are rekordbox's values from the capture; the deck() factory gives the values of a
@@ -45,6 +45,9 @@ std::vector<uint8_t> claimStage2(const Identity& id, uint8_t counter);     // 50
 std::vector<uint8_t> claimStage3(const Identity& id, uint8_t counter);     // 38 bytes
 std::vector<uint8_t> keepAlive(const Identity& id);                        // 54 bytes
 std::vector<uint8_t> namePacket(const Identity& id);
+// The PC's own status, broadcast to UDP 50002 every 100 ms from the moment it has joined (56 bytes): its tempo, 100%
+// pitch, the master flag (c0/00 -> e0/01 when the PC became master) and the beat in the bar (0 when stopped).
+std::vector<uint8_t> pcStatus(const Identity& id, uint16_t bpmX100, bool master = false, uint8_t beatInBar = 0);
 std::vector<uint8_t> pollReply(const Identity& id);                       // 48 bytes: the answer to a deck's type-0x10 poll on 50002                       // 296 bytes, UTF-16BE computer name
 
 // A deck's poll of a new device (type 0x10 to UDP 50002, 36 bytes); the rekordbox PC answered it with type 0x16.
@@ -54,9 +57,15 @@ bool parsePoll(const uint8_t* p, size_t len, PollInfo* out);
 // The slot description a deck gets in answer to its media query (192 bytes).
 struct MediaInfo {
     uint8_t     slot = 4;                 // 4 = the rekordbox collection (likely), 3 = USB
-    std::string name = "rekordbox";
+    std::string name = "rekordbox";       // the stick's label (empty on the captured deck)
     uint16_t    trackCount = 0;
     uint16_t    playlistCount = 0;
+    // what a player adds for a stick (captured from an XDJ-700 with a 64 GB stick); all empty/zero for the PC
+    bool        fromPlayer = false;       // byte 0x20: 00 from a player, 01 from the rekordbox PC
+    std::string date;                     // UTF-16BE at 0x6c, e.g. "2025-04-11"
+    std::string version;                  // UTF-16BE at 0x84, "1000" on the captured deck
+    uint64_t    totalBytes = 0;           // u64 at 0xb0
+    uint64_t    freeBytes = 0;            // u64 at 0xb8
 };
 std::vector<uint8_t> mediaResponse(const Identity& id, const MediaInfo& m);
 

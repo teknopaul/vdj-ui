@@ -242,8 +242,11 @@ bool TrackBrowser::openFolder(const QString& folder, QString* error)
 
     if (hasPdb_) {
         QString perr;
-        if (loadPdb(root.filePath(QStringLiteral("PIONEER/rekordbox/export.pdb")), root.absolutePath(), &perr))
+        if (loadPdb(root.filePath(QStringLiteral("PIONEER/rekordbox/export.pdb")), root.absolutePath(), &perr)) {
+            exportRoot_ = root.absolutePath();
+            emit databaseLoaded(exportRoot_);
             return true;
+        }
         hasPdb_ = false;   // unreadable db: fall back to the folder view
         if (error) *error = perr;
     }

@@ -24,12 +24,17 @@ struct RbModeOptions {
     quint16  queryPort = 12523, dbPort = 1051;
     quint16  bindAnnounce = 50000, bindBeat = 50001, bindStatus = 50002;
     quint16  destAnnounce = 50000, destStatus = 50002;
-    quint16  portmapPort = 111, mountPort = 0, nfsPort = 2049;      // mount 0 = any free port
+    quint16  altPortmapPort = 50111;                                 // where the decks ask a rekordbox PC for its portmapper
+    quint16  portmapPort = 111, mountPort = 50112, nfsPort = 2049;   // mount 0 = any free port; fixed so a deck's cached port stays valid
     QHostAddress bindAddress = QHostAddress::Any;
     QHostAddress broadcastOverride;                                  // null = the interface's broadcast address
     QHostAddress ipOverride;                                         // null = the interface's address
     bool     checkPortFree = true;       // refuse to start when UDP 50000 is held by someone else
-    bool     observeNfs = true;
+    QStringList nfsExports{QStringLiteral("/")};   // mount names offered to the decks' mountd EXPORT (all mount the export folder)
+    int      nfsExportStyle = 2;         // default: an empty list; a non-empty one froze the decks (see doc/rekordbox-mode.md)         // mountd EXPORT reply: 0 list, 1 list with group "*", 2 empty list, 3 procedure unavailable
+    bool     serveNfs = true;            // a read-only NFS file service for the export (portmap, mountd, nfs); false = only log the calls
+    bool     observeNfs = true;           // used when serveNfs is off
+    int      announceMs = 3000;          // unsolicited "library ready" (type 0x16) to each deck, 0 = off
     int      claimIntervalMs = 110, keepAliveMs = 2000, deckTimeoutMs = 10000;
 };
 

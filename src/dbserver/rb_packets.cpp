@@ -92,6 +92,23 @@ std::vector<uint8_t> namePacket(const Identity& id)
     return p;
 }
 
+std::vector<uint8_t> pcStatus(const Identity& id, uint16_t bpmX100, bool master, uint8_t beatInBar)
+{
+    auto p = start(PktPcStatus, false, id.name);
+    p.push_back(0x01); p.push_back(0x01); p.push_back(id.device); p.push_back(0x00); p.push_back(0x38);   // 0x1f..0x23
+    p.push_back(id.device); p.push_back(0x00); p.push_back(0x00);                                           // 0x24..0x26
+    p.push_back(master ? 0xe0 : 0xc0);                                                                      // 0x27 flags
+    put32(p, 0x00100000);                                                                                    // 0x28 pitch 100%
+    put16(p, 0x8000);                                                                                        // 0x2c
+    put16(p, bpmX100);                                                                                       // 0x2e
+    put32(p, 0x00100000);                                                                                    // 0x30 pitch again
+    p.push_back(master ? 0x01 : 0x00);                                                                       // 0x34 master
+    p.push_back(0x09);                                                                                       // 0x35
+    p.push_back(0xff);                                                                                       // 0x36 no hand-off
+    p.push_back(beatInBar);                                                                                  // 0x37
+    return p;
+}
+
 std::vector<uint8_t> pollReply(const Identity& id)
 {
     auto p = start(PktPollReply, false, id.name);
@@ -103,17 +120,26 @@ std::vector<uint8_t> pollReply(const Identity& id)
 std::vector<uint8_t> mediaResponse(const Identity& id, const MediaInfo& m)
 {
     auto p = start(PktMediaResponse, false, id.name);
-    p.push_back(0x01); p.push_back(0x01); p.push_back(id.device); put16(p, 0x009c);
+    p.push_back(0x01); p.push_back(m.fromPlayer ? 0x00 : 0x01); p.push_back(id.device); put16(p, 0x009c);
     put32(p, id.device);
     put32(p, m.slot);
     const std::u16string u = utf8ToUtf16(m.name);
     for (size_t i = 0; i < 32; ++i) put16(p, i < u.size() && i < 31 ? uint16_t(u[i]) : 0);      // 64 bytes
-    p.resize(0xa6, 0);              // creation date / free space etc: zeros (GUESS: the capture's were zero)
+    p.resize(0x6c, 0);
+    auto text = [&p](size_t at, const std::string& s) {                                          // UTF-16BE, NUL padded
+        const std::u16string w = utf8ToUtf16(s);
+        for (size_t i = 0; i < w.size() && i < 12; ++i) { p[at + 2 * i] = uint8_t(w[i] >> 8); p[at + 2 * i + 1] = uint8_t(w[i]); }
+    };
+    p.resize(0xa6, 0);
+    text(0x6c, m.date);
+    text(0x84, m.version);
     put16(p, m.trackCount);
     put16(p, 0);
     p.push_back(0x01); p.push_back(0x01);
     p.push_back(0x00); p.push_back(0x00);
     put16(p, m.playlistCount);      // 0xae
+    put32(p, uint32_t(m.totalBytes >> 32)); put32(p, uint32_t(m.totalBytes));      // 0xb0
+    put32(p, uint32_t(m.freeBytes >> 32));  put32(p, uint32_t(m.freeBytes));       // 0xb8
     p.resize(0xc0, 0);
     return p;
 }

@@ -1,5 +1,6 @@
 #include "deck_controls.h"
 #include <QPushButton>
+#include <QAbstractSpinBox>
 #include <QDoubleSpinBox>
 #include <QSpinBox>
 #include <QHBoxLayout>
@@ -127,6 +128,13 @@ void DeckControls::setRemote(bool remote)
 bool DeckControls::bpmEditable() const
 {
     return bpmSpin_ && !bpmSpin_->isHidden() && !bpmSpin_->isReadOnly();
+}
+
+void DeckControls::setBpmLocked(bool locked, const QString& tip)
+{
+    bpmSpin_->setReadOnly(locked);
+    bpmSpin_->setButtonSymbols(locked ? QAbstractSpinBox::NoButtons : QAbstractSpinBox::UpDownArrows);
+    bpmSpin_->setToolTip(locked ? tip : QString());
 }
 
 bool DeckControls::barEditable() const

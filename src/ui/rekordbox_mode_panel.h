@@ -8,6 +8,7 @@
 #include "dbserver/rb_mode_options.h"
 
 class QCheckBox;
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QLineEdit;
@@ -78,7 +79,10 @@ private:
     QSpinBox*       deviceSpin_;
     QLineEdit*      nameEdit_;
     QComboBox*      policyCombo_;
+    QCheckBox*      serveCheck_;
     QLineEdit*      logEdit_;
+    QLineEdit*      exportsEdit_;
+    QComboBox*      styleCombo_;
     QPushButton*    startBtn_;
     QLabel*         statusLabel_;
     QLabel*         countersLabel_;

@@ -46,10 +46,16 @@ spinner (default 20 ms). Same idea as `adj`'s difflock.
 
 Select a network interface to connect to the ProLink network. The application
 lists connected decks, shows the master, BPM with two decimal places, and
-renders each deck's beat grid aligned across all deck rows. The toolbar
-AutoIP button starts the link-local address helper (avahi-autoipd based,
+renders each deck's beat grid aligned across all deck rows. The Network > AutoIP
+menu item starts the link-local address helper (avahi-autoipd based,
 polkit prompt for root, start/stop toggle). NFS shares from connected
 players are mounted under `~/.cache/vdj-ui/mnt/` and released on shutdown.
+
+### Exporting a pendrive to the decks (LINK export)
+
+Network > *Export the Loaded Database as a LINK Player* makes vdj-ui serve the rekordbox database open in the browser (a pendrive or export folder) to the
+other decks like a player with a USB stick in it: they browse it, load tracks and play them. It needs UDP port 111, a privileged port.
+See `doc/link-export.md` and `doc/privileged-port-111.md`. (`doc/joining-the-link.md` explains how the virtual player joins the link without the decks complaining.)
 
 ## Packaging a .deb
 

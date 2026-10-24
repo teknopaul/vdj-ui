@@ -458,6 +458,20 @@ vdj-ui-rbpanel-test/fast:
 .PHONY : vdj-ui-rbpanel-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-linkexport-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-linkexport-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-linkexport-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-linkexport-test: tests/CMakeFiles/vdj-ui-linkexport-test.dir/rule
+.PHONY : vdj-ui-linkexport-test
+
+# fast build rule for target.
+vdj-ui-linkexport-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/build
+.PHONY : vdj-ui-linkexport-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -989,6 +1003,34 @@ vdj-ui-rbpanel-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-rbpanel-test_autogen.dir/build
 .PHONY : vdj-ui-rbpanel-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-linkexport-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-linkexport-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-linkexport-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-linkexport-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-linkexport-test_autogen: tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/rule
+.PHONY : vdj-ui-linkexport-test_autogen
+
+# fast build rule for target.
+vdj-ui-linkexport-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build
+.PHONY : vdj-ui-linkexport-test_autogen/fast
+
 test_audio.o: test_audio.cpp.o
 .PHONY : test_audio.o
 
@@ -1204,6 +1246,30 @@ test_integration.s: test_integration.cpp.s
 test_integration.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-integration-test.dir/build.make tests/CMakeFiles/vdj-ui-integration-test.dir/test_integration.cpp.s
 .PHONY : test_integration.cpp.s
+
+test_link_export.o: test_link_export.cpp.o
+.PHONY : test_link_export.o
+
+# target to build an object file
+test_link_export.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/test_link_export.cpp.o
+.PHONY : test_link_export.cpp.o
+
+test_link_export.i: test_link_export.cpp.i
+.PHONY : test_link_export.i
+
+# target to preprocess a source file
+test_link_export.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/test_link_export.cpp.i
+.PHONY : test_link_export.cpp.i
+
+test_link_export.s: test_link_export.cpp.s
+.PHONY : test_link_export.s
+
+# target to generate assembly for a file
+test_link_export.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/test_link_export.cpp.s
+.PHONY : test_link_export.cpp.s
 
 test_main.o: test_main.cpp.o
 .PHONY : test_main.o
@@ -1661,6 +1727,30 @@ vdj-ui-integration-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-integration-test.dir/build.make tests/CMakeFiles/vdj-ui-integration-test.dir/vdj-ui-integration-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-integration-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-linkexport-test_autogen/mocs_compilation.o: vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-linkexport-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-linkexport-test_autogen/mocs_compilation.i: vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-linkexport-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-linkexport-test_autogen/mocs_compilation.s: vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-linkexport-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-linkexport-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-nfsmount-test_autogen/mocs_compilation.o: vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-nfsmount-test_autogen/mocs_compilation.o
 
@@ -1934,6 +2024,8 @@ help:
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-integration-test_autogen"
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-linkexport-test_autogen"
+	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rblibrary-test_autogen"
@@ -1963,6 +2055,7 @@ help:
 	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-difflock-test"
 	@echo "... vdj-ui-integration-test"
+	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-nfsmount-test"
 	@echo "... vdj-ui-rblibrary-test"
 	@echo "... vdj-ui-rbmode-test"
@@ -2000,6 +2093,9 @@ help:
 	@echo "... test_integration.o"
 	@echo "... test_integration.i"
 	@echo "... test_integration.s"
+	@echo "... test_link_export.o"
+	@echo "... test_link_export.i"
+	@echo "... test_link_export.s"
 	@echo "... test_main.o"
 	@echo "... test_main.i"
 	@echo "... test_main.s"
@@ -2057,6 +2153,9 @@ help:
 	@echo "... vdj-ui-integration-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-integration-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-integration-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-linkexport-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-linkexport-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-linkexport-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.s"

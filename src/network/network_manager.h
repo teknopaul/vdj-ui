@@ -28,6 +28,8 @@ struct LinkMemberInfo {
     QString ip;
 };
 
+class LinkExport;
+
 class NetworkManager : public QObject {
     Q_OBJECT
 
@@ -66,6 +68,9 @@ signals:
     // packet arrived (NaN when no probe is set or the sequencer is not running)
     void beatReceived(int playerId, double bpm, int barPos, double sequencerOffsetMs);
     void masterChanged(int playerId);
+    void linkExportLog(const QString& line);        // what the export does (media queries, dbserver, NFS)
+    void linkExportChanged(bool running);
+    void linkExportNeedsPort111();                  // the export runs but UDP 111 is not bound (needs privileges)
 
 public slots:
     void setLocalBpm(double bpm);
@@ -74,13 +79,23 @@ public slots:
     void broadcastBeat(double bpm, int barPos);
     void requestMaster();
     void sendKeepalive();
+
+    // LINK export (off by default): serve a pendrive / rekordbox export folder to the other players the way a deck serves its USB stick.
+    // An empty folder switches it off. Takes effect at the next connect (or at once when connected).
+    void setLinkExportFolder(const QString& folder);
+    QString linkExportFolder() const { return linkExportFolder_; }
+    bool linkExportRunning() const;
     // start sending our status to the link, once; called when a master is known or the wait times out
     void startStatusThread();
+    // from the library's update thread: a packet on the status port that is not a status
+    void rawStatusPortPacket(const QByteArray& packet);
 
 private:
     static constexpr int kStatusStartTimeoutMs = 5000;
     friend void onDiscovery(vdj_t* v, cdj_discovery_packet_t* d_pkt);
     void teardown();
+    void startLinkExport();
+    void stopLinkExport();
 
     vdj_t* v_ = nullptr;
     vdj_discovery_ph discoveryPh_ = nullptr;
@@ -92,6 +107,8 @@ private:
     std::atomic<bool> statusStarted_{true};
     std::atomic<bool> joining_{false};   // vdj_exec_discovery() is running: deck events wait until connected() has been emitted
     std::function<bool(double*)> beatProbe_;
+    QString linkExportFolder_;
+    LinkExport* linkExport_ = nullptr;
 };
 
 } // namespace vdj

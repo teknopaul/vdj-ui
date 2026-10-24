@@ -10,6 +10,10 @@
 #include "rb_mode_options.h"
 #include "rb_presence.h"
 
+extern "C" {
+#include "nfsd.h"
+}
+
 namespace vdj {
 
 // Owns everything of the pretend-rekordbox mode: the library, the TCP servers, the UDP presence and the NFS observer, and
@@ -30,6 +34,8 @@ public:
     DbServer& server() { return server_; }
     RbPresence& presence() { return presence_; }
     NfsObserver& nfs() { return nfs_; }
+    bool nfsServing() const { return nfsd_ != nullptr; }
+    quint64 nfsBytesServed() const;
     QString localIp() const { return ip_; }
     QString interfaceName() const { return iface_; }
 
@@ -44,6 +50,8 @@ private:
     DbServer      server_;
     RbPresence    presence_;
     NfsObserver   nfs_;
+    nfsd_t*       nfsd_ = nullptr;          // the file service when serveNfs is on (the observer only logs)
+    QString       nfsLog_;
     bool          running_ = false;
     QString       ip_, iface_;
 };

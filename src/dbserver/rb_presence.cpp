@@ -11,6 +11,8 @@ RbPresence::RbPresence(QObject* parent) : QObject(parent)
     connect(&claimTimer_, &QTimer::timeout, this, &RbPresence::onClaimTimer);
     connect(&keepAliveTimer_, &QTimer::timeout, this, &RbPresence::onKeepAliveTimer);
     connect(&livenessTimer_, &QTimer::timeout, this, &RbPresence::onLivenessTimer);
+    connect(&statusTimer_, &QTimer::timeout, this, &RbPresence::onStatusTimer);
+    connect(&announceTimer_, &QTimer::timeout, this, &RbPresence::onAnnounceTimer);
     connect(&announce_, &QUdpSocket::readyRead, this, &RbPresence::onAnnounce);
     connect(&beat_, &QUdpSocket::readyRead, this, &RbPresence::onBeat);
     connect(&status_, &QUdpSocket::readyRead, this, &RbPresence::onStatus);
@@ -48,6 +50,8 @@ void RbPresence::stop()
     claimTimer_.stop();
     keepAliveTimer_.stop();
     livenessTimer_.stop();
+    statusTimer_.stop();
+    announceTimer_.stop();
     announce_.close();
     beat_.close();
     status_.close();
@@ -60,6 +64,8 @@ void RbPresence::startClaim()
     claimed_ = false;
     claimStep_ = 0;
     keepAliveTimer_.stop();
+    statusTimer_.stop();
+    announceTimer_.stop();
     // The real rekordbox PC (capture prolink-w-pc-rekordbox): stage 1 x3, then 6 rounds of stage 2 cycling the
     // candidate numbers 17,18,41,42,43,44 (counter = round), about 0.11 s apart, no hello and no stage 3,
     // then keep-alives. The first candidate is the number we keep.
@@ -102,7 +108,26 @@ void RbPresence::onClaimTimer()
     emit claimedDevice(cfg_.identity.device);
     onKeepAliveTimer();
     keepAliveTimer_.start(cfg_.keepAliveMs);
-    sendBroadcast(namePacket(cfg_.identity), cfg_.destStatus);
+    statusTimer_.start(cfg_.statusMs);
+    if (cfg_.announceMs > 0) announceTimer_.start(cfg_.announceMs);
+    // the real PC told each deck its computer name directly, 30 ms after its first keep-alive (not as a broadcast)
+    for (const Deck& d : decks_) if (!d.lost) sendName(QHostAddress(d.ip));
+}
+
+void RbPresence::sendName(const QHostAddress& to)
+{
+    sendTo(to, cfg_.destStatus, namePacket(cfg_.identity));
+}
+
+void RbPresence::onAnnounceTimer()
+{
+    for (const Deck& d : decks_)
+        if (!d.lost) sendTo(QHostAddress(d.ip), cfg_.destStatus, pollReply(cfg_.identity));
+}
+
+void RbPresence::onStatusTimer()
+{
+    sendBroadcast(pcStatus(cfg_.identity, cfg_.bpmX100), cfg_.destStatus);
 }
 
 void RbPresence::onKeepAliveTimer()
@@ -179,7 +204,7 @@ void RbPresence::onAnnounce()
             if (fresh) {
                 log(QStringLiteral("deck %1 \"%2\" device %3 seen").arg(ip, deck.name).arg(k.device));
                 emit deckSeen(ip, deck.name, k.device);
-                if (claimed_) sendBroadcast(namePacket(cfg_.identity), cfg_.destStatus);     // tell the new deck our name
+                if (claimed_) sendName(from);                                              // tell the new deck our name
             }
         } else if (parseClaim(p, size_t(d.size()), &c) && c.stage >= 2 && c.device == cfg_.identity.device) {
             renumber();

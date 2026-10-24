@@ -34,6 +34,7 @@ add_test(NAME vdj-ui-tracks-test COMMAND vdj-ui-tracks-test)
 
 add_executable(vdj-ui-integration-test test_integration.cpp)
 target_link_libraries(vdj-ui-integration-test PRIVATE ${QT_TEST} vdj-cdj)
+target_compile_definitions(vdj-ui-integration-test PRIVATE VDJ_DBSERVER_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/dbserver")
 add_test(NAME vdj-ui-integration-test COMMAND vdj-ui-integration-test)
 set_tests_properties(vdj-ui-integration-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
@@ -112,3 +113,10 @@ target_link_libraries(vdj-ui-rbpanel-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-rbpanel-test COMMAND vdj-ui-rbpanel-test)
 set_tests_properties(vdj-ui-rbpanel-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 # end rekordbox mode
+# LINK export
+add_executable(vdj-ui-linkexport-test test_link_export.cpp)
+target_compile_definitions(vdj-ui-linkexport-test PRIVATE VDJ_DBSERVER_FIXTURES="${VDJ_DBSERVER_FIXTURES}")
+target_link_libraries(vdj-ui-linkexport-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-linkexport-test COMMAND vdj-ui-linkexport-test)
+set_tests_properties(vdj-ui-linkexport-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+# end LINK export

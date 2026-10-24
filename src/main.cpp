@@ -28,6 +28,11 @@ int main(int argc, char *argv[])
     if (debug) {
         window.setDebugModeFromCli();
     }
+    // --link-export <folder>: serve that pendrive / export as a LINK player once connected (also in the Network menu)
+    {
+        const int i = args.indexOf(QStringLiteral("--link-export"));
+        if (i >= 0 && i + 1 < args.size()) window.setLinkExport(args.at(i + 1));
+    }
     // --rekordbox-mode <export>: open the rekordbox PC mode panel and start serving (see doc/rekordbox-mode.md)
     if (!rb.exportRoot.isEmpty())
         window.startRekordboxMode(rb);

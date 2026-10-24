@@ -68,6 +68,7 @@ QString fhText(const QByteArray& fh) { return QString::fromLatin1(fh.left(8).toH
 NfsObserver::NfsObserver(QObject* parent) : QObject(parent)
 {
     connect(&portmap_, &QUdpSocket::readyRead, this, [this]() { onDatagram(&portmap_, "portmap"); });
+    connect(&altPortmap_, &QUdpSocket::readyRead, this, [this]() { onDatagram(&altPortmap_, "portmap"); });
     connect(&mount_, &QUdpSocket::readyRead, this, [this]() { onDatagram(&mount_, "mount"); });
     connect(&nfs_, &QUdpSocket::readyRead, this, [this]() { onDatagram(&nfs_, "nfs"); });
     auto tcp = [this](QTcpServer* srv, const char* what) {
@@ -103,8 +104,18 @@ bool NfsObserver::start(const Config& cfg, QString* warnings)
         warn << QStringLiteral("portmap UDP %1 not bound (%2); needs root or: sudo setcap cap_net_bind_service=+ep <vdj-ui>")
                     .arg(cfg.portmapPort).arg(portmap_.errorString());
     }
-    if (mount_.bind(cfg.bindAddress, cfg.mountPort, mode)) any = true;
-    else warn << QStringLiteral("mount UDP %1 not bound (%2)").arg(cfg.mountPort).arg(mount_.errorString());
+    if (cfg.altPortmapPort) {
+        if (altPortmap_.bind(cfg.bindAddress, cfg.altPortmapPort, mode)) any = true;
+        else warn << QStringLiteral("portmap UDP %1 not bound (%2)").arg(cfg.altPortmapPort).arg(altPortmap_.errorString());
+    }
+    if (mount_.bind(cfg.bindAddress, cfg.mountPort, mode)) {
+        any = true;
+    } else if (cfg.mountPort && mount_.bind(cfg.bindAddress, 0, mode)) {      // taken: any free port, the deck is told through GETPORT
+        any = true;
+        warn << QStringLiteral("mount UDP %1 is in use, using %2 instead").arg(cfg.mountPort).arg(mount_.localPort());
+    } else {
+        warn << QStringLiteral("mount UDP %1 not bound (%2)").arg(cfg.mountPort).arg(mount_.errorString());
+    }
     if (nfs_.bind(cfg.bindAddress, cfg.nfsPort, mode)) {
         any = true;
         tcpNfs_.listen(cfg.bindAddress, nfs_.localPort());
@@ -113,15 +124,16 @@ bool NfsObserver::start(const Config& cfg, QString* warnings)
     }
     if (warnings) *warnings = warn.join("; ");
     for (const QString& w : warn) say("NFS observer: " + w);
-    if (any) say(QStringLiteral("NFS observer: portmap %1, mount %2, nfs %3 (logging only, nothing is served)")
+    if (any) say(QStringLiteral("NFS observer: portmap %1 and %2, mount %3, nfs %4 (logging only, nothing is served)")
                      .arg(portmapActive() ? QString::number(portmap_.localPort()) : QStringLiteral("off"))
+                     .arg(altPortmap_.state() == QAbstractSocket::BoundState ? QString::number(altPortmap_.localPort()) : QStringLiteral("off"))
                      .arg(mount_.localPort()).arg(nfs_.localPort()));
     return any;
 }
 
 void NfsObserver::stop()
 {
-    portmap_.close(); mount_.close(); nfs_.close();
+    portmap_.close(); altPortmap_.close(); mount_.close(); nfs_.close();
     tcpPortmap_.close(); tcpNfs_.close();
 }
 

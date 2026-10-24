@@ -1,6 +1,7 @@
 #ifndef DECK_CONTROLS_H
 #define DECK_CONTROLS_H
 
+#include <QString>
 #include <QWidget>
 
 class QPushButton;
@@ -29,6 +30,8 @@ public:
     void setRemote(bool remote);
     bool remote() const { return remote_; }
     bool bpmEditable() const;
+    // Synced to a real deck: the tempo follows that deck and the spinner cannot change it.
+    void setBpmLocked(bool locked, const QString& tip = QString());
     bool barEditable() const;
     bool playVisible() const;
     bool copyBpmVisible() const;

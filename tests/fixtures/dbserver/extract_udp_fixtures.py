@@ -55,7 +55,9 @@ first(pc, lambda s, sp, dp, p: s != PC and dp == 50002 and p[10] == 0x05, 'deck_
 first(pc, lambda s, sp, dp, p: s != PC and dp == 50000 and p[10] == 0x06, 'deck_keepalive_xdj700.bin')
 first(pc, lambda s, sp, dp, p: s != PC and dp == 50002 and p[10] == 0x10, 'deck_poll.bin')
 first(pc, lambda s, sp, dp, p: s == PC and dp == 50002 and p[10] == 0x16, 'rb_poll_reply.bin')
+first(pc, lambda s, sp, dp, p: s == PC and dp == 50002 and p[10] == 0x29, 'rb_status.bin')
 first(boot, lambda s, sp, dp, p: dp == 50000 and p[10] == 0x00, 'deck_stage1.bin')
+# deck_media_response.bin: the first 192-byte type 0x06 sent by a deck to port 50002 in pcaps/prolink-deck-to-deck-transfer.pcap (slot 3, device 1)
 first(boot, lambda s, sp, dp, p: dp == 50000 and p[10] == 0x02, 'deck_stage2.bin')
 first(boot, lambda s, sp, dp, p: dp == 50000 and p[10] == 0x04, 'deck_stage3.bin')
 

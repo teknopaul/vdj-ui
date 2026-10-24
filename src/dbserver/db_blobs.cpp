@@ -36,7 +36,9 @@ std::vector<uint8_t> beatGridBlob(const anlz_beatgrid_t& g)
     putLe32(b, g.count);
     putLe32(b, g.count * 16);
     putLe32(b, 1);
-    putLe32(b, 0);              // GUESS: looks like a heap pointer on the real deck (0x0ceea950, 0x0ceeeab4); meaningless
+    // A pointer into the serving deck's memory on a real deck (0x0ceea950, 0x0ceeeab4 seen), meaningless to a client but never 0 there:
+    // a firmware check for "is it set" would be invisible in every capture, so send a plausible one.
+    putLe32(b, 0x0ceea950);
     for (uint32_t i = 0; i < g.count; ++i) {
         anlz_beat_t e{};
         anlz_beat_at(&g, i, &e);
@@ -73,7 +75,7 @@ std::vector<uint8_t> waveformDetailBlob(const TrackAnalysis& a)
     putLe32(b, 1);
     putLe32(b, w.count);
     putLe32(b, 150);
-    putLe32(b, 0);              // GUESS: heap pointer on the real deck (0x0cf233a0)
+    putLe32(b, 0x0cf233a0);     // a pointer into the serving deck's memory on a real deck (0x0cf233a0 seen), never 0 there (see beatGridBlob)
     b.insert(b.end(), w.data, w.data + w.count);
     return b;
 }

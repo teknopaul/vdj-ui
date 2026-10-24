@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDateTime>
 #include <QFileDialog>
@@ -68,6 +69,22 @@ RekordboxModePanel::RekordboxModePanel(ConfigManager* config, QWidget* parent) :
     policyCombo_->addItem(QStringLiteral("ignore (no reply)"), QStringLiteral("ignore"));
     policyCombo_->addItem(QStringLiteral("close the connection"), QStringLiteral("close"));
     form->addRow(QStringLiteral("Unknown requests"), policyCombo_);
+    serveCheck_ = new QCheckBox(QStringLiteral("Serve the files over NFS (read-only)"), this);
+    serveCheck_->setChecked(true);
+    serveCheck_->setToolTip(QStringLiteral("The decks read the audio over NFS from the PC. Off: the NFS calls are only logged and refused."));
+    form->addRow(QString(), serveCheck_);
+    exportsEdit_ = new QLineEdit(QStringLiteral("/"), this);
+    exportsEdit_->setToolTip(QStringLiteral("Mount names offered to the decks (comma separated), each one mounts the folder above. "
+                                            "A deck mounts the export that matches the path of a track."));
+    form->addRow(QStringLiteral("NFS export names"), exportsEdit_);
+    styleCombo_ = new QComboBox(this);
+    styleCombo_->addItem(QStringLiteral("a list of the names (freezes the deck)"), 0);
+    styleCombo_->addItem(QStringLiteral("a list, with the group \"*\" on each"), 1);
+    styleCombo_->addItem(QStringLiteral("an empty list"), 2);
+    styleCombo_->addItem(QStringLiteral("procedure unavailable (as a refusal)"), 3);
+    styleCombo_->setToolTip(QStringLiteral("How the mount daemon answers a deck's EXPORT call. Some answers leave the deck's UI stuck until it is restarted: "
+                                           "try one at a time."));
+    form->addRow(QStringLiteral("Answer EXPORT with"), styleCombo_);
 
     logEdit_ = new QLineEdit(this);
     auto* logBrowse = new QPushButton(QStringLiteral("Browse..."), this);
@@ -143,6 +160,10 @@ void RekordboxModePanel::applyOptions(const RbModeOptions& o)
     if (!o.logDir.isEmpty()) logEdit_->setText(o.logDir);
     const int p = policyCombo_->findData(unknownPolicyName(o.unknownPolicy));
     if (p >= 0) policyCombo_->setCurrentIndex(p);
+    serveCheck_->setChecked(o.serveNfs);
+    exportsEdit_->setText(o.nfsExports.join(QLatin1Char(',')));
+    const int st = styleCombo_->findData(o.nfsExportStyle);
+    if (st >= 0) styleCombo_->setCurrentIndex(st);
 }
 
 RbModeOptions RekordboxModePanel::options() const
@@ -154,6 +175,11 @@ RbModeOptions RekordboxModePanel::options() const
     o.computerName = nameEdit_->text().trimmed();
     o.logDir = logEdit_->text().trimmed();
     unknownPolicyFromName(policyCombo_->currentData().toString(), &o.unknownPolicy);
+    o.serveNfs = serveCheck_->isChecked();
+    o.nfsExports = exportsEdit_->text().split(QLatin1Char(','), Qt::SkipEmptyParts);
+    for (QString& e : o.nfsExports) e = e.trimmed();
+    if (o.nfsExports.isEmpty()) o.nfsExports = QStringList{QStringLiteral("/")};
+    o.nfsExportStyle = styleCombo_->currentData().toInt();
     return o;
 }
 
@@ -170,6 +196,10 @@ void RekordboxModePanel::loadSettings()
     if (!logDir.isEmpty()) logEdit_->setText(logDir);
     const int p = policyCombo_->findData(config_->loadValue(kSection, QStringLiteral("unknown_policy"), QStringLiteral("empty")));
     if (p >= 0) policyCombo_->setCurrentIndex(p);
+    serveCheck_->setChecked(config_->loadValue(kSection, QStringLiteral("serve_nfs"), QStringLiteral("1")) != QLatin1String("0"));
+    exportsEdit_->setText(config_->loadValue(kSection, QStringLiteral("nfs_exports"), QStringLiteral("/")));
+    const int st = styleCombo_->findData(config_->loadValue(kSection, QStringLiteral("nfs_export_style"), QStringLiteral("2")).toInt());
+    if (st >= 0) styleCombo_->setCurrentIndex(st);
 }
 
 void RekordboxModePanel::saveSettings() const
@@ -182,6 +212,9 @@ void RekordboxModePanel::saveSettings() const
     config_->saveValue(kSection, QStringLiteral("name"), o.computerName);
     config_->saveValue(kSection, QStringLiteral("log_dir"), o.logDir);
     config_->saveValue(kSection, QStringLiteral("unknown_policy"), unknownPolicyName(o.unknownPolicy));
+    config_->saveValue(kSection, QStringLiteral("serve_nfs"), o.serveNfs ? QStringLiteral("1") : QStringLiteral("0"));
+    config_->saveValue(kSection, QStringLiteral("nfs_exports"), o.nfsExports.join(QLatin1Char(',')));
+    config_->saveValue(kSection, QStringLiteral("nfs_export_style"), QString::number(o.nfsExportStyle));
 }
 
 // ---- start / stop --------------------------------------------------------------------------------------------------

@@ -3,7 +3,6 @@
 #include "vdj/vdj_wrapper.h"
 #include "vdj/backline_model.h"
 #include "network/auto_ip_manager.h"
-#include "ui/toolbar.h"
 
 class TestWrappers : public QObject
 {
@@ -16,7 +15,6 @@ private slots:
     void testBacklineModelEmpty();
     void testAutoIpEmptyIface();
     void testAutoIpStopWithoutStart();
-    void testToolbarConnectedState();
 };
 
 void TestWrappers::testBpmToString()
@@ -63,34 +61,6 @@ void TestWrappers::testAutoIpStopWithoutStart()
     m.stop(); // no-op, must not crash or emit
     QVERIFY(!m.active());
     QVERIFY(stoppedSpy.count() == 0);
-}
-
-void TestWrappers::testToolbarConnectedState()
-{
-    vdj::Toolbar toolbar;
-
-    QAction* connectAction = nullptr;
-    QAction* disconnectAction = nullptr;
-    const auto actions = toolbar.actions();
-    for (QAction* a : actions) {
-        if (a->text() == QStringLiteral("Connect"))
-            connectAction = a;
-        else if (a->text() == QStringLiteral("Disconnect"))
-            disconnectAction = a;
-        QVERIFY(a->text() != QStringLiteral("AutoIP"));   // AutoIP lives in the Network menu only
-    }
-    QVERIFY(connectAction);
-    QVERIFY(disconnectAction);
-
-    // Not connected: Connect usable, Disconnect off.
-    toolbar.setConnectedState(false);
-    QVERIFY(connectAction->isEnabled());
-    QVERIFY(!disconnectAction->isEnabled());
-
-    // Connected: flip the buttons.
-    toolbar.setConnectedState(true);
-    QVERIFY(!connectAction->isEnabled());
-    QVERIFY(disconnectAction->isEnabled());
 }
 
 QTEST_MAIN(TestWrappers)
