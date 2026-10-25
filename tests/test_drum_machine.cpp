@@ -17,6 +17,7 @@ private slots:
     void halfStepIsHalfGain();
     void volumesMultiply();
     void silentVoicesPlayNothing();
+    void mutedVoicePlaysNothing();
     void perVoiceOffset();
     void swing127MovesTheOddSteps();
     void swing64AndSwingZero();
@@ -193,6 +194,32 @@ void TestDrumMachine::silentVoicesPlayNothing()
     m->setSettings(s);
     run(sch, 705, 1700);
     QVERIFY(got_.empty());
+}
+
+void TestDrumMachine::mutedVoicePlaysNothing()
+{
+    MAKE_SCHED;
+    auto m = drums();
+    ModuleSettings s = m->settings();
+    s.drums[0].samplePath = bd_;
+    s.drums[2].samplePath = sd_;
+    setSteps(s, 0, { 0, 4, 8, 12 });
+    setSteps(s, 2, { 0, 4, 8, 12 });
+    s.drums[0].muted = true;
+    m->setSettings(s);
+    sch.addModule(m);
+    run(sch, 0, 700);
+    QVERIFY(!got_.empty());
+    for (const Trigger& t : got_)
+        QCOMPARE(t.sample->path, sd_);               // the others still play
+    got_.clear();
+    s.drums[0].muted = false;                        // unmuting plays it again
+    m->setSettings(s);
+    run(sch, 705, 2700);
+    bool bd = false;
+    for (const Trigger& t : got_)
+        bd = bd || t.sample->path == bd_;
+    QVERIFY(bd);
 }
 
 void TestDrumMachine::perVoiceOffset()

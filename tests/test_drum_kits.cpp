@@ -34,6 +34,7 @@ private slots:
     void uiSaveChangeLoadRestores();
     void kitListIsSharedBetweenModules();
     void kitsAndPresetsAreIndependent();
+    void kitsKeepTheMute();
     void missingSamplesAreShown();
     void deleteKitFromTheUi();
 
@@ -247,6 +248,29 @@ void TestDrumKits::kitListIsSharedBetweenModules()
     QCOMPARE(b->module()->settings().swing, 77);
     QCOMPARE(b->module()->settings().name, b->module()->typeName());  // the name was not taken from the kit
     QVERIFY(!b->module()->settings().enabled);
+}
+
+void TestDrumKits::kitsKeepTheMute()
+{
+    auto* w = panel_->addModule(SamplerModule::DrumMachine);
+    auto* ed = w->drumEditor();
+    ed->toggleVoiceMute(1);
+    QVERIFY(ed->saveKitAs("muted kit"));
+    // the kit file has no mute key
+    const QDir d(dir_->path() + "/drum-kits");
+    const QStringList files = d.entryList({ "*.json" });
+    QCOMPARE(files.size(), 1);
+    QFile f(d.filePath(files[0]));
+    QVERIFY(f.open(QIODevice::ReadOnly));
+    QVERIFY(!f.readAll().contains("muted"));
+    // loading a kit neither mutes nor unmutes anything
+    ed->toggleVoiceMute(1);                          // unmute SD
+    ed->toggleVoiceMute(4);                          // mute HH
+    QVERIFY(ed->loadKit("muted kit"));
+    QVERIFY(!w->module()->settings().drums[1].muted);
+    QVERIFY(w->module()->settings().drums[4].muted);
+    QVERIFY(ed->selector()->muted(4));
+    QVERIFY(!ed->selector()->muted(1));
 }
 
 void TestDrumKits::kitsAndPresetsAreIndependent()

@@ -52,6 +52,8 @@ public:
     QString midiInputKey()  const;
     QString midiOutputKey() const;
     void setMidiInputKey(const QString& key);
+    // A second controller wired to the same port, for the sampler (config [instruments] midi_input_sampler; no dialog yet).
+    QString samplerInputKey() const;
     // The .adjmm map paired with an input device (stored per device key, "instrument_maps" config section).
     // Empty when none was chosen.
     QString midiMapFor(const QString& deviceKey) const;

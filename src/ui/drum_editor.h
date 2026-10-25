@@ -49,6 +49,17 @@ public:
     int selectedVoice() const;
     void selectVoice(int voice);
     void wheelVolume(QWheelEvent* event);
+    // Mute of a voice, shown or not (also for the MIDI controller)
+    void setVoiceMuted(int voice, bool muted);
+    void toggleVoiceMute(int voice);
+    // For the MIDI controller: the stored values of any voice (not only the one shown). The shown voice's widgets follow.
+    int voiceVolume(int voice) const;
+    void setVoiceVolume(int voice, int volume);
+    double voiceOffsetMs(int voice) const;
+    void setVoiceOffsetMs(int voice, double ms);
+    // The next (dir > 0) / previous kit of the kit list, from the current one ("(kits)" forward = the first, back = the last);
+    // stops at the ends. False when there are no kits or the kit cannot be loaded.
+    bool stepKit(int dir);
 
     // Drum kits: the six voices and the swing, saved apart from the sampler presets (the module's name, on/off and master volume
     // are not part of a kit).

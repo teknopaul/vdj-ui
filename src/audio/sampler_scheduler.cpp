@@ -188,7 +188,7 @@ void SamplerScheduler::tickDrums(const std::shared_ptr<SamplerModule>& m, const 
         if (h.voice < 0 || h.voice >= kDrumVoices)
             continue;
         const DrumVoice& v = s.drums[h.voice];
-        if (v.samplePath.isEmpty() || v.volume <= 0 || s.volume <= 0)
+        if (v.muted || v.samplePath.isEmpty() || v.volume <= 0 || s.volume <= 0)
             continue;
         auto sample = cache_->peek(v.samplePath);
         if (!sample) {

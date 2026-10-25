@@ -35,6 +35,9 @@
 #include "audio/audio_recorder.h"
 #include "midi/instrument_manager.h"
 #include "midi/midi_map_input.h"
+#include "midi/sampler_midi_control.h"
+#include "controller_dialog.h"
+#include "sampler_controller.h"
 #include "midi/midi_router.h"
 #include "midi/alsa_clock.h"
 #include "diff_lock_bar.h"
@@ -1660,7 +1663,37 @@ void MainWindow::setupMidi()
     instruments_->setSequencer(clock_);
     instruments_->setRouter(midiRouter_);
     instruments_->loadProfiles();
+
+    // The sampler controller (nanoKONTROL ...): an .adjmm file with the stripN_* ops, next to or inside the deck map.
+    samplerControl_ = new SamplerMidiControl(this);
+    QString samplerMap = config_->loadValue(QStringLiteral("midi"), QStringLiteral("sampler_map"));
+    if (samplerMap.isEmpty())
+        samplerMap = ConfigManager::configDir() + QStringLiteral("/sampler-control.adjmm");
+    SamplerMidiControl::installExample(samplerMap);          // only when the file does not exist
+    if (!samplerControl_->loadFromFile(samplerMap))
+        statusBar()->showMessage(tr("Sampler controller: cannot read %1").arg(samplerMap), 6000);
+    wireSamplerControl(midiIn_, samplerPanel_, samplerControl_);
+    connect(samplerPanel_, &SamplerPanel::controllerDialogRequested, this, [this]() {
+        ControllerDialog dlg(samplerControl_, this);
+        connect(&dlg, &ControllerDialog::saved, this, [this](const QString& p) {
+            config_->saveValue(QStringLiteral("midi"), QStringLiteral("sampler_map"), p);
+        });
+        dlg.exec();
+        checkSamplerControllerConnected();
+    });
     applyMidiMap();
+}
+
+// Tells the human when no connected MIDI client matches the controller's "#! source" name.
+void MainWindow::checkSamplerControllerConnected()
+{
+    const QString filter = samplerControl_->map().source();
+    if (filter.isEmpty() || !midiIn_->isRunning())
+        return;
+    for (const QString& n : midiIn_->sourceNames())
+        if (n.contains(filter, Qt::CaseInsensitive))
+            return;
+    statusBar()->showMessage(tr("Sampler controller: no MIDI client named \"%1\" is connected to the MIDI port - connect it with aconnect or Config > Instruments").arg(filter), 8000);
 }
 
 // The map comes from the input device it is paired with (Config > Instruments); without a pairing, from the
@@ -1673,6 +1706,8 @@ void MainWindow::applyMidiMap()
         map = defaultMidiMapPath();
     if (!map.isEmpty() && (map != midiIn_->mapPath() || !midiIn_->isRunning()))
         startMidiMap(map);
+    else if (map.isEmpty() && !midiIn_->isRunning())
+        startMidiMap(QString());                    // no deck map: the port is still there for the sampler controller
     instruments_->setInputPort(midiIn_->clientId(), midiIn_->portId());
     instruments_->autowire();
 }
@@ -1680,7 +1715,7 @@ void MainWindow::applyMidiMap()
 void MainWindow::startMidiMap(const QString& path)
 {
     if (midiIn_->start(path))
-        statusBar()->showMessage(QStringLiteral("MIDI map: %1").arg(path), 5000);
+        statusBar()->showMessage(path.isEmpty() ? QStringLiteral("MIDI port ready (no deck map)") : QStringLiteral("MIDI map: %1").arg(path), 5000);
 }
 
 // ---- Recording ----

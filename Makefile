@@ -868,6 +868,58 @@ vdj-ui-drum-kits-test/fast:
 .PHONY : vdj-ui-drum-kits-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-sampler-ctl-map-test
+
+# Build rule for target.
+vdj-ui-sampler-ctl-map-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-ctl-map-test
+.PHONY : vdj-ui-sampler-ctl-map-test
+
+# fast build rule for target.
+vdj-ui-sampler-ctl-map-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ctl-map-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ctl-map-test.dir/build
+.PHONY : vdj-ui-sampler-ctl-map-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-midi-control-test
+
+# Build rule for target.
+vdj-ui-sampler-midi-control-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-midi-control-test
+.PHONY : vdj-ui-sampler-midi-control-test
+
+# fast build rule for target.
+vdj-ui-sampler-midi-control-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-midi-control-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-midi-control-test.dir/build
+.PHONY : vdj-ui-sampler-midi-control-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-controller-test
+
+# Build rule for target.
+vdj-ui-sampler-controller-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-controller-test
+.PHONY : vdj-ui-sampler-controller-test
+
+# fast build rule for target.
+vdj-ui-sampler-controller-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-controller-test.dir/build
+.PHONY : vdj-ui-sampler-controller-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-controller-dialog-test
+
+# Build rule for target.
+vdj-ui-controller-dialog-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-controller-dialog-test
+.PHONY : vdj-ui-controller-dialog-test
+
+# fast build rule for target.
+vdj-ui-controller-dialog-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-controller-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-controller-dialog-test.dir/build
+.PHONY : vdj-ui-controller-dialog-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -1803,6 +1855,110 @@ vdj-ui-drum-kits-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/build
 .PHONY : vdj-ui-drum-kits-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-ctl-map-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-ctl-map-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-ctl-map-test_autogen
+.PHONY : vdj-ui-sampler-ctl-map-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-ctl-map-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ctl-map-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ctl-map-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-ctl-map-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-midi-control-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-midi-control-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-midi-control-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-midi-control-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-midi-control-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-midi-control-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-midi-control-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-midi-control-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-midi-control-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-midi-control-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-midi-control-test_autogen
+.PHONY : vdj-ui-sampler-midi-control-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-midi-control-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-midi-control-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-midi-control-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-midi-control-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-controller-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-controller-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-controller-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-controller-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-controller-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-controller-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-controller-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-controller-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-controller-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-controller-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-controller-test_autogen
+.PHONY : vdj-ui-sampler-controller-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-controller-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-controller-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-controller-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-controller-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-controller-dialog-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-controller-dialog-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-controller-dialog-test_autogen_timestamp_deps
+.PHONY : vdj-ui-controller-dialog-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-controller-dialog-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-controller-dialog-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-controller-dialog-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-controller-dialog-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-controller-dialog-test_autogen
+
+# Build rule for target.
+vdj-ui-controller-dialog-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-controller-dialog-test_autogen
+.PHONY : vdj-ui-controller-dialog-test_autogen
+
+# fast build rule for target.
+vdj-ui-controller-dialog-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-controller-dialog-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-controller-dialog-test_autogen.dir/build
+.PHONY : vdj-ui-controller-dialog-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1835,6 +1991,8 @@ help:
 	@echo "... vdj-ui-clone-dialog-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-config-test_autogen"
 	@echo "... vdj-ui-config-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-controller-dialog-test_autogen"
+	@echo "... vdj-ui-controller-dialog-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-controls-test_autogen"
 	@echo "... vdj-ui-controls-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-dbcodec-test_autogen"
@@ -1881,8 +2039,14 @@ help:
 	@echo "... vdj-ui-rekordbox-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-sampler-basics-test_autogen"
 	@echo "... vdj-ui-sampler-basics-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-controller-test_autogen"
+	@echo "... vdj-ui-sampler-controller-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-ctl-map-test_autogen"
+	@echo "... vdj-ui-sampler-ctl-map-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-sampler-engine-test_autogen"
 	@echo "... vdj-ui-sampler-engine-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-midi-control-test_autogen"
+	@echo "... vdj-ui-sampler-midi-control-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-sampler-modules-test_autogen"
 	@echo "... vdj-ui-sampler-modules-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-sampler-presets-test_autogen"
@@ -1910,6 +2074,7 @@ help:
 	@echo "... vdj-ui-beatgrid-test"
 	@echo "... vdj-ui-clone-dialog-test"
 	@echo "... vdj-ui-config-test"
+	@echo "... vdj-ui-controller-dialog-test"
 	@echo "... vdj-ui-controls-test"
 	@echo "... vdj-ui-dbcodec-test"
 	@echo "... vdj-ui-dbhandler-test"
@@ -1933,7 +2098,10 @@ help:
 	@echo "... vdj-ui-rbpresence-test"
 	@echo "... vdj-ui-rekordbox-test"
 	@echo "... vdj-ui-sampler-basics-test"
+	@echo "... vdj-ui-sampler-controller-test"
+	@echo "... vdj-ui-sampler-ctl-map-test"
 	@echo "... vdj-ui-sampler-engine-test"
+	@echo "... vdj-ui-sampler-midi-control-test"
 	@echo "... vdj-ui-sampler-modules-test"
 	@echo "... vdj-ui-sampler-presets-test"
 	@echo "... vdj-ui-sampler-stretch-test"

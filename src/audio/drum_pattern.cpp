@@ -31,7 +31,7 @@ int drumChokeNext(int current, int dir)
 
 bool DrumVoice::operator==(const DrumVoice& o) const
 {
-    if (samplePath != o.samplePath || volume != o.volume || offsetMs != o.offsetMs || chokeSteps != o.chokeSteps)
+    if (samplePath != o.samplePath || volume != o.volume || offsetMs != o.offsetMs || chokeSteps != o.chokeSteps || muted != o.muted)
         return false;
     return std::equal(steps, steps + kDrumSteps, o.steps);
 }
@@ -59,7 +59,7 @@ bool drumPatternFromString(const QString& text, quint8 out[kDrumSteps])
     return true;
 }
 
-QVariantMap drumVoiceToVariant(const DrumVoice& v)
+QVariantMap drumVoiceToVariant(const DrumVoice& v, bool withMute)
 {
     QVariantMap m;
     m["sample"] = v.samplePath;
@@ -67,6 +67,8 @@ QVariantMap drumVoiceToVariant(const DrumVoice& v)
     m["offsetMs"] = v.offsetMs;
     m["choke"] = v.chokeSteps;
     m["pattern"] = drumPatternToString(v.steps);
+    if (withMute && v.muted)
+        m["muted"] = true;
     return m;
 }
 
@@ -76,6 +78,7 @@ void drumVoiceFromVariant(const QVariantMap& m, DrumVoice* v)
     v->volume = m.value("volume", v->volume).toInt();
     v->offsetMs = m.value("offsetMs", v->offsetMs).toDouble();
     v->chokeSteps = m.value("choke", v->chokeSteps).toInt();
+    v->muted = m.value("muted", v->muted).toBool();
     drumPatternFromString(m.value("pattern").toString(), v->steps);
 }
 

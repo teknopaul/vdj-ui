@@ -34,12 +34,13 @@ public:
     QToolButton* upButton() const { return up_; }
     QToolButton* downButton() const { return down_; }
     QLabel* nameLabel() const { return name_; }
+    // What the arrows do: the previous (-1) / next (+1) .wav of the folder; false when there is none to go to.
+    bool stepSample(int dir);
 
 signals:
     void sampleChanged(const QString& path);
 
 private:
-    void step(int dir);
     void choose();
     void updateLabel();
 

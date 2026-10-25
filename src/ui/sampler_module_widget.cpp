@@ -229,6 +229,44 @@ void SamplerModuleWidget::setVolume(int volume)
     volume_->setValue(std::clamp(volume, 0, SamplerModule::kMaxVolume));     // the slider's signal updates the module
 }
 
+int SamplerModuleWidget::currentVolume() const
+{
+    return volume_->value();
+}
+
+bool SamplerModuleWidget::setOffsetMs(double ms)
+{
+    if (!offset_)
+        return false;
+    offset_->setValue(int(std::lround(ms)));         // clamped by the spin box; its signal updates the module
+    return true;
+}
+
+bool SamplerModuleWidget::currentOffsetMs(double* ms) const
+{
+    if (!offset_)
+        return false;
+    *ms = offset_->value();
+    return true;
+}
+
+bool SamplerModuleWidget::pressGreenButton()
+{
+    if (oneBar_) { oneBar_->click(); return true; }
+    if (fire_) { fire_->click(); return true; }
+    return false;
+}
+
+bool SamplerModuleWidget::stepSample(int dir)
+{
+    return sample_ && sample_->stepSample(dir);
+}
+
+void SamplerModuleWidget::toggleOnOff()
+{
+    on_->click();
+}
+
 void SamplerModuleWidget::wheelEvent(QWheelEvent* event)
 {
     event->accept();                                 // a wheel over a module never scrolls the list, even for a part of a notch
@@ -239,8 +277,16 @@ void SamplerModuleWidget::wheelEvent(QWheelEvent* event)
     setVolume(volume_->value() + notches * step);
 }
 
+void SamplerModuleWidget::mousePressEvent(QMouseEvent* event)
+{
+    emit touched(module_->id());
+    QFrame::mousePressEvent(event);
+}
+
 bool SamplerModuleWidget::eventFilter(QObject* watched, QEvent* event)
 {
+    if (event->type() == QEvent::MouseButtonPress)
+        emit touched(module_->id());
     if (event->type() == QEvent::Wheel) {
         auto* we = static_cast<QWheelEvent*>(event);
         // the DR-6S: over its editor (but not the swing slider) the wheel is the volume of the selected voice, elsewhere the module's

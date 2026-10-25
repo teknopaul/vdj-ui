@@ -17,5 +17,6 @@
         <file alias="img/drum-HH-off.png">img/button-HH-off-24.png</file>
         <file alias="img/drum-OH-on.png">img/button-OH-on-24.png</file>
         <file alias="img/drum-OH-off.png">img/button-OH-off-24.png</file>
+        <file alias="doc/nanokontrol-studio-sampler.adjmm">doc/nanokontrol-studio-sampler.adjmm</file>
     </qresource>
 </RCC>

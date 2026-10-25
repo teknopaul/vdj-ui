@@ -16,6 +16,7 @@ struct SamplerState {
     QString folder;
     double masterGain = 1.0;
     int columns = 2;                                 // modules per row in the panel: 2 or 4
+    int controlMode = 0;                             // MIDI controller mode: 0 = strips drive the modules, 1 = the DR-6S
     QVariantList modules;
 };
 

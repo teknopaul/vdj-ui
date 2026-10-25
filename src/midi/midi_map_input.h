@@ -1,11 +1,13 @@
 #pragma once
 
 #include <QObject>
+#include <QHash>
 #include <QString>
 #include <QStringList>
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <map>
 
 class QThread;
 
@@ -53,6 +55,13 @@ struct AdjmmOp {
 
 struct AdjmmMap {
     std::array<AdjmmOp, ADJMM_MAX_OP> ops;
+    // Sampler controller ops (strip1_mute ... strip8_fader, track_back, track_fwd, mode_toggle), keyed by name.
+    std::map<QString, AdjmmOp> named;
+    // "#! key value" comment lines (adj ignores them as comments).
+    QHash<QString, QString> directives;
+
+    // True for the op names the sampler controller uses.
+    static bool isSamplerOpName(const QString& name);
 
     // Parse a .adjmm file; returns nullptr on file-open failure (parse
     // errors are logged but do not abort — unknown op names are silently
@@ -71,7 +80,8 @@ public:
     explicit MidiMapInput(QObject* parent = nullptr);
     ~MidiMapInput();
 
-    // Load map file and start background reader; returns false on error.
+    // Load map file and start background reader; returns false on error. An empty path starts the reader with an empty
+    // transport map (the port is still there for other listeners, e.g. the sampler controller).
     bool start(const QString& mapPath);
     void stop();
     bool isRunning() const;
@@ -104,6 +114,10 @@ signals:
     // What arrived and what it was mapped to: a one-line description of the event and the operation (1-based, 0 =
     // not mapped). Only while monitoring.
     void midiEvent(const QString& description, int op);
+    // Every controller / note event, before the transport map is applied, with the ALSA client name of its sender.
+    // Emitted from the reader thread (default connection = queued). channel 1-16.
+    void controlEvent(int channel, int controller, int value, const QString& source);
+    void noteEvent(int channel, int note, int velocity, bool on, const QString& source);
 
 private:
     std::atomic<bool> monitoring_{ false };

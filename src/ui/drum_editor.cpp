@@ -17,6 +17,7 @@
 #include <QVBoxLayout>
 #include <QWheelEvent>
 #include <algorithm>
+#include <cmath>
 
 namespace vdj {
 
@@ -122,6 +123,7 @@ DrumEditor::DrumEditor(std::shared_ptr<SamplerModule> module, SamplerPanel* pane
     l->addWidget(steps_);
 
     connect(selector_, &DrumVoiceSelector::selectedChanged, this, [this](int) { loadVoice(); });
+    connect(selector_, &DrumVoiceSelector::muteToggled, this, [this](int voice, bool muted) { setVoiceMuted(voice, muted); });
     connect(swing_, &SwingSlider::valueChanged, this, [this](int v) {
         if (loading_)
             return;
@@ -162,6 +164,87 @@ DrumEditor::DrumEditor(std::shared_ptr<SamplerModule> module, SamplerPanel* pane
     connect(panel_, &SamplerPanel::kitsChanged, this, [this]() { refreshKits(); });
     refreshKits();
     reload();
+}
+
+void DrumEditor::setVoiceMuted(int voice, bool muted)
+{
+    if (voice < 0 || voice >= kDrumVoices)
+        return;
+    selector_->setMuted(voice, muted);
+    ModuleSettings s = module_->settings();
+    if (s.drums[voice].muted == muted)
+        return;
+    s.drums[voice].muted = muted;
+    module_->setSettings(s);
+    panel_->moduleEdited(module_->id());
+}
+
+void DrumEditor::toggleVoiceMute(int voice)
+{
+    if (voice >= 0 && voice < kDrumVoices)
+        setVoiceMuted(voice, !module_->settings().drums[voice].muted);
+}
+
+int DrumEditor::voiceVolume(int voice) const
+{
+    return module_->settings().drums[std::clamp(voice, 0, kDrumVoices - 1)].volume;
+}
+
+double DrumEditor::voiceOffsetMs(int voice) const
+{
+    return module_->settings().drums[std::clamp(voice, 0, kDrumVoices - 1)].offsetMs;
+}
+
+void DrumEditor::setVoiceVolume(int voice, int volume)
+{
+    if (voice < 0 || voice >= kDrumVoices)
+        return;
+    if (voice == selector_->selected()) {
+        volume_->setValue(std::clamp(volume, 0, SamplerModule::kMaxVolume));    // its signal writes the module
+        return;
+    }
+    ModuleSettings s = module_->settings();
+    s.drums[voice].volume = std::clamp(volume, 0, SamplerModule::kMaxVolume);
+    module_->setSettings(s);
+    panel_->moduleEdited(module_->id());
+}
+
+void DrumEditor::setVoiceOffsetMs(int voice, double ms)
+{
+    if (voice < 0 || voice >= kDrumVoices)
+        return;
+    const double v = std::clamp(std::round(ms), -SamplerModule::kMaxOffsetMs, SamplerModule::kMaxOffsetMs);
+    if (voice == selector_->selected()) {
+        offset_->setValue(int(v));
+        return;
+    }
+    ModuleSettings s = module_->settings();
+    s.drums[voice].offsetMs = v;
+    module_->setSettings(s);
+    panel_->moduleEdited(module_->id());
+}
+
+bool DrumEditor::stepKit(int dir)
+{
+    const QStringList kits = panel_->drumKits()->list();
+    if (kits.isEmpty() || dir == 0)
+        return false;
+    const int cur = kits_->currentIndex() > 0 ? kits.indexOf(kits_->currentText()) : -1;
+    int next;
+    if (dir > 0)
+        next = cur < 0 ? 0 : std::min(cur + 1, int(kits.size()) - 1);
+    else
+        next = cur < 0 ? int(kits.size()) - 1 : std::max(cur - 1, 0);
+    if (next == cur)
+        return false;
+    if (!loadKit(kits[next]))
+        return false;
+    const int i = kits_->findText(kits[next]);
+    if (i > 0) {
+        QSignalBlocker block(kits_);
+        kits_->setCurrentIndex(i);
+    }
+    return true;
 }
 
 bool DrumEditor::saveKitAs(const QString& name)
@@ -230,6 +313,9 @@ void DrumEditor::reload()
     loading_ = true;
     swing_->setValue(module_->settings().swing);
     loading_ = false;
+    const ModuleSettings s = module_->settings();
+    for (int v = 0; v < kDrumVoices; ++v)
+        selector_->setMuted(v, s.drums[v].muted);
     loadVoice();
 }
 

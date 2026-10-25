@@ -22,8 +22,11 @@ DrumKit drumKitFromSettings(const ModuleSettings& s)
 
 void applyDrumKit(ModuleSettings* s, const DrumKit& kit)
 {
-    for (int v = 0; v < kDrumVoices; ++v)
+    for (int v = 0; v < kDrumVoices; ++v) {
+        const bool muted = s->drums[v].muted;        // a kit does not touch the mix
         s->drums[v] = kit.voices[v];
+        s->drums[v].muted = muted;
+    }
     s->swing = kit.swing;
 }
 
@@ -62,7 +65,7 @@ bool DrumKits::save(const QString& name, const DrumKit& kit)
         return false;
     QJsonArray voices;
     for (const DrumVoice& v : kit.voices)
-        voices.append(QJsonObject::fromVariantMap(drumVoiceToVariant(v)));
+        voices.append(QJsonObject::fromVariantMap(drumVoiceToVariant(v, false)));
     QJsonObject o;
     o["version"] = kVersion;
     o["swing"] = kit.swing;

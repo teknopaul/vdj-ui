@@ -93,6 +93,29 @@ private slots:
         in.stop();
     }
 
+    void rawControlAndNoteEventsWithoutAMap()
+    {
+        MidiMapInput in;
+        QVERIFY(in.start(QString()));                // an empty map still opens the port
+        QCOMPARE(in.mappedOps(), 0);
+        snd_seq_connect_to(seq_, port_, in.clientId(), in.portId());
+        QSignalSpy ccs(&in, &MidiMapInput::controlEvent);
+        QSignalSpy notes(&in, &MidiMapInput::noteEvent);
+        cc(3, 21, 99);
+        noteOn(2, 40, 100);
+        QTRY_COMPARE(ccs.count(), 1);
+        QTRY_COMPARE(notes.count(), 1);
+        QCOMPARE(ccs[0][0].toInt(), 3);
+        QCOMPARE(ccs[0][1].toInt(), 21);
+        QCOMPARE(ccs[0][2].toInt(), 99);
+        QVERIFY(!ccs[0][3].toString().isEmpty());     // the sender's ALSA client name
+        QCOMPARE(notes[0][0].toInt(), 2);
+        QCOMPARE(notes[0][1].toInt(), 40);
+        QCOMPARE(notes[0][2].toInt(), 100);
+        QCOMPARE(notes[0][3].toBool(), true);
+        in.stop();
+    }
+
     void nothingIsReportedUnlessMonitoring()
     {
         QTemporaryFile map;

@@ -39,6 +39,7 @@ class RecordingPanel;
 class AudioRecorder;
 class InstrumentManager;
 class MidiMonitorDialog;
+class SamplerMidiControl;
 class MidiRouter;
 class MidiMapInput;
 class PendriveRegistry;       // src/export/pendrive_registry.h
@@ -111,6 +112,7 @@ private:
     void setupRecording();
     void startMidiMap(const QString& path);
     void applyMidiMap();
+    void checkSamplerControllerConnected();
     QString defaultMidiMapPath() const;
     void setVdjTransport(bool playing);
     void startBpmRamp(double targetBpm, int bars);
@@ -184,6 +186,7 @@ private:
     MidiRouter* midiRouter_ = nullptr;
     InstrumentManager* instruments_ = nullptr;
     MidiMonitorDialog* midiMonitor_ = nullptr;
+    SamplerMidiControl* samplerControl_ = nullptr;
     QElapsedTimer followersClock_;       // throttles the ALSA subscriber query
     QStringList followerNames_;
     std::map<int, BeatTempo> beatTempo_;   // per deck: tempo measured from the beat packets

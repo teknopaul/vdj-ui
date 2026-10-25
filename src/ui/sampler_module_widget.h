@@ -61,15 +61,24 @@ public:
     SwingSlider* swingSlider() const { return swing_; }     // the Dembomatik's (the DR-6S has it in its editor)
     bool wantsFullRow() const { return module_->perVoiceSamples(); }   // the 16 steps need a whole row of the grid
     void setVolume(int volume);
+    // For the MIDI controller (no mouse): each returns false when the module has no such control.
+    int currentVolume() const;
+    bool setOffsetMs(double ms);                     // writes the module's offset (whole ms, clamped)
+    bool currentOffsetMs(double* ms) const;
+    bool pressGreenButton();                         // 1 bar or Fire, whichever the module has
+    bool stepSample(int dir);                        // the sample chooser's arrows: -1 previous, +1 next
+    void toggleOnOff();
     // The function key that switches this module on and off (shown next to the switch); empty for none.
     void setKeyLabel(const QString& label);
     QString keyLabel() const { return keyLabel_; }                      // 0..127, as if set with the wheel
 
 signals:
     void removeRequested(int moduleId);
+    void touched(int moduleId);                      // the human clicked something in this module
 
 protected:
     void wheelEvent(QWheelEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:

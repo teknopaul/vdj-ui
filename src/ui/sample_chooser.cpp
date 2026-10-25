@@ -39,8 +39,8 @@ SampleChooser::SampleChooser(QWidget* parent)
     l->addWidget(down_);
     l->addWidget(choose_);
 
-    connect(up_, &QToolButton::clicked, this, [this]() { step(-1); });
-    connect(down_, &QToolButton::clicked, this, [this]() { step(+1); });
+    connect(up_, &QToolButton::clicked, this, [this]() { stepSample(-1); });
+    connect(down_, &QToolButton::clicked, this, [this]() { stepSample(+1); });
     connect(choose_, &QToolButton::clicked, this, [this]() { choose(); });
     updateLabel();
 }
@@ -66,14 +66,15 @@ void SampleChooser::updateLabel()
     down_->setEnabled(any);
 }
 
-void SampleChooser::step(int dir)
+bool SampleChooser::stepSample(int dir)
 {
-    const QString next = stepSample(path_, dir);
+    const QString next = vdj::stepSample(path_, dir);
     if (next.isEmpty() || next == path_)
-        return;
+        return false;
     path_ = next;
     updateLabel();
     emit sampleChanged(path_);
+    return true;
 }
 
 void SampleChooser::choose()

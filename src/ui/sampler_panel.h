@@ -30,6 +30,7 @@ namespace vdj {
 
 class AlsaClock;
 class SampleTreeModel;
+class SamplerController;
 class SamplerModuleWidget;
 
 // The live sampler: a sample folder tree, a list of modules (Bombomatic, Stab player, Acid loop, One shot, MIDI matic) each with
@@ -82,6 +83,13 @@ public:
     void moduleEdited(int moduleId);
     QList<MidiPort> midiDestinations();
 
+    SamplerController* controller() const { return controller_; }
+    QComboBox* controlModeCombo() const { return controlModeBox_; }
+    QPushButton* controllerButton() const { return controllerButton_; }
+    // The DR-6S the MIDI controller drives in the DR-6S mode: the one the human touched last, else the first (null without one)
+    SamplerModuleWidget* drumTarget() const;
+    void setControlMode(int mode);                   // 0 = the strips drive the modules, 1 = the DR-6S
+
     QComboBox* presetCombo() const { return presetBox_; }
     QPushButton* savePresetButton() const { return savePreset_; }
     QPushButton* deletePresetButton() const { return deletePreset_; }
@@ -100,6 +108,7 @@ public:
 signals:
     void message(const QString& text);
     void kitsChanged();
+    void controllerDialogRequested();                // the "Controller..." button
 
 private:
     void connectModuleWidget(SamplerModuleWidget* w);
@@ -129,11 +138,15 @@ private:
     QLabel* status_;
     QGridLayout* modulesLayout_;
     QComboBox* columnsBox_;
+    QComboBox* controlModeBox_;
+    QPushButton* controllerButton_;
+    SamplerController* controller_;
     QWidget* modulesHost_;
     QTimer pollTimer_;
     QTimer saveTimer_;
     QList<SamplerModuleWidget*> widgets_;
     QString folder_;
+    int lastTouchedId_ = -1;
     bool audioEnabled_ = true;
     bool running_ = false;
     bool loading_ = false;

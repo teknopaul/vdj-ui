@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 #include <QApplication>
 #include <QCheckBox>
+#include <QGraphicsEffect>
+#include <QSignalSpy>
 #include <QGridLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -73,6 +75,7 @@ private slots:
     void drumMachineTakesAWholeRow();
     void dembomatikHasASwingSlider();
     void presetRoundTripKeepsEverything();
+    void voiceMuteDimsAndAltClickToggles();
 
 private:
     QTemporaryDir* dir_ = nullptr;
@@ -611,6 +614,53 @@ void TestDrumUi::dembomatikHasASwingSlider()
     wheel(back->swingSlider()->slider(), -2);
     QCOMPARE(back->module()->settings().swing, 55);
     QCOMPARE(back->module()->settings().volume, 125);
+}
+
+void TestDrumUi::voiceMuteDimsAndAltClickToggles()
+{
+    auto* w = newDrums();
+    auto* sel = w->drumEditor()->selector();
+    auto* ed = w->drumEditor();
+    QVERIFY(!sel->muted(2));
+    const QString tip = sel->button(2)->toolTip();
+    QVERIFY(!tip.contains("muted"));
+    QSignalSpy toggled(sel, &DrumVoiceSelector::muteToggled);
+    QSignalSpy selected(sel, &DrumVoiceSelector::selectedChanged);
+    click(sel->button(2), Qt::AltModifier);
+    QVERIFY(sel->muted(2));
+    QVERIFY(sel->button(2)->graphicsEffect());                  // dimmed
+    QVERIFY(sel->button(2)->toolTip().endsWith("muted"));
+    QCOMPARE(toggled.size(), 1);
+    QCOMPARE(toggled[0][0].toInt(), 2);
+    QCOMPARE(toggled[0][1].toBool(), true);
+    QCOMPARE(selected.size(), 0);                                // the selection did not move
+    QCOMPARE(sel->selected(), 0);
+    QVERIFY(w->module()->settings().drums[2].muted);
+    QVERIFY(!w->module()->settings().drums[1].muted);
+    click(sel->button(2), Qt::AltModifier);                      // again: unmuted
+    QVERIFY(!sel->muted(2));
+    QVERIFY(!sel->button(2)->graphicsEffect());
+    QCOMPARE(sel->button(2)->toolTip(), tip);
+    QVERIFY(!w->module()->settings().drums[2].muted);
+    QTest::mouseClick(sel->button(3), Qt::MiddleButton, Qt::NoModifier, QPoint(5, 5));   // middle click
+    QVERIFY(sel->muted(3));
+    QCOMPARE(sel->selected(), 0);
+    click(sel->button(3));                                       // a plain click selects, muted or not
+    QCOMPARE(sel->selected(), 3);
+    QVERIFY(sel->muted(3));
+    ed->toggleVoiceMute(3);
+    QVERIFY(!sel->muted(3));
+    ed->setVoiceMuted(5, true);                                  // any voice, also a hidden one
+    QVERIFY(w->module()->settings().drums[5].muted);
+    QVERIFY(sel->muted(5));
+    // a preset keeps the mutes
+    QVERIFY(panel_->savePresetAs("muted"));
+    panel_->removeModule(w->module()->id());
+    QVERIFY(panel_->loadPresetByName("muted"));
+    auto* back = panel_->moduleWidgets()[0];
+    QVERIFY(back->module()->settings().drums[5].muted);
+    QVERIFY(back->drumEditor()->selector()->muted(5));
+    QVERIFY(!back->drumEditor()->selector()->muted(2));
 }
 
 void TestDrumUi::presetRoundTripKeepsEverything()

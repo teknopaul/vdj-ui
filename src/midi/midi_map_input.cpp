@@ -3,6 +3,7 @@
 #include <alsa/asoundlib.h>
 #include <poll.h>
 
+#include <QHash>
 #include <QThread>
 #include <QFile>
 #include <QTextStream>
@@ -14,9 +15,70 @@ namespace vdj {
 
 // ── .adjmm parser ─────────────────────────────────────────────────────────────
 
+bool AdjmmMap::isSamplerOpName(const QString& name)
+{
+    static const QRegularExpression strip(QStringLiteral("^strip[1-8]_(mute|solo|rec|select|knob|fader)$"));
+    return name == QStringLiteral("track_back") || name == QStringLiteral("track_fwd")
+        || name == QStringLiteral("mode_toggle") || strip.match(name).hasMatch();
+}
+
+// Parses channel / controller / value into *op; false (with a warning) when a field is invalid.
+static bool parseFields(const QString& ch, const QString& ctrl, const QString& val, int lineNo, AdjmmOp* op)
+{
+    // channel: * = any, number = 1-16
+    if (ch == QStringLiteral("*")) {
+        op->channel = ADJMM_ANY_CHANNEL;
+    } else {
+        bool ok; int v = ch.toInt(&ok);
+        if (!ok || v < 0 || v > 16) {
+            qWarning("adjmm line %d: invalid channel '%s'", lineNo, qPrintable(ch));
+            return false;
+        }
+        op->channel = static_cast<uint8_t>(v);
+    }
+
+    // controller: N = NoteOn, O = NoteOff, number = CC (0-127)
+    if (ctrl.startsWith('N')) {
+        op->controller = ADJMM_NOTEON;
+    } else if (ctrl.startsWith('O')) {
+        op->controller = ADJMM_NOTEOFF;
+    } else {
+        bool ok; int v = ctrl.toInt(&ok);
+        if (!ok || v < 0 || v > 127) {
+            qWarning("adjmm line %d: invalid controller '%s'", lineNo, qPrintable(ctrl));
+            return false;
+        }
+        op->controller = static_cast<uint8_t>(v);
+    }
+
+    // value: * = any, ++ / -- / + / - = jog wheel, number = exact
+    if (val == QStringLiteral("*"))        op->value = ADJMM_ANY_VALUE;
+    else if (val == QStringLiteral("++"))  op->value = ADJMM_WHEEL_PLUS_PLUS;
+    else if (val == QStringLiteral("--"))  op->value = ADJMM_WHEEL_MINUS_MINUS;
+    else if (val == QStringLiteral("+"))   op->value = ADJMM_WHEEL_PLUS;
+    else if (val == QStringLiteral("-"))   op->value = ADJMM_WHEEL_MINUS;
+    else {
+        bool ok; int v = val.toInt(&ok);
+        if (!ok || v < 0 || v > 127) {
+            qWarning("adjmm line %d: invalid value '%s'", lineNo, qPrintable(val));
+            return false;
+        }
+        op->value = static_cast<uint8_t>(v);
+    }
+    return true;
+}
+
 static void parseLine(const QString& rawLine, int lineNo, AdjmmMap* map)
 {
     QString line = rawLine.trimmed();
+    if (line.startsWith(QStringLiteral("#!"))) {            // "#! key value": a setting, not a mapping
+        const QString rest = line.mid(2).trimmed();
+        const int sp = rest.indexOf(QRegularExpression(QStringLiteral("\\s")));
+        const QString key = (sp < 0 ? rest : rest.left(sp)).toLower();
+        if (!key.isEmpty())
+            map->directives.insert(key, sp < 0 ? QString() : rest.mid(sp).trimmed());
+        return;
+    }
     int ci = line.indexOf('#');
     if (ci == 0) return;
     if (ci > 0)  line = line.left(ci).trimmed();
@@ -54,51 +116,19 @@ static void parseLine(const QString& rawLine, int lineNo, AdjmmMap* map)
     else if (name == QStringLiteral("slider_off"))    idx = ADJMM_OP_SLIDER_OFF - 1;
     else if (name == QStringLiteral("copy_master"))   idx = ADJMM_OP_COPY_MASTER - 1;
     else if (name == QStringLiteral("become_master")) idx = ADJMM_OP_BECOME_MASTER - 1;
-    else {
+    else if (AdjmmMap::isSamplerOpName(name)) {
+        AdjmmOp op;
+        if (parseFields(ch, ctrl, val, lineNo, &op)) map->named[name] = op;
+        return;
+    } else {
+        if (name.startsWith(QStringLiteral("strip")))
+            qWarning("adjmm line %d: bad sampler op '%s' (strips are 1-8)", lineNo, qPrintable(name));
         // skip unknown names — forward compatibility when new ops are added
         return;
     }
 
-    // channel: * = any, number = 1-16
-    if (ch == QStringLiteral("*")) {
-        map->ops[idx].channel = ADJMM_ANY_CHANNEL;
-    } else {
-        bool ok; int v = ch.toInt(&ok);
-        if (!ok || v < 0 || v > 16) {
-            qWarning("adjmm line %d: invalid channel '%s'", lineNo, qPrintable(ch));
-            return;
-        }
-        map->ops[idx].channel = static_cast<uint8_t>(v);
-    }
-
-    // controller: N = NoteOn, O = NoteOff, number = CC (0-127)
-    if (ctrl.startsWith('N')) {
-        map->ops[idx].controller = ADJMM_NOTEON;
-    } else if (ctrl.startsWith('O')) {
-        map->ops[idx].controller = ADJMM_NOTEOFF;
-    } else {
-        bool ok; int v = ctrl.toInt(&ok);
-        if (!ok || v < 0 || v > 127) {
-            qWarning("adjmm line %d: invalid controller '%s'", lineNo, qPrintable(ctrl));
-            return;
-        }
-        map->ops[idx].controller = static_cast<uint8_t>(v);
-    }
-
-    // value: * = any, ++ / -- / + / - = jog wheel, number = exact
-    if (val == QStringLiteral("*"))        map->ops[idx].value = ADJMM_ANY_VALUE;
-    else if (val == QStringLiteral("++"))  map->ops[idx].value = ADJMM_WHEEL_PLUS_PLUS;
-    else if (val == QStringLiteral("--"))  map->ops[idx].value = ADJMM_WHEEL_MINUS_MINUS;
-    else if (val == QStringLiteral("+"))   map->ops[idx].value = ADJMM_WHEEL_PLUS;
-    else if (val == QStringLiteral("-"))   map->ops[idx].value = ADJMM_WHEEL_MINUS;
-    else {
-        bool ok; int v = val.toInt(&ok);
-        if (!ok || v < 0 || v > 127) {
-            qWarning("adjmm line %d: invalid value '%s'", lineNo, qPrintable(val));
-            return;
-        }
-        map->ops[idx].value = static_cast<uint8_t>(v);
-    }
+    AdjmmOp op;
+    if (parseFields(ch, ctrl, val, lineNo, &op)) map->ops[idx] = op;
 }
 
 AdjmmMap* AdjmmMap::readFromFile(const QString& path)
@@ -219,6 +249,22 @@ private:
             emit owner_->midiEvent(what, op);
     }
 
+    // ALSA client name of the sender, looked up once per client id (reader thread only).
+    QString sourceName(int client)
+    {
+        auto it = names_.find(client);
+        if (it != names_.end()) return it.value();
+        QString name;
+        snd_seq_client_info_t* ci;
+        snd_seq_client_info_alloca(&ci);
+        if (snd_seq_get_any_client_info(handle_, client, ci) >= 0)
+            name = QString::fromUtf8(snd_seq_client_info_get_name(ci));
+        else
+            return name;                                 // not cached: the client may appear later
+        names_.insert(client, name);
+        return name;
+    }
+
     void dispatch(snd_seq_event_t* ev)
     {
         int op = 0;
@@ -226,6 +272,7 @@ private:
             int ch  = ev->data.control.channel + 1; // ALSA 0-15 → human 1-16
             int par = ev->data.control.param;
             int val = ev->data.control.value;
+            emit owner_->controlEvent(ch, par, val, sourceName(ev->source.client));
             op = matchCtrl(map_, ch, par, val);
             if (op == 0) op = matchWheel(map_, ch, par, val);
             report(QStringLiteral("ch %1  CC %2 = %3").arg(ch).arg(par).arg(val), op);
@@ -235,9 +282,12 @@ private:
             }
         } else if (ev->type == SND_SEQ_EVENT_NOTEON) {
             const int ch = ev->data.note.channel + 1;
+            emit owner_->noteEvent(ch, ev->data.note.note, ev->data.note.velocity, true, sourceName(ev->source.client));
             op = matchNote(map_, ch, ev->data.note.note);
             report(QStringLiteral("ch %1  NOTE ON  note %2 velocity %3").arg(ch).arg(ev->data.note.note).arg(ev->data.note.velocity), op);
         } else if (ev->type == SND_SEQ_EVENT_NOTEOFF) {
+            emit owner_->noteEvent(ev->data.note.channel + 1, ev->data.note.note, ev->data.note.velocity, false,
+                                   sourceName(ev->source.client));
             report(QStringLiteral("ch %1  NOTE OFF note %2 (maps ignore note off)").arg(ev->data.note.channel + 1).arg(ev->data.note.note), 0);
         } else if (ev->type == SND_SEQ_EVENT_PITCHBEND) {
             report(QStringLiteral("ch %1  PITCH BEND %2 (not mappable)").arg(ev->data.control.channel + 1).arg(ev->data.control.value), 0);
@@ -333,6 +383,7 @@ private:
     volatile bool   running_     = true;
     bool            sliderOn_    = false;
     int             sliderValue_ = -1;
+    QHash<int, QString> names_;
 };
 
 // ── MidiMapInput public API ───────────────────────────────────────────────────
@@ -396,7 +447,7 @@ bool MidiMapInput::start(const QString& mapPath)
     stop();
     delete map_;
     mapPath_ = mapPath;
-    map_ = AdjmmMap::readFromFile(mapPath);
+    map_ = mapPath.isEmpty() ? new AdjmmMap() : AdjmmMap::readFromFile(mapPath);
     if (!map_) {
         emit errorOccurred(QStringLiteral("Cannot read map file: ") + mapPath);
         return false;

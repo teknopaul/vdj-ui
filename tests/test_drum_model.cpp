@@ -27,6 +27,7 @@ private slots:
     void drumMachineVariantEdgeCases();
     void swingIsSavedForDembomatikAndDrumsOnly();
     void otherTypesStayByteIdentical();
+    void voiceMuteVariant();
 };
 
 void TestDrumModel::patternStringRoundTrip()
@@ -180,6 +181,38 @@ void TestDrumModel::settingsClamping()
     QCOMPARE(c.drums[4].chokeSteps, 2);
     QCOMPARE(c.drums[5].chokeSteps, 16);
     QCOMPARE(int(c.drums[0].steps[3]), int(StepHalf));
+}
+
+void TestDrumModel::voiceMuteVariant()
+{
+    DrumVoice v;
+    v.samplePath = "/a.wav";
+    QVERIFY(!drumVoiceToVariant(v).contains("muted"));          // old files stay identical
+    v.muted = true;
+    const QVariantMap m = drumVoiceToVariant(v);
+    QCOMPARE(m.value("muted").toBool(), true);
+    QVERIFY(!drumVoiceToVariant(v, false).contains("muted"));   // kits leave it out
+    DrumVoice back;
+    drumVoiceFromVariant(m, &back);
+    QVERIFY(back.muted);
+    QVERIFY(back == v);
+    DrumVoice other = v;
+    other.muted = false;
+    QVERIFY(other != v);
+    QVariantMap old = m;
+    old.remove("muted");
+    DrumVoice fromOld;
+    drumVoiceFromVariant(old, &fromOld);                        // a file without the key
+    QVERIFY(!fromOld.muted);
+    // through a whole module
+    auto mod = SamplerModule::create(SamplerModule::DrumMachine);
+    ModuleSettings s = mod->settings();
+    s.drums[2].muted = true;
+    mod->setSettings(s);
+    auto copy = SamplerModule::fromVariant(mod->toVariant());
+    QVERIFY(copy);
+    QVERIFY(copy->settings().drums[2].muted);
+    QVERIFY(!copy->settings().drums[1].muted);
 }
 
 void TestDrumModel::drumMachineVariantRoundTrip()

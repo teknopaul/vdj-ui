@@ -56,6 +56,8 @@ add_library(vdj-cdj STATIC
     midi/alsa_clock.cpp
     midi/diff_lock.cpp
     midi/midi_map_input.cpp
+    midi/sampler_ctl_map.cpp
+    midi/sampler_midi_control.cpp
     midi/midi_router.cpp
     midi/midi_out.cpp
     midi/instrument_manager.cpp
@@ -84,6 +86,7 @@ add_library(vdj-cdj STATIC
     ui/sample_chooser.cpp
     ui/sampler_module_widget.cpp
     ui/sampler_panel.cpp
+    ui/sampler_controller.cpp
     ${CMAKE_SOURCE_DIR}/resources.qrc
     ui/track_details.cpp
     ui/track_analysis.cpp
@@ -105,6 +108,7 @@ add_library(vdj-cdj STATIC
     ui/rekordbox_mode_panel.cpp
     ui/instrument_config_dialog.cpp
     ui/midi_monitor_dialog.cpp
+    ui/controller_dialog.cpp
     ui/main_window.cpp
     network/beat_tempo.cpp
     network/network_manager.cpp

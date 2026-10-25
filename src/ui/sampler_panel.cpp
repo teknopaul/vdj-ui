@@ -1,6 +1,7 @@
 #include "sampler_panel.h"
 #include "sample_tree_model.h"
 #include "sampler_module_widget.h"
+#include "sampler_controller.h"
 #include "sample_chooser.h"
 #include "midi/alsa_clock.h"
 #include "debug/packet_logger.h"
@@ -75,6 +76,13 @@ SamplerPanel::SamplerPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
     columnsBox_->addItem(tr("2 across"), 2);
     columnsBox_->addItem(tr("4 across"), 4);
     columnsBox_->setToolTip(tr("Modules per row"));
+    controlModeBox_ = new QComboBox(this);
+    controlModeBox_->addItem(tr("Controller: Modules"), 0);
+    controlModeBox_->addItem(tr("Controller: DR-6S"), 1);
+    controlModeBox_->setToolTip(tr("What the MIDI controller's strips drive: the modules, or the voices of a DR-6S"));
+    controllerButton_ = new QPushButton(tr("Controller..."), this);
+    controllerButton_->setToolTip(tr("The MIDI controller that drives the modules: which buttons, knobs and faders do what, and MIDI learn"));
+    controller_ = new SamplerController(this);
     master_ = new QSlider(Qt::Horizontal, this);
     master_->setRange(0, 150);
     master_->setValue(100);
@@ -88,6 +96,8 @@ SamplerPanel::SamplerPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
     top->addWidget(savePreset_);
     top->addWidget(deletePreset_);
     top->addStretch(1);
+    top->addWidget(controlModeBox_);
+    top->addWidget(controllerButton_);
     top->addWidget(columnsBox_);
     top->addWidget(status_);
     top->addWidget(new QLabel(tr("Vol"), this));
@@ -116,6 +126,12 @@ SamplerPanel::SamplerPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
     layout->addWidget(split);
     setMinimumHeight(150);
 
+    connect(controlModeBox_, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int i) {
+        controller_->setMode(controlModeBox_->itemData(i).toInt() == 1 ? SamplerController::DrumMachine : SamplerController::Modules);
+        scheduleSave();
+    });
+    connect(controllerButton_, &QPushButton::clicked, this, &SamplerPanel::controllerDialogRequested);
+    connect(controller_, &SamplerController::modeChanged, this, [this](int m) { setControlMode(m); });
     connect(folderButton_, &QPushButton::clicked, this, [this]() { chooseFolder(); });
     connect(tree_, &QTreeView::doubleClicked, this, [this](const QModelIndex& i) {
         const QString p = treeModel_->samplePath(i);
@@ -222,6 +238,7 @@ SamplerModuleWidget* SamplerPanel::addModule(SamplerModule::Type type)
 void SamplerPanel::connectModuleWidget(SamplerModuleWidget* w)
 {
     connect(w, &SamplerModuleWidget::removeRequested, this, [this](int id) { removeModule(id); });
+    connect(w, &SamplerModuleWidget::touched, this, [this](int id) { lastTouchedId_ = id; });
 }
 
 void SamplerPanel::removeModule(int moduleId)
@@ -241,9 +258,32 @@ void SamplerPanel::removeModule(int moduleId)
     }
 }
 
+SamplerModuleWidget* SamplerPanel::drumTarget() const
+{
+    SamplerModuleWidget* first = nullptr;
+    for (SamplerModuleWidget* w : widgets_) {
+        if (!w->drumEditor())
+            continue;
+        if (w->module()->id() == lastTouchedId_)
+            return w;
+        if (!first)
+            first = w;
+    }
+    return first;
+}
+
+void SamplerPanel::setControlMode(int mode)
+{
+    const int i = controlModeBox_->findData(mode == 1 ? 1 : 0);
+    if (i != controlModeBox_->currentIndex())
+        controlModeBox_->setCurrentIndex(i);          // its signal tells the controller
+}
+
 void SamplerPanel::moduleEdited(int moduleId)
 {
-    Q_UNUSED(moduleId);
+    if (!loading_)
+        lastTouchedId_ = moduleId;
+    controller_->softwareChanged(moduleId);
     if (!loading_)
         scheduleSave();
 }
@@ -265,6 +305,7 @@ SamplerState SamplerPanel::state() const
         mods.push_back(w->module());
     SamplerState st = samplerStateFrom(mods, folder_, masterGain());
     st.columns = columns();
+    st.controlMode = controlModeBox_->currentData().toInt();
     return st;
 }
 
@@ -286,6 +327,7 @@ void SamplerPanel::applyState(const SamplerState& st)
     widgets_.clear();
     master_->setValue(int(std::lround(st.masterGain * 100.0)));
     setColumns(st.columns);
+    setControlMode(st.controlMode);
     setSampleFolder(st.folder);
     QStringList warnings;
     for (const auto& m : samplerModulesFrom(st, &warnings)) {
@@ -300,6 +342,7 @@ void SamplerPanel::applyState(const SamplerState& st)
         emit message(tr("Sampler preset: %1").arg(warnings.join(QStringLiteral("; "))));
     relayout();
     loading_ = false;
+    controller_->resetPickups();
     scheduleSave();
 }
 

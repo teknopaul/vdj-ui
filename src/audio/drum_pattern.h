@@ -25,6 +25,7 @@ struct DrumVoice {
     int volume = 127;                                // 0..127
     double offsetMs = 0.0;
     int chokeSteps = 0;
+    bool muted = false;                              // plays nothing while true (a voice that is already ringing finishes)
     quint8 steps[kDrumSteps] = {};                   // DrumStep per step of the bar
 
     bool operator==(const DrumVoice& o) const;
@@ -35,7 +36,8 @@ QString drumPatternToString(const quint8 steps[kDrumSteps]);                 // 
 bool drumPatternFromString(const QString& text, quint8 out[kDrumSteps]);     // false (out untouched) for a wrong length or character
 // One voice as a QVariantMap { sample, volume, offsetMs, choke, pattern } (module presets and drum kits use the same form);
 // fromVariant keeps the voice's current value for every key the map does not have, a bad pattern string leaves the pattern as it is.
-QVariantMap drumVoiceToVariant(const DrumVoice& v);
+// "muted" is written only when true (old files stay identical); drum kits leave it out (withMute = false): a kit is a sound, not a mix.
+QVariantMap drumVoiceToVariant(const DrumVoice& v, bool withMute = true);
 void drumVoiceFromVariant(const QVariantMap& m, DrumVoice* v);
 float drumStepLevel(quint8 step);                    // 0 off, 1 on, 0.5 half volume
 double drumStepBeat(int step);                       // step / 4

@@ -90,6 +90,7 @@ bool SamplerPresets::writeFile(const QString& path, const SamplerState& state)
     o["folder"] = state.folder;
     o["masterGain"] = state.masterGain;
     o["columns"] = state.columns;
+    o["controlMode"] = state.controlMode;
     o["modules"] = QJsonArray::fromVariantList(state.modules);
     QDir().mkpath(QFileInfo(path).absolutePath());
     QSaveFile f(path);                               // written to a temporary file and renamed: a crash keeps the old one
@@ -117,6 +118,7 @@ bool SamplerPresets::readFile(const QString& path, SamplerState* state, QString*
     st.folder = o.value("folder").toString();
     st.masterGain = o.contains("masterGain") ? o.value("masterGain").toDouble(1.0) : 1.0;
     st.columns = o.value("columns").toInt(2) == 4 ? 4 : 2;
+    st.controlMode = o.value("controlMode").toInt(0) == 1 ? 1 : 0;
     st.modules = o.value("modules").toArray().toVariantList();
     if (state)
         *state = st;

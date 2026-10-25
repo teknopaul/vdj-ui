@@ -1625,6 +1625,54 @@ midi/midi_router.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/midi_router.cpp.s
 .PHONY : midi/midi_router.cpp.s
 
+midi/sampler_ctl_map.o: midi/sampler_ctl_map.cpp.o
+.PHONY : midi/sampler_ctl_map.o
+
+# target to build an object file
+midi/sampler_ctl_map.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_ctl_map.cpp.o
+.PHONY : midi/sampler_ctl_map.cpp.o
+
+midi/sampler_ctl_map.i: midi/sampler_ctl_map.cpp.i
+.PHONY : midi/sampler_ctl_map.i
+
+# target to preprocess a source file
+midi/sampler_ctl_map.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_ctl_map.cpp.i
+.PHONY : midi/sampler_ctl_map.cpp.i
+
+midi/sampler_ctl_map.s: midi/sampler_ctl_map.cpp.s
+.PHONY : midi/sampler_ctl_map.s
+
+# target to generate assembly for a file
+midi/sampler_ctl_map.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_ctl_map.cpp.s
+.PHONY : midi/sampler_ctl_map.cpp.s
+
+midi/sampler_midi_control.o: midi/sampler_midi_control.cpp.o
+.PHONY : midi/sampler_midi_control.o
+
+# target to build an object file
+midi/sampler_midi_control.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_midi_control.cpp.o
+.PHONY : midi/sampler_midi_control.cpp.o
+
+midi/sampler_midi_control.i: midi/sampler_midi_control.cpp.i
+.PHONY : midi/sampler_midi_control.i
+
+# target to preprocess a source file
+midi/sampler_midi_control.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_midi_control.cpp.i
+.PHONY : midi/sampler_midi_control.cpp.i
+
+midi/sampler_midi_control.s: midi/sampler_midi_control.cpp.s
+.PHONY : midi/sampler_midi_control.s
+
+# target to generate assembly for a file
+midi/sampler_midi_control.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_midi_control.cpp.s
+.PHONY : midi/sampler_midi_control.cpp.s
+
 network/auto_ip_manager.o: network/auto_ip_manager.cpp.o
 .PHONY : network/auto_ip_manager.o
 
@@ -1936,6 +1984,30 @@ ui/bpm_ramp_widget.s: ui/bpm_ramp_widget.cpp.s
 ui/bpm_ramp_widget.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/bpm_ramp_widget.cpp.s
 .PHONY : ui/bpm_ramp_widget.cpp.s
+
+ui/controller_dialog.o: ui/controller_dialog.cpp.o
+.PHONY : ui/controller_dialog.o
+
+# target to build an object file
+ui/controller_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/controller_dialog.cpp.o
+.PHONY : ui/controller_dialog.cpp.o
+
+ui/controller_dialog.i: ui/controller_dialog.cpp.i
+.PHONY : ui/controller_dialog.i
+
+# target to preprocess a source file
+ui/controller_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/controller_dialog.cpp.i
+.PHONY : ui/controller_dialog.cpp.i
+
+ui/controller_dialog.s: ui/controller_dialog.cpp.s
+.PHONY : ui/controller_dialog.s
+
+# target to generate assembly for a file
+ui/controller_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/controller_dialog.cpp.s
+.PHONY : ui/controller_dialog.cpp.s
 
 ui/dark_theme.o: ui/dark_theme.cpp.o
 .PHONY : ui/dark_theme.o
@@ -2512,6 +2584,30 @@ ui/sample_tree_model.s: ui/sample_tree_model.cpp.s
 ui/sample_tree_model.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sample_tree_model.cpp.s
 .PHONY : ui/sample_tree_model.cpp.s
+
+ui/sampler_controller.o: ui/sampler_controller.cpp.o
+.PHONY : ui/sampler_controller.o
+
+# target to build an object file
+ui/sampler_controller.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_controller.cpp.o
+.PHONY : ui/sampler_controller.cpp.o
+
+ui/sampler_controller.i: ui/sampler_controller.cpp.i
+.PHONY : ui/sampler_controller.i
+
+# target to preprocess a source file
+ui/sampler_controller.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_controller.cpp.i
+.PHONY : ui/sampler_controller.cpp.i
+
+ui/sampler_controller.s: ui/sampler_controller.cpp.s
+.PHONY : ui/sampler_controller.s
+
+# target to generate assembly for a file
+ui/sampler_controller.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_controller.cpp.s
+.PHONY : ui/sampler_controller.cpp.s
 
 ui/sampler_icons.o: ui/sampler_icons.cpp.o
 .PHONY : ui/sampler_icons.o
@@ -3200,6 +3296,12 @@ help:
 	@echo "... midi/midi_router.o"
 	@echo "... midi/midi_router.i"
 	@echo "... midi/midi_router.s"
+	@echo "... midi/sampler_ctl_map.o"
+	@echo "... midi/sampler_ctl_map.i"
+	@echo "... midi/sampler_ctl_map.s"
+	@echo "... midi/sampler_midi_control.o"
+	@echo "... midi/sampler_midi_control.i"
+	@echo "... midi/sampler_midi_control.s"
 	@echo "... network/auto_ip_manager.o"
 	@echo "... network/auto_ip_manager.i"
 	@echo "... network/auto_ip_manager.s"
@@ -3239,6 +3341,9 @@ help:
 	@echo "... ui/bpm_ramp_widget.o"
 	@echo "... ui/bpm_ramp_widget.i"
 	@echo "... ui/bpm_ramp_widget.s"
+	@echo "... ui/controller_dialog.o"
+	@echo "... ui/controller_dialog.i"
+	@echo "... ui/controller_dialog.s"
 	@echo "... ui/dark_theme.o"
 	@echo "... ui/dark_theme.i"
 	@echo "... ui/dark_theme.s"
@@ -3311,6 +3416,9 @@ help:
 	@echo "... ui/sample_tree_model.o"
 	@echo "... ui/sample_tree_model.i"
 	@echo "... ui/sample_tree_model.s"
+	@echo "... ui/sampler_controller.o"
+	@echo "... ui/sampler_controller.i"
+	@echo "... ui/sampler_controller.s"
 	@echo "... ui/sampler_icons.o"
 	@echo "... ui/sampler_icons.i"
 	@echo "... ui/sampler_icons.s"

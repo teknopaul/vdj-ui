@@ -74,6 +74,7 @@ sequencer is stopped. Hiding the panel does not stop it. Samples are `.wav` file
   off after 1, 2, 4, 8 or 16 quarter beats (off = play to the end) with a fade over 100 ms, e.g. to shorten a long open hi-hat. *Swing* is the same as the
   Dembomatik's. The module takes a whole row of the grid. *Kit*, *Save kit* and *Delete* keep **drum kits** (the six voices and the swing, not the
   module's name, switch or volume) in `drum-kits/` of the config folder, apart from the sampler presets; the kit list is shared by all DR-6S modules.
+  Alt+click (or middle click) on a voice button mutes that voice (it is dimmed); the mute is saved with the module but not in kits.
   The module switch (and its F key) mutes the whole machine; *1 bar* plays one bar of the pattern.
 - **Stab player**: the sample on the beats of the bar you choose (the round buttons: red = on, yellow = off). *Reverse sync* makes the sample
   end on the beat instead of starting on it. *1 bar* (green) plays exactly one bar from the next bar line, even when the module is switched off.
@@ -91,6 +92,36 @@ working state is kept in `sampler-current.json` and comes back at the next start
 The sampler plays on the output chosen for the Local Track Player. Sounds are rendered ahead of the beat by the sound server's buffer,
 40 ms by default; if the kick sounds early or late put `latency_ms=40` (change the number) in `sampler.conf` in the config folder. In debug mode (*View > Debug Panel*)
 each sound start is logged with how far it was rendered from its scheduled time (a few microseconds is normal).
+
+#### Controlling the sampler with MIDI (nanoKONTROL Studio)
+
+A MIDI controller with 8 strips (mute, solo, rec, select buttons, a knob and a fader each, plus track back / forward) can drive the sampler.
+Connect it to the *vdj-midi-in* ALSA port that the deck maps use (*Config > Instruments*, or `aconnect`; a second controller can be wired
+automatically with `midi_input_sampler=<device key>` in the `[instruments]` section of the config). The *Controller: Modules / DR-6S* box in the
+sampler panel picks what the strips drive, one mode at a time:
+
+| control | Modules mode (strip n = module n, the F1..F12 order) | DR-6S mode (strip n = voice n: BD SD SY CL HH OH) |
+|---|---|---|
+| mute | the module's on / off | the voice on / off (a muted voice is dimmed; Alt+click or middle click on a voice button does the same) |
+| solo | the green button (1 bar / Fire) | - |
+| rec / select | next / previous sample in the folder | - |
+| knob | offset, -40 ms .. +40 ms (middle = 0) | the voice's offset |
+| fader | the module's volume 0-127 | the voice's volume |
+| track back / forward | - | previous / next drum kit |
+
+With several DR-6S modules the one you touched last is driven (else the first). Faders and knobs use **pickup**: after a mode change, a preset
+load or a change made with the mouse they do nothing until they reach the value on screen, so the sound never jumps. A voice mute is saved with
+the module and the presets, not in drum kits. The controller is never given LED feedback.
+
+The mapping is a normal adj `.adjmm` file (`<config folder>/sampler-control.adjmm`, or `sampler_map=` in the `[midi]` section), the same format
+as the deck maps and the one `adj_midilearn` writes, so it can also be the same file as the deck map. Each line is `name channel controller value`
+(channel 0 = any, `N` as the controller = a note, `*` = any value; `#` starts a comment). The names are `strip1_mute`, `strip1_solo`, `strip1_rec`,
+`strip1_select`, `strip1_knob`, `strip1_fader` ... `strip8_*`, `track_back`, `track_fwd` and `mode_toggle`. Lines starting with `#!` are settings:
+`#! source nanoKONTROL` (only events from a MIDI client with that in its name), `#! pickup 1` and `#! rec_is_forward 1` (rec = next sample;
+0 swaps rec and select). Other lines (the deck's `start`, `stop` ...) are ignored by the sampler, and `adj` ignores the sampler lines.
+**The numbers in the example file the program creates are a guess** (a nanoKONTROL2 style layout); use *Controller...* in the sampler panel:
+select a cell, press *Learn* and move or press that control (*learn strip 1 fills the row* fills strips 2-8 with the next numbers), then *Save*.
+Saving changes only the lines you edited; everything else in the file is kept. *View > MIDI monitor* shows the raw events.
 
 ### Exporting a pendrive to the decks (LINK export)
 

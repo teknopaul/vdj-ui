@@ -179,6 +179,11 @@ QString InstrumentManager::midiInputKey() const
     return config_->loadValue(QStringLiteral("instruments"), QStringLiteral("midi_input"));
 }
 
+QString InstrumentManager::samplerInputKey() const
+{
+    return config_->loadValue(QStringLiteral("instruments"), QStringLiteral("midi_input_sampler"));
+}
+
 QString InstrumentManager::midiOutputKey() const
 {
     return config_->loadValue(QStringLiteral("instruments"), QStringLiteral("midi_output"));
@@ -236,8 +241,9 @@ void InstrumentManager::wireDevices()
 
     // MIDI input: controller → VDJ clock
     // (e.g. XDJ-700 MIDI out → vdj-ui:MIDI clock, exactly like adj_mod_xdj700)
-    const QString inKey = midiInputKey();
-    if (!inKey.isEmpty() && vdjWritePort.clientId > 0) {
+    for (const QString& inKey : { midiInputKey(), samplerInputKey() }) {
+        if (inKey.isEmpty() || vdjWritePort.clientId <= 0)
+            continue;
         for (const DetectedDevice& d : devs) {
             if (d.key == inKey && d.inputPorts > 0 && d.alsaPortId >= 0) {
                 MidiPort src;
