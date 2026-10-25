@@ -40,11 +40,21 @@ add_library(vdj-cdj STATIC
     audio/audio_decoder.cpp
     audio/audio_output.cpp
     audio/audio_player.cpp
+    audio/beat_source.cpp
+    audio/sample_cache.cpp
+    audio/wav_info.cpp
+    audio/voice_mixer.cpp
+    audio/sampler_engine.cpp
+    audio/sampler_module.cpp
+    audio/sampler_scheduler.cpp
+    audio/sample_stretch.cpp
+    audio/sampler_presets.cpp
     audio/time_stretcher.cpp
     midi/alsa_clock.cpp
     midi/diff_lock.cpp
     midi/midi_map_input.cpp
     midi/midi_router.cpp
+    midi/midi_out.cpp
     midi/instrument_manager.cpp
     audio/audio_recorder.cpp
     nfs/id3_tags.cpp
@@ -61,6 +71,13 @@ add_library(vdj-cdj STATIC
     ui/usb_config_dialog.cpp
     ui/joystick_config_dialog.cpp
     ui/track_browser.cpp
+    ui/sample_tree_model.cpp
+    ui/sampler_icons.cpp
+    ui/beat_chooser.cpp
+    ui/sample_chooser.cpp
+    ui/sampler_module_widget.cpp
+    ui/sampler_panel.cpp
+    ${CMAKE_SOURCE_DIR}/resources.qrc
     ui/track_details.cpp
     ui/track_analysis.cpp
     ui/waveform_delegate.cpp

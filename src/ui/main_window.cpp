@@ -23,6 +23,7 @@
 #include "autoip_status_widget.h"
 #include "bpm_ramp_widget.h"
 #include "hud_window.h"
+#include "sampler_panel.h"
 #include "recording_panel.h"
 #include "pendrive_clone_dialog.h"
 #include "virtual_pendrives_dialog.h"
@@ -334,6 +335,7 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
     if (midiIn_) midiIn_->stop();
+    if (samplerPanel_) samplerPanel_->shutdown();   // its threads read the clock
     delete clock_;
 }
 
@@ -440,7 +442,7 @@ void MainWindow::setupMenus()
 
     QMenu* view = menuBar()->addMenu("&View");
     QAction* fullscr = view->addAction("Full&screen");
-    fullscr->setShortcut(Qt::Key_F11);
+    fullscr->setShortcut(Qt::CTRL | Qt::Key_F11);   // F1..F12 switch the sampler modules
     connect(fullscr, &QAction::triggered, this, [this]() {
         if (isFullScreen()) showNormal();
         else showFullScreen();
@@ -460,6 +462,17 @@ void MainWindow::setupMenus()
         if (!on && playerPanel_->stopButton()->isEnabled())
             playerPanel_->stopButton()->click();   // don't leave a hidden player making noise
         playerPanel_->setVisible(on);
+    });
+
+    QAction* samplerAction = view->addAction("&Sampler");
+    samplerAction->setCheckable(true);
+    samplerAction->setToolTip("The live sampler (bombomatic, stabs, acid loops, one shots, MIDI notes) in time with the VDJ sequencer. "
+                              "Hiding the panel does not stop it.");
+    samplerAction->setChecked(config_->loadValue(QStringLiteral("ui"), QStringLiteral("sampler")) == QLatin1String("1"));
+    connect(samplerAction, &QAction::toggled, this, [this](bool on) {
+        config_->saveValue(QStringLiteral("ui"), QStringLiteral("sampler"), on ? QStringLiteral("1") : QStringLiteral("0"));
+        if (samplerPanel_)
+            samplerPanel_->setVisible(on);
     });
 
     recordAction_ = view->addAction("&Recording Panel");
@@ -947,11 +960,49 @@ void MainWindow::setupDemoDecks()
     playerPanel_ = new PlayerPanel(this);
     playerPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("local_player")) != QLatin1String("0"));
     centralLayout->addWidget(playerPanel_);
+    samplerPanel_ = new SamplerPanel(clock_, ConfigManager::configDir(), this);
+    samplerPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("sampler")) == QLatin1String("1"));
+    {
+        bool ok = false;
+        const double latency = config_->loadValue(QStringLiteral("sampler"), QStringLiteral("latency_ms")).toDouble(&ok);
+        if (ok && latency > 0)
+            samplerPanel_->setLatencyMs(latency);
+        // the sampler plays on the output chosen for the local track player
+        auto syncDevice = [this]() { samplerPanel_->engine()->setDevice(playerPanel_->deviceCombo()->currentData().toString()); };
+        connect(playerPanel_->deviceCombo(), QOverload<int>::of(&QComboBox::currentIndexChanged), this, syncDevice);
+        syncDevice();
+    }
+    for (int i = 0; i < SamplerPanel::kFunctionKeys; ++i) {
+        // window wide, and the panel may be hidden: the sampler keeps playing and can still be switched
+        auto* sc = new QShortcut(QKeySequence(Qt::Key_F1 + i), this);
+        sc->setContext(Qt::WindowShortcut);
+        connect(sc, &QShortcut::activated, this, [this, i]() { samplerPanel_->toggleModuleAt(i); });
+    }
+    connect(samplerPanel_, &SamplerPanel::message, this, [this](const QString& m) { statusBar()->showMessage(m, 5000); });
     bpmRamp_ = new BpmRampWidget(this);
-    centralLayout->addWidget(bpmRamp_);
     connect(bpmRamp_, &BpmRampWidget::rampRequested, this, &MainWindow::startBpmRamp);
     connect(bpmRamp_, &BpmRampWidget::bpmNudged, this, [this](double d) { nudgeLocalBpm(d); });
-    centralLayout->addWidget(splitter, 1);
+    // the sampler sits above the rest in a vertical splitter: drag the handle between them to give it more room for many modules
+    auto* lower = new QWidget(this);
+    auto* lowerLayout = new QVBoxLayout(lower);
+    lowerLayout->setContentsMargins(0, 0, 0, 0);
+    lowerLayout->addWidget(bpmRamp_);
+    lowerLayout->addWidget(splitter, 1);
+    auto* samplerSplit = new QSplitter(Qt::Vertical, this);
+    samplerSplit->setChildrenCollapsible(false);
+    samplerSplit->addWidget(samplerPanel_);
+    samplerSplit->addWidget(lower);
+    samplerSplit->setStretchFactor(0, 0);
+    samplerSplit->setStretchFactor(1, 1);
+    {
+        const int h = config_->loadValue(QStringLiteral("ui"), QStringLiteral("sampler_height")).toInt();
+        samplerSplit->setSizes(QList<int>() << (h >= 120 ? h : 260) << 1000);
+    }
+    connect(samplerSplit, &QSplitter::splitterMoved, this, [this, samplerSplit]() {
+        if (samplerPanel_->isVisible())
+            config_->saveValue(QStringLiteral("ui"), QStringLiteral("sampler_height"), QString::number(samplerSplit->sizes().value(0)));
+    });
+    centralLayout->addWidget(samplerSplit, 1);
     centralLayout->addWidget(nowPlaying_);
     setCentralWidget(central);
 

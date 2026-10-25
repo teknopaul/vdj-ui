@@ -542,6 +542,104 @@ vdj-ui-packet-logger-test/fast:
 .PHONY : vdj-ui-packet-logger-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-basics-test: tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/rule
+.PHONY : vdj-ui-sampler-basics-test
+
+# fast build rule for target.
+vdj-ui-sampler-basics-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build
+.PHONY : vdj-ui-sampler-basics-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-engine-test: tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/rule
+.PHONY : vdj-ui-sampler-engine-test
+
+# fast build rule for target.
+vdj-ui-sampler-engine-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build
+.PHONY : vdj-ui-sampler-engine-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-modules-test: tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/rule
+.PHONY : vdj-ui-sampler-modules-test
+
+# fast build rule for target.
+vdj-ui-sampler-modules-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build
+.PHONY : vdj-ui-sampler-modules-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-stretch-test: tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/rule
+.PHONY : vdj-ui-sampler-stretch-test
+
+# fast build rule for target.
+vdj-ui-sampler-stretch-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build
+.PHONY : vdj-ui-sampler-stretch-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-midi-matic-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-midi-matic-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-midi-matic-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-midi-matic-test: tests/CMakeFiles/vdj-ui-midi-matic-test.dir/rule
+.PHONY : vdj-ui-midi-matic-test
+
+# fast build rule for target.
+vdj-ui-midi-matic-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build
+.PHONY : vdj-ui-midi-matic-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-presets-test: tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/rule
+.PHONY : vdj-ui-sampler-presets-test
+
+# fast build rule for target.
+vdj-ui-sampler-presets-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build
+.PHONY : vdj-ui-sampler-presets-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-ui-test: tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/rule
+.PHONY : vdj-ui-sampler-ui-test
+
+# fast build rule for target.
+vdj-ui-sampler-ui-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build
+.PHONY : vdj-ui-sampler-ui-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -1241,6 +1339,202 @@ vdj-ui-packet-logger-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-packet-logger-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-packet-logger-test_autogen.dir/build
 .PHONY : vdj-ui-packet-logger-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-basics-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sampler-basics-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-basics-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-basics-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-basics-test_autogen: tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/rule
+.PHONY : vdj-ui-sampler-basics-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-basics-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-basics-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-engine-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sampler-engine-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-engine-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-engine-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-engine-test_autogen: tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/rule
+.PHONY : vdj-ui-sampler-engine-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-engine-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-engine-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-modules-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sampler-modules-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-modules-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-modules-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-modules-test_autogen: tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/rule
+.PHONY : vdj-ui-sampler-modules-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-modules-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-modules-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-stretch-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sampler-stretch-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-stretch-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-stretch-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-stretch-test_autogen: tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/rule
+.PHONY : vdj-ui-sampler-stretch-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-stretch-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-stretch-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-midi-matic-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-midi-matic-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-midi-matic-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-midi-matic-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-midi-matic-test_autogen: tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/rule
+.PHONY : vdj-ui-midi-matic-test_autogen
+
+# fast build rule for target.
+vdj-ui-midi-matic-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/build
+.PHONY : vdj-ui-midi-matic-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-presets-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sampler-presets-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-presets-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-presets-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-presets-test_autogen: tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/rule
+.PHONY : vdj-ui-sampler-presets-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-presets-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-presets-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-ui-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sampler-ui-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-ui-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-ui-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sampler-ui-test_autogen: tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/rule
+.PHONY : vdj-ui-sampler-ui-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-ui-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-ui-test_autogen/fast
+
 test_audio.o: test_audio.cpp.o
 .PHONY : test_audio.o
 
@@ -1577,6 +1871,30 @@ test_midi_map_input.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-map-input-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-map-input-test.dir/test_midi_map_input.cpp.s
 .PHONY : test_midi_map_input.cpp.s
 
+test_midi_matic.o: test_midi_matic.cpp.o
+.PHONY : test_midi_matic.o
+
+# target to build an object file
+test_midi_matic.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/test_midi_matic.cpp.o
+.PHONY : test_midi_matic.cpp.o
+
+test_midi_matic.i: test_midi_matic.cpp.i
+.PHONY : test_midi_matic.i
+
+# target to preprocess a source file
+test_midi_matic.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/test_midi_matic.cpp.i
+.PHONY : test_midi_matic.cpp.i
+
+test_midi_matic.s: test_midi_matic.cpp.s
+.PHONY : test_midi_matic.s
+
+# target to generate assembly for a file
+test_midi_matic.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/test_midi_matic.cpp.s
+.PHONY : test_midi_matic.cpp.s
+
 test_nfs_mount.o: test_nfs_mount.cpp.o
 .PHONY : test_nfs_mount.o
 
@@ -1792,6 +2110,150 @@ test_rekordbox.s: test_rekordbox.cpp.s
 test_rekordbox.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rekordbox-test.dir/build.make tests/CMakeFiles/vdj-ui-rekordbox-test.dir/test_rekordbox.cpp.s
 .PHONY : test_rekordbox.cpp.s
+
+test_sampler_basics.o: test_sampler_basics.cpp.o
+.PHONY : test_sampler_basics.o
+
+# target to build an object file
+test_sampler_basics.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/test_sampler_basics.cpp.o
+.PHONY : test_sampler_basics.cpp.o
+
+test_sampler_basics.i: test_sampler_basics.cpp.i
+.PHONY : test_sampler_basics.i
+
+# target to preprocess a source file
+test_sampler_basics.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/test_sampler_basics.cpp.i
+.PHONY : test_sampler_basics.cpp.i
+
+test_sampler_basics.s: test_sampler_basics.cpp.s
+.PHONY : test_sampler_basics.s
+
+# target to generate assembly for a file
+test_sampler_basics.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/test_sampler_basics.cpp.s
+.PHONY : test_sampler_basics.cpp.s
+
+test_sampler_engine.o: test_sampler_engine.cpp.o
+.PHONY : test_sampler_engine.o
+
+# target to build an object file
+test_sampler_engine.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/test_sampler_engine.cpp.o
+.PHONY : test_sampler_engine.cpp.o
+
+test_sampler_engine.i: test_sampler_engine.cpp.i
+.PHONY : test_sampler_engine.i
+
+# target to preprocess a source file
+test_sampler_engine.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/test_sampler_engine.cpp.i
+.PHONY : test_sampler_engine.cpp.i
+
+test_sampler_engine.s: test_sampler_engine.cpp.s
+.PHONY : test_sampler_engine.s
+
+# target to generate assembly for a file
+test_sampler_engine.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/test_sampler_engine.cpp.s
+.PHONY : test_sampler_engine.cpp.s
+
+test_sampler_modules.o: test_sampler_modules.cpp.o
+.PHONY : test_sampler_modules.o
+
+# target to build an object file
+test_sampler_modules.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/test_sampler_modules.cpp.o
+.PHONY : test_sampler_modules.cpp.o
+
+test_sampler_modules.i: test_sampler_modules.cpp.i
+.PHONY : test_sampler_modules.i
+
+# target to preprocess a source file
+test_sampler_modules.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/test_sampler_modules.cpp.i
+.PHONY : test_sampler_modules.cpp.i
+
+test_sampler_modules.s: test_sampler_modules.cpp.s
+.PHONY : test_sampler_modules.s
+
+# target to generate assembly for a file
+test_sampler_modules.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/test_sampler_modules.cpp.s
+.PHONY : test_sampler_modules.cpp.s
+
+test_sampler_presets.o: test_sampler_presets.cpp.o
+.PHONY : test_sampler_presets.o
+
+# target to build an object file
+test_sampler_presets.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/test_sampler_presets.cpp.o
+.PHONY : test_sampler_presets.cpp.o
+
+test_sampler_presets.i: test_sampler_presets.cpp.i
+.PHONY : test_sampler_presets.i
+
+# target to preprocess a source file
+test_sampler_presets.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/test_sampler_presets.cpp.i
+.PHONY : test_sampler_presets.cpp.i
+
+test_sampler_presets.s: test_sampler_presets.cpp.s
+.PHONY : test_sampler_presets.s
+
+# target to generate assembly for a file
+test_sampler_presets.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/test_sampler_presets.cpp.s
+.PHONY : test_sampler_presets.cpp.s
+
+test_sampler_stretch.o: test_sampler_stretch.cpp.o
+.PHONY : test_sampler_stretch.o
+
+# target to build an object file
+test_sampler_stretch.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/test_sampler_stretch.cpp.o
+.PHONY : test_sampler_stretch.cpp.o
+
+test_sampler_stretch.i: test_sampler_stretch.cpp.i
+.PHONY : test_sampler_stretch.i
+
+# target to preprocess a source file
+test_sampler_stretch.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/test_sampler_stretch.cpp.i
+.PHONY : test_sampler_stretch.cpp.i
+
+test_sampler_stretch.s: test_sampler_stretch.cpp.s
+.PHONY : test_sampler_stretch.s
+
+# target to generate assembly for a file
+test_sampler_stretch.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/test_sampler_stretch.cpp.s
+.PHONY : test_sampler_stretch.cpp.s
+
+test_sampler_ui.o: test_sampler_ui.cpp.o
+.PHONY : test_sampler_ui.o
+
+# target to build an object file
+test_sampler_ui.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/test_sampler_ui.cpp.o
+.PHONY : test_sampler_ui.cpp.o
+
+test_sampler_ui.i: test_sampler_ui.cpp.i
+.PHONY : test_sampler_ui.i
+
+# target to preprocess a source file
+test_sampler_ui.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/test_sampler_ui.cpp.i
+.PHONY : test_sampler_ui.cpp.i
+
+test_sampler_ui.s: test_sampler_ui.cpp.s
+.PHONY : test_sampler_ui.s
+
+# target to generate assembly for a file
+test_sampler_ui.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/test_sampler_ui.cpp.s
+.PHONY : test_sampler_ui.cpp.s
 
 test_tracks.o: test_tracks.cpp.o
 .PHONY : test_tracks.o
@@ -2153,6 +2615,30 @@ vdj-ui-midi-map-input-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-map-input-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-map-input-test.dir/vdj-ui-midi-map-input-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-midi-map-input-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-midi-matic-test_autogen/mocs_compilation.o: vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-midi-matic-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-midi-matic-test_autogen/mocs_compilation.i: vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-midi-matic-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-midi-matic-test_autogen/mocs_compilation.s: vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-midi-matic-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-midi-matic-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-nfsmount-test_autogen/mocs_compilation.o: vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-nfsmount-test_autogen/mocs_compilation.o
 
@@ -2369,6 +2855,150 @@ vdj-ui-rekordbox-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rekordbox-test.dir/build.make tests/CMakeFiles/vdj-ui-rekordbox-test.dir/vdj-ui-rekordbox-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-rekordbox-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-sampler-basics-test_autogen/mocs_compilation.o: vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-basics-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sampler-basics-test_autogen/mocs_compilation.i: vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-basics-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sampler-basics-test_autogen/mocs_compilation.s: vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-basics-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-basics-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-sampler-engine-test_autogen/mocs_compilation.o: vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-engine-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sampler-engine-test_autogen/mocs_compilation.i: vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-engine-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sampler-engine-test_autogen/mocs_compilation.s: vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-engine-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-engine-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-sampler-modules-test_autogen/mocs_compilation.o: vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-modules-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sampler-modules-test_autogen/mocs_compilation.i: vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-modules-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sampler-modules-test_autogen/mocs_compilation.s: vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-modules-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-modules-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-sampler-presets-test_autogen/mocs_compilation.o: vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-presets-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sampler-presets-test_autogen/mocs_compilation.i: vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-presets-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sampler-presets-test_autogen/mocs_compilation.s: vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-presets-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-presets-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-sampler-stretch-test_autogen/mocs_compilation.o: vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-stretch-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sampler-stretch-test_autogen/mocs_compilation.i: vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-stretch-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sampler-stretch-test_autogen/mocs_compilation.s: vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-stretch-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-stretch-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-sampler-ui-test_autogen/mocs_compilation.o: vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-ui-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sampler-ui-test_autogen/mocs_compilation.i: vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-ui-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sampler-ui-test_autogen/mocs_compilation.s: vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-ui-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sampler-ui-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-test_autogen/mocs_compilation.o: vdj-ui-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-test_autogen/mocs_compilation.o
 
@@ -2482,6 +3112,8 @@ help:
 	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-midi-map-input-test_autogen"
 	@echo "... vdj-ui-midi-map-input-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-midi-matic-test_autogen"
+	@echo "... vdj-ui-midi-matic-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-packet-logger-test_autogen"
@@ -2500,6 +3132,18 @@ help:
 	@echo "... vdj-ui-rbpresence-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rekordbox-test_autogen"
 	@echo "... vdj-ui-rekordbox-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-basics-test_autogen"
+	@echo "... vdj-ui-sampler-basics-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-engine-test_autogen"
+	@echo "... vdj-ui-sampler-engine-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-modules-test_autogen"
+	@echo "... vdj-ui-sampler-modules-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-presets-test_autogen"
+	@echo "... vdj-ui-sampler-presets-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-stretch-test_autogen"
+	@echo "... vdj-ui-sampler-stretch-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-ui-test_autogen"
+	@echo "... vdj-ui-sampler-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-test_autogen"
 	@echo "... vdj-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-tracks-test_autogen"
@@ -2519,6 +3163,7 @@ help:
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-midi-map-input-test"
+	@echo "... vdj-ui-midi-matic-test"
 	@echo "... vdj-ui-nfsmount-test"
 	@echo "... vdj-ui-packet-logger-test"
 	@echo "... vdj-ui-pendrive-registry-test"
@@ -2528,6 +3173,12 @@ help:
 	@echo "... vdj-ui-rbpanel-test"
 	@echo "... vdj-ui-rbpresence-test"
 	@echo "... vdj-ui-rekordbox-test"
+	@echo "... vdj-ui-sampler-basics-test"
+	@echo "... vdj-ui-sampler-engine-test"
+	@echo "... vdj-ui-sampler-modules-test"
+	@echo "... vdj-ui-sampler-presets-test"
+	@echo "... vdj-ui-sampler-stretch-test"
+	@echo "... vdj-ui-sampler-ui-test"
 	@echo "... vdj-ui-test"
 	@echo "... vdj-ui-tracks-test"
 	@echo "... vdj-ui-wrapper-test"
@@ -2573,6 +3224,9 @@ help:
 	@echo "... test_midi_map_input.o"
 	@echo "... test_midi_map_input.i"
 	@echo "... test_midi_map_input.s"
+	@echo "... test_midi_matic.o"
+	@echo "... test_midi_matic.i"
+	@echo "... test_midi_matic.s"
 	@echo "... test_nfs_mount.o"
 	@echo "... test_nfs_mount.i"
 	@echo "... test_nfs_mount.s"
@@ -2600,6 +3254,24 @@ help:
 	@echo "... test_rekordbox.o"
 	@echo "... test_rekordbox.i"
 	@echo "... test_rekordbox.s"
+	@echo "... test_sampler_basics.o"
+	@echo "... test_sampler_basics.i"
+	@echo "... test_sampler_basics.s"
+	@echo "... test_sampler_engine.o"
+	@echo "... test_sampler_engine.i"
+	@echo "... test_sampler_engine.s"
+	@echo "... test_sampler_modules.o"
+	@echo "... test_sampler_modules.i"
+	@echo "... test_sampler_modules.s"
+	@echo "... test_sampler_presets.o"
+	@echo "... test_sampler_presets.i"
+	@echo "... test_sampler_presets.s"
+	@echo "... test_sampler_stretch.o"
+	@echo "... test_sampler_stretch.i"
+	@echo "... test_sampler_stretch.s"
+	@echo "... test_sampler_ui.o"
+	@echo "... test_sampler_ui.i"
+	@echo "... test_sampler_ui.s"
 	@echo "... test_tracks.o"
 	@echo "... test_tracks.i"
 	@echo "... test_tracks.s"
@@ -2645,6 +3317,9 @@ help:
 	@echo "... vdj-ui-midi-map-input-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-midi-map-input-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-midi-map-input-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-midi-matic-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-midi-matic-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-midi-matic-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.s"
@@ -2672,6 +3347,24 @@ help:
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sampler-basics-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sampler-basics-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sampler-basics-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sampler-engine-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sampler-engine-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sampler-engine-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sampler-modules-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sampler-modules-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sampler-modules-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sampler-presets-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sampler-presets-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sampler-presets-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sampler-stretch-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sampler-stretch-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sampler-stretch-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sampler-ui-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sampler-ui-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sampler-ui-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-test_autogen/mocs_compilation.s"

@@ -725,6 +725,97 @@ vdj-ui-packet-logger-test/fast:
 .PHONY : vdj-ui-packet-logger-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-sampler-basics-test
+
+# Build rule for target.
+vdj-ui-sampler-basics-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-basics-test
+.PHONY : vdj-ui-sampler-basics-test
+
+# fast build rule for target.
+vdj-ui-sampler-basics-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test.dir/build
+.PHONY : vdj-ui-sampler-basics-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-engine-test
+
+# Build rule for target.
+vdj-ui-sampler-engine-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-engine-test
+.PHONY : vdj-ui-sampler-engine-test
+
+# fast build rule for target.
+vdj-ui-sampler-engine-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test.dir/build
+.PHONY : vdj-ui-sampler-engine-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-modules-test
+
+# Build rule for target.
+vdj-ui-sampler-modules-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-modules-test
+.PHONY : vdj-ui-sampler-modules-test
+
+# fast build rule for target.
+vdj-ui-sampler-modules-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test.dir/build
+.PHONY : vdj-ui-sampler-modules-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-stretch-test
+
+# Build rule for target.
+vdj-ui-sampler-stretch-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-stretch-test
+.PHONY : vdj-ui-sampler-stretch-test
+
+# fast build rule for target.
+vdj-ui-sampler-stretch-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test.dir/build
+.PHONY : vdj-ui-sampler-stretch-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-midi-matic-test
+
+# Build rule for target.
+vdj-ui-midi-matic-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-midi-matic-test
+.PHONY : vdj-ui-midi-matic-test
+
+# fast build rule for target.
+vdj-ui-midi-matic-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test.dir/build
+.PHONY : vdj-ui-midi-matic-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-presets-test
+
+# Build rule for target.
+vdj-ui-sampler-presets-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-presets-test
+.PHONY : vdj-ui-sampler-presets-test
+
+# fast build rule for target.
+vdj-ui-sampler-presets-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test.dir/build
+.PHONY : vdj-ui-sampler-presets-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-ui-test
+
+# Build rule for target.
+vdj-ui-sampler-ui-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-ui-test
+.PHONY : vdj-ui-sampler-ui-test
+
+# fast build rule for target.
+vdj-ui-sampler-ui-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test.dir/build
+.PHONY : vdj-ui-sampler-ui-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -1374,6 +1465,188 @@ vdj-ui-packet-logger-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-packet-logger-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-packet-logger-test_autogen.dir/build
 .PHONY : vdj-ui-packet-logger-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-basics-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-basics-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-basics-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-basics-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-basics-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-basics-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-basics-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-basics-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-basics-test_autogen
+.PHONY : vdj-ui-sampler-basics-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-basics-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-basics-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-basics-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-engine-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-engine-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-engine-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-engine-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-engine-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-engine-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-engine-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-engine-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-engine-test_autogen
+.PHONY : vdj-ui-sampler-engine-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-engine-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-engine-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-engine-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-modules-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-modules-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-modules-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-modules-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-modules-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-modules-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-modules-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-modules-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-modules-test_autogen
+.PHONY : vdj-ui-sampler-modules-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-modules-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-modules-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-modules-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-stretch-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-stretch-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-stretch-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-stretch-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-stretch-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-stretch-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-stretch-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-stretch-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-stretch-test_autogen
+.PHONY : vdj-ui-sampler-stretch-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-stretch-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-stretch-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-stretch-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-midi-matic-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-midi-matic-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-midi-matic-test_autogen_timestamp_deps
+.PHONY : vdj-ui-midi-matic-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-midi-matic-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-midi-matic-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-midi-matic-test_autogen
+
+# Build rule for target.
+vdj-ui-midi-matic-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-midi-matic-test_autogen
+.PHONY : vdj-ui-midi-matic-test_autogen
+
+# fast build rule for target.
+vdj-ui-midi-matic-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-midi-matic-test_autogen.dir/build
+.PHONY : vdj-ui-midi-matic-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-presets-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-presets-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-presets-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-presets-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-presets-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-presets-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-presets-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-presets-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-presets-test_autogen
+.PHONY : vdj-ui-sampler-presets-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-presets-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-presets-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-presets-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-ui-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sampler-ui-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-ui-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sampler-ui-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sampler-ui-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sampler-ui-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sampler-ui-test_autogen
+
+# Build rule for target.
+vdj-ui-sampler-ui-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sampler-ui-test_autogen
+.PHONY : vdj-ui-sampler-ui-test_autogen
+
+# fast build rule for target.
+vdj-ui-sampler-ui-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build
+.PHONY : vdj-ui-sampler-ui-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1422,6 +1695,8 @@ help:
 	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-midi-map-input-test_autogen"
 	@echo "... vdj-ui-midi-map-input-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-midi-matic-test_autogen"
+	@echo "... vdj-ui-midi-matic-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-packet-logger-test_autogen"
@@ -1440,6 +1715,18 @@ help:
 	@echo "... vdj-ui-rbpresence-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rekordbox-test_autogen"
 	@echo "... vdj-ui-rekordbox-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-basics-test_autogen"
+	@echo "... vdj-ui-sampler-basics-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-engine-test_autogen"
+	@echo "... vdj-ui-sampler-engine-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-modules-test_autogen"
+	@echo "... vdj-ui-sampler-modules-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-presets-test_autogen"
+	@echo "... vdj-ui-sampler-presets-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-stretch-test_autogen"
+	@echo "... vdj-ui-sampler-stretch-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sampler-ui-test_autogen"
+	@echo "... vdj-ui-sampler-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-test_autogen"
 	@echo "... vdj-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-tracks-test_autogen"
@@ -1467,6 +1754,7 @@ help:
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-midi-map-input-test"
+	@echo "... vdj-ui-midi-matic-test"
 	@echo "... vdj-ui-nfsmount-test"
 	@echo "... vdj-ui-packet-logger-test"
 	@echo "... vdj-ui-pendrive-registry-test"
@@ -1476,6 +1764,12 @@ help:
 	@echo "... vdj-ui-rbpanel-test"
 	@echo "... vdj-ui-rbpresence-test"
 	@echo "... vdj-ui-rekordbox-test"
+	@echo "... vdj-ui-sampler-basics-test"
+	@echo "... vdj-ui-sampler-engine-test"
+	@echo "... vdj-ui-sampler-modules-test"
+	@echo "... vdj-ui-sampler-presets-test"
+	@echo "... vdj-ui-sampler-stretch-test"
+	@echo "... vdj-ui-sampler-ui-test"
 	@echo "... vdj-ui-test"
 	@echo "... vdj-ui-tracks-test"
 	@echo "... vdj-ui-wrapper-test"

@@ -33,6 +33,11 @@ bool AlsaClock::open(const QString& clientName, QString* error)
         SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
     if (port_ < 0)
         return fail(QStringLiteral("cannot create the ALSA clock port"));
+    samplerPort_ = snd_seq_create_simple_port(seq_, "Sampler MIDI",
+        SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ,
+        SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
+    if (samplerPort_ < 0)
+        return fail(QStringLiteral("cannot create the ALSA sampler port"));
     queue_ = snd_seq_alloc_named_queue(seq_, "vdj-ui clock");
     if (queue_ < 0)
         return fail(QStringLiteral("cannot create the ALSA queue"));
@@ -78,7 +83,7 @@ void AlsaClock::close()
         snd_seq_free_queue(seq_, queue_);
     snd_seq_close(seq_);
     seq_ = nullptr;
-    client_ = port_ = queue_ = -1;
+    client_ = port_ = samplerPort_ = queue_ = -1;
 }
 
 bool AlsaClock::applyTempo(double bpmValue, double extraMicros)
@@ -178,6 +183,32 @@ static void sendNow(snd_seq_t* seq, int port, snd_seq_event_type_t type)
     snd_seq_ev_set_direct(&ev);
     snd_seq_event_output(seq, &ev);
     snd_seq_drain_output(seq);
+}
+
+bool AlsaClock::sendSamplerMidi(int kind, int channel, int note, int velocity, qint64 tick, int destClient, int destPort)
+{
+    if (!seq_ || samplerPort_ < 0)
+        return false;
+    std::lock_guard<std::mutex> lock(mutex_);
+    snd_seq_event_t ev;
+    snd_seq_ev_clear(&ev);
+    snd_seq_ev_set_source(&ev, samplerPort_);
+    if (destClient >= 0)
+        snd_seq_ev_set_dest(&ev, static_cast<unsigned char>(destClient), static_cast<unsigned char>(destPort));
+    else
+        snd_seq_ev_set_subs(&ev);
+    channel = std::clamp(channel, 0, 15);
+    switch (kind) {
+    case 0: snd_seq_ev_set_noteon(&ev, channel, std::clamp(note, 0, 127), std::clamp(velocity, 1, 127)); break;
+    case 1: snd_seq_ev_set_noteoff(&ev, channel, std::clamp(note, 0, 127), 0); break;
+    case 2: snd_seq_ev_set_controller(&ev, channel, 123, 0); break;
+    default: return false;
+    }
+    snd_seq_ev_schedule_tick(&ev, queue_, 0, static_cast<snd_seq_tick_time_t>(std::max<qint64>(0, tick)));
+    if (snd_seq_event_output(seq_, &ev) < 0)
+        return false;
+    snd_seq_drain_output(seq_);
+    return true;
 }
 
 void AlsaClock::start()

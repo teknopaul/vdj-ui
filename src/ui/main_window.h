@@ -34,6 +34,7 @@ class DiffLockBar;
 class AutoipStatusWidget;
 class BpmRampWidget;
 class HudWindow;
+class SamplerPanel;
 class RecordingPanel;
 class AudioRecorder;
 class InstrumentManager;
@@ -146,6 +147,7 @@ private:
     TrackBrowser* trackBrowser_;
     NowPlaying* nowPlaying_;
     PlayerPanel* playerPanel_ = nullptr;
+    SamplerPanel* samplerPanel_ = nullptr;
     DebugPanel* debugPanel_;
     QDockWidget* debugDock_;
     bool debugMode_ = false;

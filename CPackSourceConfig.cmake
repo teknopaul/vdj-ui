@@ -38,7 +38,7 @@ set(CPACK_OUTPUT_CONFIG_FILE "/home/teknopaul/bzr_workspace/vdj-ui/CPackConfig.c
 set(CPACK_PACKAGE_CONTACT "vdj <vdj@localhost>")
 set(CPACK_PACKAGE_DEFAULT_LOCATION "/")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "/usr/share/cmake-3.28/Templates/CPack.GenericDescription.txt")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Qt GUI for Virtual DJ - renders ProLink beat grids")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Virtual DJ - for syncing midi drum machines to Pioneer decks")
 set(CPACK_PACKAGE_FILE_NAME "vdj-ui-0.1.0-Source")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "vdj-ui 0.1.0")
 set(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "vdj-ui 0.1.0")

@@ -57,6 +57,32 @@ The interface for the decks is asked once and saved; Config > *Forget Saved Netw
 whoever assigned it). When AutoIP gets no address in time and NetworkManager is present, vdj-ui offers to enable link-local on the connection with `nmcli`
 (`ipv4.link-local enabled`, left enabled afterwards). Config > *Application Font...* sets the font for the whole app (default Liberation Sans, package `fonts-liberation`).
 
+### Sampler
+
+*View > Sampler* shows the live sampler. It plays in time with the VDJ sequencer (the clock the decks follow), so it is silent while the
+sequencer is stopped. Hiding the panel does not stop it. Samples are `.wav` files; *Sample folder...* chooses the folder shown in the tree
+(double click a file to hear it). *Add module* adds any number of:
+
+- **Bombomatic**: the sample on every beat (a kick to keep the beat through a breakdown).
+- **Dembomatik**: the dembow kick. The bar is cut into 16 equal parts and the sample plays on `X . . X . . X . X . . . . X . .` (parts 1, 4, 7, 9
+  and 14). *1 bar* plays one bar of it.
+- **Stab player**: the sample on the beats of the bar you choose (the round buttons: red = on, yellow = off). *Reverse sync* makes the sample
+  end on the beat instead of starting on it. *1 bar* (green) plays exactly one bar from the next bar line, even when the module is switched off.
+- **Acid loop**: a sample that is a 4 beat loop, time-stretched to the sequencer's BPM and started on the bar line. *1 bar* plays one pass.
+  The loop's BPM comes from the file (`acid` chunk, or `128bpm` in the name) or the BPM box; with none it is assumed to be 4 beats long.
+- **One shot**: *Fire* plays the sample once, on the next beat (*Quantize*) and stretched to the BPM when it is known (*Stretch*).
+- **MIDI matic**: a MIDI note on the chosen beats to an ALSA port (device, channel, note). It leaves the *Sampler MIDI* port of the `vdj-ui`
+  ALSA client; with no device chosen it goes to whatever is connected to that port.
+
+Every module has a name, an on/off switch and an **offset** of +/- 80 ms to the beat. The arrows next to a sample name step to the previous /
+next `.wav` of the same folder (ASCIIbetical); the new sample is used from the module's next hit, so you can flick through kicks live.
+*Preset* saves and loads the whole set-up (modules, settings, folder, volume) as JSON in the config folder (`sampler-presets/`); the
+working state is kept in `sampler-current.json` and comes back at the next start.
+
+The sampler plays on the output chosen for the Local Track Player. Sounds are rendered ahead of the beat by the sound server's buffer,
+40 ms by default; if the kick sounds early or late put `latency_ms=40` (change the number) in `sampler.conf` in the config folder. In debug mode (*View > Debug Panel*)
+each sound start is logged with how far it was rendered from its scheduled time (a few microseconds is normal).
+
 ### Exporting a pendrive to the decks (LINK export)
 
 Network > *Export the Loaded Database as a LINK Player* makes vdj-ui serve the rekordbox database open in the browser (a pendrive or export folder) to the

@@ -145,3 +145,38 @@ add_executable(vdj-ui-packet-logger-test test_packet_logger.cpp)
 target_link_libraries(vdj-ui-packet-logger-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-packet-logger-test COMMAND vdj-ui-packet-logger-test)
 set_tests_properties(vdj-ui-packet-logger-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-sampler-basics-test test_sampler_basics.cpp)
+target_link_libraries(vdj-ui-sampler-basics-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-sampler-basics-test COMMAND vdj-ui-sampler-basics-test)
+set_tests_properties(vdj-ui-sampler-basics-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-sampler-engine-test test_sampler_engine.cpp)
+target_link_libraries(vdj-ui-sampler-engine-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-sampler-engine-test COMMAND vdj-ui-sampler-engine-test)
+set_tests_properties(vdj-ui-sampler-engine-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-sampler-modules-test test_sampler_modules.cpp)
+target_link_libraries(vdj-ui-sampler-modules-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-sampler-modules-test COMMAND vdj-ui-sampler-modules-test)
+set_tests_properties(vdj-ui-sampler-modules-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-sampler-stretch-test test_sampler_stretch.cpp)
+target_link_libraries(vdj-ui-sampler-stretch-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-sampler-stretch-test COMMAND vdj-ui-sampler-stretch-test)
+set_tests_properties(vdj-ui-sampler-stretch-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-midi-matic-test test_midi_matic.cpp)
+target_link_libraries(vdj-ui-midi-matic-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-midi-matic-test COMMAND vdj-ui-midi-matic-test)
+set_tests_properties(vdj-ui-midi-matic-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-sampler-presets-test test_sampler_presets.cpp)
+target_link_libraries(vdj-ui-sampler-presets-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-sampler-presets-test COMMAND vdj-ui-sampler-presets-test)
+set_tests_properties(vdj-ui-sampler-presets-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-sampler-ui-test test_sampler_ui.cpp)
+target_link_libraries(vdj-ui-sampler-ui-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-sampler-ui-test COMMAND vdj-ui-sampler-ui-test)
+set_tests_properties(vdj-ui-sampler-ui-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

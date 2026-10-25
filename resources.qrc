@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="img/button-red.png">img/button-red-24.png</file>
+        <file alias="img/button-yellow.png">img/button-yellow-24.png</file>
+        <file alias="img/button-grey.png">img/button-grey-24.png</file>
+        <file alias="img/button-green.png">img/button-green-24.png</file>
+    </qresource>
+</RCC>

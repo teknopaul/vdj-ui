@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="64"
+   height="64"
+   viewBox="0 0 16.933333 16.933333"
+   version="1.1"
+   id="svg349"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="button-BD-on.svg"
+   inkscape:export-filename="button-OH.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview351"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="true"
+     showguides="true"
+     inkscape:zoom="6.2247095"
+     inkscape:cx="22.169709"
+     inkscape:cy="85.546161"
+     inkscape:window-width="2494"
+     inkscape:window-height="1531"
+     inkscape:window-x="2560"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid477" />
+  </sodipodi:namedview>
+  <defs
+     id="defs346">
+    <rect
+       x="7.7233247"
+       y="7.4083824"
+       width="49.813138"
+       height="51.462367"
+       id="rect1069" />
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient4534">
+      <stop
+         style="stop-color:#9f9f9f;stop-opacity:0.23338081;"
+         offset="0"
+         id="stop4530" />
+      <stop
+         style="stop-color:#616161;stop-opacity:0.24020088;"
+         offset="1"
+         id="stop4532" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4534"
+       id="linearGradient4536"
+       x1="7.9375"
+       y1="1.3229166"
+       x2="7.9375"
+       y2="15.875"
+       gradientUnits="userSpaceOnUse" />
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter5633"
+       x="-0.083734237"
+       y="-0.083734239"
+       width="1.1674685"
+       height="1.1674685">
+      <feGaussianBlur
+         stdDeviation="0.01 0.01"
+         result="fbSourceGraphic"
+         id="feGaussianBlur5631" />
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix5635" />
+      <feGaussianBlur
+         id="feGaussianBlur5637"
+         stdDeviation="0.11 0.11"
+         result="blur"
+         in="fbSourceGraphic" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter6367"
+       x="-0.076756391"
+       y="-0.076756384"
+       width="1.1535128"
+       height="1.1535128">
+      <feGaussianBlur
+         stdDeviation="0.11 0.11"
+         result="blur"
+         id="feGaussianBlur6365" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter7097"
+       x="-0.076756391"
+       y="-0.076756391"
+       width="1.1535128"
+       height="1.1535128">
+      <feGaussianBlur
+         stdDeviation="0.11 0.11"
+         result="blur"
+         id="feGaussianBlur7095" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter7827"
+       x="-0.076756386"
+       y="-0.076756391"
+       width="1.1535128"
+       height="1.1535128">
+      <feGaussianBlur
+         stdDeviation="0.11 0.11"
+         result="blur"
+         id="feGaussianBlur7825" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter9330"
+       x="-0.018141733"
+       y="-0.018141733"
+       width="1.0362835"
+       height="1.0362835">
+      <feGaussianBlur
+         stdDeviation="0.11 0.11"
+         result="blur"
+         id="feGaussianBlur9328" />
+    </filter>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g468">
+      <g
+         id="g464" />
+    </g>
+    <rect
+       style="fill:#462369;stroke-width:0.165;fill-opacity:1;stroke:#000000;stroke-opacity:1;stroke-dasharray:none"
+       id="rect479"
+       width="16.404167"
+       height="16.404167"
+       x="0.26458332"
+       y="0.26458332"
+       ry="3.7041667" />
+    <path
+       id="rect481"
+       style="fill:#ccc9cc;fill-opacity:1;stroke-width:0.264583"
+       d="M 4.2418347 0.80238138 C 4.3264294 0.79665795 4.4118211 0.79374999 4.4979166 0.79374999 L 4.4979166 0.79374999 L 12.435417 0.79374999 C 12.521513 0.79374999 12.606904 0.79665795 12.691499 0.80238139 " />
+    <path
+       id="path4242"
+       style="fill:#ffffff;fill-opacity:0.74273527;stroke-width:0.264583;filter:url(#filter5633)"
+       d="M 0.80238139 4.2418346 C 0.92735393 2.3946897 2.3946897 0.9273539 4.2418347 0.80238138 " />
+    <path
+       id="path4240"
+       style="fill:#ccc9cc;fill-opacity:1;stroke-width:0.264583"
+       d="M 0.80238138 12.691499 C 0.79665795 12.606904 0.79374999 12.521513 0.79374999 12.435417 L 0.79374999 4.4979166 C 0.79374999 4.4118211 0.79665795 4.3264294 0.80238139 4.2418346 " />
+    <path
+       id="path4238"
+       style="fill:#ccc9cc;fill-opacity:0.59902149;stroke-width:0.264583;filter:url(#filter7827)"
+       d="M 4.2418346 16.130952 C 2.3946897 16.00598 0.9273539 14.538644 0.80238138 12.691499 " />
+    <path
+       id="path4236"
+       style="fill:#ccc9cc;fill-opacity:1;stroke-width:0.264583"
+       d="M 12.691499 16.130952 C 12.606904 16.136676 12.521513 16.139584 12.435417 16.139584 L 4.4979166 16.139584 C 4.4118211 16.139584 4.3264294 16.136676 4.2418346 16.130952 " />
+    <path
+       id="path4234"
+       style="fill:#6e676e;fill-opacity:0.27641284;stroke-width:0.264583;filter:url(#filter7097)"
+       d="M 16.130952 12.691499 C 16.00598 14.538644 14.538644 16.00598 12.691499 16.130952 " />
+    <path
+       id="path4232"
+       style="fill:#ccc9cc;fill-opacity:1;stroke-width:0.264583"
+       d="M 16.130952 4.2418347 C 16.136676 4.3264294 16.139584 4.4118211 16.139584 4.4979166 L 16.139584 12.435417 C 16.139584 12.521513 16.136676 12.606904 16.130952 12.691499 " />
+    <path
+       id="path4230"
+       style="fill:#ccc9cc;fill-opacity:0.65649068;stroke-width:0.264583;filter:url(#filter6367)"
+       d="M 12.691499 0.80238139 C 14.538644 0.92735393 16.00598 2.3946897 16.130952 4.2418347 " />
+    <rect
+       style="fill:url(#linearGradient4536);fill-opacity:1;stroke:none;stroke-width:0.165;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter9330)"
+       id="rect4297"
+       width="14.552083"
+       height="14.552083"
+       x="1.3229166"
+       y="1.3229166"
+       ry="3.7041667" />
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text1067"
+       style="white-space:pre;shape-inside:url(#rect1069);display:inline;fill:#7a19d7;fill-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:9.52454px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0.793711"
+       x="1.8043429"
+       y="11.645544"
+       id="text1075"><tspan
+         sodipodi:role="line"
+         id="tspan1073"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:9.52454px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#ffffff;fill-opacity:1;stroke-width:0.793711"
+         x="1.8043429"
+         y="11.645544">BD</tspan></text>
+  </g>
+</svg>

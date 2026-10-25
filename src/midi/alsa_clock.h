@@ -57,6 +57,13 @@ public:
     // Names of the ALSA clients subscribed to the clock port (the drum machines / synths following us).
     QStringList subscriberNames() const;
 
+    // A second output port, "Sampler MIDI", for the sampler's MidiMatic notes: notes are scheduled on the same queue as the clock,
+    // by absolute tick (96 per beat, beat 0 = the last start()), so they are as steady as the clock. kind: 0 note on,
+    // 1 note off, 2 all notes off (CC 123); channel 0..15. To the ALSA address destClient:destPort, or to whoever is subscribed to
+    // the port when destClient < 0. False when closed or the event could not be queued.
+    bool sendSamplerMidi(int kind, int channel, int note, int velocity, qint64 tick, int destClient, int destPort);
+    int samplerPortId() const { return samplerPort_; }
+
     int clientId() const { return client_; }
     int portId() const { return port_; }
 
@@ -68,6 +75,7 @@ private:
     snd_seq_t* seq_ = nullptr;
     int client_ = -1;
     int port_ = -1;
+    int samplerPort_ = -1;
     int queue_ = -1;
     std::atomic<double> bpm_{ 120.0 };
     std::atomic<bool> running_{ false };
