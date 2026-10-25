@@ -20,5 +20,5 @@ tempo_dec_1     1   N     13    # tempo -1.0
 tempo_dec       1   N     14    # tempo -0.1
 tempo_dec_min   1   N     15    # tempo -0.01
 
-copy_master     1   N     16    # copy BPM from master deck
-become_master   1   N     17    # become tempo master
+copy_master     1   N     31    # copy BPM from master deck (Sync screen button)
+become_master   1   N     30    # become tempo master       (Master screen button)

@@ -40,8 +40,16 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
     barPosSpin_->hide();
 
     // Static BPM readout used in place of the BPM editor on remote decks.
-    bpmValueLabel_ = new QLabel(QStringLiteral("BPM %1").arg(bpmSpin_->value(), 0, 'f', 2), this);
+    bpmValueLabel_ = new QLabel(QString::number(bpmSpin_->value(), 'f', 2), this);
+    bpmValueLabel_->setToolTip(QStringLiteral("The BPM the deck reports"));
     bpmValueLabel_->setVisible(false);
+    measuredLabel_ = new QLabel(this);
+    measuredLabel_->setToolTip(QStringLiteral("The BPM measured from the timing of the deck's beat packets"));
+    measuredLabel_->setVisible(false);
+    sequencerLabel_ = new QLabel(this);
+    sequencerLabel_->setToolTip(QStringLiteral("The BPM of the ALSA sequencer (MIDI clock) the drum machines follow; "
+                                               "the value to the left is what is sent on the link"));
+    sequencerLabel_->setVisible(false);
 
     layout->addWidget(playPause_);
     layout->addWidget(sync_);
@@ -52,6 +60,8 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
     layout->addWidget(bpmLabel);
     layout->addWidget(bpmSpin_);
     layout->addWidget(bpmValueLabel_);
+    layout->addWidget(measuredLabel_);
+    layout->addWidget(sequencerLabel_);
     layout->addStretch(1);
 
     connect(playPause_, &QPushButton::toggled, this, [this](bool on) {
@@ -80,9 +90,25 @@ void DeckControls::setBpm(double bpm)
 {
     if (bpm > 0) {
         bpmSpin_->setValue(bpm);
-        bpmValueLabel_->setText(QStringLiteral("BPM %1").arg(bpm, 0, 'f', 2));
+        bpmValueLabel_->setText(QString::number(bpm, 'f', 2));
     }
 }
+
+void DeckControls::setMeasuredBpm(double bpm)
+{
+    measuredLabel_->setText(bpm > 0 ? QStringLiteral("measured %1").arg(bpm, 0, 'f', 3) : QString());
+    measuredLabel_->setVisible(remote_ && bpm > 0);
+}
+
+QString DeckControls::measuredText() const { return measuredLabel_->text(); }
+
+void DeckControls::setSequencerBpm(double bpm)
+{
+    sequencerLabel_->setText(bpm > 0 ? QStringLiteral("seq %1").arg(bpm, 0, 'f', 3) : QString());
+    sequencerLabel_->setVisible(!remote_ && bpm > 0);
+}
+
+QString DeckControls::sequencerText() const { return sequencerLabel_->text(); }
 
 double DeckControls::bpm() const
 {
@@ -115,14 +141,16 @@ void DeckControls::setRemote(bool remote)
     // available (it adopts that deck's tempo into the local VDJ).
     playPause_->setVisible(!remote);
     sync_->setVisible(true);   // remote decks: Sync difflocks the VDJ sequencer to that deck
-    sync_->setToolTip(remote ? QStringLiteral("Difflock the VDJ sequencer to this deck's beat")
+    sync_->setToolTip(remote ? QStringLiteral("Sync the VDJ to this deck")
                              : QStringLiteral("Sync the VDJ to the master"));
     becomeMaster_->setVisible(!remote);
     broadcastBeat_->setVisible(!remote);
     bpmSpin_->setVisible(!remote);
     barPosSpin_->setVisible(!remote);
     bpmValueLabel_->setVisible(remote);
-    bpmValueLabel_->setText(QStringLiteral("BPM %1").arg(bpm(), 0, 'f', 2));
+    bpmValueLabel_->setText(QString::number(bpm(), 'f', 2));
+    if (remote) sequencerLabel_->setVisible(false);
+    else measuredLabel_->setVisible(false);
 }
 
 bool DeckControls::bpmEditable() const

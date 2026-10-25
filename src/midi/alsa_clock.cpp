@@ -40,6 +40,34 @@ bool AlsaClock::open(const QString& clientName, QString* error)
     return setBpm(bpm_);
 }
 
+QStringList AlsaClock::subscriberNames() const
+{
+    QStringList names;
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!seq_ || port_ < 0)
+        return names;
+    snd_seq_query_subscribe_t* q;
+    snd_seq_query_subscribe_alloca(&q);
+    snd_seq_addr_t root;
+    root.client = static_cast<unsigned char>(client_);
+    root.port = static_cast<unsigned char>(port_);
+    snd_seq_query_subscribe_set_root(q, &root);
+    snd_seq_query_subscribe_set_type(q, SND_SEQ_QUERY_SUBS_READ);
+    snd_seq_query_subscribe_set_index(q, 0);
+    while (snd_seq_query_port_subscribers(seq_, q) >= 0) {
+        const snd_seq_addr_t* dest = snd_seq_query_subscribe_get_addr(q);
+        snd_seq_client_info_t* ci;
+        snd_seq_client_info_alloca(&ci);
+        if (snd_seq_get_any_client_info(seq_, dest->client, ci) >= 0) {
+            const QString name = QString::fromUtf8(snd_seq_client_info_get_name(ci));
+            if (!names.contains(name))
+                names << name;
+        }
+        snd_seq_query_subscribe_set_index(q, snd_seq_query_subscribe_get_index(q) + 1);
+    }
+    return names;
+}
+
 void AlsaClock::close()
 {
     if (!seq_)
@@ -61,6 +89,12 @@ bool AlsaClock::applyTempo(double bpmValue, double extraMicros)
     snd_seq_queue_tempo_set_tempo(tempo, static_cast<unsigned int>(std::lround(micros)));
     snd_seq_queue_tempo_set_ppq(tempo, kPpq);
     return snd_seq_set_queue_tempo(seq_, queue_, tempo) == 0;
+}
+
+double AlsaClock::effectiveBpm() const
+{
+    const double bpm = bpm_;
+    return 60000000.0 / std::max(1000.0, std::round(60000000.0 / bpm));
 }
 
 bool AlsaClock::setBpm(double bpm)
@@ -201,13 +235,14 @@ void AlsaClock::loop()
 {
     constexpr snd_seq_tick_time_t kStep = kPpq / kClocksPerBeat;   // ticks between clock pulses
     snd_seq_tick_time_t next = 0;
+    // alloca() is only released when the function returns: allocated inside the loop (every 2 ms) it overflowed the thread's stack after a couple of minutes
+    snd_seq_queue_status_t* st;
+    snd_seq_queue_status_alloca(&st);
     while (!quit_) {
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (!seq_)
                 return;
-            snd_seq_queue_status_t* st;
-            snd_seq_queue_status_alloca(&st);
             snd_seq_tick_time_t now = 0;
             if (snd_seq_get_queue_status(seq_, queue_, st) == 0)
                 now = snd_seq_queue_status_get_tick_time(st);

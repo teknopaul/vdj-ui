@@ -68,6 +68,14 @@ participate as a VDJ in sync, NFS read, and NFS publish. The Network > AutoIP
 menu item starts the avahi-autoipd based link-local address helper (via a polkit
 GUI prompt for root). NFS mounts from connected players are managed
 automatically and released on shutdown.
+.SH LINK EXPORT
+The drive viewer has a tool bar with the virtual and plugged\-in pendrives, \fBUSB STOP\fR and \fBInsert\fR: Insert exports the chosen pendrive to the decks, USB STOP unmounts it like the
+button on a deck (dimmed when a deck uses the stick). The decks follow the switching only when \fBvdj\-ui\fR announces itself as an XDJ, so start it with \fBVDJ_UI_MODEL=XDJ\fR.
+The network interface is asked once and saved (Config > Forget Saved Network Interface); Config > Application Font sets the font. See doc/link\-export.md.
+.SH ENVIRONMENT
+.TP
+.B VDJ_UI_MODEL
+\fBXDJ\fR announces the virtual player as an XDJ\-700 (keep\-alive type and the 284\-byte status packet); needed for USB STOP / Insert. Default: CDJ\-1000.
 .SH FILES
 .TP
 .B /etc/vdj-ui/

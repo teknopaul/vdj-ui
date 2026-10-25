@@ -2,6 +2,7 @@
 #include "debug/packet_logger.h"
 #include "network/link_export.h"
 #include <arpa/inet.h>
+#include <chrono>
 #include <cstring>
 #include <QCoreApplication>
 #include <QDateTime>
@@ -60,17 +61,19 @@ static void onUpdate(vdj_t* v, cdj_cdj_status_packet_t* cs_pkt)
     int active = cdj_status_active(cs_pkt);
     nm->noteRemoteLoad(pid, cdj_status_playing_from(cs_pkt), cdj_status_playing_from_slot(cs_pkt), cdj_status_track_type(cs_pkt));
 
-    QString detail = QStringLiteral("p%1 bpm=%2 pitch=%3 flags=0x%4 master=%5 "
-                                    "active=%6 track=%7 model=%8")
-        .arg(pid)
-        .arg(bpm, 0, 'f', 2)
-        .arg(pitch)
-        .arg(flags, 0, 16)
-        .arg(masterState)
-        .arg(active)
-        .arg(cdj_status_track_id(cs_pkt))
-        .arg(QString::fromUtf8(cdj_status_model(cs_pkt)));
-    PacketLogger::instance().log(QStringLiteral("UPDATE"), detail);
+    if (PacketLogger::instance().packetLevel()) {
+        const QString detail = QStringLiteral("p%1 bpm=%2 pitch=%3 flags=0x%4 master=%5 "
+                                              "active=%6 track=%7 model=%8")
+            .arg(pid)
+            .arg(bpm, 0, 'f', 2)
+            .arg(pitch)
+            .arg(flags, 0, 16)
+            .arg(masterState)
+            .arg(active)
+            .arg(cdj_status_track_id(cs_pkt))
+            .arg(QString::fromUtf8(cdj_status_model(cs_pkt)));
+        PacketLogger::instance().log(QStringLiteral("UPDATE"), detail);
+    }
 
     // the lib's update handler has already folded this packet into the backline (sync counter, master id): we now know what
     // the link agrees on. Real players start their status within a second of joining (capture prolink-3-boots), so do not wait
@@ -88,15 +91,19 @@ static void onBeat(vdj_t* v, cdj_beat_packet_t* b_pkt)
     NetworkManager* nm = instanceFrom(v);
     if (!nm) return;
     const double sequencerOffset = nm->sequencerOffsetNow();   // read first: the delivery to the GUI thread adds delay
+    const qint64 arrivedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
     int pid = cdj_beat_player_id(b_pkt);
     double bpm = cdj_beat_calculated_bpm(b_pkt);
     int barPos = cdj_beat_bar_pos(b_pkt);
 
-    PacketLogger::instance().log(QStringLiteral("BEAT"),
-        QStringLiteral("p%1 bpm=%2 bar=%3")
-            .arg(pid).arg(bpm, 0, 'f', 2).arg(barPos));
+    if (PacketLogger::instance().packetLevel())
+        PacketLogger::instance().log(QStringLiteral("BEAT"),
+            QStringLiteral("p%1 bpm=%2 bar=%3")
+                .arg(pid).arg(bpm, 0, 'f', 2).arg(barPos));
 
     emit nm->beatReceived(pid, bpm, barPos, sequencerOffset);
+    emit nm->beatTimed(pid, barPos, arrivedNs);
 }
 
 static void onBeatUnicast(vdj_t* v, cdj_beat_packet_t* b_pkt)
@@ -128,11 +135,11 @@ void onDiscovery(vdj_t* v, cdj_discovery_packet_t* d_pkt)
     }
 
     QString model = QString::fromUtf8(cdj_discovery_model(d_pkt));
-    QString detail = QStringLiteral("p%1 model=%2 ip=%3")
-        .arg(pid)
-        .arg(model)
-        .arg(ip.isEmpty() ? QStringLiteral("?") : ip);
-    PacketLogger::instance().log(QStringLiteral("DISCOVERY"), detail);
+    if (PacketLogger::instance().packetLevel())
+        PacketLogger::instance().log(QStringLiteral("DISCOVERY"), QStringLiteral("p%1 model=%2 ip=%3")
+            .arg(pid)
+            .arg(model)
+            .arg(ip.isEmpty() ? QStringLiteral("?") : ip));
 
     // Not while we join: the GUI only sets its deck rows up in the connected() handler, which would throw these away. The next
     // keepalive of the deck (2 s) announces it.

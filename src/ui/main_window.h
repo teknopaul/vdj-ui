@@ -5,6 +5,9 @@
 #include <QFont>
 #include <QVector>
 #include <QElapsedTimer>
+#include <QStringList>
+#include <map>
+#include "network/beat_tempo.h"
 #include "midi/diff_lock.h"
 
 class QLabel;
@@ -34,6 +37,7 @@ class HudWindow;
 class RecordingPanel;
 class AudioRecorder;
 class InstrumentManager;
+class MidiMonitorDialog;
 class MidiRouter;
 class MidiMapInput;
 class PendriveRegistry;       // src/export/pendrive_registry.h
@@ -105,7 +109,7 @@ private:
     void setupMidi();
     void setupRecording();
     void startMidiMap(const QString& path);
-    void chooseMidiMap();
+    void applyMidiMap();
     QString defaultMidiMapPath() const;
     void setVdjTransport(bool playing);
     void startBpmRamp(double targetBpm, int bars);
@@ -177,6 +181,10 @@ private:
     RecordingPanel* recordingPanel_ = nullptr;
     MidiRouter* midiRouter_ = nullptr;
     InstrumentManager* instruments_ = nullptr;
+    MidiMonitorDialog* midiMonitor_ = nullptr;
+    QElapsedTimer followersClock_;       // throttles the ALSA subscriber query
+    QStringList followerNames_;
+    std::map<int, BeatTempo> beatTempo_;   // per deck: tempo measured from the beat packets
     MidiMapInput* midiIn_ = nullptr;
     QLabel* statusDecks_;
     QTimer* demoClock_;

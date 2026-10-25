@@ -30,6 +30,7 @@
 #include "export/pendrive_registry.h"
 #include "network/link_export.h"
 #include "instrument_config_dialog.h"
+#include "midi_monitor_dialog.h"
 #include "audio/audio_recorder.h"
 #include "midi/instrument_manager.h"
 #include "midi/midi_map_input.h"
@@ -42,8 +43,10 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFontDialog>
+#include <QDialogButtonBox>
 #include <QProcess>
 #include <QFileInfo>
+#include <QPixmap>
 #include <QPushButton>
 #include <QApplication>
 #include <QCoreApplication>
@@ -213,6 +216,10 @@ MainWindow::MainWindow(QWidget* parent)
         if (deck) {
             bool playing = (flags & CDJ_STAT_FLAG_PLAY) != 0;
             deck->setPlaying(playing);
+            if (!playing && !isVdjDeck(pid)) {       // a stopped deck sends no beats: do not leave a stale reading
+                beatTempo_[pid].reset();
+                deck->setMeasuredBpm(0.0);
+            }
             deck->setMaster(masterState != 0);
             deck->setSync((flags & CDJ_STAT_FLAG_SYNC) != 0);
             if (bpm > 0)
@@ -250,6 +257,13 @@ MainWindow::MainWindow(QWidget* parent)
         if (nowPlaying_)
             nowPlaying_->setBpm(bpm);
     });
+    QObject::connect(network_, &NetworkManager::beatTimed, this, [this](int pid, int barPos, qint64 steadyNs) {
+        if (isVdjDeck(pid)) return;                  // ours: the ALSA sequencer's tempo is shown instead
+        BeatTempo& tempo = beatTempo_[pid];
+        tempo.addBeat(barPos, steadyNs);
+        if (auto* deck = deckAt(pid))
+            deck->setMeasuredBpm(tempo.bpm());
+    });
     QObject::connect(network_, &NetworkManager::deckJoined, this,
                      [this](int pid, const QString& ip, const QString& model) {
         if (isVdjDeck(pid) || pid == int(network_->localPlayerId()))
@@ -263,6 +277,7 @@ MainWindow::MainWindow(QWidget* parent)
         statusDecks_->setText(QString("Decks: %1").arg(deckArea_->deckCount()));
     });
     QObject::connect(network_, &NetworkManager::deckLeft, this, [this](int pid) {
+        beatTempo_.erase(pid);
         deckArea_->removeDeck(pid);
         if (difflock_.player() == pid) { difflock_.off(); }
         refreshDiffLock();
@@ -444,6 +459,19 @@ void MainWindow::setupMenus()
     debugAction->setShortcut(Qt::CTRL | Qt::Key_D);
     debugAction->setCheckable(true);
     connect(debugAction, &QAction::toggled, this, &MainWindow::setDebugMode);
+    QAction* logPacketsAction = view->addAction("Log &Packets (debug panel)");
+    logPacketsAction->setCheckable(true);
+    logPacketsAction->setToolTip("Record every status, beat and discovery packet in the debug log. Turn it off to keep only the other lines (USER, LINK, NFS, SYS): "
+                                 "less work while connected to busy decks. Only has an effect in debug mode.");
+    {
+        const bool on = config_->loadValue(QStringLiteral("debug"), QStringLiteral("log_packets")) != QLatin1String("0");
+        logPacketsAction->setChecked(on);
+        PacketLogger::instance().setPacketLevel(on);
+    }
+    connect(logPacketsAction, &QAction::toggled, this, [this](bool on) {
+        PacketLogger::instance().setPacketLevel(on);
+        config_->saveValue(QStringLiteral("debug"), QStringLiteral("log_packets"), on ? QStringLiteral("1") : QStringLiteral("0"));
+    });
 
     QMenu* network = menuBar()->addMenu("&Network");
     connectAction_ = network->addAction("&Connect");
@@ -485,20 +513,24 @@ void MainWindow::setupMenus()
     QAction* fontAction = configMenu->addAction("Application &Font...");
     fontAction->setToolTip("The font for the whole app");
     connect(fontAction, &QAction::triggered, this, &MainWindow::chooseAppFont);
-    QAction* fontResetAction = configMenu->addAction("&Reset Font");
-    connect(fontResetAction, &QAction::triggered, this, &MainWindow::resetAppFont);
     configMenu->addSeparator();
     QAction* usbAction = configMenu->addAction("&USB / MIDI...");
     QAction* instAction = configMenu->addAction("&Instruments...");
-    QAction* mapAction = configMenu->addAction("MIDI &Map...");
+    QAction* monitorAction = configMenu->addAction("MIDI M&onitor...");
+    monitorAction->setToolTip("Shows the MIDI events the controller sends and what the map turns them into");
+    connect(monitorAction, &QAction::triggered, this, [this]() {
+        if (!midiMonitor_) midiMonitor_ = new MidiMonitorDialog(midiIn_, this);
+        midiMonitor_->show();
+        midiMonitor_->raise();
+        midiMonitor_->activateWindow();
+    });
     QAction* joyAction = configMenu->addAction("&Joystick...");
     connect(instAction, &QAction::triggered, this, [this]() {
         if (!instruments_) return;
         InstrumentConfigDialog dlg(instruments_, config_, this);
         dlg.exec();
-        instruments_->autowire();
+        applyMidiMap();
     });
-    connect(mapAction, &QAction::triggered, this, &MainWindow::chooseMidiMap);
     connect(usbAction, &QAction::triggered, this, [this]() {
         UsbConfigDialog dlg(config_, this);
         dlg.exec();
@@ -511,11 +543,27 @@ void MainWindow::setupMenus()
     QMenu* help = menuBar()->addMenu("&Help");
     QAction* aboutAction = help->addAction("&About");
     connect(aboutAction, &QAction::triggered, this, [this]() {
-        QMessageBox::about(this, QStringLiteral("About VDJ UI"),
-            QStringLiteral("<h3>VDJ UI %1</h3>"
-                           "<p>A Qt GUI for a virtual DJ on the Pioneer ProLink network: beat grids of all decks, "
-                           "rekordbox track browsing and a local track preview player.</p>")
-                .arg(QCoreApplication::applicationVersion()));
+        QMessageBox box(this);
+        box.setWindowTitle(QStringLiteral("About VDJ UI"));
+        box.setText(QStringLiteral("<h3>VDJ UI %1</h3>"
+                                   "<p>A Qt GUI for a virtual DJ on the Pioneer ProLink network: beat grids of all decks, "
+                                   "rekordbox track browsing and a local track preview player.</p>")
+                        .arg(QCoreApplication::applicationVersion()));
+        // installed: <prefix>/share/vdj-ui; from a build tree: the source's img/
+        const QString appDir = QCoreApplication::applicationDirPath();
+        const QStringList logos = {
+            appDir + QStringLiteral("/../share/vdj-ui/vdj-64x64.png"),
+            QStringLiteral("/usr/share/vdj-ui/vdj-64x64.png"),
+            appDir + QStringLiteral("/../img/vdj-64x64.png"),
+            appDir + QStringLiteral("/../../img/vdj-64x64.png"),
+        };
+        for (const QString& path : logos) {
+            if (QFile::exists(path)) {
+                box.setIconPixmap(QPixmap(path));
+                break;
+            }
+        }
+        box.exec();
     });
 }
 
@@ -626,7 +674,9 @@ void MainWindow::nudgeSequencer(int ms)
         statusBar()->showMessage(QStringLiteral("Nudge: the VDJ sequencer is not running"), 3000);
         return;
     }
-    clock_->nudgeMillis(ms);
+    // Unlocked, the buttons move the playhead: - sets it back (a longer beat), + pushes it forward (a shorter one).
+    // Locked, they keep adj's meaning (+ = the next beat is longer) and the target moves with them.
+    clock_->nudgeMillis(difflock_.locked() ? ms : -ms);
     if (difflock_.locked()) {
         difflock_.nudgeTarget(-ms);
         if (auto* bar = vdjDiffLockBar()) bar->setTargetMs(difflock_.targetMs());
@@ -749,13 +799,25 @@ void MainWindow::applyAppFont(const QString& family, int pointSize)
 
 void MainWindow::chooseAppFont()
 {
-    bool ok = false;
     QFont current = QApplication::font();
     const QString fam = config_->loadValue(QStringLiteral("ui"), QStringLiteral("font_family"));
     if (!fam.isEmpty()) current.setFamily(fam);
-    const QFont f = QFontDialog::getFont(&ok, current, this, QStringLiteral("Application Font"));
+    QFontDialog dlg(current, this);
+    dlg.setWindowTitle(QStringLiteral("Application Font"));
+    dlg.setOption(QFontDialog::DontUseNativeDialog);   // the native dialog has no button box to extend
+    bool reset = false;
+    if (auto* box = dlg.findChild<QDialogButtonBox*>()) {
+        QPushButton* resetBtn = box->addButton(QStringLiteral("Reset Font"), QDialogButtonBox::ResetRole);
+        connect(resetBtn, &QPushButton::clicked, &dlg, [&]() { reset = true; dlg.reject(); });
+    }
+    const bool ok = dlg.exec() == QDialog::Accepted;
+    if (reset) {
+        resetAppFont();
+        return;
+    }
     if (!ok)
         return;
+    const QFont f = dlg.selectedFont();
     config_->saveValue(QStringLiteral("ui"), QStringLiteral("font_family"), f.family());
     config_->saveValue(QStringLiteral("ui"), QStringLiteral("font_size"), QString::number(f.pointSize()));
     applyAppFont(f.family(), f.pointSize());
@@ -1349,10 +1411,20 @@ void MainWindow::setVdjPlaying(bool playing)
 void MainWindow::updateSequencerPlayhead()
 {
     const double beats = clock_ ? clock_->positionBeats() : -1.0;
+    // Subscribers change rarely; querying ALSA every 16 ms frame is needless.
+    const bool refreshFollowers = !followersClock_.isValid() || followersClock_.elapsed() >= 500;
+    if (refreshFollowers) {
+        followersClock_.start();
+        followerNames_ = clock_ ? clock_->subscriberNames() : QStringList();
+    }
     for (int i = 0; i < deckArea_->deckCount(); ++i) {
         DeckWidget* d = deckArea_->deckAt(i);
-        if (isVdjRow(d))
-            d->beatGrid()->setSequencerBeats(beats);
+        if (!isVdjRow(d)) continue;
+        d->beatGrid()->setSequencerBeats(beats);
+        if (refreshFollowers && d->diffLockBar())
+            d->diffLockBar()->setSequencerFollowers(followerNames_, clock_ && clock_->running());
+        if (refreshFollowers)
+            d->setSequencerBpm(clock_ ? clock_->effectiveBpm() : 0.0);
     }
 }
 
@@ -1424,7 +1496,7 @@ void MainWindow::setupDebugPanel()
     connect(&PacketLogger::instance(), &PacketLogger::entryAdded, this, [this]() {
         if (debugMode_) {
             statusBar()->showMessage(
-                QStringLiteral("Log: %1 entries").arg(PacketLogger::instance().entries().size()));
+                QStringLiteral("Log: %1 entries").arg(PacketLogger::instance().entryCount()));
         }
     });
 }
@@ -1523,14 +1595,23 @@ void MainWindow::setupMidi()
     connect(instruments_, &InstrumentManager::wired, this,
             [this](const QString& d) { statusBar()->showMessage(QStringLiteral("MIDI: ") + d, 6000); });
 
-    const QString map = defaultMidiMapPath();
-    if (!map.isEmpty())
-        startMidiMap(map);
-
     instruments_->setSequencer(clock_);
     instruments_->setRouter(midiRouter_);
-    instruments_->setInputPort(midiIn_->clientId(), midiIn_->portId());
     instruments_->loadProfiles();
+    applyMidiMap();
+}
+
+// The map comes from the input device it is paired with (Config > Instruments); without a pairing, from the
+// default map search. The reader has to run for the controller to be wired to it, so a device without a map
+// still gets the port.
+void MainWindow::applyMidiMap()
+{
+    QString map = instruments_->midiMapFor(instruments_->midiInputKey());
+    if (map.isEmpty() || !QFile::exists(map))
+        map = defaultMidiMapPath();
+    if (!map.isEmpty() && (map != midiIn_->mapPath() || !midiIn_->isRunning()))
+        startMidiMap(map);
+    instruments_->setInputPort(midiIn_->clientId(), midiIn_->portId());
     instruments_->autowire();
 }
 
@@ -1538,18 +1619,6 @@ void MainWindow::startMidiMap(const QString& path)
 {
     if (midiIn_->start(path))
         statusBar()->showMessage(QStringLiteral("MIDI map: %1").arg(path), 5000);
-}
-
-void MainWindow::chooseMidiMap()
-{
-    const QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select MIDI map"),
-        QDir::homePath() + QStringLiteral("/.config/vdj-ui"), QStringLiteral("adj MIDI maps (*.adjmm);;All files (*)"));
-    if (path.isEmpty())
-        return;
-    config_->saveValue(QStringLiteral("midi"), QStringLiteral("map"), path);
-    startMidiMap(path);
-    instruments_->setInputPort(midiIn_->clientId(), midiIn_->portId());
-    instruments_->autowire();
 }
 
 // ---- Recording ----

@@ -25,6 +25,15 @@ install(DIRECTORY data/devices DESTINATION share/vdj-ui FILES_MATCHING PATTERN "
 install(FILES data/default.adjmm data/xdj700.adjmm DESTINATION share/vdj-ui)
 install(FILES doc/vdj-ui.1 DESTINATION share/man/man1)
 
+# Logo: the About box loads share/vdj-ui/vdj-64x64.png; the hicolor icons (named after data/vdj-ui.desktop's Icon=)
+# are for the desktop menu and window icon.
+install(FILES img/vdj-64x64.png DESTINATION share/vdj-ui)
+foreach(size 16x16 22x22 24x24 32x32 64x64 128x128 256x256 512x512)
+    install(FILES img/vdj-${size}.png DESTINATION share/icons/hicolor/${size}/apps RENAME vdj-ui.png)
+endforeach()
+install(FILES img/vdj.svg DESTINATION share/icons/hicolor/scalable/apps RENAME vdj-ui.svg)
+install(FILES data/vdj-ui.desktop DESTINATION share/applications)
+
 # ---------------------------------------------------------------------------
 # Packaging (deb)
 # ---------------------------------------------------------------------------

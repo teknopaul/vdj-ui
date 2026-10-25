@@ -20,6 +20,11 @@ DiffLockBar::DiffLockBar(QWidget* parent)
     status_->setToolTip(QStringLiteral("Click Sync on a deck to lock the sequencer to its beat"));
     layout->addWidget(status_);
 
+    followers_ = new QLabel(QStringLiteral("Drums: none"), this);
+    followers_->setToolTip(QStringLiteral("Devices subscribed to the vdj-ui MIDI clock port, and whether the "
+                                          "clock is running (▶) or stopped (■)"));
+    layout->addWidget(followers_);
+
     target_ = new QSpinBox(this);
     target_->setRange(-250, 250);
     target_->setValue(kDefaultTargetMs);
@@ -44,8 +49,6 @@ DiffLockBar::DiffLockBar(QWidget* parent)
     layout->addWidget(new QLabel(QStringLiteral("Nudge"), this));
     for (int ms : { -10, -1, 1, 10 }) {
         auto* b = new QPushButton(ms > 0 ? QStringLiteral("+%1").arg(ms) : QString::number(ms), this);
-        b->setToolTip(ms > 0 ? QStringLiteral("Make the sequencer's next beat %1 ms longer (it ends up later)").arg(ms)
-                             : QStringLiteral("Make the sequencer's next beat %1 ms shorter (it ends up earlier)").arg(-ms));
         b->setAutoRepeat(false);
         b->setFocusPolicy(Qt::NoFocus);
         b->setMaximumWidth(48);
@@ -78,6 +81,18 @@ void DiffLockBar::setFollowMaster(bool on)
 }
 
 void DiffLockBar::setStatus(const QString& text) { status_->setText(text); }
+
+void DiffLockBar::setSequencerFollowers(const QStringList& names, bool running)
+{
+    const QString text = names.isEmpty()
+        ? QStringLiteral("Drums: none")
+        : QStringLiteral("Drums: %1 %2").arg(names.join(QStringLiteral(", ")),
+                                              running ? QStringLiteral("▶ playing") : QStringLiteral("■ stopped"));
+    if (followers_->text() != text) followers_->setText(text);
+    followers_->setStyleSheet(!names.isEmpty() && running ? QStringLiteral("color: #4caf50; font-weight: bold;") : QString());
+}
+
+QString DiffLockBar::followersText() const { return followers_->text(); }
 QString DiffLockBar::status() const { return status_->text(); }
 
 } // namespace vdj

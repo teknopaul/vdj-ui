@@ -30,6 +30,8 @@ public:
     bool isRemote() const { return remote_; }
     QString titleText() const;
     void setBpm(double bpm);
+    void setMeasuredBpm(double bpm);             // remote decks: tempo from the beat timings, 0 = unknown
+    void setSequencerBpm(double bpm);            // VDJ deck: tempo of the ALSA sequencer
     void setMaster(bool master);
     void setSync(bool sync);
     void setPlaying(bool playing);

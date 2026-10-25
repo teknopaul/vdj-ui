@@ -2,7 +2,9 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <array>
+#include <atomic>
 #include <cstdint>
 
 class QThread;
@@ -78,6 +80,16 @@ public:
     int clientId() const { return clientId_; }
     int portId() const { return portId_; }
 
+    // The .adjmm name of an operation index (1-based), "" when out of range.
+    static QString opName(int op);
+    // Names of the ALSA clients whose output is subscribed to our port (the controller, when it is wired up)
+    QStringList sourceNames() const;
+    // While on, every event the port receives is reported through midiEvent(), mapped or not (for the MIDI monitor).
+    void setMonitoring(bool on) { monitoring_ = on; }
+    bool monitoring() const { return monitoring_; }
+    QString mapPath() const { return mapPath_; }
+    int mappedOps() const;                       // how many operations the loaded map defines
+
 signals:
     // Emitted from the reader thread; connect with the default (auto -> queued) connection.
     void startRequested();
@@ -89,8 +101,13 @@ signals:
     void copyMasterRequested();
     void becomeMasterRequested();
     void errorOccurred(const QString& msg);
+    // What arrived and what it was mapped to: a one-line description of the event and the operation (1-based, 0 =
+    // not mapped). Only while monitoring.
+    void midiEvent(const QString& description, int op);
 
 private:
+    std::atomic<bool> monitoring_{ false };
+    QString        mapPath_;
     int            clientId_ = -1;
     int            portId_   = -1;
     AdjmmMap*      map_    = nullptr;

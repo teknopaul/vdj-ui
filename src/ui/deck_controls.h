@@ -20,6 +20,12 @@ public:
     int playerId() const { return playerId_; }
     void setPlayerId(int id) { playerId_ = id; }
     void setBpm(double bpm);
+    // Remote decks: the tempo measured from the beat packets' arrival (3 decimals); 0 = not known yet
+    void setMeasuredBpm(double bpm);
+    QString measuredText() const;
+    // The VDJ deck: the tempo of the ALSA sequencer the drum machines follow (3 decimals); the spinner is the link BPM
+    void setSequencerBpm(double bpm);
+    QString sequencerText() const;
     double bpm() const;
     void setPlaying(bool playing);
     void setBarPos(int barPos);
@@ -60,6 +66,8 @@ private:
     QDoubleSpinBox* bpmSpin_;
     QSpinBox* barPosSpin_;
     QLabel* bpmValueLabel_;
+    QLabel* measuredLabel_;
+    QLabel* sequencerLabel_;
 };
 
 } // namespace vdj

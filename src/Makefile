@@ -1337,6 +1337,30 @@ network/auto_ip_manager.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/auto_ip_manager.cpp.s
 .PHONY : network/auto_ip_manager.cpp.s
 
+network/beat_tempo.o: network/beat_tempo.cpp.o
+.PHONY : network/beat_tempo.o
+
+# target to build an object file
+network/beat_tempo.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/beat_tempo.cpp.o
+.PHONY : network/beat_tempo.cpp.o
+
+network/beat_tempo.i: network/beat_tempo.cpp.i
+.PHONY : network/beat_tempo.i
+
+# target to preprocess a source file
+network/beat_tempo.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/beat_tempo.cpp.i
+.PHONY : network/beat_tempo.cpp.i
+
+network/beat_tempo.s: network/beat_tempo.cpp.s
+.PHONY : network/beat_tempo.s
+
+# target to generate assembly for a file
+network/beat_tempo.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/beat_tempo.cpp.s
+.PHONY : network/beat_tempo.cpp.s
+
 network/link_export.o: network/link_export.cpp.o
 .PHONY : network/link_export.o
 
@@ -1864,6 +1888,30 @@ ui/main_window.s: ui/main_window.cpp.s
 ui/main_window.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/main_window.cpp.s
 .PHONY : ui/main_window.cpp.s
+
+ui/midi_monitor_dialog.o: ui/midi_monitor_dialog.cpp.o
+.PHONY : ui/midi_monitor_dialog.o
+
+# target to build an object file
+ui/midi_monitor_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/midi_monitor_dialog.cpp.o
+.PHONY : ui/midi_monitor_dialog.cpp.o
+
+ui/midi_monitor_dialog.i: ui/midi_monitor_dialog.cpp.i
+.PHONY : ui/midi_monitor_dialog.i
+
+# target to preprocess a source file
+ui/midi_monitor_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/midi_monitor_dialog.cpp.i
+.PHONY : ui/midi_monitor_dialog.cpp.i
+
+ui/midi_monitor_dialog.s: ui/midi_monitor_dialog.cpp.s
+.PHONY : ui/midi_monitor_dialog.s
+
+# target to generate assembly for a file
+ui/midi_monitor_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/midi_monitor_dialog.cpp.s
+.PHONY : ui/midi_monitor_dialog.cpp.s
 
 ui/now_playing.o: ui/now_playing.cpp.o
 .PHONY : ui/now_playing.o
@@ -2540,6 +2588,9 @@ help:
 	@echo "... network/auto_ip_manager.o"
 	@echo "... network/auto_ip_manager.i"
 	@echo "... network/auto_ip_manager.s"
+	@echo "... network/beat_tempo.o"
+	@echo "... network/beat_tempo.i"
+	@echo "... network/beat_tempo.s"
 	@echo "... network/link_export.o"
 	@echo "... network/link_export.i"
 	@echo "... network/link_export.s"
@@ -2606,6 +2657,9 @@ help:
 	@echo "... ui/main_window.o"
 	@echo "... ui/main_window.i"
 	@echo "... ui/main_window.s"
+	@echo "... ui/midi_monitor_dialog.o"
+	@echo "... ui/midi_monitor_dialog.i"
+	@echo "... ui/midi_monitor_dialog.s"
 	@echo "... ui/now_playing.o"
 	@echo "... ui/now_playing.i"
 	@echo "... ui/now_playing.s"

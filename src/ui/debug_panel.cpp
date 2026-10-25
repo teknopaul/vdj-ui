@@ -1,4 +1,5 @@
 #include "debug_panel.h"
+#include <QTimer>
 #include "debug/packet_logger.h"
 #include <QListWidget>
 #include <QComboBox>
@@ -40,7 +41,12 @@ DebugPanel::DebugPanel(PacketLogger* logger, QWidget* parent)
         currentFilter_ = filter_->currentText();
         refresh();
     });
-    connect(logger_, &PacketLogger::entryAdded, this, &DebugPanel::refresh);
+    // Rebuilding the list for every entry is a lot of work at the packet rate: at most about four times a second
+    connect(logger_, &PacketLogger::entryAdded, this, [this]() {
+        if (refreshPending_) return;
+        refreshPending_ = true;
+        QTimer::singleShot(250, this, [this]() { refreshPending_ = false; refresh(); });
+    });
 
     refresh();
 }
@@ -48,7 +54,7 @@ DebugPanel::DebugPanel(PacketLogger* logger, QWidget* parent)
 void DebugPanel::refresh()
 {
     list_->clear();
-    const auto& entries = logger_->entries();
+    const QVector<PacketEntry> entries = logger_->entries();
     int shown = 0;
     for (int i = entries.size() - 1; i >= 0; --i) {
         const PacketEntry& e = entries[i];

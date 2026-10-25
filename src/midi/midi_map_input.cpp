@@ -25,7 +25,7 @@ static void parseLine(const QString& rawLine, int lineNo, AdjmmMap* map)
     const QStringList p = line.split(QRegularExpression(QStringLiteral("\\s+")),
                                      Qt::SkipEmptyParts);
     if (p.size() < 4) {
-        qWarning("adjmm line %d: expected 4 fields, got %d", lineNo, p.size());
+        qWarning("adjmm line %d: expected 4 fields, got %d", lineNo, int(p.size()));
         return;
     }
 
@@ -154,10 +154,15 @@ public slots:
         while (running_) {
             if (poll(pfds, npfds, 100) <= 0) continue; // 100 ms timeout → clean stop
 
+            // The port is non-blocking: read until the kernel queue is empty. (Asking
+            // snd_seq_event_input_pending(handle, 0) first only looks at the library's own buffer, which is empty
+            // after a poll(), so no event was ever read.)
             snd_seq_event_t* ev = nullptr;
-            while (snd_seq_event_input_pending(handle_, 0) > 0) {
-                if (snd_seq_event_input(handle_, &ev) >= 0)
-                    dispatch(ev);
+            for (;;) {
+                const int r = snd_seq_event_input(handle_, &ev);
+                if (r == -ENOSPC) continue;          // input queue overran: events were lost, carry on
+                if (r < 0 || !ev) break;             // -EAGAIN: nothing more to read
+                dispatch(ev);
             }
         }
 
@@ -208,6 +213,12 @@ private:
         return 0;
     }
 
+    void report(const QString& what, int op)
+    {
+        if (owner_->monitoring())
+            emit owner_->midiEvent(what, op);
+    }
+
     void dispatch(snd_seq_event_t* ev)
     {
         int op = 0;
@@ -217,12 +228,23 @@ private:
             int val = ev->data.control.value;
             op = matchCtrl(map_, ch, par, val);
             if (op == 0) op = matchWheel(map_, ch, par, val);
+            report(QStringLiteral("ch %1  CC %2 = %3").arg(ch).arg(par).arg(val), op);
             if (op == ADJMM_OP_SLIDER) {
                 handleSlider(val);
                 return;
             }
         } else if (ev->type == SND_SEQ_EVENT_NOTEON) {
-            op = matchNote(map_, ev->data.note.channel + 1, ev->data.note.note);
+            const int ch = ev->data.note.channel + 1;
+            op = matchNote(map_, ch, ev->data.note.note);
+            report(QStringLiteral("ch %1  NOTE ON  note %2 velocity %3").arg(ch).arg(ev->data.note.note).arg(ev->data.note.velocity), op);
+        } else if (ev->type == SND_SEQ_EVENT_NOTEOFF) {
+            report(QStringLiteral("ch %1  NOTE OFF note %2 (maps ignore note off)").arg(ev->data.note.channel + 1).arg(ev->data.note.note), 0);
+        } else if (ev->type == SND_SEQ_EVENT_PITCHBEND) {
+            report(QStringLiteral("ch %1  PITCH BEND %2 (not mappable)").arg(ev->data.control.channel + 1).arg(ev->data.control.value), 0);
+        } else if (ev->type == SND_SEQ_EVENT_CLOCK || ev->type == SND_SEQ_EVENT_SENSING) {
+            return;                                  // constant noise
+        } else {
+            report(QStringLiteral("ALSA event type %1 (not mappable)").arg(int(ev->type)), 0);
         }
 
         if (op == 0) return;
@@ -324,10 +346,56 @@ MidiMapInput::~MidiMapInput()
     delete map_;
 }
 
+QString MidiMapInput::opName(int op)
+{
+    static const char* const names[ADJMM_MAX_OP] = {
+        "start", "stop", "toggle", "q_restart", "nudge_ffwd", "nudge_fwd", "nudge_frew", "nudge_rew", "(unused 9)",
+        "tempo_inc_min", "tempo_inc", "tempo_inc_1", "tempo_dec_min", "tempo_dec", "tempo_dec_1",
+        "slider", "slider_on", "slider_off", "copy_master", "become_master" };
+    return op >= 1 && op <= ADJMM_MAX_OP ? QString::fromLatin1(names[op - 1]) : QString();
+}
+
+int MidiMapInput::mappedOps() const
+{
+    int n = 0;
+    if (map_)
+        for (const AdjmmOp& op : map_->ops)
+            if (op.controller != ADJMM_UNSET) ++n;
+    return n;
+}
+
+QStringList MidiMapInput::sourceNames() const
+{
+    QStringList names;
+    if (clientId_ < 0) return names;
+    snd_seq_t* seq = nullptr;                        // a handle of our own: the reader thread owns the other
+    if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_INPUT, SND_SEQ_NONBLOCK) < 0) return names;
+    snd_seq_query_subscribe_t* q;
+    snd_seq_query_subscribe_alloca(&q);
+    snd_seq_addr_t root;
+    root.client = static_cast<unsigned char>(clientId_);
+    root.port = static_cast<unsigned char>(portId_);
+    snd_seq_query_subscribe_set_root(q, &root);
+    snd_seq_query_subscribe_set_type(q, SND_SEQ_QUERY_SUBS_WRITE);
+    snd_seq_query_subscribe_set_index(q, 0);
+    while (snd_seq_query_port_subscribers(seq, q) >= 0) {
+        const snd_seq_addr_t* src = snd_seq_query_subscribe_get_addr(q);
+        snd_seq_client_info_t* ci;
+        snd_seq_client_info_alloca(&ci);
+        if (snd_seq_get_any_client_info(seq, src->client, ci) >= 0)
+            names << QStringLiteral("%1:%2 %3").arg(src->client).arg(src->port)
+                         .arg(QString::fromUtf8(snd_seq_client_info_get_name(ci)));
+        snd_seq_query_subscribe_set_index(q, snd_seq_query_subscribe_get_index(q) + 1);
+    }
+    snd_seq_close(seq);
+    return names;
+}
+
 bool MidiMapInput::start(const QString& mapPath)
 {
     stop();
     delete map_;
+    mapPath_ = mapPath;
     map_ = AdjmmMap::readFromFile(mapPath);
     if (!map_) {
         emit errorOccurred(QStringLiteral("Cannot read map file: ") + mapPath);

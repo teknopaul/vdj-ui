@@ -189,6 +189,18 @@ void InstrumentManager::setMidiInputKey(const QString& key)
     config_->saveValue(QStringLiteral("instruments"), QStringLiteral("midi_input"), key);
 }
 
+QString InstrumentManager::midiMapFor(const QString& deviceKey) const
+{
+    return deviceKey.isEmpty() ? QString()
+        : config_->loadValue(QStringLiteral("instrument_maps"), deviceKey);
+}
+
+void InstrumentManager::setMidiMapFor(const QString& deviceKey, const QString& path)
+{
+    if (!deviceKey.isEmpty())
+        config_->saveValue(QStringLiteral("instrument_maps"), deviceKey, path);
+}
+
 void InstrumentManager::setMidiOutputKey(const QString& key)
 {
     config_->saveValue(QStringLiteral("instruments"), QStringLiteral("midi_output"), key);

@@ -80,7 +80,9 @@ add_library(vdj-cdj STATIC
     ui/recording_panel.cpp
     ui/rekordbox_mode_panel.cpp
     ui/instrument_config_dialog.cpp
+    ui/midi_monitor_dialog.cpp
     ui/main_window.cpp
+    network/beat_tempo.cpp
     network/network_manager.cpp
     network/link_export.cpp
     export/pendrive_registry.cpp

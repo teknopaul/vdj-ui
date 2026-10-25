@@ -26,6 +26,9 @@ public:
     bool followMaster() const;
     void setFollowMaster(bool on);               // does not emit followMasterToggled
     void setStatus(const QString& text);
+    // What follows the VDJ's MIDI clock: names of the subscribed drum machines / synths and whether the clock runs.
+    void setSequencerFollowers(const QStringList& names, bool running);
+    QString followersText() const;
     QString status() const;
 
     QSpinBox* targetSpin() const { return target_; }
@@ -43,6 +46,7 @@ signals:
 
 private:
     QLabel* status_;
+    QLabel* followers_;
     QSpinBox* target_;
     QCheckBox* followMaster_;
     QPushButton* off_;

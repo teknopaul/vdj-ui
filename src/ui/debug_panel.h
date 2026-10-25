@@ -23,6 +23,7 @@ public:
 
 private:
     PacketLogger* logger_;
+    bool refreshPending_ = false;
     QListWidget* list_;
     QComboBox* filter_;
     QLabel* countLabel_;

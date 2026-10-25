@@ -69,6 +69,9 @@ signals:
     // sequencerOffsetMs: where the deck's beat fell relative to the VDJ sequencer's beat, measured the moment the
     // packet arrived (NaN when no probe is set or the sequencer is not running)
     void beatReceived(int playerId, double bpm, int barPos, double sequencerOffsetMs);
+    // steadyNs: std::chrono::steady_clock time of the packet's arrival (taken on the network thread), for measuring a
+    // deck's real tempo from the beat intervals
+    void beatTimed(int playerId, int barPos, qint64 steadyNs);
     void masterChanged(int playerId);
     void linkExportLog(const QString& line);        // what the export does (media queries, dbserver, NFS)
     void linkExportChanged(bool running);

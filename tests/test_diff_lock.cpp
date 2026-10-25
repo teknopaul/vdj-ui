@@ -249,8 +249,8 @@ void TestDiffLock::nudgeButtonsMoveTheTargetWhileLocked()
     clock->setBpm(120.0);
     clock->start();
 
-    bar->nudgeButtons()[3]->click();              // +10 while not locked: the sequencer is nudged, the target is not
-    QVERIFY(clock->queueBpm() < 120.0);
+    bar->nudgeButtons()[3]->click();              // +10 while not locked: the playhead goes forward (a shorter beat), the target is not nudged
+    QVERIFY(clock->queueBpm() > 120.0);
     QCOMPARE(bar->targetMs(), 20);
     QTest::qWait(600);
 

@@ -543,6 +543,32 @@ vdj-ui-difflock-test/fast:
 .PHONY : vdj-ui-difflock-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-beat-tempo-test
+
+# Build rule for target.
+vdj-ui-beat-tempo-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-beat-tempo-test
+.PHONY : vdj-ui-beat-tempo-test
+
+# fast build rule for target.
+vdj-ui-beat-tempo-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-tempo-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-tempo-test.dir/build
+.PHONY : vdj-ui-beat-tempo-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-midi-map-input-test
+
+# Build rule for target.
+vdj-ui-midi-map-input-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-midi-map-input-test
+.PHONY : vdj-ui-midi-map-input-test
+
+# fast build rule for target.
+vdj-ui-midi-map-input-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-map-input-test.dir/build.make tests/CMakeFiles/vdj-ui-midi-map-input-test.dir/build
+.PHONY : vdj-ui-midi-map-input-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-dbcodec-test
 
 # Build rule for target.
@@ -684,6 +710,19 @@ vdj-ui-clone-dialog-test: cmake_check_build_system
 vdj-ui-clone-dialog-test/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build
 .PHONY : vdj-ui-clone-dialog-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-packet-logger-test
+
+# Build rule for target.
+vdj-ui-packet-logger-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-packet-logger-test
+.PHONY : vdj-ui-packet-logger-test
+
+# fast build rule for target.
+vdj-ui-packet-logger-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-packet-logger-test.dir/build.make tests/CMakeFiles/vdj-ui-packet-logger-test.dir/build
+.PHONY : vdj-ui-packet-logger-test/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
@@ -972,6 +1011,58 @@ vdj-ui-difflock-test_autogen/fast:
 .PHONY : vdj-ui-difflock-test_autogen/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-beat-tempo-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-beat-tempo-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-beat-tempo-test_autogen_timestamp_deps
+.PHONY : vdj-ui-beat-tempo-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-beat-tempo-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-tempo-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-beat-tempo-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-beat-tempo-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-beat-tempo-test_autogen
+
+# Build rule for target.
+vdj-ui-beat-tempo-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-beat-tempo-test_autogen
+.PHONY : vdj-ui-beat-tempo-test_autogen
+
+# fast build rule for target.
+vdj-ui-beat-tempo-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-tempo-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-beat-tempo-test_autogen.dir/build
+.PHONY : vdj-ui-beat-tempo-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-midi-map-input-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-midi-map-input-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-midi-map-input-test_autogen_timestamp_deps
+.PHONY : vdj-ui-midi-map-input-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-midi-map-input-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-map-input-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-midi-map-input-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-midi-map-input-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-midi-map-input-test_autogen
+
+# Build rule for target.
+vdj-ui-midi-map-input-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-midi-map-input-test_autogen
+.PHONY : vdj-ui-midi-map-input-test_autogen
+
+# fast build rule for target.
+vdj-ui-midi-map-input-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-midi-map-input-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-midi-map-input-test_autogen.dir/build
+.PHONY : vdj-ui-midi-map-input-test_autogen/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-dbcodec-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -1257,6 +1348,32 @@ vdj-ui-clone-dialog-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/build
 .PHONY : vdj-ui-clone-dialog-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-packet-logger-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-packet-logger-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-packet-logger-test_autogen_timestamp_deps
+.PHONY : vdj-ui-packet-logger-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-packet-logger-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-packet-logger-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-packet-logger-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-packet-logger-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-packet-logger-test_autogen
+
+# Build rule for target.
+vdj-ui-packet-logger-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-packet-logger-test_autogen
+.PHONY : vdj-ui-packet-logger-test_autogen
+
+# fast build rule for target.
+vdj-ui-packet-logger-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-packet-logger-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-packet-logger-test_autogen.dir/build
+.PHONY : vdj-ui-packet-logger-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1281,6 +1398,8 @@ help:
 	@echo "... vdj-nfsd_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test_autogen"
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-beat-tempo-test_autogen"
+	@echo "... vdj-ui-beat-tempo-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatgrid-test_autogen"
 	@echo "... vdj-ui-beatgrid-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-clone-dialog-test_autogen"
@@ -1301,8 +1420,12 @@ help:
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-linkexport-test_autogen"
 	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-midi-map-input-test_autogen"
+	@echo "... vdj-ui-midi-map-input-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-packet-logger-test_autogen"
+	@echo "... vdj-ui-packet-logger-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-pendrive-registry-test_autogen"
 	@echo "... vdj-ui-pendrive-registry-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rblibrary-test_autogen"
@@ -1332,6 +1455,7 @@ help:
 	@echo "... vdj-nfsd"
 	@echo "... vdj-ui"
 	@echo "... vdj-ui-audio-test"
+	@echo "... vdj-ui-beat-tempo-test"
 	@echo "... vdj-ui-beatgrid-test"
 	@echo "... vdj-ui-clone-dialog-test"
 	@echo "... vdj-ui-config-test"
@@ -1342,7 +1466,9 @@ help:
 	@echo "... vdj-ui-difflock-test"
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-linkexport-test"
+	@echo "... vdj-ui-midi-map-input-test"
 	@echo "... vdj-ui-nfsmount-test"
+	@echo "... vdj-ui-packet-logger-test"
 	@echo "... vdj-ui-pendrive-registry-test"
 	@echo "... vdj-ui-rblibrary-test"
 	@echo "... vdj-ui-rbmode-test"

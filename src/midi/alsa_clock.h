@@ -2,6 +2,7 @@
 #define ALSA_CLOCK_H
 
 #include <QString>
+#include <QStringList>
 #include <atomic>
 #include <chrono>
 #include <mutex>
@@ -35,6 +36,7 @@ public:
     double bpm() const { return bpm_; }
     // Beats since the last start() as the sequencer queue counts them (fractional); -1 when not running.
     double positionBeats() const;
+    double effectiveBpm() const;                 // the tempo the queue really has: ALSA keeps whole microseconds per beat
     double queueBpm() const;                      // read back from ALSA (what the devices actually follow)
 
     // Nudge like adj: the tempo is changed for exactly one beat, then restored. nudgeMillis(+n) makes that beat n ms
@@ -51,6 +53,9 @@ public:
     void start();                                 // MIDI start + clock from tick 0
     void stop();                                  // MIDI stop, clock ends
     bool running() const { return running_; }
+
+    // Names of the ALSA clients subscribed to the clock port (the drum machines / synths following us).
+    QStringList subscriberNames() const;
 
     int clientId() const { return client_; }
     int portId() const { return port_; }

@@ -186,6 +186,16 @@ void DeckWidget::setBpm(double bpm)
     }
 }
 
+void DeckWidget::setMeasuredBpm(double bpm)
+{
+    if (controls_) controls_->setMeasuredBpm(bpm);
+}
+
+void DeckWidget::setSequencerBpm(double bpm)
+{
+    if (controls_) controls_->setSequencerBpm(bpm);
+}
+
 void DeckWidget::setMaster(bool master)
 {
     if (master_ != master) {

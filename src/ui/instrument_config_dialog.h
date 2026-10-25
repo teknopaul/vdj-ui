@@ -1,13 +1,16 @@
 #pragma once
 
 #include <QDialog>
+#include <QHash>
 #include <QList>
+#include <QString>
 
 class QTabWidget;
 class QTableWidget;
 class QComboBox;
 class QListWidget;
 class QPushButton;
+class QLineEdit;
 
 namespace vdj {
 
@@ -25,6 +28,9 @@ private slots:
     void rescan();
     void saveAndWire();
     void applyJoystickProfile();
+    void inputDeviceChanged();
+    void browseMap();
+    void clearMap();
 
 private:
     void buildMidiTab(QWidget* tab);
@@ -40,6 +46,11 @@ private:
     QComboBox*    inputCombo_;
     QComboBox*    outputCombo_;
     QList<QString> comboKeys_; // parallel to both combos: device key or ""
+    QLineEdit*    mapEdit_;
+    QPushButton*  mapBrowse_;
+    QPushButton*  mapClear_;
+    QHash<QString, QString> maps_;   // device key -> map path, saved with the dialog
+    QString shownKey_;               // the input device the map row currently belongs to
 
     // Joystick tab
     QComboBox*   jsDeviceCombo_;

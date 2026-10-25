@@ -17,6 +17,7 @@ PacketLogger::PacketLogger(QObject* parent)
 
 void PacketLogger::setEnabled(bool enabled)
 {
+    QMutexLocker lock(&mutex_);
     if (enabled_ == enabled)
         return;
 
@@ -39,6 +40,7 @@ void PacketLogger::setEnabled(bool enabled)
 
 void PacketLogger::setLogFile(const QString& path)
 {
+    QMutexLocker lock(&mutex_);
     filePath_ = path;
     if (enabled_ && file_.isOpen()) {
         file_.close();
@@ -49,29 +51,50 @@ void PacketLogger::setLogFile(const QString& path)
 
 QString PacketLogger::logFilePath() const
 {
+    QMutexLocker lock(&mutex_);
     return filePath_;
+}
+
+QVector<PacketEntry> PacketLogger::entries() const
+{
+    QMutexLocker lock(&mutex_);
+    return entries_;
+}
+
+int PacketLogger::entryCount() const
+{
+    QMutexLocker lock(&mutex_);
+    return entries_.size();
 }
 
 void PacketLogger::log(const QString& type, const QString& detail)
 {
+    if (!enabled_)
+        return;
+    if (!packets_ && (type == QLatin1String("UPDATE") || type == QLatin1String("BEAT") || type == QLatin1String("DISCOVERY")))
+        return;
+
     PacketEntry e;
     e.timestamp = QDateTime::currentDateTime();
     e.type = type;
     e.detail = detail;
 
-    if (entries_.size() >= maxEntries_)
-        entries_.remove(0, entries_.size() - maxEntries_ + 1);
-    entries_.append(e);
+    {
+        QMutexLocker lock(&mutex_);
+        if (entries_.size() >= maxEntries_)
+            entries_.remove(0, entries_.size() - maxEntries_ + 1);
+        entries_.append(e);
 
-    if (file_.isOpen()) {
-        QByteArray line = e.timestamp.toString(Qt::ISODateWithMs).toUtf8();
-        line += " [";
-        line += type.toUtf8();
-        line += "] ";
-        line += detail.toUtf8();
-        line += "\n";
-        file_.write(line);
-        file_.flush();
+        if (file_.isOpen()) {
+            QByteArray line = e.timestamp.toString(Qt::ISODateWithMs).toUtf8();
+            line += " [";
+            line += type.toUtf8();
+            line += "] ";
+            line += detail.toUtf8();
+            line += "\n";
+            file_.write(line);
+            file_.flush();
+        }
     }
 
     emit entryAdded();

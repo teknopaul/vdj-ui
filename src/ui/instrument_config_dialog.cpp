@@ -16,6 +16,9 @@
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QMessageBox>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QLineEdit>
 
 namespace vdj {
 
@@ -80,8 +83,27 @@ void InstrumentConfigDialog::buildMidiTab(QWidget* tab)
     form->addRow(QStringLiteral("MIDI Output (VDJ clock → drum machine):"), outputCombo_);
     layout->addLayout(form);
 
+    // The map belongs to the input device: choosing a device shows (and remembers) the map paired with it
+    auto* mapRow = new QHBoxLayout;
+    mapEdit_ = new QLineEdit(tab);
+    mapEdit_->setReadOnly(true);
+    mapEdit_->setPlaceholderText(QStringLiteral("no map: the controller's events do nothing"));
+    mapBrowse_ = new QPushButton(QStringLiteral("Browse..."), tab);
+    mapClear_ = new QPushButton(QStringLiteral("Clear"), tab);
+    mapRow->addWidget(mapEdit_, 1);
+    mapRow->addWidget(mapBrowse_);
+    mapRow->addWidget(mapClear_);
+    form->insertRow(1, QStringLiteral("MIDI Map (.adjmm) for the input:"), mapRow);   // between input and output
+    connect(inputCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            [this]() { inputDeviceChanged(); });
+    connect(mapBrowse_, &QPushButton::clicked, this, &InstrumentConfigDialog::browseMap);
+    connect(mapClear_, &QPushButton::clicked, this, &InstrumentConfigDialog::clearMap);
+
     auto* rescanBtn = new QPushButton(QStringLiteral("Rescan"), tab);
-    layout->addWidget(rescanBtn);
+    auto* rescanRow = new QHBoxLayout;
+    rescanRow->addWidget(rescanBtn);
+    rescanRow->addStretch(1);
+    layout->addLayout(rescanRow);
     connect(rescanBtn, &QPushButton::clicked, this, &InstrumentConfigDialog::rescan);
 
     populateMidiTab();
@@ -136,6 +158,45 @@ void InstrumentConfigDialog::populateMidiTab()
 
     inputCombo_->setCurrentIndex(selIn);
     outputCombo_->setCurrentIndex(selOut);
+    shownKey_.clear();
+    inputDeviceChanged();
+}
+
+// The map row follows the selected input device: a map chosen for a device is kept while the dialog is open and
+// saved with it, so switching the device back and forth does not lose it.
+void InstrumentConfigDialog::inputDeviceChanged()
+{
+    const int i = inputCombo_->currentIndex();
+    const QString key = i > 0 ? inputCombo_->itemData(i).toString() : QString();
+    shownKey_ = key;
+    if (!key.isEmpty() && !maps_.contains(key))
+        maps_.insert(key, manager_->midiMapFor(key));
+    const QString path = key.isEmpty() ? QString() : maps_.value(key);
+    mapEdit_->setText(path);
+    mapEdit_->setToolTip(path);
+    mapEdit_->setEnabled(!key.isEmpty());
+    mapBrowse_->setEnabled(!key.isEmpty());
+    mapClear_->setEnabled(!key.isEmpty() && !path.isEmpty());
+}
+
+void InstrumentConfigDialog::browseMap()
+{
+    if (shownKey_.isEmpty()) return;
+    const QString current = maps_.value(shownKey_);
+    QString dir = current.isEmpty() ? QString() : QFileInfo(current).absolutePath();
+    if (dir.isEmpty()) dir = QFileInfo(QStringLiteral("/etc/adj")).isDir() ? QStringLiteral("/etc/adj") : QDir::homePath();
+    const QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select MIDI map"), dir,
+        QStringLiteral("adj MIDI maps (*.adjmm);;All files (*)"));
+    if (path.isEmpty()) return;
+    maps_.insert(shownKey_, path);
+    inputDeviceChanged();
+}
+
+void InstrumentConfigDialog::clearMap()
+{
+    if (shownKey_.isEmpty()) return;
+    maps_.insert(shownKey_, QString());
+    inputDeviceChanged();
 }
 
 // ── Joystick tab ──────────────────────────────────────────────────────────────
@@ -207,6 +268,8 @@ void InstrumentConfigDialog::saveAndWire()
     // Save input selection
     int si = inputCombo_->currentIndex();
     manager_->setMidiInputKey(si > 0 ? inputCombo_->itemData(si).toString() : QString());
+    for (auto it = maps_.cbegin(); it != maps_.cend(); ++it)
+        manager_->setMidiMapFor(it.key(), it.value());
 
     // Save output selection
     int di = outputCombo_->currentIndex();

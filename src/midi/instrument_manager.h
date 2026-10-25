@@ -52,6 +52,10 @@ public:
     QString midiInputKey()  const;
     QString midiOutputKey() const;
     void setMidiInputKey(const QString& key);
+    // The .adjmm map paired with an input device (stored per device key, "instrument_maps" config section).
+    // Empty when none was chosen.
+    QString midiMapFor(const QString& deviceKey) const;
+    void setMidiMapFor(const QString& deviceKey, const QString& path);
     void setMidiOutputKey(const QString& key);
 
     // Create ALSA subscriptions for the configured devices.

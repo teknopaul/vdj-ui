@@ -63,6 +63,16 @@ target_link_libraries(vdj-ui-difflock-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-difflock-test COMMAND vdj-ui-difflock-test)
 set_tests_properties(vdj-ui-difflock-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(vdj-ui-beat-tempo-test test_beat_tempo.cpp)
+target_link_libraries(vdj-ui-beat-tempo-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-beat-tempo-test COMMAND vdj-ui-beat-tempo-test)
+set_tests_properties(vdj-ui-beat-tempo-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-midi-map-input-test test_midi_map_input.cpp)
+target_link_libraries(vdj-ui-midi-map-input-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-midi-map-input-test COMMAND vdj-ui-midi-map-input-test)
+set_tests_properties(vdj-ui-midi-map-input-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 # rekordbox mode
 set(VDJ_DBSERVER_FIXTURES "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/dbserver")
 add_executable(vdj-ui-dbcodec-test test_db_codec.cpp)
@@ -130,3 +140,8 @@ add_executable(vdj-ui-clone-dialog-test test_clone_dialog.cpp)
 target_link_libraries(vdj-ui-clone-dialog-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-clone-dialog-test COMMAND vdj-ui-clone-dialog-test)
 set_tests_properties(vdj-ui-clone-dialog-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-packet-logger-test test_packet_logger.cpp)
+target_link_libraries(vdj-ui-packet-logger-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-packet-logger-test COMMAND vdj-ui-packet-logger-test)
+set_tests_properties(vdj-ui-packet-logger-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
