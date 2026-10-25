@@ -28,9 +28,11 @@ long_line_column=72
 
 [files]
 current_page=0
-FILE_NAME_0=3301;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Faudio-out.prompt.md;0;4
+FILE_NAME_0=1138;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Faudio-out.prompt.md;0;4
 FILE_NAME_1=1299;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fgenerating-waveforms.prompt.md;0;4
 FILE_NAME_2=584;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Ffolder-view.prompt.md;0;4
+FILE_NAME_3=7351;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Fdrum-machine_PLAN.md;0;2
+FILE_NAME_4=365;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Faudio-module-midi-control.prompt.md;0;4
 
 [VTE]
 last_dir=/home/teknopaul

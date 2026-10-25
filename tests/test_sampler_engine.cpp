@@ -27,6 +27,12 @@ private slots:
     void stopTagAtInLaterBlock();
     void engineConstructsIdle();
     void timingReportsRenderedMinusScheduled();
+    void cutFadesOutAndEndsTheVoice();
+    void cutShorterThanTheFadeClampsTheFade();
+    void cutAcrossBlockBoundary();
+    void cutWithLoopStartFrameAndStopTag();
+    void cutsAreIndependentPerVoice();
+    void cutZeroOrNegativeIsNoCut();
 
 private:
     // an impulse train: value `v` on every frame for `frames` frames
@@ -317,6 +323,153 @@ void TestSamplerEngine::timingReportsRenderedMinusScheduled()
     m.post(trig(flat(100, 1), 10000001));
     m.render(out.data(), N, 10000000);
     QVERIFY(m.drainTiming().empty());
+}
+
+void TestSamplerEngine::cutFadesOutAndEndsTheVoice()
+{
+    VoiceMixer m;
+    Trigger t = trig(flat(5000, 10000), 1);
+    t.cutAfterFrames = 1000;
+    t.fadeFrames = 441;
+    m.post(t);
+    std::vector<qint16> out(N * 2 * 4);
+    for (int b = 0; b < 4; ++b)
+        m.render(out.data() + b * N * 2, N, qint64(b * N * nsPerFrame()));
+    // frames 0..558 at full gain, then a linear ramp that reaches 0 at frame 1000
+    QCOMPARE(out[2 * 0], qint16(10000));
+    QCOMPARE(out[2 * 558], qint16(10000));
+    QCOMPARE(out[2 * 559], qint16(10000));                  // the ramp starts at 1.0
+    const int mid = 559 + 220;                              // half way down
+    QVERIFY2(qAbs(out[2 * mid] - 5000) < 100, qPrintable(QString::number(out[2 * mid])));
+    QVERIFY(out[2 * 999] > 0 && out[2 * 999] < 40);        // almost 0
+    QCOMPARE(out[2 * 1000], qint16(0));                     // silent at the cut
+    QCOMPARE(out[2 * 1001], qint16(0));
+    QCOMPARE(out[2 * 1023], qint16(0));
+    for (int f = 560; f < 999; ++f)
+        QVERIFY(out[2 * f] <= out[2 * (f - 1)]);            // monotonic down
+    QCOMPARE(m.activeVoices(), 0);                          // and the voice is gone
+}
+
+void TestSamplerEngine::cutShorterThanTheFadeClampsTheFade()
+{
+    VoiceMixer m;
+    Trigger t = trig(flat(5000, 10000), 1);
+    t.cutAfterFrames = 100;
+    t.fadeFrames = 4410;                                    // clamps to 100: a ramp from the first frame
+    m.post(t);
+    std::vector<qint16> out(N * 2);
+    m.render(out.data(), N, 0);
+    QVERIFY(out[0] > 9800);
+    QVERIFY(qAbs(out[2 * 50] - 5000) < 200);
+    QVERIFY(out[2 * 99] < 200);
+    QCOMPARE(out[2 * 100], qint16(0));
+    QCOMPARE(m.activeVoices(), 0);
+}
+
+void TestSamplerEngine::cutAcrossBlockBoundary()
+{
+    VoiceMixer m;
+    Trigger t = trig(flat(5000, 10000), 1);
+    t.cutAfterFrames = 300;                                 // 256 frame blocks: the cut falls in the second block
+    t.fadeFrames = 100;
+    m.post(t);
+    std::vector<qint16> out(N * 2);
+    m.render(out.data(), N, 0);
+    QCOMPARE(out[2 * 199], qint16(10000));                  // the fade starts at frame 200
+    QVERIFY(out[2 * 250] < 10000 && out[2 * 250] > 4000);
+    QCOMPARE(m.activeVoices(), 1);
+    m.render(out.data(), N, qint64(N * nsPerFrame()));
+    QVERIFY(out[2 * (299 - 256)] < 150);
+    QCOMPARE(out[2 * (300 - 256)], qint16(0));
+    QCOMPARE(out[2 * 200], qint16(0));
+    QCOMPARE(m.activeVoices(), 0);
+}
+
+void TestSamplerEngine::cutWithLoopStartFrameAndStopTag()
+{
+    std::vector<qint16> out(N * 2);
+    {
+        VoiceMixer m;                                       // a loop is cut too
+        Trigger t = trig(ramp(50), 1);
+        t.loop = true;
+        t.cutAfterFrames = 120;
+        t.fadeFrames = 20;
+        m.post(t);
+        m.render(out.data(), N, 0);
+        QCOMPARE(out[2 * 60], qint16(10));                  // looping: 60 mod 50
+        QCOMPARE(out[2 * 121], qint16(0));
+        QCOMPARE(m.activeVoices(), 0);
+    }
+    {
+        VoiceMixer m;                                       // startFrame: the cut counts from where the voice starts playing
+        Trigger t = trig(flat(5000, 10000), 1);
+        t.startFrame = 3000;
+        t.cutAfterFrames = 200;
+        t.fadeFrames = 50;
+        m.post(t);
+        m.render(out.data(), N, 0);
+        QCOMPARE(out[2 * 100], qint16(10000));
+        QCOMPARE(out[2 * 200], qint16(0));
+    }
+    {
+        VoiceMixer m;                                       // a hard stop before the cut still wins
+        Trigger t = trig(flat(5000, 10000), 1);
+        t.tag = 7;
+        t.cutAfterFrames = 200;
+        t.fadeFrames = 50;
+        m.post(t);
+        m.stopTagAt(7, qint64(80 * nsPerFrame()) + 1);
+        m.render(out.data(), N, 0);
+        QCOMPARE(out[2 * 79], qint16(10000));
+        QCOMPARE(out[2 * 80], qint16(0));
+        QCOMPARE(m.activeVoices(), 0);
+    }
+}
+
+void TestSamplerEngine::cutsAreIndependentPerVoice()
+{
+    VoiceMixer m;
+    Trigger a = trig(flat(5000, 1000), 1);
+    a.cutAfterFrames = 100;
+    a.fadeFrames = 10;
+    Trigger b = trig(flat(5000, 2000), 1);                  // no cut
+    Trigger c = trig(flat(60, 4000), 1);                    // the sample is shorter than a cut: ends by itself
+    c.cutAfterFrames = 500;
+    c.fadeFrames = 1;
+    m.post(a); m.post(b); m.post(c);
+    std::vector<qint16> out(N * 2);
+    m.render(out.data(), N, 0);
+    QCOMPARE(out[2 * 10], qint16(7000));
+    QCOMPARE(out[2 * 80], qint16(3000));                    // a and b (c ended at 60)
+    QCOMPARE(out[2 * 150], qint16(2000));                   // only b
+    QCOMPARE(m.activeVoices(), 1);
+    // a second hit of the same sample is cut on its own
+    m.stopAll();
+    Trigger d = a;
+    d.steadyNs = qint64(300 * nsPerFrame());
+    m.post(a);
+    m.post(d);
+    m.render(out.data(), N, 0);
+    QCOMPARE(out[2 * 50], qint16(1000));
+    QCOMPARE(out[2 * 150], qint16(0));
+    m.render(out.data(), N, qint64(N * nsPerFrame()));
+    QCOMPARE(out[2 * (310 - 256)], qint16(1000));           // the later hit still plays at full level
+    QCOMPARE(out[2 * (410 - 256)], qint16(0));
+}
+
+void TestSamplerEngine::cutZeroOrNegativeIsNoCut()
+{
+    VoiceMixer m;
+    Trigger t = trig(flat(5000, 500), 1);
+    t.cutAfterFrames = 0;
+    m.post(t);
+    Trigger n = trig(flat(5000, 100), 1);
+    n.cutAfterFrames = -20;
+    m.post(n);
+    std::vector<qint16> out(N * 2);
+    m.render(out.data(), N, 0);
+    QCOMPARE(out[2 * 255], qint16(600));
+    QCOMPARE(m.activeVoices(), 2);
 }
 
 QTEST_MAIN(TestSamplerEngine)

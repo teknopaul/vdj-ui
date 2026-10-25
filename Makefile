@@ -816,6 +816,58 @@ vdj-ui-sampler-ui-test/fast:
 .PHONY : vdj-ui-sampler-ui-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-drum-model-test
+
+# Build rule for target.
+vdj-ui-drum-model-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-model-test
+.PHONY : vdj-ui-drum-model-test
+
+# fast build rule for target.
+vdj-ui-drum-model-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/build
+.PHONY : vdj-ui-drum-model-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-machine-test
+
+# Build rule for target.
+vdj-ui-drum-machine-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-machine-test
+.PHONY : vdj-ui-drum-machine-test
+
+# fast build rule for target.
+vdj-ui-drum-machine-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build
+.PHONY : vdj-ui-drum-machine-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-ui-test
+
+# Build rule for target.
+vdj-ui-drum-ui-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-ui-test
+.PHONY : vdj-ui-drum-ui-test
+
+# fast build rule for target.
+vdj-ui-drum-ui-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build
+.PHONY : vdj-ui-drum-ui-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-kits-test
+
+# Build rule for target.
+vdj-ui-drum-kits-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-kits-test
+.PHONY : vdj-ui-drum-kits-test
+
+# fast build rule for target.
+vdj-ui-drum-kits-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build
+.PHONY : vdj-ui-drum-kits-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -1647,6 +1699,110 @@ vdj-ui-sampler-ui-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build
 .PHONY : vdj-ui-sampler-ui-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-model-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-drum-model-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-model-test_autogen_timestamp_deps
+.PHONY : vdj-ui-drum-model-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-model-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-model-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-model-test_autogen
+
+# Build rule for target.
+vdj-ui-drum-model-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-model-test_autogen
+.PHONY : vdj-ui-drum-model-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-model-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/build
+.PHONY : vdj-ui-drum-model-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-machine-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-drum-machine-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-machine-test_autogen_timestamp_deps
+.PHONY : vdj-ui-drum-machine-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-machine-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-machine-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-machine-test_autogen
+
+# Build rule for target.
+vdj-ui-drum-machine-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-machine-test_autogen
+.PHONY : vdj-ui-drum-machine-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-machine-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/build
+.PHONY : vdj-ui-drum-machine-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-ui-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-drum-ui-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-ui-test_autogen_timestamp_deps
+.PHONY : vdj-ui-drum-ui-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-ui-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-ui-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-ui-test_autogen
+
+# Build rule for target.
+vdj-ui-drum-ui-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-ui-test_autogen
+.PHONY : vdj-ui-drum-ui-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-ui-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/build
+.PHONY : vdj-ui-drum-ui-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-kits-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-drum-kits-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-kits-test_autogen_timestamp_deps
+.PHONY : vdj-ui-drum-kits-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-kits-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-kits-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-drum-kits-test_autogen
+
+# Build rule for target.
+vdj-ui-drum-kits-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-drum-kits-test_autogen
+.PHONY : vdj-ui-drum-kits-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-kits-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/build
+.PHONY : vdj-ui-drum-kits-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1689,6 +1845,14 @@ help:
 	@echo "... vdj-ui-dbserver-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-difflock-test_autogen"
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-kits-test_autogen"
+	@echo "... vdj-ui-drum-kits-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-machine-test_autogen"
+	@echo "... vdj-ui-drum-machine-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-model-test_autogen"
+	@echo "... vdj-ui-drum-model-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-ui-test_autogen"
+	@echo "... vdj-ui-drum-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-integration-test_autogen"
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-linkexport-test_autogen"
@@ -1751,6 +1915,10 @@ help:
 	@echo "... vdj-ui-dbhandler-test"
 	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-difflock-test"
+	@echo "... vdj-ui-drum-kits-test"
+	@echo "... vdj-ui-drum-machine-test"
+	@echo "... vdj-ui-drum-model-test"
+	@echo "... vdj-ui-drum-ui-test"
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-midi-map-input-test"

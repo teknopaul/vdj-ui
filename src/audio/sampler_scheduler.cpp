@@ -157,6 +157,62 @@ bool SamplerScheduler::waitIdle(int timeoutMs)
     return false;
 }
 
+// Where the next window of hits starts: where the last one ended, or now for a module that has just become active; a sequencer
+// that restarted (its beat count went back) cancels a one bar in progress and starts over from now.
+double SamplerScheduler::windowStart(const State& st, double nowBeat, double lookaheadBeats, SamplerModule* m)
+{
+    if (!st.active)
+        return nowBeat;
+    if (nowBeat + lookaheadBeats + 1.0 < st.scheduledTo) {
+        m->cancelOneBar();
+        return nowBeat;
+    }
+    return std::max(st.scheduledTo, nowBeat);
+}
+
+// DR-6S: every hit belongs to a voice with its own sample, volume, offset and choke.
+void SamplerScheduler::tickDrums(const std::shared_ptr<SamplerModule>& m, const ModuleSettings& s, double nowBeat, double bpm)
+{
+    State st;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        st = states_[m->id()];
+    }
+    const double lookaheadBeats = kLookaheadMs * bpm / 60000.0;
+    const double from = windowStart(st, nowBeat, lookaheadBeats, m.get());
+    const double to = nowBeat + lookaheadBeats;
+    std::vector<PlannedHit> hits;
+    if (to > from)
+        m->plan(from, to, hits);
+    for (const PlannedHit& h : hits) {
+        if (h.voice < 0 || h.voice >= kDrumVoices)
+            continue;
+        const DrumVoice& v = s.drums[h.voice];
+        if (v.samplePath.isEmpty() || v.volume <= 0 || s.volume <= 0)
+            continue;
+        auto sample = cache_->peek(v.samplePath);
+        if (!sample) {
+            requestLoad(v.samplePath);               // this hit is skipped, the next ones find it decoded
+            continue;
+        }
+        Trigger t;
+        t.sample = sample;
+        t.steadyNs = source_->steadyNsAtBeat(h.beat) + qint64(v.offsetMs * 1e6);
+        t.gain = s.gain * float(s.volume) / float(SamplerModule::kMaxVolume) * float(v.volume) / float(SamplerModule::kMaxVolume) * h.level;
+        t.tag = m->id();
+        if (v.chokeSteps > 0) {
+            // the voice is cut that many quarter beats after it starts, with a fade of up to 100 ms before the cut
+            t.cutAfterFrames = qint64(std::llround(double(v.chokeSteps) * (60.0 / bpm) / 4.0 * DecodedAudio::kSampleRate));
+            t.fadeFrames = DecodedAudio::kSampleRate / 10;
+        }
+        sink_(t);
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    State& ns = states_[m->id()];
+    ns.active = true;
+    ns.scheduledTo = std::max(to, from);
+}
+
 // MidiMatic: the same window logic as the samples, but the result is queued note events, no sample is involved.
 void SamplerScheduler::tickMidi(const std::shared_ptr<SamplerModule>& m, const ModuleSettings& s, bool oneBar,
                                 double nowBeat, double bpm)
@@ -168,13 +224,7 @@ void SamplerScheduler::tickMidi(const std::shared_ptr<SamplerModule>& m, const M
         st = states_[m->id()];
     }
     const double lookaheadBeats = kLookaheadMs * bpm / 60000.0;
-    double from = nowBeat;
-    if (st.active) {
-        if (nowBeat + lookaheadBeats + 1.0 < st.scheduledTo)
-            m->cancelOneBar();
-        else
-            from = std::max(st.scheduledTo, nowBeat);
-    }
+    const double from = windowStart(st, nowBeat, lookaheadBeats, m.get());
     const double to = nowBeat + lookaheadBeats;
     std::vector<PlannedHit> hits;
     if (to > from)
@@ -261,7 +311,7 @@ void SamplerScheduler::tick(qint64 nowNs)
         for (const auto& m : mods) {
             m->cancelOneBar();
             auto it = states_.find(m->id());
-            if (!m->usesSample() && it != states_.end() && it->second.active && midiSink_) {
+            if (!m->usesSample() && !m->perVoiceSamples() && it != states_.end() && it->second.active && midiSink_) {
                 // the sequencer stop dropped the queued note offs: release whatever may be sounding
                 const ModuleSettings s = m->settings();
                 MidiNoteEvent e;
@@ -290,6 +340,12 @@ void SamplerScheduler::tick(qint64 nowNs)
             std::lock_guard<std::mutex> lock(mutex_);
             st = states_[m->id()];
         }
+        if (m->perVoiceSamples()) {
+            // decode the six samples ahead of time so the first bar after switching on is not missing hits
+            for (const DrumVoice& v : s.drums)
+                if (!v.samplePath.isEmpty() && !cache_->peek(v.samplePath))
+                    requestLoad(v.samplePath);
+        }
         if (!s.enabled && !oneBar) {
             if (m->stretchesToBpm() && !s.samplePath.isEmpty()) {
                 // get the stretched copy ready while the loop is off, so switching it on or the one bar button is not late
@@ -306,6 +362,10 @@ void SamplerScheduler::tick(qint64 nowNs)
             continue;
         }
 
+        if (m->perVoiceSamples()) {
+            tickDrums(m, s, nowBeat, bpm);
+            continue;
+        }
         if (!m->usesSample()) {
             tickMidi(m, s, oneBar, nowBeat, bpm);
             continue;

@@ -72,6 +72,8 @@ private:
     };
     void loaderLoop();
     void requestLoad(const QString& path);
+    double windowStart(const State& st, double nowBeat, double lookaheadBeats, SamplerModule* m);
+    void tickDrums(const std::shared_ptr<SamplerModule>& m, const ModuleSettings& s, double nowBeat, double bpm);
     void tickMidi(const std::shared_ptr<SamplerModule>& m, const ModuleSettings& s, bool oneBar, double nowBeat, double bpm);
     void requestStretch(const QString& path, int permille, qint64 exactFrames);
     std::shared_ptr<const Sample> acidSample(const ModuleSettings& s, const std::shared_ptr<const Sample>& base, double bpm, State& st);

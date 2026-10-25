@@ -785,6 +785,54 @@ audio/beat_source.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/beat_source.cpp.s
 .PHONY : audio/beat_source.cpp.s
 
+audio/drum_kits.o: audio/drum_kits.cpp.o
+.PHONY : audio/drum_kits.o
+
+# target to build an object file
+audio/drum_kits.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/drum_kits.cpp.o
+.PHONY : audio/drum_kits.cpp.o
+
+audio/drum_kits.i: audio/drum_kits.cpp.i
+.PHONY : audio/drum_kits.i
+
+# target to preprocess a source file
+audio/drum_kits.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/drum_kits.cpp.i
+.PHONY : audio/drum_kits.cpp.i
+
+audio/drum_kits.s: audio/drum_kits.cpp.s
+.PHONY : audio/drum_kits.s
+
+# target to generate assembly for a file
+audio/drum_kits.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/drum_kits.cpp.s
+.PHONY : audio/drum_kits.cpp.s
+
+audio/drum_pattern.o: audio/drum_pattern.cpp.o
+.PHONY : audio/drum_pattern.o
+
+# target to build an object file
+audio/drum_pattern.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/drum_pattern.cpp.o
+.PHONY : audio/drum_pattern.cpp.o
+
+audio/drum_pattern.i: audio/drum_pattern.cpp.i
+.PHONY : audio/drum_pattern.i
+
+# target to preprocess a source file
+audio/drum_pattern.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/drum_pattern.cpp.i
+.PHONY : audio/drum_pattern.cpp.i
+
+audio/drum_pattern.s: audio/drum_pattern.cpp.s
+.PHONY : audio/drum_pattern.s
+
+# target to generate assembly for a file
+audio/drum_pattern.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/drum_pattern.cpp.s
+.PHONY : audio/drum_pattern.cpp.s
+
 audio/sample_cache.o: audio/sample_cache.cpp.o
 .PHONY : audio/sample_cache.o
 
@@ -928,6 +976,30 @@ audio/sampler_scheduler.s: audio/sampler_scheduler.cpp.s
 audio/sampler_scheduler.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_scheduler.cpp.s
 .PHONY : audio/sampler_scheduler.cpp.s
+
+audio/swing.o: audio/swing.cpp.o
+.PHONY : audio/swing.o
+
+# target to build an object file
+audio/swing.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/swing.cpp.o
+.PHONY : audio/swing.cpp.o
+
+audio/swing.i: audio/swing.cpp.i
+.PHONY : audio/swing.i
+
+# target to preprocess a source file
+audio/swing.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/swing.cpp.i
+.PHONY : audio/swing.cpp.i
+
+audio/swing.s: audio/swing.cpp.s
+.PHONY : audio/swing.s
+
+# target to generate assembly for a file
+audio/swing.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/swing.cpp.s
+.PHONY : audio/swing.cpp.s
 
 audio/time_stretcher.o: audio/time_stretcher.cpp.o
 .PHONY : audio/time_stretcher.o
@@ -2033,6 +2105,54 @@ ui/diff_lock_bar.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/diff_lock_bar.cpp.s
 .PHONY : ui/diff_lock_bar.cpp.s
 
+ui/drum_editor.o: ui/drum_editor.cpp.o
+.PHONY : ui/drum_editor.o
+
+# target to build an object file
+ui/drum_editor.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/drum_editor.cpp.o
+.PHONY : ui/drum_editor.cpp.o
+
+ui/drum_editor.i: ui/drum_editor.cpp.i
+.PHONY : ui/drum_editor.i
+
+# target to preprocess a source file
+ui/drum_editor.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/drum_editor.cpp.i
+.PHONY : ui/drum_editor.cpp.i
+
+ui/drum_editor.s: ui/drum_editor.cpp.s
+.PHONY : ui/drum_editor.s
+
+# target to generate assembly for a file
+ui/drum_editor.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/drum_editor.cpp.s
+.PHONY : ui/drum_editor.cpp.s
+
+ui/drum_voice_selector.o: ui/drum_voice_selector.cpp.o
+.PHONY : ui/drum_voice_selector.o
+
+# target to build an object file
+ui/drum_voice_selector.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/drum_voice_selector.cpp.o
+.PHONY : ui/drum_voice_selector.cpp.o
+
+ui/drum_voice_selector.i: ui/drum_voice_selector.cpp.i
+.PHONY : ui/drum_voice_selector.i
+
+# target to preprocess a source file
+ui/drum_voice_selector.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/drum_voice_selector.cpp.i
+.PHONY : ui/drum_voice_selector.cpp.i
+
+ui/drum_voice_selector.s: ui/drum_voice_selector.cpp.s
+.PHONY : ui/drum_voice_selector.s
+
+# target to generate assembly for a file
+ui/drum_voice_selector.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/drum_voice_selector.cpp.s
+.PHONY : ui/drum_voice_selector.cpp.s
+
 ui/hud_window.o: ui/hud_window.cpp.o
 .PHONY : ui/hud_window.o
 
@@ -2464,6 +2584,54 @@ ui/sampler_panel.s: ui/sampler_panel.cpp.s
 ui/sampler_panel.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_panel.cpp.s
 .PHONY : ui/sampler_panel.cpp.s
+
+ui/step_chooser.o: ui/step_chooser.cpp.o
+.PHONY : ui/step_chooser.o
+
+# target to build an object file
+ui/step_chooser.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/step_chooser.cpp.o
+.PHONY : ui/step_chooser.cpp.o
+
+ui/step_chooser.i: ui/step_chooser.cpp.i
+.PHONY : ui/step_chooser.i
+
+# target to preprocess a source file
+ui/step_chooser.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/step_chooser.cpp.i
+.PHONY : ui/step_chooser.cpp.i
+
+ui/step_chooser.s: ui/step_chooser.cpp.s
+.PHONY : ui/step_chooser.s
+
+# target to generate assembly for a file
+ui/step_chooser.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/step_chooser.cpp.s
+.PHONY : ui/step_chooser.cpp.s
+
+ui/swing_slider.o: ui/swing_slider.cpp.o
+.PHONY : ui/swing_slider.o
+
+# target to build an object file
+ui/swing_slider.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/swing_slider.cpp.o
+.PHONY : ui/swing_slider.cpp.o
+
+ui/swing_slider.i: ui/swing_slider.cpp.i
+.PHONY : ui/swing_slider.i
+
+# target to preprocess a source file
+ui/swing_slider.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/swing_slider.cpp.i
+.PHONY : ui/swing_slider.cpp.i
+
+ui/swing_slider.s: ui/swing_slider.cpp.s
+.PHONY : ui/swing_slider.s
+
+# target to generate assembly for a file
+ui/swing_slider.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/swing_slider.cpp.s
+.PHONY : ui/swing_slider.cpp.s
 
 ui/track_analysis.o: ui/track_analysis.cpp.o
 .PHONY : ui/track_analysis.o
@@ -2927,6 +3095,12 @@ help:
 	@echo "... audio/beat_source.o"
 	@echo "... audio/beat_source.i"
 	@echo "... audio/beat_source.s"
+	@echo "... audio/drum_kits.o"
+	@echo "... audio/drum_kits.i"
+	@echo "... audio/drum_kits.s"
+	@echo "... audio/drum_pattern.o"
+	@echo "... audio/drum_pattern.i"
+	@echo "... audio/drum_pattern.s"
 	@echo "... audio/sample_cache.o"
 	@echo "... audio/sample_cache.i"
 	@echo "... audio/sample_cache.s"
@@ -2945,6 +3119,9 @@ help:
 	@echo "... audio/sampler_scheduler.o"
 	@echo "... audio/sampler_scheduler.i"
 	@echo "... audio/sampler_scheduler.s"
+	@echo "... audio/swing.o"
+	@echo "... audio/swing.i"
+	@echo "... audio/swing.s"
 	@echo "... audio/time_stretcher.o"
 	@echo "... audio/time_stretcher.i"
 	@echo "... audio/time_stretcher.s"
@@ -3083,6 +3260,12 @@ help:
 	@echo "... ui/diff_lock_bar.o"
 	@echo "... ui/diff_lock_bar.i"
 	@echo "... ui/diff_lock_bar.s"
+	@echo "... ui/drum_editor.o"
+	@echo "... ui/drum_editor.i"
+	@echo "... ui/drum_editor.s"
+	@echo "... ui/drum_voice_selector.o"
+	@echo "... ui/drum_voice_selector.i"
+	@echo "... ui/drum_voice_selector.s"
 	@echo "... ui/hud_window.o"
 	@echo "... ui/hud_window.i"
 	@echo "... ui/hud_window.s"
@@ -3137,6 +3320,12 @@ help:
 	@echo "... ui/sampler_panel.o"
 	@echo "... ui/sampler_panel.i"
 	@echo "... ui/sampler_panel.s"
+	@echo "... ui/step_chooser.o"
+	@echo "... ui/step_chooser.i"
+	@echo "... ui/step_chooser.s"
+	@echo "... ui/swing_slider.o"
+	@echo "... ui/swing_slider.i"
+	@echo "... ui/swing_slider.s"
 	@echo "... ui/track_analysis.o"
 	@echo "... ui/track_analysis.i"
 	@echo "... ui/track_analysis.s"

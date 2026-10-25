@@ -1,8 +1,11 @@
 #include "sampler_module_widget.h"
 #include "beat_chooser.h"
+#include "drum_editor.h"
 #include "sample_chooser.h"
 #include "sampler_icons.h"
 #include "sampler_panel.h"
+#include "swing_slider.h"
+#include "wheel_notches.h"
 
 #include <QCheckBox>
 #include <algorithm>
@@ -46,15 +49,17 @@ SamplerModuleWidget::SamplerModuleWidget(std::shared_ptr<SamplerModule> module, 
     on_->setFocusPolicy(Qt::NoFocus);
     name_ = new QLineEdit(this);
     name_->setPlaceholderText(m.typeName());
-    QFont bold = name_->font();
-    bold.setBold(true);
-    name_->setFont(bold);
+
     volume_ = new QSlider(Qt::Horizontal, this);
     volume_->setRange(0, SamplerModule::kMaxVolume);
     volume_->setFixedWidth(80);
     volume_->setFocusPolicy(Qt::NoFocus);
     auto* type = new QLabel(m.typeName(), this);
+    QFont bold = type->font();
+    bold.setBold(true);
+    type->setFont(bold);                             // the module type, next to the remove button
     type->setStyleSheet(QStringLiteral("color: gray;"));
+    typeLabel_ = type;
     remove_ = new QToolButton(this);
     remove_->setText(QStringLiteral("✕"));
     remove_->setToolTip(tr("Remove this module"));
@@ -77,12 +82,16 @@ SamplerModuleWidget::SamplerModuleWidget(std::shared_ptr<SamplerModule> module, 
         beats_ = new BeatChooser(this);
         second->addWidget(beats_);
     }
-    offset_ = new QSpinBox(this);
-    offset_->setRange(int(-SamplerModule::kMaxOffsetMs), int(SamplerModule::kMaxOffsetMs));
-    offset_->setSuffix(QStringLiteral(" ms"));
-    offset_->setToolTip(tr("Offset to the beat: negative plays early, positive late"));
-    second->addWidget(new QLabel(tr("offset"), this));
-    second->addWidget(offset_);
+    if (m.perVoiceSamples()) {
+        drum_ = new DrumEditor(module_, panel_, this);       // the DR-6S: sample, offset and pattern are per voice, in its editor
+    } else {
+        offset_ = new QSpinBox(this);
+        offset_->setRange(int(-SamplerModule::kMaxOffsetMs), int(SamplerModule::kMaxOffsetMs));
+        offset_->setSuffix(QStringLiteral(" ms"));
+        offset_->setToolTip(tr("Offset to the beat: negative plays early, positive late"));
+        second->addWidget(new QLabel(tr("offset"), this));
+        second->addWidget(offset_);
+    }
 
     auto* third = new QHBoxLayout;
     if (m.supportsReverseSync()) {
@@ -94,23 +103,23 @@ SamplerModuleWidget::SamplerModuleWidget(std::shared_ptr<SamplerModule> module, 
         oneBar_ = new QToolButton(this);
         oneBar_->setIcon(samplerIcon(SamplerIcon::Green));
         oneBar_->setIconSize(QSize(24, 24));
-        oneBar_->setText(tr("1 bar"));
-        oneBar_->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        oneBar_->setToolTip(tr("Play one bar from the next bar line, then stop. Click again to cancel."));
+        oneBar_->setAutoRaise(true);                 // just the round icon, the tooltip says what it does
+        oneBar_->setStyleSheet(QStringLiteral("QToolButton { padding: 0px; margin: 0px; border: none; background: transparent; }"));
+        oneBar_->setToolTip(tr("1 bar: play one bar from the next bar line, then stop. Click again to cancel."));
         oneBar_->setFocusPolicy(Qt::NoFocus);
-        third->addWidget(oneBar_);
+        top->insertWidget(1, oneBar_);               // right of the on/off button, the same place in every module
     }
     if (m.type() == SamplerModule::OneShot) {
         fire_ = new QToolButton(this);
         fire_->setIcon(samplerIcon(SamplerIcon::Green));
         fire_->setIconSize(QSize(24, 24));
-        fire_->setText(tr("Fire"));
-        fire_->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        fire_->setToolTip(tr("Play the sample once"));
+        fire_->setAutoRaise(true);
+        fire_->setStyleSheet(QStringLiteral("QToolButton { padding: 0px; margin: 0px; border: none; background: transparent; }"));
+        fire_->setToolTip(tr("Fire: play the sample once"));
         fire_->setFocusPolicy(Qt::NoFocus);
         quantize_ = new QCheckBox(tr("Quantize"), this);
         quantize_->setToolTip(tr("Start on the next beat"));
-        third->addWidget(fire_);
+        top->insertWidget(1, fire_);                 // the one shot's green button sits where the other modules' 1 bar button is
         third->addWidget(quantize_);
     }
     if (m.type() == SamplerModule::OneShot || m.type() == SamplerModule::AcidLoop) {
@@ -126,6 +135,10 @@ SamplerModuleWidget::SamplerModuleWidget(std::shared_ptr<SamplerModule> module, 
         bpm_->setSuffix(QStringLiteral(" BPM"));
         bpm_->setToolTip(tr("The sample's BPM when the file does not say (auto = from the file)"));
         third->addWidget(bpm_);
+    }
+    if (m.supportsSwing() && !m.perVoiceSamples()) {
+        swing_ = new SwingSlider(this);
+        third->addWidget(swing_);
     }
     if (m.type() == SamplerModule::MidiMatic) {
         device_ = new QComboBox(this);
@@ -147,7 +160,10 @@ SamplerModuleWidget::SamplerModuleWidget(std::shared_ptr<SamplerModule> module, 
     l->setContentsMargins(6, 4, 6, 4);
     l->setSpacing(3);
     l->addLayout(top);
-    l->addLayout(second);
+    if (drum_)
+        l->addWidget(drum_);
+    else
+        l->addLayout(second);
     if (third->count() > 1)
         l->addLayout(third);
 
@@ -164,7 +180,10 @@ SamplerModuleWidget::SamplerModuleWidget(std::shared_ptr<SamplerModule> module, 
         edit([v](ModuleSettings& s) { s.volume = v; });
     });
     connect(remove_, &QToolButton::clicked, this, [this]() { emit removeRequested(module_->id()); });
-    connect(offset_, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int v) { edit([v](ModuleSettings& s) { s.offsetMs = v; }); });
+    if (offset_)
+        connect(offset_, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int v) { edit([v](ModuleSettings& s) { s.offsetMs = v; }); });
+    if (swing_)
+        connect(swing_, &SwingSlider::valueChanged, this, [this](int v) { edit([v](ModuleSettings& s) { s.swing = v; }); });
     if (sample_)
         connect(sample_, &SampleChooser::sampleChanged, this, [this](const QString& p) { edit([&](ModuleSettings& s) { s.samplePath = p; }); });
     if (beats_)
@@ -212,20 +231,24 @@ void SamplerModuleWidget::setVolume(int volume)
 
 void SamplerModuleWidget::wheelEvent(QWheelEvent* event)
 {
-    const int notches = event->angleDelta().y() / 120;
-    if (notches == 0) {
-        event->ignore();
+    event->accept();                                 // a wheel over a module never scrolls the list, even for a part of a notch
+    const int notches = wheel_.add(event);
+    if (notches == 0)
         return;
-    }
     const int step = (event->modifiers() & Qt::ShiftModifier) ? 10 : 1;       // shift: coarse
     setVolume(volume_->value() + notches * step);
-    event->accept();
 }
 
 bool SamplerModuleWidget::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::Wheel) {
-        wheelEvent(static_cast<QWheelEvent*>(event));
+        auto* we = static_cast<QWheelEvent*>(event);
+        // the DR-6S: over its editor (but not the swing slider) the wheel is the volume of the selected voice, elsewhere the module's
+        auto* w = qobject_cast<QWidget*>(watched);
+        if (drum_ && w && (w == drum_ || drum_->isAncestorOf(w)) && !SwingSlider::isInside(watched))
+            drum_->wheelVolume(we);
+        else
+            wheelEvent(we);
         return true;
     }
     return QFrame::eventFilter(watched, event);
@@ -234,14 +257,13 @@ bool SamplerModuleWidget::eventFilter(QObject* watched, QEvent* event)
 void SamplerModuleWidget::updateOnButton(bool on)
 {
     on_->setIcon(samplerIcon(on ? SamplerIcon::Red : SamplerIcon::Yellow));
-    const QString key = on_->text();
+    const QString key = keyLabel_;
     on_->setToolTip((on ? tr("On") : tr("Off")) + (key.isEmpty() ? QString() : tr(" (%1 switches it)").arg(key)));
 }
 
 void SamplerModuleWidget::setKeyLabel(const QString& label)
 {
-    on_->setText(label);
-    on_->setToolButtonStyle(label.isEmpty() ? Qt::ToolButtonIconOnly : Qt::ToolButtonTextBesideIcon);
+    keyLabel_ = label;                               // only in the tooltip: the button shows just the round icon
     updateOnButton(on_->isChecked());
 }
 
@@ -254,7 +276,9 @@ void SamplerModuleWidget::reloadFromModule()
     volume_->setValue(s.volume);
     volume_->setToolTip(tr("Volume %1 (0-127). Turn the mouse wheel over the module to change it.").arg(s.volume));
     name_->setText(s.name);
-    offset_->setValue(int(s.offsetMs));
+    if (offset_) offset_->setValue(int(s.offsetMs));
+    if (swing_) swing_->setValue(s.swing);
+    if (drum_) drum_->reload();
     if (sample_) {
         sample_->setSample(s.samplePath);
         sample_->setFolder(panel_->sampleFolder());

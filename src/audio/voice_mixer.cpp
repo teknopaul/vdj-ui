@@ -81,6 +81,15 @@ void VoiceMixer::mixVoice(Voice& v, int* acc, int fromFrame, int toFrame)
     const double frames = double(v.sample->audio.frames());
     const float g = v.gain;
     for (int f = fromFrame; f < toFrame; ++f) {
+        float cutGain = 1.0f;
+        if (v.cutAfter > 0) {
+            if (v.age >= v.cutAfter) {
+                v.finished = true;
+                return;
+            }
+            if (v.age >= v.cutAfter - v.fade)
+                cutGain = float(v.cutAfter - v.age) / float(v.fade);
+        }
         if (v.pos >= frames) {
             if (!v.loop)
                 return;
@@ -99,10 +108,13 @@ void VoiceMixer::mixVoice(Voice& v, int* acc, int fromFrame, int toFrame)
             l = float(s[2 * i] * (1.0 - frac) + s[2 * j] * frac);
             r = float(s[2 * i + 1] * (1.0 - frac) + s[2 * j + 1] * frac);
         }
-        acc[2 * f] += int(l * g);
-        acc[2 * f + 1] += int(r * g);
+        acc[2 * f] += int(l * g * cutGain);
+        acc[2 * f + 1] += int(r * g * cutGain);
         v.pos += v.ratio;
+        ++v.age;
     }
+    if (v.cutAfter > 0 && v.age >= v.cutAfter)
+        v.finished = true;                                   // removed in this pass, not one block later
 }
 
 void VoiceMixer::render(qint16* out, int frames, qint64 blockStartNs)
@@ -127,6 +139,10 @@ void VoiceMixer::render(qint16* out, int frames, qint64 blockStartNs)
             v.gain = t.gain * master_;
             v.loop = t.loop;
             v.tag = t.tag;
+            if (t.cutAfterFrames > 0) {
+                v.cutAfter = t.cutAfterFrames;
+                v.fade = std::clamp<qint64>(t.fadeFrames, 1, t.cutAfterFrames);
+            }
             const int off = t.steadyNs <= blockStartNs ? 0 : std::min(frames - 1, int(double(t.steadyNs - blockStartNs) * kRate / 1e9));
             voices_.push_back(v);
             starts.emplace_back(off, voices_.size() - 1);
@@ -167,7 +183,7 @@ void VoiceMixer::render(qint16* out, int frames, qint64 blockStartNs)
     size_t keep = 0;
     for (size_t vi = 0; vi < voices_.size(); ++vi) {
         const Voice& v = voices_[vi];
-        if (killed[vi] || (!v.loop && v.pos >= double(v.sample->audio.frames())))
+        if (killed[vi] || v.finished || (!v.loop && v.pos >= double(v.sample->audio.frames())))
             continue;
         if (keep != vi)
             voices_[keep] = voices_[vi];

@@ -4,10 +4,12 @@
 #include <QFrame>
 #include <memory>
 #include "audio/sampler_module.h"
+#include "wheel_notches.h"
 
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QLabel;
 class QLineEdit;
 class QSlider;
 class QSpinBox;
@@ -16,6 +18,8 @@ class QToolButton;
 namespace vdj {
 
 class BeatChooser;
+class DrumEditor;
+class SwingSlider;
 class SampleChooser;
 class SamplerPanel;
 
@@ -38,6 +42,7 @@ public:
     QToolButton* onButton() const { return on_; }
     QLineEdit* nameEdit() const { return name_; }
     QToolButton* removeButton() const { return remove_; }
+    QLabel* typeLabel() const { return typeLabel_; }       // "Bombomatic", "DR-6S" ... in bold, next to the remove button
     SampleChooser* sampleChooser() const { return sample_; }
     BeatChooser* beatChooser() const { return beats_; }
     QSpinBox* offsetSpin() const { return offset_; }
@@ -52,9 +57,13 @@ public:
     QSpinBox* midiNoteSpin() const { return note_; }
 
     QSlider* volumeSlider() const { return volume_; }
+    DrumEditor* drumEditor() const { return drum_; }
+    SwingSlider* swingSlider() const { return swing_; }     // the Dembomatik's (the DR-6S has it in its editor)
+    bool wantsFullRow() const { return module_->perVoiceSamples(); }   // the 16 steps need a whole row of the grid
     void setVolume(int volume);
     // The function key that switches this module on and off (shown next to the switch); empty for none.
-    void setKeyLabel(const QString& label);                      // 0..127, as if set with the wheel
+    void setKeyLabel(const QString& label);
+    QString keyLabel() const { return keyLabel_; }                      // 0..127, as if set with the wheel
 
 signals:
     void removeRequested(int moduleId);
@@ -73,7 +82,11 @@ private:
     QToolButton* on_ = nullptr;
     QLineEdit* name_ = nullptr;
     QToolButton* remove_ = nullptr;
+    QLabel* typeLabel_ = nullptr;
+    QString keyLabel_;
     QSlider* volume_ = nullptr;
+    DrumEditor* drum_ = nullptr;
+    SwingSlider* swing_ = nullptr;
     SampleChooser* sample_ = nullptr;
     BeatChooser* beats_ = nullptr;
     QSpinBox* offset_ = nullptr;
@@ -87,6 +100,7 @@ private:
     QSpinBox* channel_ = nullptr;
     QSpinBox* note_ = nullptr;
     int blink_ = 0;
+    WheelNotches wheel_;
 };
 
 } // namespace vdj

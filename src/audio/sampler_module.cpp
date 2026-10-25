@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include "swing.h"
 
 namespace vdj {
 
@@ -28,6 +29,14 @@ void SamplerModule::setSettings(const ModuleSettings& in)
     s.midiVelocity = std::clamp(s.midiVelocity, 1, 127);
     s.gain = std::clamp(s.gain, 0.0f, 4.0f);
     s.volume = std::clamp(s.volume, 0, kMaxVolume);
+    s.swing = swingClamp(s.swing);
+    for (DrumVoice& v : s.drums) {
+        v.volume = std::clamp(v.volume, 0, kMaxVolume);
+        v.offsetMs = std::clamp(v.offsetMs, -kMaxOffsetMs, kMaxOffsetMs);
+        v.chokeSteps = drumChokeClamp(v.chokeSteps);
+        for (quint8& st : v.steps)
+            st = std::min<quint8>(st, StepHalf);
+    }
     s.beatMask &= 0x0F;
     std::lock_guard<std::mutex> lock(mutex_);
     s_ = s;
@@ -63,12 +72,29 @@ bool Dembomatik::stepIsOn(int step)
     return kPattern[((step % kSteps) + kSteps) % kSteps];
 }
 
-void Dembomatik::collectHits(double lo, double hi, const ModuleSettings&, std::vector<PlannedHit>& out) const
+void Dembomatik::collectHits(double lo, double hi, const ModuleSettings& s, std::vector<PlannedHit>& out) const
 {
-    // a step is a quarter of a beat; the bar is 4 beats = 16 steps
+    // a step is a quarter of a beat; the bar is 4 beats = 16 steps. Swing delays the odd steps (swing.h).
     for (long k = long(std::ceil(lo * 4.0 - 1e-9)); double(k) / 4.0 < hi - 1e-12; ++k)
         if (stepIsOn(int(k % kSteps)))
-            out.push_back(PlannedHit{ double(k) / 4.0 });
+            out.push_back(PlannedHit{ double(k) / 4.0 + swingDelayBeats(int(k % kSteps), s.swing) });
+}
+
+void DrumMachine::collectHits(double lo, double hi, const ModuleSettings& s, std::vector<PlannedHit>& out) const
+{
+    // a hit is planned once, in the window that holds its grid position; the swing only moves the time it plays at
+    for (long k = long(std::ceil(lo * 4.0 - 1e-9)); double(k) / 4.0 < hi - 1e-12; ++k) {
+        const int step = int(k % kDrumSteps);
+        for (int v = 0; v < kDrumVoices; ++v) {
+            if (s.drums[v].steps[step] == StepOff)
+                continue;
+            PlannedHit h;
+            h.beat = double(k) / 4.0 + swingDelayBeats(step, s.swing);
+            h.voice = v;
+            h.level = drumStepLevel(s.drums[v].steps[step]);
+            out.push_back(h);
+        }
+    }
 }
 
 void SamplerModule::fireOneBar(double nowBeat)
@@ -117,6 +143,7 @@ QString SamplerModule::typeKey(Type t)
     case OneShot: return QStringLiteral("oneshot");
     case MidiMatic: return QStringLiteral("midi");
     case Dembomatik: return QStringLiteral("dembow");
+    case DrumMachine: return QStringLiteral("drums");
     }
     return QString();
 }
@@ -131,6 +158,7 @@ std::shared_ptr<SamplerModule> SamplerModule::create(Type type)
     case OneShot: m = std::make_shared<vdj::OneShot>(); break;
     case MidiMatic: m = std::make_shared<vdj::MidiMatic>(); break;
     case Dembomatik: m = std::make_shared<vdj::Dembomatik>(); break;
+    case DrumMachine: m = std::make_shared<vdj::DrumMachine>(); break;
     }
     ModuleSettings s;
     s.name = m->typeName();
@@ -158,13 +186,21 @@ QVariantMap SamplerModule::toVariant() const
     m["midiChannel"] = s.midiChannel;
     m["midiNote"] = s.midiNote;
     m["midiVelocity"] = s.midiVelocity;
+    if (supportsSwing())
+        m["swing"] = s.swing;
+    if (hasDrumVoices()) {
+        QVariantList voices;
+        for (const DrumVoice& v : s.drums)
+            voices.append(drumVoiceToVariant(v));
+        m["voices"] = voices;
+    }
     return m;
 }
 
 std::shared_ptr<SamplerModule> SamplerModule::fromVariant(const QVariantMap& m)
 {
     const QString key = m.value("type").toString();
-    for (Type t : { Bombomatic, StabPlayer, AcidLoop, OneShot, MidiMatic, Dembomatik }) {
+    for (Type t : { Bombomatic, StabPlayer, AcidLoop, OneShot, MidiMatic, Dembomatik, DrumMachine }) {
         if (typeKey(t) != key)
             continue;
         auto mod = create(t);
@@ -186,6 +222,13 @@ std::shared_ptr<SamplerModule> SamplerModule::fromVariant(const QVariantMap& m)
         s.midiChannel = m.value("midiChannel", s.midiChannel).toInt();
         s.midiNote = m.value("midiNote", s.midiNote).toInt();
         s.midiVelocity = m.value("midiVelocity", s.midiVelocity).toInt();
+        if (mod->supportsSwing())
+            s.swing = m.value("swing", s.swing).toInt();
+        if (mod->hasDrumVoices()) {
+            const QVariantList voices = m.value("voices").toList();
+            for (int i = 0; i < kDrumVoices && i < voices.size(); ++i)
+                drumVoiceFromVariant(voices[i].toMap(), &s.drums[i]);          // a bad pattern keeps the (empty) default
+        }
         mod->setSettings(s);
         return mod;
     }

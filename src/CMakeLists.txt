@@ -49,6 +49,9 @@ add_library(vdj-cdj STATIC
     audio/sampler_scheduler.cpp
     audio/sample_stretch.cpp
     audio/sampler_presets.cpp
+    audio/swing.cpp
+    audio/drum_pattern.cpp
+    audio/drum_kits.cpp
     audio/time_stretcher.cpp
     midi/alsa_clock.cpp
     midi/diff_lock.cpp
@@ -73,6 +76,10 @@ add_library(vdj-cdj STATIC
     ui/track_browser.cpp
     ui/sample_tree_model.cpp
     ui/sampler_icons.cpp
+    ui/drum_voice_selector.cpp
+    ui/step_chooser.cpp
+    ui/drum_editor.cpp
+    ui/swing_slider.cpp
     ui/beat_chooser.cpp
     ui/sample_chooser.cpp
     ui/sampler_module_widget.cpp

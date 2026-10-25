@@ -28,6 +28,7 @@ private slots:
     void reverseSyncStartsBeforeBeat();
     void reverseSyncLateStart();
     void settingsClampAndRoundTrip();
+    void bombomaticOneBarPlaysFourBeats();
     void volumeScalesTheGainAndZeroIsSilent();
     void dembowPatternOnTheSixteenthGrid();
     void dembowScheduledAt120Bpm();
@@ -291,8 +292,8 @@ void TestSamplerModules::oneBarStateReporting()
     m->finishOneBar(12.0);
     m->fireOneBar(12.5);                             // a fresh press after it played arms again
     QCOMPARE(m->oneBarState(12.5), OneBarState::Armed);
-    auto b = bomb(shortWav_, false);
-    b->fireOneBar(0.0);                              // the bombomatic has no one bar button
+    auto b = SamplerModule::create(SamplerModule::OneShot);
+    b->fireOneBar(0.0);                              // the one shot has no one bar (it has its own fire button)
     QCOMPARE(b->oneBarState(0.0), OneBarState::Idle);
 }
 
@@ -450,6 +451,21 @@ void TestSamplerModules::dembowOneBarAndDisabled()
     QCOMPARE(int(got_.size()), 5);                   // the five kicks of that one bar
     QCOMPARE(got_[0].steadyNs, ms(2000));
     QCOMPARE(got_[4].steadyNs, ms(2000 + 3.25 * 500));
+}
+
+void TestSamplerModules::bombomaticOneBarPlaysFourBeats()
+{
+    MAKE_SCHED;
+    auto m = bomb(shortWav_, false);
+    QVERIFY(m->supportsOneBar());
+    sch.addModule(m);
+    run(sch, 0, 1200);
+    QVERIFY(got_.empty());
+    m->fireOneBar(beats_.beatsAtSteadyNs(ms(1200)));  // beat 2.4: the bar line at beat 4 = 2.0 s
+    run(sch, 1205, 6000);
+    QCOMPARE(int(got_.size()), 4);                   // one bar of beats, then silence
+    QCOMPARE(got_[0].steadyNs, ms(2000));
+    QCOMPARE(got_[3].steadyNs, ms(3500));
 }
 
 QTEST_MAIN(TestSamplerModules)

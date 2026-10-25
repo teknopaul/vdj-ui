@@ -63,9 +63,18 @@ whoever assigned it). When AutoIP gets no address in time and NetworkManager is 
 sequencer is stopped. Hiding the panel does not stop it. Samples are `.wav` files; *Sample folder...* chooses the folder shown in the tree
 (double click a file to hear it). *Add module* adds any number of:
 
-- **Bombomatic**: the sample on every beat (a kick to keep the beat through a breakdown).
+- **Bombomatic**: the sample on every beat (a kick to keep the beat through a breakdown). *1 bar* plays one bar of it.
 - **Dembomatik**: the dembow kick. The bar is cut into 16 equal parts and the sample plays on `X . . X . . X . X . . . . X . .` (parts 1, 4, 7, 9
   and 14). *1 bar* plays one bar of it.
+  Its *swing* slider (0-127) delays every second sixteenth note (the 2nd and 4th of each beat): 127 is a quarter of a beat, one step.
+- **DR-6S**: a drum machine of six voices, BD SD SY CL HH OH, in a row of buttons; the lit one is the voice you are editing. Each voice has its own
+  sample (the same chooser with preview and up / down arrows), offset, volume, choke and a pattern of 16 steps, the bar cut in sixteenths:
+  click a round step for on (red), click it again for off (yellow), Ctrl+click for half volume (pink); a plain click on a pink step turns it off. The wheel over the editor changes the voice's volume
+  (Shift: steps of 10); anywhere else over the module (and over the swing slider) it changes the whole kit's volume. *Choke* cuts every hit of the voice
+  off after 1, 2, 4, 8 or 16 quarter beats (off = play to the end) with a fade over 100 ms, e.g. to shorten a long open hi-hat. *Swing* is the same as the
+  Dembomatik's. The module takes a whole row of the grid. *Kit*, *Save kit* and *Delete* keep **drum kits** (the six voices and the swing, not the
+  module's name, switch or volume) in `drum-kits/` of the config folder, apart from the sampler presets; the kit list is shared by all DR-6S modules.
+  The module switch (and its F key) mutes the whole machine; *1 bar* plays one bar of the pattern.
 - **Stab player**: the sample on the beats of the bar you choose (the round buttons: red = on, yellow = off). *Reverse sync* makes the sample
   end on the beat instead of starting on it. *1 bar* (green) plays exactly one bar from the next bar line, even when the module is switched off.
 - **Acid loop**: a sample that is a 4 beat loop, time-stretched to the sequencer's BPM and started on the bar line. *1 bar* plays one pass.

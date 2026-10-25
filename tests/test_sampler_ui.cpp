@@ -46,6 +46,9 @@ private slots:
     void modulesAreInAGridTwoOrFourAcross();
     void mouseWheelOverTheModuleIsTheVolume();
     void functionKeysSwitchModules();
+    void greenButtonSitsRightOfTheOnOffButtonInEveryModule();
+    void smallWheelDeltasAddUpToNotches();
+    void drumIconsExistAndDiffer();
 
 private:
     QTemporaryDir* dir_ = nullptr;
@@ -89,16 +92,16 @@ void TestSamplerUi::cleanup()
 void TestSamplerUi::everyTypeCanBeAddedAndRemoved()
 {
     QCOMPARE(panel_->moduleWidgets().size(), 0);
-    for (auto t : { SamplerModule::Bombomatic, SamplerModule::StabPlayer, SamplerModule::AcidLoop, SamplerModule::OneShot, SamplerModule::MidiMatic, SamplerModule::Dembomatik })
+    for (auto t : { SamplerModule::Bombomatic, SamplerModule::StabPlayer, SamplerModule::AcidLoop, SamplerModule::OneShot, SamplerModule::MidiMatic, SamplerModule::Dembomatik, SamplerModule::DrumMachine })
         QVERIFY(panel_->addModule(t));
-    QCOMPARE(panel_->moduleWidgets().size(), 6);
-    QCOMPARE(int(panel_->scheduler()->modules().size()), 6);
+    QCOMPARE(panel_->moduleWidgets().size(), 7);
+    QCOMPARE(int(panel_->scheduler()->modules().size()), 7);
     const int id = panel_->moduleWidgets()[1]->module()->id();
     QTest::mouseClick(panel_->moduleWidgets()[1]->removeButton(), Qt::LeftButton);
-    QCOMPARE(panel_->moduleWidgets().size(), 5);
+    QCOMPARE(panel_->moduleWidgets().size(), 6);
     QVERIFY(!panel_->scheduler()->module(id));
-    // the "Add module" menu has the six types
-    QCOMPARE(panel_->addButton()->menu()->actions().size(), 6);
+    // the "Add module" menu has the seven types
+    QCOMPARE(panel_->addButton()->menu()->actions().size(), 7);
 }
 
 void TestSamplerUi::togglesAndFieldsReachTheModule()
@@ -141,7 +144,7 @@ void TestSamplerUi::typeSpecificControlsOnlyWhereTheyBelong()
 {
     auto* bomb = panel_->addModule(SamplerModule::Bombomatic);
     QVERIFY(bomb->sampleChooser());
-    QVERIFY(!bomb->beatChooser() && !bomb->reverseSyncBox() && !bomb->oneBarButton() && !bomb->fireButton() && !bomb->midiDeviceCombo());
+    QVERIFY(!bomb->beatChooser() && !bomb->reverseSyncBox() && bomb->oneBarButton() && !bomb->fireButton() && !bomb->midiDeviceCombo());
     auto* stab = panel_->addModule(SamplerModule::StabPlayer);
     QVERIFY(stab->beatChooser() && stab->reverseSyncBox() && stab->oneBarButton());
     auto* acid = panel_->addModule(SamplerModule::AcidLoop);
@@ -150,7 +153,7 @@ void TestSamplerUi::typeSpecificControlsOnlyWhereTheyBelong()
     auto* shot = panel_->addModule(SamplerModule::OneShot);
     QVERIFY(shot->fireButton() && shot->quantizeBox() && shot->stretchBox() && !shot->oneBarButton());
     auto* midi = panel_->addModule(SamplerModule::MidiMatic);
-    QVERIFY(!midi->sampleChooser() && midi->beatChooser() && midi->midiDeviceCombo());
+    QVERIFY(!midi->sampleChooser() && midi->beatChooser() && midi->midiDeviceCombo() && midi->oneBarButton());
 }
 
 void TestSamplerUi::beatChooserMaskAndIcons()
@@ -211,6 +214,11 @@ void TestSamplerUi::missingSampleIsShown()
 void TestSamplerUi::oneBarButtonLightsAndClears()
 {
     auto* w = panel_->addModule(SamplerModule::StabPlayer);
+    QVERIFY(w->oneBarButton()->text().isEmpty());      // the green button is just the icon
+    QVERIFY(w->oneBarButton()->toolTip().contains("1 bar"));
+    auto* shot = panel_->addModule(SamplerModule::OneShot);
+    QVERIFY(shot->fireButton()->text().isEmpty());
+    QVERIFY(shot->fireButton()->toolTip().contains("Fire"));
     w->refresh(0.5);
     QCOMPARE(image(w->oneBarButton()->icon()), image(samplerIcon(SamplerIcon::Green)));
     w->module()->fireOneBar(1.0);                    // armed for the bar at beat 4
@@ -440,9 +448,9 @@ void TestSamplerUi::functionKeysSwitchModules()
     for (int i = 0; i < 14; ++i)
         panel_->addModule(SamplerModule::Bombomatic);
     auto on = [&](int i) { return panel_->moduleWidgets()[i]->module()->settings().enabled; };
-    QCOMPARE(panel_->moduleWidgets()[0]->onButton()->text(), QString("F1"));
-    QCOMPARE(panel_->moduleWidgets()[11]->onButton()->text(), QString("F12"));
-    QVERIFY(panel_->moduleWidgets()[12]->onButton()->text().isEmpty());      // only twelve keys
+    QCOMPARE(panel_->moduleWidgets()[0]->keyLabel(), QString("F1"));
+    QCOMPARE(panel_->moduleWidgets()[11]->keyLabel(), QString("F12"));
+    QVERIFY(panel_->moduleWidgets()[12]->keyLabel().isEmpty());      // only twelve keys
     QVERIFY(panel_->moduleWidgets()[2]->onButton()->toolTip().contains("F3"));
     QVERIFY(!on(0) && !on(2));
     QVERIFY(panel_->toggleModuleAt(2));              // what F3 does
@@ -458,9 +466,77 @@ void TestSamplerUi::functionKeysSwitchModules()
     const int id = panel_->moduleWidgets()[1]->module()->id();
     panel_->removeModule(panel_->moduleWidgets()[0]->module()->id());
     QCOMPARE(panel_->moduleWidgets()[0]->module()->id(), id);
-    QCOMPARE(panel_->moduleWidgets()[0]->onButton()->text(), QString("F1"));
-    QCOMPARE(panel_->moduleWidgets()[11]->onButton()->text(), QString("F12"));
-    QCOMPARE(panel_->moduleWidgets()[12]->onButton()->text(), QString());
+    QCOMPARE(panel_->moduleWidgets()[0]->keyLabel(), QString("F1"));
+    QCOMPARE(panel_->moduleWidgets()[11]->keyLabel(), QString("F12"));
+    QCOMPARE(panel_->moduleWidgets()[12]->keyLabel(), QString());
+}
+
+void TestSamplerUi::drumIconsExistAndDiffer()
+{
+    const QIcon pink = samplerIcon(SamplerIcon::Pink);
+    QVERIFY(!pink.isNull());
+    QVERIFY(!pink.pixmap(24, 24).isNull());
+    QVERIFY(image(pink) != image(samplerIcon(SamplerIcon::Red)));
+    QVERIFY(image(pink) != image(samplerIcon(SamplerIcon::Yellow)));
+    QVERIFY(image(samplerIcon(SamplerIcon::Red)) != image(samplerIcon(SamplerIcon::Yellow)));
+    QSet<QByteArray> seen;
+    for (int v = 0; v < 6; ++v) {
+        const QIcon on = drumVoiceIcon(v, true), off = drumVoiceIcon(v, false);
+        QVERIFY(!on.isNull() && !off.isNull());
+        const QImage a = on.pixmap(24, 24).toImage(), b = off.pixmap(24, 24).toImage();
+        QCOMPARE(a.size(), QSize(24, 24));
+        QVERIFY2(a != b, qPrintable(QString::number(v)));            // lit differs from not lit
+        QByteArray ba((const char*)a.constBits(), int(a.sizeInBytes()));
+        QVERIFY(!seen.contains(ba));                                  // every voice has its own picture
+        seen.insert(ba);
+    }
+    QVERIFY(drumVoiceIcon(-1, true).isNull());
+    QVERIFY(drumVoiceIcon(6, false).isNull());
+}
+
+void TestSamplerUi::smallWheelDeltasAddUpToNotches()
+{
+    // many mice and touchpads send 15, 30 ... units per event instead of 120: they must add up, not round to 0
+    auto* w = panel_->addModule(SamplerModule::Bombomatic);
+    w->show();
+    auto wheel = [](QWidget* target, QPoint delta, Qt::KeyboardModifiers mods = Qt::NoModifier) {
+        QWheelEvent e(QPointF(5, 5), target->mapToGlobal(QPointF(5, 5)), QPoint(), delta, Qt::NoButton, mods, Qt::NoScrollPhase, false);
+        QApplication::sendEvent(target, &e);
+    };
+    for (int i = 0; i < 7; ++i)
+        wheel(w->nameEdit(), QPoint(0, -15));            // 7 * 15 = 105: not a notch yet
+    QCOMPARE(w->module()->settings().volume, 127);
+    wheel(w->nameEdit(), QPoint(0, -15));                // 120: one notch
+    QCOMPARE(w->module()->settings().volume, 126);
+    for (int i = 0; i < 4; ++i)
+        wheel(w, QPoint(0, -30));                        // 4 * 30 = 120
+    QCOMPARE(w->module()->settings().volume, 125);
+    wheel(w, QPoint(0, -60));
+    wheel(w, QPoint(0, +120));                           // turning the other way drops the rest
+    QCOMPARE(w->module()->settings().volume, 126);
+    wheel(w, QPoint(-120, 0));                           // a sideways wheel counts too (shift + wheel on some systems)
+    QCOMPARE(w->module()->settings().volume, 125);
+    wheel(w, QPoint(0, 0));                              // nothing
+    QCOMPARE(w->module()->settings().volume, 125);
+    wheel(w, QPoint(0, 240));                            // two notches in one event
+    QCOMPARE(w->module()->settings().volume, 127);
+}
+
+void TestSamplerUi::greenButtonSitsRightOfTheOnOffButtonInEveryModule()
+{
+    for (auto t : { SamplerModule::Bombomatic, SamplerModule::StabPlayer, SamplerModule::AcidLoop, SamplerModule::OneShot, SamplerModule::MidiMatic,
+                    SamplerModule::Dembomatik, SamplerModule::DrumMachine }) {
+        auto* w = panel_->addModule(t);
+        w->show();
+        QTest::qWait(10);
+        QToolButton* green = w->oneBarButton() ? w->oneBarButton() : w->fireButton();    // 1 bar, or Fire for the one shot
+        QVERIFY2(green, qPrintable(w->module()->typeName()));
+        QVERIFY2(!(w->oneBarButton() && w->fireButton()), qPrintable(w->module()->typeName()));    // one green button per module
+        const QPoint on = w->onButton()->mapTo(w, QPoint(0, 0)), g = green->mapTo(w, QPoint(0, 0)), name = w->nameEdit()->mapTo(w, QPoint(0, 0));
+        QCOMPARE(g.y(), on.y());                                         // the same line
+        QVERIFY2(g.x() > on.x() && g.x() < name.x(), qPrintable(w->module()->typeName()));   // between the on/off button and the name
+        QCOMPARE(g.x() - (on.x() + w->onButton()->width()) < 12, true);  // right next to it
+    }
 }
 
 QTEST_MAIN(TestSamplerUi)

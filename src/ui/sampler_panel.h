@@ -10,6 +10,7 @@
 #include "audio/beat_source.h"
 #include "audio/sample_cache.h"
 #include "audio/sampler_engine.h"
+#include "audio/drum_kits.h"
 #include "audio/sampler_presets.h"
 #include "audio/sampler_scheduler.h"
 #include "midi/midi_out.h"
@@ -53,6 +54,8 @@ public:
     SamplerEngine* engine() { return &engine_; }
     SampleCache* cache() { return &cache_; }
     SamplerPresets* presets() { return &presets_; }
+    DrumKits* drumKits() { return &kits_; }                 // the DR-6S's own presets, shared by all DR-6S modules
+    void drumKitsChanged() { emit kitsChanged(); }          // a DR-6S saved or deleted a kit: the others refresh their lists
     SampleTreeModel* treeModel() { return treeModel_; }
 
     SamplerModuleWidget* addModule(SamplerModule::Type type);
@@ -70,8 +73,8 @@ public:
     int columns() const;                             // modules per row: 2 or 4
     void setColumns(int columns);
     QComboBox* columnsCombo() const { return columnsBox_; }
-    // grid position of module widget i (row, column), for tests
-    QPoint gridCell(int index) const;
+    // Where module widget i sits in the grid: the cell and how many columns it spans (the DR-6S takes the whole row)
+    QRect gridCell(int index) const;               // x = column, y = row, width = columns spanned, height 1
 
     // For the module widgets
     void ensureRunning();                            // open the sound output and start the scheduler (first use)
@@ -96,6 +99,7 @@ public:
 
 signals:
     void message(const QString& text);
+    void kitsChanged();
 
 private:
     void connectModuleWidget(SamplerModuleWidget* w);
@@ -111,6 +115,7 @@ private:
     SamplerScheduler scheduler_;
     MidiOut midiOut_;
     SamplerPresets presets_;
+    DrumKits kits_;
     MidiRouter router_;
 
     SampleTreeModel* treeModel_;

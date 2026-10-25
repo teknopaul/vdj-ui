@@ -6,6 +6,7 @@
 #include "debug/packet_logger.h"
 
 #include <QComboBox>
+#include <algorithm>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -34,6 +35,7 @@ SamplerPanel::SamplerPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
     , scheduler_(&source_, &cache_, [this](const Trigger& t) { engine_.post(t); })
     , midiOut_(clock)
     , presets_(dataDir)
+    , kits_(dataDir)
 {
     scheduler_.setStopSink([this](int tag, qint64 ns) { engine_.stopTagAt(tag, ns); });
     scheduler_.setMidiSink([this](const MidiNoteEvent& e) { midiOut_.send(e); });
@@ -59,7 +61,7 @@ SamplerPanel::SamplerPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
     add_->setText(tr("Add module"));
     add_->setPopupMode(QToolButton::InstantPopup);
     auto* menu = new QMenu(add_);
-    for (auto t : { SamplerModule::Bombomatic, SamplerModule::Dembomatik, SamplerModule::StabPlayer, SamplerModule::AcidLoop, SamplerModule::OneShot, SamplerModule::MidiMatic }) {
+    for (auto t : { SamplerModule::Bombomatic, SamplerModule::Dembomatik, SamplerModule::DrumMachine, SamplerModule::StabPlayer, SamplerModule::AcidLoop, SamplerModule::OneShot, SamplerModule::MidiMatic }) {
         const QString name = SamplerModule::create(t)->typeName();
         menu->addAction(name, this, [this, t]() { addModule(t); });
     }
@@ -326,9 +328,27 @@ void SamplerPanel::setColumns(int columns)
     scheduleSave();
 }
 
-QPoint SamplerPanel::gridCell(int index) const
+QRect SamplerPanel::gridCell(int index) const
 {
-    return QPoint(index % columns(), index / columns());
+    // the same flow as relayout(): left to right, then down; a module that wants a whole row starts a new row and fills it
+    const int cols = columns();
+    int row = 0, col = 0;
+    for (int i = 0; i < widgets_.size(); ++i) {
+        const bool full = widgets_[i]->wantsFullRow();
+        if (full && col != 0) {
+            ++row;
+            col = 0;
+        }
+        const QRect r(col, row, full ? cols : 1, 1);
+        if (i == index)
+            return r;
+        col += r.width();
+        if (col >= cols) {
+            col = 0;
+            ++row;
+        }
+    }
+    return QRect();
 }
 
 // Modules fill the grid left to right, then down; every column the same width, the spare height below the last row.
@@ -339,14 +359,17 @@ void SamplerPanel::relayout()
         modulesLayout_->removeWidget(w);
     for (int c = 0; c < 4; ++c)
         modulesLayout_->setColumnStretch(c, c < cols ? 1 : 0);
-    for (int r = 0; r <= widgets_.size() / cols + 1; ++r)
+    for (int r = 0; r <= widgets_.size() + 1; ++r)
         modulesLayout_->setRowStretch(r, 0);
+    int lastRow = 0;
     for (int i = 0; i < widgets_.size(); ++i) {
-        modulesLayout_->addWidget(widgets_[i], i / cols, i % cols);
+        const QRect r = gridCell(i);
+        modulesLayout_->addWidget(widgets_[i], r.y(), r.x(), 1, r.width());
+        lastRow = std::max(lastRow, r.y());
         widgets_[i]->setKeyLabel(i < kFunctionKeys ? QStringLiteral("F%1").arg(i + 1) : QString());
         widgets_[i]->show();
     }
-    modulesLayout_->setRowStretch((widgets_.size() + cols - 1) / cols, 1);
+    modulesLayout_->setRowStretch(lastRow + 1, 1);
 }
 
 void SamplerPanel::setSampleFolder(const QString& folder)

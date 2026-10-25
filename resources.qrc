@@ -4,5 +4,18 @@
         <file alias="img/button-yellow.png">img/button-yellow-24.png</file>
         <file alias="img/button-grey.png">img/button-grey-24.png</file>
         <file alias="img/button-green.png">img/button-green-24.png</file>
+        <file alias="img/button-pink.png">img/button-pink-24.png</file>
+        <file alias="img/drum-BD-on.png">img/button-BD-on-24.png</file>
+        <file alias="img/drum-BD-off.png">img/button-BD-off-24.png</file>
+        <file alias="img/drum-SD-on.png">img/button-SD-on-24.png</file>
+        <file alias="img/drum-SD-off.png">img/button-SD-off-24.png</file>
+        <file alias="img/drum-SY-on.png">img/button-SY-on-24.png</file>
+        <file alias="img/drum-SY-off.png">img/button-SY-off-24.png</file>
+        <file alias="img/drum-CL-on.png">img/button-CL-on-24.png</file>
+        <file alias="img/drum-CL-off.png">img/button-CL-off-24.png</file>
+        <file alias="img/drum-HH-on.png">img/button-HH-on-24.png</file>
+        <file alias="img/drum-HH-off.png">img/button-HH-off-24.png</file>
+        <file alias="img/drum-OH-on.png">img/button-OH-on-24.png</file>
+        <file alias="img/drum-OH-off.png">img/button-OH-off-24.png</file>
     </qresource>
 </RCC>

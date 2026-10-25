@@ -180,3 +180,23 @@ add_executable(vdj-ui-sampler-ui-test test_sampler_ui.cpp)
 target_link_libraries(vdj-ui-sampler-ui-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-sampler-ui-test COMMAND vdj-ui-sampler-ui-test)
 set_tests_properties(vdj-ui-sampler-ui-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-drum-model-test test_drum_model.cpp)
+target_link_libraries(vdj-ui-drum-model-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-drum-model-test COMMAND vdj-ui-drum-model-test)
+set_tests_properties(vdj-ui-drum-model-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-drum-machine-test test_drum_machine.cpp)
+target_link_libraries(vdj-ui-drum-machine-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-drum-machine-test COMMAND vdj-ui-drum-machine-test)
+set_tests_properties(vdj-ui-drum-machine-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-drum-ui-test test_drum_ui.cpp)
+target_link_libraries(vdj-ui-drum-ui-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-drum-ui-test COMMAND vdj-ui-drum-ui-test)
+set_tests_properties(vdj-ui-drum-ui-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-drum-kits-test test_drum_kits.cpp)
+target_link_libraries(vdj-ui-drum-kits-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-drum-kits-test COMMAND vdj-ui-drum-kits-test)
+set_tests_properties(vdj-ui-drum-kits-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

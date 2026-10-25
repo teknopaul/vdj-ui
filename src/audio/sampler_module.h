@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include "drum_pattern.h"
 
 namespace vdj {
 
@@ -27,11 +28,15 @@ struct ModuleSettings {
     int midiChannel = 1;                 // 1..16
     int midiNote = 36;
     int midiVelocity = 100;
+    int swing = 0;                       // 0..127, see swing.h (Dembomatik, DR-6S)
+    DrumVoice drums[kDrumVoices];        // DR-6S: sample, volume, offset, choke and pattern of BD SD SY CL HH OH
 };
 
 // A sound the module wants at an integer beat (counted from the sequencer's start). Which beat of the bar it is: beat % 4.
 struct PlannedHit {
     double beat = 0.0;
+    int voice = -1;                      // DR-6S: which of the six voices (-1 for the other modules)
+    float level = 1.0f;                  // DR-6S: 1 on, 0.5 half volume
 };
 
 enum class OneBarState { Idle, Armed, Playing };
@@ -39,7 +44,7 @@ enum class OneBarState { Idle, Armed, Playing };
 // A sampler type. Settings are changed from the GUI thread and read from the scheduler thread, so they sit behind a mutex.
 class SamplerModule {
 public:
-    enum Type { Bombomatic, StabPlayer, AcidLoop, OneShot, MidiMatic, Dembomatik };
+    enum Type { Bombomatic, StabPlayer, AcidLoop, OneShot, MidiMatic, Dembomatik, DrumMachine };
     static constexpr double kMaxOffsetMs = 80.0;
     static constexpr int kMaxVolume = 127;     // the scheduler looks 100 ms ahead
 
@@ -51,7 +56,10 @@ public:
     virtual bool hasBeatChooser() const { return false; }
     virtual bool supportsOneBar() const { return false; }
     virtual bool supportsReverseSync() const { return false; }
-    virtual bool usesSample() const { return true; }       // false: plays MIDI (MidiMatic)
+    virtual bool usesSample() const { return true; }       // false: no single sample (MidiMatic plays MIDI, the DR-6S has six)
+    virtual bool perVoiceSamples() const { return false; }  // the DR-6S: samples, volumes and offsets are per voice (settings.drums)
+    virtual bool supportsSwing() const { return false; }    // has a swing setting that is saved
+    virtual bool hasDrumVoices() const { return false; }    // saves the six drum voices (DR-6S)
     virtual bool periodic() const { return true; }   // false: only plays when fired (OneShot)
     virtual bool stretchesToBpm() const { return false; }   // the scheduler plays a time-stretched copy (AcidLoop)
 
@@ -92,6 +100,7 @@ class Bombomatic : public SamplerModule {
 public:
     Type type() const override { return SamplerModule::Bombomatic; }
     QString typeName() const override { return QStringLiteral("Bombomatic"); }
+    bool supportsOneBar() const override { return true; }
 };
 
 class StabPlayer : public SamplerModule {
@@ -135,6 +144,24 @@ public:
     Type type() const override { return SamplerModule::Dembomatik; }
     QString typeName() const override { return QStringLiteral("Dembomatik"); }
     bool supportsOneBar() const override { return true; }
+    bool supportsSwing() const override { return true; }
+
+protected:
+    void collectHits(double lo, double hi, const ModuleSettings& s, std::vector<PlannedHit>& out) const override;
+};
+
+// The DR-6S: six voices (BD SD SY CL HH OH) each with its own sample, volume, offset, choke and 16 step pattern, and a swing.
+// (The hits and the scheduling arrive with the next phases; for now the module only holds and saves its settings.)
+class DrumMachine : public SamplerModule {
+public:
+    Type type() const override { return SamplerModule::DrumMachine; }
+    QString typeName() const override { return QStringLiteral("DR-6S"); }
+    bool supportsOneBar() const override { return true; }
+    bool supportsSwing() const override { return true; }
+    bool hasDrumVoices() const override { return true; }
+    bool usesSample() const override { return false; }
+    bool perVoiceSamples() const override { return true; }
+    // The module level offsetMs is not used: every voice has its own offset.
 
 protected:
     void collectHits(double lo, double hi, const ModuleSettings& s, std::vector<PlannedHit>& out) const override;
@@ -146,6 +173,7 @@ public:
     Type type() const override { return SamplerModule::MidiMatic; }
     QString typeName() const override { return QStringLiteral("MIDI matic"); }
     bool hasBeatChooser() const override { return true; }
+    bool supportsOneBar() const override { return true; }
     bool usesSample() const override { return false; }
 
 protected:

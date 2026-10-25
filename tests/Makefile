@@ -640,6 +640,62 @@ vdj-ui-sampler-ui-test/fast:
 .PHONY : vdj-ui-sampler-ui-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-model-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-model-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-model-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-model-test: tests/CMakeFiles/vdj-ui-drum-model-test.dir/rule
+.PHONY : vdj-ui-drum-model-test
+
+# fast build rule for target.
+vdj-ui-drum-model-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/build
+.PHONY : vdj-ui-drum-model-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-machine-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-machine-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-machine-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-machine-test: tests/CMakeFiles/vdj-ui-drum-machine-test.dir/rule
+.PHONY : vdj-ui-drum-machine-test
+
+# fast build rule for target.
+vdj-ui-drum-machine-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build
+.PHONY : vdj-ui-drum-machine-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-ui-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-ui-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-ui-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-ui-test: tests/CMakeFiles/vdj-ui-drum-ui-test.dir/rule
+.PHONY : vdj-ui-drum-ui-test
+
+# fast build rule for target.
+vdj-ui-drum-ui-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build
+.PHONY : vdj-ui-drum-ui-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-kits-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-kits-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-kits-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-kits-test: tests/CMakeFiles/vdj-ui-drum-kits-test.dir/rule
+.PHONY : vdj-ui-drum-kits-test
+
+# fast build rule for target.
+vdj-ui-drum-kits-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build
+.PHONY : vdj-ui-drum-kits-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -1535,6 +1591,118 @@ vdj-ui-sampler-ui-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sampler-ui-test_autogen.dir/build
 .PHONY : vdj-ui-sampler-ui-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-model-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-drum-model-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-model-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-model-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-model-test_autogen: tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/rule
+.PHONY : vdj-ui-drum-model-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-model-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test_autogen.dir/build
+.PHONY : vdj-ui-drum-model-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-machine-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-drum-machine-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-machine-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-machine-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-machine-test_autogen: tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/rule
+.PHONY : vdj-ui-drum-machine-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-machine-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test_autogen.dir/build
+.PHONY : vdj-ui-drum-machine-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-ui-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-drum-ui-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-ui-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-ui-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-ui-test_autogen: tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/rule
+.PHONY : vdj-ui-drum-ui-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-ui-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test_autogen.dir/build
+.PHONY : vdj-ui-drum-ui-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-kits-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-drum-kits-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-drum-kits-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-drum-kits-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-drum-kits-test_autogen: tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/rule
+.PHONY : vdj-ui-drum-kits-test_autogen
+
+# fast build rule for target.
+vdj-ui-drum-kits-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test_autogen.dir/build
+.PHONY : vdj-ui-drum-kits-test_autogen/fast
+
 test_audio.o: test_audio.cpp.o
 .PHONY : test_audio.o
 
@@ -1774,6 +1942,102 @@ test_diff_lock.s: test_diff_lock.cpp.s
 test_diff_lock.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test.dir/test_diff_lock.cpp.s
 .PHONY : test_diff_lock.cpp.s
+
+test_drum_kits.o: test_drum_kits.cpp.o
+.PHONY : test_drum_kits.o
+
+# target to build an object file
+test_drum_kits.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/test_drum_kits.cpp.o
+.PHONY : test_drum_kits.cpp.o
+
+test_drum_kits.i: test_drum_kits.cpp.i
+.PHONY : test_drum_kits.i
+
+# target to preprocess a source file
+test_drum_kits.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/test_drum_kits.cpp.i
+.PHONY : test_drum_kits.cpp.i
+
+test_drum_kits.s: test_drum_kits.cpp.s
+.PHONY : test_drum_kits.s
+
+# target to generate assembly for a file
+test_drum_kits.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/test_drum_kits.cpp.s
+.PHONY : test_drum_kits.cpp.s
+
+test_drum_machine.o: test_drum_machine.cpp.o
+.PHONY : test_drum_machine.o
+
+# target to build an object file
+test_drum_machine.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/test_drum_machine.cpp.o
+.PHONY : test_drum_machine.cpp.o
+
+test_drum_machine.i: test_drum_machine.cpp.i
+.PHONY : test_drum_machine.i
+
+# target to preprocess a source file
+test_drum_machine.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/test_drum_machine.cpp.i
+.PHONY : test_drum_machine.cpp.i
+
+test_drum_machine.s: test_drum_machine.cpp.s
+.PHONY : test_drum_machine.s
+
+# target to generate assembly for a file
+test_drum_machine.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/test_drum_machine.cpp.s
+.PHONY : test_drum_machine.cpp.s
+
+test_drum_model.o: test_drum_model.cpp.o
+.PHONY : test_drum_model.o
+
+# target to build an object file
+test_drum_model.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/test_drum_model.cpp.o
+.PHONY : test_drum_model.cpp.o
+
+test_drum_model.i: test_drum_model.cpp.i
+.PHONY : test_drum_model.i
+
+# target to preprocess a source file
+test_drum_model.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/test_drum_model.cpp.i
+.PHONY : test_drum_model.cpp.i
+
+test_drum_model.s: test_drum_model.cpp.s
+.PHONY : test_drum_model.s
+
+# target to generate assembly for a file
+test_drum_model.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/test_drum_model.cpp.s
+.PHONY : test_drum_model.cpp.s
+
+test_drum_ui.o: test_drum_ui.cpp.o
+.PHONY : test_drum_ui.o
+
+# target to build an object file
+test_drum_ui.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/test_drum_ui.cpp.o
+.PHONY : test_drum_ui.cpp.o
+
+test_drum_ui.i: test_drum_ui.cpp.i
+.PHONY : test_drum_ui.i
+
+# target to preprocess a source file
+test_drum_ui.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/test_drum_ui.cpp.i
+.PHONY : test_drum_ui.cpp.i
+
+test_drum_ui.s: test_drum_ui.cpp.s
+.PHONY : test_drum_ui.s
+
+# target to generate assembly for a file
+test_drum_ui.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/test_drum_ui.cpp.s
+.PHONY : test_drum_ui.cpp.s
 
 test_integration.o: test_integration.cpp.o
 .PHONY : test_integration.o
@@ -2543,6 +2807,102 @@ vdj-ui-difflock-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test.dir/vdj-ui-difflock-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-difflock-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-drum-kits-test_autogen/mocs_compilation.o: vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-kits-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-drum-kits-test_autogen/mocs_compilation.i: vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-kits-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-drum-kits-test_autogen/mocs_compilation.s: vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-kits-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-kits-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-kits-test.dir/vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-kits-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-drum-machine-test_autogen/mocs_compilation.o: vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-machine-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-drum-machine-test_autogen/mocs_compilation.i: vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-machine-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-drum-machine-test_autogen/mocs_compilation.s: vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-machine-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-machine-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-machine-test.dir/vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-machine-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-drum-model-test_autogen/mocs_compilation.o: vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-model-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-drum-model-test_autogen/mocs_compilation.i: vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-model-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-drum-model-test_autogen/mocs_compilation.s: vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-model-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-model-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-model-test.dir/vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-model-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-drum-ui-test_autogen/mocs_compilation.o: vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-ui-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-drum-ui-test_autogen/mocs_compilation.i: vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-ui-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-drum-ui-test_autogen/mocs_compilation.s: vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-ui-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-drum-ui-test.dir/build.make tests/CMakeFiles/vdj-ui-drum-ui-test.dir/vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-drum-ui-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-integration-test_autogen/mocs_compilation.o: vdj-ui-integration-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-integration-test_autogen/mocs_compilation.o
 
@@ -3106,6 +3466,14 @@ help:
 	@echo "... vdj-ui-dbserver-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-difflock-test_autogen"
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-kits-test_autogen"
+	@echo "... vdj-ui-drum-kits-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-machine-test_autogen"
+	@echo "... vdj-ui-drum-machine-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-model-test_autogen"
+	@echo "... vdj-ui-drum-model-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-drum-ui-test_autogen"
+	@echo "... vdj-ui-drum-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-integration-test_autogen"
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-linkexport-test_autogen"
@@ -3160,6 +3528,10 @@ help:
 	@echo "... vdj-ui-dbhandler-test"
 	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-difflock-test"
+	@echo "... vdj-ui-drum-kits-test"
+	@echo "... vdj-ui-drum-machine-test"
+	@echo "... vdj-ui-drum-model-test"
+	@echo "... vdj-ui-drum-ui-test"
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-midi-map-input-test"
@@ -3212,6 +3584,18 @@ help:
 	@echo "... test_diff_lock.o"
 	@echo "... test_diff_lock.i"
 	@echo "... test_diff_lock.s"
+	@echo "... test_drum_kits.o"
+	@echo "... test_drum_kits.i"
+	@echo "... test_drum_kits.s"
+	@echo "... test_drum_machine.o"
+	@echo "... test_drum_machine.i"
+	@echo "... test_drum_machine.s"
+	@echo "... test_drum_model.o"
+	@echo "... test_drum_model.i"
+	@echo "... test_drum_model.s"
+	@echo "... test_drum_ui.o"
+	@echo "... test_drum_ui.i"
+	@echo "... test_drum_ui.s"
 	@echo "... test_integration.o"
 	@echo "... test_integration.i"
 	@echo "... test_integration.s"
@@ -3308,6 +3692,18 @@ help:
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-drum-kits-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-drum-kits-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-drum-kits-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-drum-machine-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-drum-machine-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-drum-machine-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-drum-model-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-drum-model-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-drum-model-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-drum-ui-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-drum-ui-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-drum-ui-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-integration-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-integration-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-integration-test_autogen/mocs_compilation.s"

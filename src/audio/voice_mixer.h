@@ -18,6 +18,10 @@ struct Trigger {
     double ratio = 1.0;          // playback speed (linear interpolation, the pitch follows); 1 = as recorded
     int tag = 0;                 // owner (a module id), for stopTag(); 0 = none
     qint64 startFrame = 0;       // skip this many frames of the sample (reverse sync that arrives late)
+    // Choke: the voice ends this many output frames after it starts (0 = never cut). The last fadeFrames before the cut ramp the gain
+    // linearly down to 0, so the sound is silent at the cut point and there is no click.
+    qint64 cutAfterFrames = 0;
+    qint64 fadeFrames = 4410;    // 100 ms
 };
 
 // Mixes triggered samples into 16 bit stereo blocks. No audio device here: the engine (or a test) calls render() with the
@@ -59,6 +63,10 @@ private:
         float gain = 1.0f;
         bool loop = false;
         int tag = 0;
+        qint64 cutAfter = 0;                                 // see Trigger::cutAfterFrames
+        qint64 fade = 0;
+        qint64 age = 0;                                      // output frames since the voice started
+        bool finished = false;                               // ended by its cut
     };
     static void mixVoice(Voice& v, int* acc, int fromFrame, int toFrame);   // acc: interleaved, added in 1/32768 units * gain
 
