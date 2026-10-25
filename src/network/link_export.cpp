@@ -6,6 +6,7 @@
 #include <QHostAddress>
 #include <QMetaObject>
 #include <QStorageInfo>
+#include <QTimer>
 #include <cstring>
 
 namespace vdj {
@@ -22,7 +23,7 @@ db::MediaInfo LinkExport::mediaInfo() const
     db::MediaInfo m;
     const QStorageInfo st(cfg_.folder);
     m.slot = 3;
-    m.name = st.isValid() ? st.name().toStdString() : std::string();
+    m.name = displayName().toStdString();
     m.trackCount = quint16(qMin<size_t>(lib_.trackCount(), 65535));
     m.playlistCount = quint16(qMin<size_t>(lib_.playlistCount(), 65535));
     m.fromPlayer = true;
@@ -35,30 +36,10 @@ db::MediaInfo LinkExport::mediaInfo() const
     return m;
 }
 
-bool LinkExport::start(const Config& cfg, QString* error)
+bool LinkExport::startNfs()
 {
-    stop();
-    cfg_ = cfg;
-    auto fail = [&](const QString& m) {
-        if (error) *error = m;
-        stop();
-        return false;
-    };
-    if (cfg.deviceNumber == 0) return fail(QStringLiteral("no player number yet"));
-
-    std::string err;
-    if (!lib_.load(cfg.folder.toStdString(), &err)) return fail(QString::fromStdString(err));
-
-    server_ = std::make_unique<DbServer>(&lib_);
-    connect(server_.get(), &DbServer::logLine, this, &LinkExport::logLine);
-    DbServer::Config sc;
-    sc.queryPort = cfg.queryPort;
-    sc.dbPort = cfg.dbPort;
-    sc.deviceNumber = cfg.deviceNumber;
-    sc.logDir = cfg.logDir;
-    QString serr;
-    if (!server_->start(sc, &serr)) return fail(serr);
-
+    stopNfs();
+    const auto& cfg = cfg_;
     // the files: the players ask a player's portmapper at UDP 111 (needs root or setcap) and a computer's at 50111
     nfsLogPath_ = cfg.logDir.isEmpty() ? QString() : cfg.logDir + QStringLiteral("/link-nfs.log");
     const QByteArray root = cfg.folder.toUtf8();
@@ -101,7 +82,48 @@ bool LinkExport::start(const Config& cfg, QString* error)
         }
     }
 
+    return nfsd_ != nullptr;
+}
+
+void LinkExport::stopNfs()
+{
+    if (nfsd_) { nfsd_stop(nfsd_); nfsd_ = nullptr; }
+}
+
+bool LinkExport::start(const Config& cfg, QString* error)
+{
+    stop();
+    cfg_ = cfg;
+    name_ = cfg.displayName;
+    usbState_ = UsbState::Ready;
+    mediaPresent_ = true;
+    transitioning_ = false;
+    pendingSwitch_ = false;
+    auto fail = [&](const QString& m) {
+        if (error) *error = m;
+        stop();
+        return false;
+    };
+    if (cfg.deviceNumber == 0) return fail(QStringLiteral("no player number yet"));
+
+    std::string err;
+    if (!lib_.load(cfg.folder.toStdString(), &err)) return fail(QString::fromStdString(err));
+
+    server_ = std::make_unique<DbServer>(&lib_);
+    connect(server_.get(), &DbServer::logLine, this, &LinkExport::logLine);
+    DbServer::Config sc;
+    sc.queryPort = cfg.queryPort;
+    sc.dbPort = cfg.dbPort;
+    sc.deviceNumber = cfg.deviceNumber;
+    sc.logDir = cfg.logDir;
+    QString serr;
+    if (!server_->start(sc, &serr)) return fail(serr);
+
+    startNfs();
+
     running_ = true;
+    emit usbSlotChanged(quint8(usbState_), mediaPresent_);
+    emit mountChanged(cfg.folder, displayName(), true);
     emit logLine(QStringLiteral("LINK export: %1 tracks from %2 as player %3, USB slot 3")
                      .arg(lib_.trackCount()).arg(cfg.folder).arg(cfg.deviceNumber));
     return true;
@@ -109,7 +131,9 @@ bool LinkExport::start(const Config& cfg, QString* error)
 
 void LinkExport::stop()
 {
-    if (nfsd_) { nfsd_stop(nfsd_); nfsd_ = nullptr; }
+    stopNfs();
+    pendingSwitch_ = false;
+    transitioning_ = false;
     if (server_) { server_->stop(); server_.reset(); }
     reply_.close();
     running_ = false;
@@ -133,6 +157,10 @@ void LinkExport::handlePacket(const QByteArray& packet)
                      .arg(ip).arg(q.askerDevice).arg(q.targetDevice).arg(q.slot).arg(ours ? "answering" : "not ours"));
     emit mediaQueried(ip, q.slot, ours);
     if (!ours) return;
+    if (usbState_ != UsbState::Ready) {          // GUESS: a real deck's answer with the slot empty or unloading was not captured
+        emit logLine(QStringLiteral("media query ignored: the slot is not ready"));
+        return;
+    }
 
     db::Identity id = db::Identity::deck();
     id.device = cfg_.deviceNumber;
@@ -141,6 +169,129 @@ void LinkExport::handlePacket(const QByteArray& packet)
     std::memcpy(id.ip, cfg_.ip, 4);
     const auto resp = db::mediaResponse(id, mediaInfo());
     reply_.writeDatagram(reinterpret_cast<const char*>(resp.data()), qint64(resp.size()), QHostAddress(ip), cfg_.replyToPort);
+}
+
+QString LinkExport::displayName() const
+{
+    if (!name_.isEmpty()) return name_;
+    const QStorageInfo st(cfg_.folder);
+    const QString vol = st.isValid() ? st.name() : QString();
+    if (!vol.isEmpty()) return vol;
+    const QString base = QFileInfo(cfg_.folder).fileName();
+    return base.isEmpty() ? QStringLiteral("VDJ-USB") : base;
+}
+
+void LinkExport::setUsb(UsbState s, bool media)
+{
+    usbState_ = s;
+    mediaPresent_ = media;
+    emit usbSlotChanged(quint8(s), media);
+}
+
+QString LinkExport::busyReason()
+{
+    if (nfsd_) {
+        const quint64 now = nfsBytesServed();
+        const qint64 t = QDateTime::currentMSecsSinceEpoch();
+        if (now != lastNfsBytes_) { lastNfsBytes_ = now; lastNfsMs_ = t; }
+        if (lastNfsMs_ && t - lastNfsMs_ < cfg_.busyWindowMs) return QStringLiteral("a player is reading files from it");
+    }
+    if (usageProbe_) {
+        const QString why = usageProbe_();
+        if (!why.isEmpty()) return why;
+    }
+    return QString();
+}
+
+QString LinkExport::requestUnmount()
+{
+    if (!running_) return QStringLiteral("the LINK export is not running");
+    if (transitioning_ || usbState_ != UsbState::Ready) return QStringLiteral("the pendrive is already being unmounted or is empty");
+    const QString why = busyReason();
+    transitioning_ = true;
+    setUsb(UsbState::Unloading, true);
+    if (!why.isEmpty()) {                                           // refused: 02 for about a second, then back to 00, nothing else changes
+        emit logLine(QStringLiteral("USB STOP refused: %1").arg(why));
+        QTimer::singleShot(cfg_.refusedMs, this, [this]() {
+            if (!running_) return;
+            transitioning_ = false;
+            setUsb(UsbState::Ready, true);
+        });
+        emit switchRefused(why);
+        return why;
+    }
+    emit logLine(QStringLiteral("USB STOP: unmounting %1").arg(displayName()));
+    QTimer::singleShot(cfg_.unloadingMs, this, [this]() {
+        if (!running_) return;
+        setUsb(UsbState::Removable, true);
+        QTimer::singleShot(cfg_.removableMs, this, [this]() { finishUnmount(); });
+    });
+    return QString();
+}
+
+void LinkExport::finishUnmount()
+{
+    if (!running_) return;
+    stopNfs();                                                       // GUESS: the dbserver sessions are left to the decks to drop
+    setUsb(UsbState::Empty, false);
+    transitioning_ = false;
+    emit mountChanged(cfg_.folder, displayName(), false);
+    emit logLine(QStringLiteral("USB slot empty"));
+    if (pendingSwitch_) QTimer::singleShot(cfg_.swapGapMs, this, [this]() { insertPending(); });
+}
+
+void LinkExport::insertPending()
+{
+    if (!running_ || !pendingSwitch_) return;
+    pendingSwitch_ = false;
+    std::string err;
+    if (!lib_.load(pendingFolder_.toStdString(), &err)) {
+        emit logLine(QStringLiteral("USB insert failed: %1; the slot stays empty").arg(QString::fromStdString(err)));
+        emit switchRefused(QString::fromStdString(err));
+        return;
+    }
+    cfg_.folder = pendingFolder_;
+    name_ = pendingName_;
+    transitioning_ = true;
+    setUsb(UsbState::Empty, true);                                   // media present first, ready about a second later
+    emit logLine(QStringLiteral("USB inserted: %1 (%2 tracks)").arg(displayName()).arg(lib_.trackCount()));
+    QTimer::singleShot(cfg_.insertMs, this, [this]() {
+        if (!running_) return;
+        startNfs();
+        transitioning_ = false;
+        setUsb(UsbState::Ready, true);
+        emit mountChanged(cfg_.folder, displayName(), true);
+    });
+}
+
+QString LinkExport::switchTo(const QString& folder, const QString& displayName)
+{
+    if (!running_) return QStringLiteral("the LINK export is not running");
+    if (!QFileInfo(folder + QStringLiteral("/PIONEER/rekordbox/export.pdb")).isFile())
+        return QStringLiteral("%1 has no PIONEER/rekordbox/export.pdb").arg(folder);
+    if (pendingSwitch_ || transitioning_) return QStringLiteral("a switch is already under way");
+    pendingFolder_ = folder;
+    pendingName_ = displayName;
+    if (usbState_ == UsbState::Empty) {
+        pendingSwitch_ = true;
+        insertPending();
+        return QString();
+    }
+    pendingSwitch_ = true;
+    const QString why = requestUnmount();
+    if (!why.isEmpty()) pendingSwitch_ = false;
+    return why;
+}
+
+void LinkExport::forceEmpty(const QString& why)
+{
+    if (!running_) return;
+    pendingSwitch_ = false;
+    transitioning_ = false;
+    stopNfs();
+    setUsb(UsbState::Empty, false);
+    emit mountChanged(cfg_.folder, displayName(), false);
+    emit logLine(QStringLiteral("USB slot emptied: %1").arg(why));
 }
 
 } // namespace vdj

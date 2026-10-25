@@ -23,6 +23,12 @@ public:
     void start(const QString& iface);
     void stop();
 
+    // Fallback when avahi-autoipd did not deliver: let NetworkManager do the link-local address
+    // (`nmcli con mod <profile> ipv4.link-local enabled` + `con up`), then watch the interface for it.
+    // The profile keeps link-local enabled afterwards; stop() only stops watching.
+    void startViaNetworkManager(const QString& iface);
+    static bool networkManagerAvailable();
+
     bool active() const { return active_; }
     QString iface() const { return iface_; }
     QString ip() const { return ip_; }
@@ -33,6 +39,8 @@ signals:
     void stopped(const QString& iface, const QString& ip);
     void ipChanged(const QString& ip);
     void errorOccurred(const QString& message);
+    // No 169.254.x.x address showed up on the interface in time (the helper has been stopped); the UI can offer nmcli
+    void noAddress(const QString& iface);
 
 private:
     void readClaimedIp();
@@ -50,6 +58,8 @@ private:
     bool active_ = false;
     bool stopped_ = false;
     bool startedOnce_ = false;
+    bool viaNm_ = false;
+    QProcess* nmProc_ = nullptr;
 };
 
 } // namespace vdj

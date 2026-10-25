@@ -97,6 +97,11 @@ bool ConfigManager::saveValue(const QString& section, const QString& key, const 
     return writeFile(section, entries);
 }
 
+bool ConfigManager::clearSection(const QString& section)
+{
+    return writeFile(section, {});
+}
+
 QStringList ConfigManager::keysOf(const QString& section) const
 {
     return readFile(section).keys();

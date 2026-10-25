@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QEventLoop>
 #include <QDir>
 #include <QStandardPaths>
@@ -57,6 +58,7 @@ static void onUpdate(vdj_t* v, cdj_cdj_status_packet_t* cs_pkt)
     int flags = cdj_status_flags(cs_pkt);
     int masterState = cdj_status_master_state(cs_pkt);
     int active = cdj_status_active(cs_pkt);
+    nm->noteRemoteLoad(pid, cdj_status_playing_from(cs_pkt), cdj_status_playing_from_slot(cs_pkt), cdj_status_track_type(cs_pkt));
 
     QString detail = QStringLiteral("p%1 bpm=%2 pitch=%3 flags=0x%4 master=%5 "
                                     "active=%6 track=%7 model=%8")
@@ -334,17 +336,71 @@ void NetworkManager::rawStatusPortPacket(const QByteArray& packet)
     if (le) le->onStatusPortPacket(packet);
 }
 
+void NetworkManager::noteRemoteLoad(int playerId, int playingFrom, int slot, int trackType)
+{
+    QMutexLocker l(&loadMutex_);
+    remoteLoads_[playerId] = RemoteLoad{ playingFrom, slot, trackType, QDateTime::currentMSecsSinceEpoch() };
+}
+
+QString NetworkManager::usbInUseBy()
+{
+    if (!v_) return QString();
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    QMutexLocker l(&loadMutex_);
+    for (auto it = remoteLoads_.constBegin(); it != remoteLoads_.constEnd(); ++it) {
+        const RemoteLoad& r = it.value();
+        if (it.key() == v_->player_id || now - r.seenMs > 5000) continue;
+        if (r.from == v_->player_id && r.slot == 3 && r.type != 0)
+            return QStringLiteral("player %1 has a track loaded from it").arg(it.key());
+    }
+    return QString();
+}
+
+QString NetworkManager::linkExportUnmount()
+{
+    return linkExport_ ? linkExport_->requestUnmount() : QStringLiteral("the LINK export is not running");
+}
+
+QString NetworkManager::linkExportSwitch(const QString& folder, const QString& displayName)
+{
+    if (!linkExport_) {
+        linkExportFolder_ = folder;
+        linkExportDisplayName_ = displayName;
+        startLinkExport();
+        if (!linkExport_) return QStringLiteral("the LINK export did not start (not connected to the link?)");
+        return QString();
+    }
+    return linkExport_->switchTo(folder, displayName);
+}
+
 void NetworkManager::startLinkExport()
 {
     if (!v_ || linkExportFolder_.isEmpty() || linkExport_) return;
     auto* le = new LinkExport(this);
-    connect(le, &LinkExport::logLine, this, [this](const QString& line) {
+    // Always on: what the export did and when, to line up with a capture (the status bar only keeps the last message for a few seconds)
+    const QString exportLogDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/linkexport");
+    QDir().mkpath(exportLogDir);
+    auto appendLog = [exportLogDir](const QString& line) {
+        QFile f(exportLogDir + QStringLiteral("/link-export.log"));
+        if (f.open(QIODevice::WriteOnly | QIODevice::Append))
+            f.write((QDateTime::currentDateTime().toString(QStringLiteral("hh:mm:ss.zzz")) + QLatin1Char(' ') + line + QLatin1Char('\n')).toUtf8());
+    };
+    appendLog(QStringLiteral("---- LINK export starting: %1").arg(linkExportFolder_));
+    connect(le, &LinkExport::logLine, this, [this, appendLog](const QString& line) {
         PacketLogger::instance().log(QStringLiteral("LINK"), line);
+        appendLog(line);
         emit linkExportLog(line);
     });
     connect(le, &LinkExport::portmapNotBound, this, &NetworkManager::linkExportNeedsPort111);
+    connect(le, &LinkExport::usbSlotChanged, this, [this, appendLog](quint8 state, bool media) {
+        appendLog(QStringLiteral("slot 0x6f=%1, stick present (0x74/0x77)=%2").arg(state, 2, 16, QLatin1Char('0')).arg(media ? 1 : 0));
+        if (v_) vdj_set_usb_slot(v_, state, media);
+    });
+    connect(le, &LinkExport::mountChanged, this, &NetworkManager::linkExportMounted);
+    le->setUsageProbe([this]() { return usbInUseBy(); });
     LinkExport::Config c;
     c.folder = linkExportFolder_;
+    c.displayName = linkExportDisplayName_;
     c.deviceNumber = v_->player_id;
     std::memcpy(c.mac, v_->mac, 6);
     std::memcpy(c.ip, v_->ip, 4);
@@ -360,6 +416,7 @@ void NetworkManager::startLinkExport()
     }
     linkExport_ = le;
     v_->raw_update_h = onRawUpdate;                // media queries
+    vdj_set_usb_slot(v_, VDJ_USB_READY, 1);
     v_->usb_loaded = 1;                            // our status now says a stick is mounted
     emit linkExportChanged(true);
 }

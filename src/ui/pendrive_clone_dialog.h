@@ -5,6 +5,8 @@
 #include <QAtomicInt>
 #include <QElapsedTimer>
 #include <QObject>
+#include <QPointer>
+#include <QThread>
 
 class QLineEdit;
 class QLabel;
@@ -39,6 +41,7 @@ private:
     QString     src_;
     QString     dst_;
     QAtomicInt  cancelled_;
+    QString     error_;      // why a copy stopped: the file and the system's reason
 };
 
 
@@ -47,9 +50,16 @@ class PendriveCloneDialog : public QDialog {
 
 public:
     explicit PendriveCloneDialog(QWidget* parent = nullptr);
+    ~PendriveCloneDialog() override;     // stops a copy that is still running before the thread goes away
 
     // Pre-populate source field (e.g., from NFS mount or pendrive path)
     void setSourcePath(const QString& path);
+
+    // Start copying without asking for confirmation (onStart asks, then calls this).
+    void startCopy(const QString& src, const QString& dst);
+    bool running() const { return thread_ != nullptr; }
+
+    void reject() override;              // closing while copying cancels the copy and waits for it, the dialog stays until it has stopped
 
 private slots:
     void onBrowseSrc();
@@ -73,8 +83,8 @@ private:
     QPushButton* startBtn_;
     QPushButton* cancelBtn_;
 
-    CloneWorker* worker_ = nullptr;
-    QThread*     thread_ = nullptr;
+    QPointer<CloneWorker> worker_;
+    QPointer<QThread>     thread_;       // set until the thread has really finished
 
     int    totalFiles_ = 0;
     qint64 totalBytes_ = 0;

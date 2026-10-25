@@ -22,6 +22,7 @@ public:
     bool saveValue(const QString& section, const QString& key, const QString& value);
 
     QStringList keysOf(const QString& section) const;
+    bool clearSection(const QString& section);          // forget every key of the section
     QString sectionPath(const QString& section) const;
 
     bool saveJoystickMapping(const QString& device, const QString& action,

@@ -112,6 +112,76 @@ private slots:
         QVERIFY(!le.start(c, &err));
         QVERIFY(!le.running());
     }
+    // the status bytes follow the sequence of a real deck (pcaps/prolink-usb-extracts.pcap): 02 -> 03 -> 04 (+ media gone), insert: media, ready
+    void swapsThePendriveLikeADeck()
+    {
+        QTemporaryDir logs;
+        LinkExport le;
+        LinkExport::Config c;
+        c.folder = QStringLiteral(VDJ_DBSERVER_FIXTURES "/export7");
+        c.deviceNumber = 2;
+        c.logDir = logs.path();
+        c.queryPort = 0; c.dbPort = 0;
+        c.altPortmapPort = 53321; c.portmapPort = 0; c.mountPort = 53322; c.nfsPort = 53359;
+        c.unloadingMs = 60; c.removableMs = 20; c.refusedMs = 40; c.swapGapMs = 30; c.insertMs = 30;
+        QString err;
+        QVERIFY2(le.start(c, &err), qPrintable(err));
+        QCOMPARE(int(le.library().trackCount()), 7);
+
+        QList<QPair<int, bool>> seen;
+        QObject::connect(&le, &LinkExport::usbSlotChanged, &le, [&](quint8 st, bool m) { seen << qMakePair(int(st), m); });
+        QSignalSpy mounts(&le, &LinkExport::mountChanged);
+
+        QVERIFY(le.switchTo(QStringLiteral("/nonexistent"), QString()).contains("export.pdb"));   // validated before anything moves
+        QVERIFY(seen.isEmpty());
+
+        QVERIFY2(le.switchTo(QStringLiteral(VDJ_DBSERVER_FIXTURES "/export"), QStringLiteral("STICK-B")).isEmpty(), "idle: accepted");
+        QVERIFY(QTest::qWaitFor([&] { return le.usbState() == LinkExport::UsbState::Ready && le.folder().endsWith("/export"); }, 3000));
+        const QList<QPair<int, bool>> want = { {2, true}, {3, true}, {4, false}, {4, true}, {0, true} };
+        QCOMPARE(seen, want);
+        QCOMPARE(le.displayName(), QStringLiteral("STICK-B"));
+        QVERIFY(le.library().trackCount() != 7);                       // the other export is loaded
+        QCOMPARE(mounts.count(), 2);                                   // unmounted, mounted
+        QVERIFY(!mounts.at(0).at(2).toBool() && mounts.at(1).at(2).toBool());
+        le.stop();
+    }
+
+    void refusesToUnmountWhileInUse()
+    {
+        QTemporaryDir logs;
+        LinkExport le;
+        LinkExport::Config c;
+        c.folder = QStringLiteral(VDJ_DBSERVER_FIXTURES "/export7");
+        c.deviceNumber = 2;
+        c.logDir = logs.path();
+        c.queryPort = 0; c.dbPort = 0;
+        c.altPortmapPort = 53331; c.portmapPort = 0; c.mountPort = 53332; c.nfsPort = 53369;
+        c.unloadingMs = 60; c.removableMs = 20; c.refusedMs = 40;
+        QString err;
+        QVERIFY2(le.start(c, &err), qPrintable(err));
+        bool busy = true;
+        le.setUsageProbe([&]() { return busy ? QStringLiteral("player 4 has a track loaded from it") : QString(); });
+
+        QList<QPair<int, bool>> seen;
+        QObject::connect(&le, &LinkExport::usbSlotChanged, &le, [&](quint8 st, bool m) { seen << qMakePair(int(st), m); });
+        QSignalSpy refused(&le, &LinkExport::switchRefused);
+        QVERIFY(le.requestUnmount().contains("player 4"));
+        QVERIFY(QTest::qWaitFor([&] { return le.usbState() == LinkExport::UsbState::Ready && seen.size() == 2; }, 2000));
+        const QList<QPair<int, bool>> want = { {2, true}, {0, true} };        // 00 -> 02 -> 00, nothing else changes
+        QCOMPARE(seen, want);
+        QCOMPARE(refused.count(), 1);
+        QVERIFY(le.mediaPresent());
+        QVERIFY(le.switchTo(QStringLiteral(VDJ_DBSERVER_FIXTURES "/export"), QString()).contains("player 4"));
+        QVERIFY(QTest::qWaitFor([&] { return le.usbState() == LinkExport::UsbState::Ready && seen.size() == 4; }, 2000));
+        QVERIFY(le.folder().endsWith("/export7"));                      // still the old stick
+        busy = false;
+        QVERIFY(le.requestUnmount().isEmpty());
+        QVERIFY(QTest::qWaitFor([&] { return le.usbState() == LinkExport::UsbState::Empty; }, 2000));
+        QVERIFY(!le.mediaPresent());
+        le.forceEmpty("test");                                          // idempotent
+        QCOMPARE(int(le.usbState()), 4);
+        le.stop();
+    }
 };
 
 QTEST_MAIN(TestLinkExport)

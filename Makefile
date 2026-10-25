@@ -660,6 +660,32 @@ vdj-ui-linkexport-test/fast:
 .PHONY : vdj-ui-linkexport-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-pendrive-registry-test
+
+# Build rule for target.
+vdj-ui-pendrive-registry-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-pendrive-registry-test
+.PHONY : vdj-ui-pendrive-registry-test
+
+# fast build rule for target.
+vdj-ui-pendrive-registry-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build
+.PHONY : vdj-ui-pendrive-registry-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-clone-dialog-test
+
+# Build rule for target.
+vdj-ui-clone-dialog-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-clone-dialog-test
+.PHONY : vdj-ui-clone-dialog-test
+
+# fast build rule for target.
+vdj-ui-clone-dialog-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build
+.PHONY : vdj-ui-clone-dialog-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -1179,6 +1205,58 @@ vdj-ui-linkexport-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build
 .PHONY : vdj-ui-linkexport-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-pendrive-registry-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-pendrive-registry-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-pendrive-registry-test_autogen_timestamp_deps
+.PHONY : vdj-ui-pendrive-registry-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-pendrive-registry-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-pendrive-registry-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-pendrive-registry-test_autogen
+
+# Build rule for target.
+vdj-ui-pendrive-registry-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-pendrive-registry-test_autogen
+.PHONY : vdj-ui-pendrive-registry-test_autogen
+
+# fast build rule for target.
+vdj-ui-pendrive-registry-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/build
+.PHONY : vdj-ui-pendrive-registry-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-clone-dialog-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-clone-dialog-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-clone-dialog-test_autogen_timestamp_deps
+.PHONY : vdj-ui-clone-dialog-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-clone-dialog-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-clone-dialog-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-clone-dialog-test_autogen
+
+# Build rule for target.
+vdj-ui-clone-dialog-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-clone-dialog-test_autogen
+.PHONY : vdj-ui-clone-dialog-test_autogen
+
+# fast build rule for target.
+vdj-ui-clone-dialog-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/build
+.PHONY : vdj-ui-clone-dialog-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1205,6 +1283,8 @@ help:
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatgrid-test_autogen"
 	@echo "... vdj-ui-beatgrid-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-clone-dialog-test_autogen"
+	@echo "... vdj-ui-clone-dialog-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-config-test_autogen"
 	@echo "... vdj-ui-config-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-controls-test_autogen"
@@ -1223,6 +1303,8 @@ help:
 	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-pendrive-registry-test_autogen"
+	@echo "... vdj-ui-pendrive-registry-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rblibrary-test_autogen"
 	@echo "... vdj-ui-rblibrary-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rbmode-test_autogen"
@@ -1251,6 +1333,7 @@ help:
 	@echo "... vdj-ui"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-beatgrid-test"
+	@echo "... vdj-ui-clone-dialog-test"
 	@echo "... vdj-ui-config-test"
 	@echo "... vdj-ui-controls-test"
 	@echo "... vdj-ui-dbcodec-test"
@@ -1260,6 +1343,7 @@ help:
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-nfsmount-test"
+	@echo "... vdj-ui-pendrive-registry-test"
 	@echo "... vdj-ui-rblibrary-test"
 	@echo "... vdj-ui-rbmode-test"
 	@echo "... vdj-ui-rbpackets-test"

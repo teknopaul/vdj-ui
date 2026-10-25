@@ -44,3 +44,7 @@ add_test(vdj-ui-rbpanel-test "/home/teknopaul/bzr_workspace/vdj-ui/tests/vdj-ui-
 set_tests_properties(vdj-ui-rbpanel-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;113;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
 add_test(vdj-ui-linkexport-test "/home/teknopaul/bzr_workspace/vdj-ui/tests/vdj-ui-linkexport-test")
 set_tests_properties(vdj-ui-linkexport-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;120;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
+add_test(vdj-ui-pendrive-registry-test "/home/teknopaul/bzr_workspace/vdj-ui/tests/vdj-ui-pendrive-registry-test")
+set_tests_properties(vdj-ui-pendrive-registry-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;126;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
+add_test(vdj-ui-clone-dialog-test "/home/teknopaul/bzr_workspace/vdj-ui/tests/vdj-ui-clone-dialog-test")
+set_tests_properties(vdj-ui-clone-dialog-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;131;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")

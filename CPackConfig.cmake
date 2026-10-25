@@ -14,7 +14,7 @@ set(CPACK_BUILD_SOURCE_DIRS "/home/teknopaul/bzr_workspace/vdj-ui;/home/teknopau
 set(CPACK_CMAKE_GENERATOR "Unix Makefiles")
 set(CPACK_COMPONENT_UNSPECIFIED_HIDDEN "TRUE")
 set(CPACK_COMPONENT_UNSPECIFIED_REQUIRED "TRUE")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev, libcdj, libvdj")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev, libcdj, libvdj, fonts-liberation")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "VDJ")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
 set(CPACK_DEFAULT_PACKAGE_DESCRIPTION_FILE "/usr/share/cmake-3.28/Templates/CPack.GenericDescription.txt")

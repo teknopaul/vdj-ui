@@ -69,6 +69,18 @@ while true; do
 done
 )SH";
 
+// Runs as the user: enabling link-local on the profile that carries the interface, then re-activating it
+static const char kNmScript[] = R"SH(
+iface="$1"
+con=$(nmcli -g GENERAL.CONNECTION dev show "$iface" 2>/dev/null)
+if [ -z "$con" ] || [ "$con" = "--" ]; then
+  echo "NetworkManager has no active connection on $iface (cable connected?)" >&2
+  exit 2
+fi
+nmcli con mod "$con" ipv4.link-local enabled || exit 3
+nmcli con up "$con" || exit 4
+)SH";
+
 AutoIpManager::AutoIpManager(QObject* parent)
     : QObject(parent)
 {
@@ -133,14 +145,66 @@ void AutoIpManager::start(const QString& iface)
         // avahi-autoipd takes a few seconds to probe; give up if nothing was claimed by then
         QTimer::singleShot(40000, this, [this, runner = QPointer<QProcess>(runner_)]() {
             if (active_ && !startedOnce_ && runner == runner_) {
-                lastError_ = QStringLiteral("AutoIP: no address claimed on %1 (is the cable connected?)").arg(iface_);
-                emit errorOccurred(lastError_);
+                const QString iface = iface_;
                 stop();
+                lastError_ = QStringLiteral("AutoIP: no 169.254.x.x address on %1 (is the cable connected?)").arg(iface);
+                if (networkManagerAvailable())
+                    emit noAddress(iface);
+                else
+                    emit errorOccurred(lastError_);
             }
         });
     } else {
         onRunnerFinished(runner_->exitCode());
     }
+}
+
+bool AutoIpManager::networkManagerAvailable()
+{
+    return !QStandardPaths::findExecutable(QStringLiteral("nmcli")).isEmpty();
+}
+
+void AutoIpManager::startViaNetworkManager(const QString& iface)
+{
+    if (active_)
+        stop();
+    if (iface.isEmpty() || !networkManagerAvailable()) {
+        lastError_ = QStringLiteral("AutoIP: nmcli (NetworkManager) is not available");
+        emit errorOccurred(lastError_);
+        return;
+    }
+    iface_ = iface;
+    ip_.clear();
+    active_ = true;
+    stopped_ = false;
+    startedOnce_ = false;
+    viaNm_ = true;
+    lastError_.clear();
+
+    nmProc_ = new QProcess(this);
+    nmProc_->setProcessChannelMode(QProcess::MergedChannels);
+    connect(nmProc_, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this, proc = QPointer<QProcess>(nmProc_)](int code, QProcess::ExitStatus) {
+        if (!proc) return;
+        const QString out = QString::fromLocal8Bit(proc->readAll()).trimmed();
+        proc->deleteLater();
+        nmProc_ = nullptr;
+        if (code != 0 && active_) {
+            lastError_ = QStringLiteral("nmcli failed on %1: %2").arg(iface_, out.isEmpty() ? QStringLiteral("exit %1").arg(code) : out);
+            emit errorOccurred(lastError_);
+            stop();
+        }
+    });
+    nmProc_->start(QStringLiteral("/bin/sh"), { QStringLiteral("-c"), QString::fromLatin1(kNmScript), QStringLiteral("vdj-autoip-nm"), iface });
+    pollTimer_->start();
+    // activating a profile can wait for DHCP to time out before the link-local fallback applies
+    QTimer::singleShot(60000, this, [this, iface]() {
+        if (active_ && viaNm_ && !startedOnce_ && iface == iface_) {
+            lastError_ = QStringLiteral("AutoIP: NetworkManager did not assign a 169.254.x.x address on %1").arg(iface);
+            stop();
+            emit errorOccurred(lastError_);
+        }
+    });
 }
 
 void AutoIpManager::stop()
@@ -151,6 +215,20 @@ void AutoIpManager::stop()
     stopped_ = true;
     active_ = false;
     pollTimer_->stop();
+
+    if (viaNm_) {
+        viaNm_ = false;
+        if (nmProc_) {
+            nmProc_->disconnect(this);
+            nmProc_->kill();
+            nmProc_->deleteLater();
+            nmProc_ = nullptr;
+        }
+        emit stopped(iface_, ip_);
+        iface_.clear();
+        ip_.clear();
+        return;
+    }
 
     // The stop marker makes the privileged maintainer tear the address down
     // and exit; SIGTERM as well so it does not wait for the next poll.
@@ -164,8 +242,10 @@ void AutoIpManager::stop()
         if (!runner_->waitForFinished(5000))
             runner_->kill();
     }
-    runner_->deleteLater();
-    runner_ = nullptr;
+    if (runner_) {
+        runner_->deleteLater();
+        runner_ = nullptr;
+    }
 
     emit stopped(iface_, ip_);
     iface_.clear();

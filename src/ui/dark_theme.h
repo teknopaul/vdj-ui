@@ -5,7 +5,8 @@
 
 namespace vdj {
 
-QString darkThemeStylesheet();
+// family: the font for the whole app (empty = Liberation Sans, package fonts-liberation); the size comes from QApplication::font()
+QString darkThemeStylesheet(const QString& family = QString());
 
 }
 

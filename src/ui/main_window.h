@@ -2,6 +2,7 @@
 #define MAIN_WINDOW_H
 
 #include <QMainWindow>
+#include <QFont>
 #include <QVector>
 #include <QElapsedTimer>
 #include "midi/diff_lock.h"
@@ -35,6 +36,9 @@ class AudioRecorder;
 class InstrumentManager;
 class MidiRouter;
 class MidiMapInput;
+class PendriveRegistry;       // src/export/pendrive_registry.h
+class PendriveToolBar;         // src/ui/pendrive_toolbar.h
+class VirtualPendrivesDialog;  // src/ui/virtual_pendrives_dialog.h
 class RekordboxModePanel;      // rekordbox PC mode (src/ui/rekordbox_mode_panel.h)
 struct RbModeOptions;
 
@@ -62,6 +66,14 @@ private slots:
 
 private:
     void openRekordboxFolder();
+    // virtual / physical pendrives (src/export/pendrive_registry.h)
+    PendriveRegistry* pendrives();
+    void showVirtualPendrives();
+    void rebuildExportMenu();
+    void openPendrive(const QString& folder);
+    void exportPendrive(const QString& folder, const QString& name);   // swap the exported pendrive like a deck would
+    void ejectPendrive();
+    void pickAdHocFolder();
     void setupMenus();
     void setupStatusBar();
     void setupShortcuts();
@@ -152,6 +164,13 @@ private:
     QDockWidget* rbDock_ = nullptr;
     QAction* rbAction_ = nullptr;
     QAction* linkExportAction_ = nullptr;
+    QMenu* exportMenu_ = nullptr;
+    PendriveToolBar* pendriveBar_ = nullptr;
+    void updatePendriveBar();                       // exported marker and the USB STOP dimming
+    PendriveRegistry* pendrives_ = nullptr;
+    VirtualPendrivesDialog* pendrivesDialog_ = nullptr;
+    QString explicitExportFolder_;                    // a pendrive picked on purpose; empty = export what the browser shows
+    QString explicitExportName_;
     bool linkExportWanted_ = false;
     QAction* connectAction_ = nullptr;
     AudioRecorder* recorder_ = nullptr;
@@ -168,6 +187,15 @@ private:
     double masterBpm_ = 0.0;
     int masterPid_ = -1;
     QString currentInterface_;
+    void applyAppFont(const QString& family, int pointSize);   // Config > Application Font; saved as [ui] font_family / font_size
+    void chooseAppFont();
+    void resetAppFont();
+    QFont defaultAppFont_;
+    void offerPort111Capability();                  // popup: setcap cap_net_bind_service on our binary via pkexec, then restart
+    bool port111Offered_ = false;
+    void setMasterStatus(int pid);                  // status bar "Master: ..." label, pid < 0 = none
+    bool savedInterfaceUsable() const;              // saved NIC exists on this machine: no need to ask
+    void forgetInterface();                         // Config menu: clears the saved NIC so the next Connect / AutoIP asks again
     void rememberInterface(const QString& iface);   // sets currentInterface_ and persists it as the default
 };
 

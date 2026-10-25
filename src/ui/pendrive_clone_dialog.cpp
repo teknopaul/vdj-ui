@@ -56,7 +56,10 @@ bool CloneWorker::copyDir(const QString& src, const QString& dst,
                           int totalFiles, qint64 totalBytes,
                           int& filesDone, qint64& bytesDone)
 {
-    QDir().mkpath(dst);
+    if (!QDir().mkpath(dst)) {
+        error_ = QStringLiteral("Cannot create %1").arg(dst);
+        return false;
+    }
     QDir d(src);
     for (const QFileInfo& fi : d.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot)) {
         if (cancelled_.loadAcquire()) return false;
@@ -70,8 +73,11 @@ bool CloneWorker::copyDir(const QString& src, const QString& dst,
         } else {
             if (QFile::exists(dstPath))
                 QFile::remove(dstPath);
-            if (!QFile::copy(srcPath, dstPath))
+            QFile in(srcPath);
+            if (!in.copy(dstPath)) {
+                error_ = QStringLiteral("Cannot copy %1: %2").arg(srcPath, in.errorString());
                 return false;
+            }
             preserveMtime(srcPath, dstPath);
 
             bytesDone += fi.size();
@@ -102,7 +108,7 @@ void CloneWorker::run()
     bool ok = copyDir(src_, dst_, totalFiles, totalBytes, filesDone, bytesDone);
 
     if (!ok && !cancelled_.loadAcquire())
-        emit finished(false, QStringLiteral("Copy failed — check source/destination paths."));
+        emit finished(false, error_.isEmpty() ? QStringLiteral("Copy failed — check source/destination paths.") : error_);
     else if (cancelled_.loadAcquire())
         emit finished(false, QStringLiteral("Cancelled."));
     else
@@ -219,26 +225,57 @@ void PendriveCloneDialog::onStart()
         QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel);
     if (res != QMessageBox::Yes) return;
 
-    worker_ = new CloneWorker(src, dst);
-    thread_ = new QThread(this);
-    worker_->moveToThread(thread_);
+    startCopy(src, dst);
+}
 
-    connect(thread_, &QThread::started,        worker_,  &CloneWorker::run);
-    connect(worker_, &CloneWorker::scanDone,   this,     &PendriveCloneDialog::onScanDone);
-    connect(worker_, &CloneWorker::fileDone,   this,     &PendriveCloneDialog::onFileDone);
-    connect(worker_, &CloneWorker::finished,   this,     &PendriveCloneDialog::onWorkerFinished);
-    connect(worker_, &CloneWorker::finished,   thread_,  &QThread::quit);
-    connect(thread_, &QThread::finished,       worker_,  &QObject::deleteLater);
+void PendriveCloneDialog::startCopy(const QString& src, const QString& dst)
+{
+    if (thread_) return;                        // the previous copy is still shutting down
+
+    auto* worker = new CloneWorker(src, dst);
+    auto* thread = new QThread(this);
+    worker_ = worker;
+    thread_ = thread;
+    worker->moveToThread(thread);
+
+    connect(thread, &QThread::started,        worker, &CloneWorker::run);
+    connect(worker, &CloneWorker::scanDone,   this,   &PendriveCloneDialog::onScanDone);
+    connect(worker, &CloneWorker::fileDone,   this,   &PendriveCloneDialog::onFileDone);
+    connect(worker, &CloneWorker::finished,   this,   &PendriveCloneDialog::onWorkerFinished);
+    connect(worker, &CloneWorker::finished,   thread, &QThread::quit);
+    // The thread object may only go once it has stopped: delete it from its own finished signal, never earlier
+    connect(thread, &QThread::finished,       worker, &QObject::deleteLater);
+    connect(thread, &QThread::finished,       thread, &QObject::deleteLater);
+    connect(thread, &QThread::finished,       this,   [this]() { setRunning(false); });
 
     elapsed_.start();
     setRunning(true);
-    thread_->start();
+    thread->start();
+}
+
+PendriveCloneDialog::~PendriveCloneDialog()
+{
+    if (thread_) {
+        if (worker_) worker_->cancel();
+        thread_->quit();
+        thread_->wait();                        // returns once the file being copied is done
+    }
+}
+
+void PendriveCloneDialog::reject()
+{
+    if (thread_) {                              // copying: cancel, and close once it has stopped (the Cancel button does the same)
+        onCancel();
+        return;
+    }
+    QDialog::reject();
 }
 
 void PendriveCloneDialog::onCancel()
 {
-    if (worker_) {
-        worker_->cancel();
+    if (thread_) {
+        if (worker_) worker_->cancel();
+        statusLabel_->setText(QStringLiteral("Cancelling…"));
     } else {
         accept();
     }
@@ -279,10 +316,6 @@ void PendriveCloneDialog::onFileDone(int filesDone, qint64 bytesDone,
 
 void PendriveCloneDialog::onWorkerFinished(bool success, const QString& error)
 {
-    setRunning(false);
-    worker_ = nullptr;
-    if (thread_) { thread_->deleteLater(); thread_ = nullptr; }
-
     if (success) {
         statusLabel_->setText(QStringLiteral("Copy complete."));
         progressBar_->setValue(100);
@@ -293,6 +326,7 @@ void PendriveCloneDialog::onWorkerFinished(bool success, const QString& error)
 
 void PendriveCloneDialog::setRunning(bool running)
 {
+    if (!running) { worker_ = nullptr; thread_ = nullptr; }
     startBtn_->setEnabled(!running);
     srcEdit_->setEnabled(!running);
     dstEdit_->setEnabled(!running);

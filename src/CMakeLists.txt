@@ -75,12 +75,15 @@ add_library(vdj-cdj STATIC
     ui/bpm_ramp_widget.cpp
     ui/hud_window.cpp
     ui/pendrive_clone_dialog.cpp
+    ui/virtual_pendrives_dialog.cpp
+    ui/pendrive_toolbar.cpp
     ui/recording_panel.cpp
     ui/rekordbox_mode_panel.cpp
     ui/instrument_config_dialog.cpp
     ui/main_window.cpp
     network/network_manager.cpp
     network/link_export.cpp
+    export/pendrive_registry.cpp
     network/network_config_dialog.cpp
     network/auto_ip_manager.cpp
 )

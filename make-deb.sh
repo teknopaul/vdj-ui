@@ -10,7 +10,8 @@ cmake --build "$BUILD_DIR" --parallel "$(nproc)"
 (cd "$BUILD_DIR" && cpack -G DEB)
 
 DEB=$(ls "$BUILD_DIR"/vdj-ui-*.deb 2>/dev/null | head -1)
-if [ -n "$DEB" ]; then
+if [ -n "$DEB" ]
+then
     echo "Package: $DEB"
     dpkg-deb --info "$DEB"
 else

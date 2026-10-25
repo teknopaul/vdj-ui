@@ -25,6 +25,10 @@
 #include "hud_window.h"
 #include "recording_panel.h"
 #include "pendrive_clone_dialog.h"
+#include "virtual_pendrives_dialog.h"
+#include "pendrive_toolbar.h"
+#include "export/pendrive_registry.h"
+#include "network/link_export.h"
 #include "instrument_config_dialog.h"
 #include "audio/audio_recorder.h"
 #include "midi/instrument_manager.h"
@@ -37,6 +41,11 @@
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QFontDialog>
+#include <QProcess>
+#include <QFileInfo>
+#include <QPushButton>
+#include <QApplication>
 #include <QCoreApplication>
 #include <QMenu>
 #include <QStatusBar>
@@ -76,7 +85,6 @@ MainWindow::MainWindow(QWidget* parent)
         maxH = qMax(500, qMin(750, availH - 100));
     }
     resize(1400, maxH);
-    setStyleSheet(darkThemeStylesheet());
 
     clock_ = new AlsaClock;
     {
@@ -91,12 +99,14 @@ MainWindow::MainWindow(QWidget* parent)
     network_->setBeatProbe([this](double* ms) { return clock_ && clock_->beatOffsetMs(ms); });
     autoIp_ = new AutoIpManager(this);
     config_ = new ConfigManager(this);
+    applyAppFont(config_->loadValue(QStringLiteral("ui"), QStringLiteral("font_family")),
+                 config_->loadValue(QStringLiteral("ui"), QStringLiteral("font_size")).toInt());
     currentInterface_ = config_->loadValue(QStringLiteral("network"), QStringLiteral("interface"));   // last NIC used for prolink
     nfs_ = new NfsMountManager(this);
     trackBrowser_ = nullptr; // created in setupDemoDecks
     nowPlaying_ = nullptr;
     QObject::connect(network_, &NetworkManager::connected, this, [this]() {
-        statusNetwork_->setText("Network: connected");
+        statusNetwork_->setText("Prolink: connected");
         updateRampEnabled();
         // The VDJ row takes the player id the link gave us; placeholder decks go, real ones announce themselves.
         const int localId = int(network_->localPlayerId());
@@ -116,7 +126,7 @@ MainWindow::MainWindow(QWidget* parent)
             local->setIp(network_->ipForPlayer(int(network_->localPlayerId())));
     });
     QObject::connect(network_, &NetworkManager::disconnected, this, [this]() {
-        statusNetwork_->setText("Network: down");
+        statusNetwork_->setText("Prolink: down");
         updateRampEnabled();
         for (int i = deckArea_->deckCount() - 1; i >= 0; --i) {      // the other decks are no longer visible
             DeckWidget* d = deckArea_->deckAt(i);
@@ -129,7 +139,7 @@ MainWindow::MainWindow(QWidget* parent)
         stopBpmRamp();
         masterPid_ = -1;
         masterBpm_ = 0.0;
-        statusMaster_->setText(QStringLiteral("Master: none"));
+        setMasterStatus(-1);
         difflock_.off();                       // also unlocks the BPM spinner
         refreshDiffLock();
         for (DeckWidget* d : deckArea_->findChildren<DeckWidget*>())
@@ -149,11 +159,11 @@ MainWindow::MainWindow(QWidget* parent)
     });
     QObject::connect(network_, &NetworkManager::discoveryPhase, this, [this](const QString& text) {
         statusBar()->showMessage(text, text.startsWith(QLatin1String("Joined")) ? 6000 : 0);
-        statusNetwork_->setText(QStringLiteral("Network: joining"));
+        statusNetwork_->setText(QStringLiteral("Prolink: joining"));
     });
     QObject::connect(network_, &NetworkManager::errorOccurred, this,
                      [this](const QString& msg) {
-        statusNetwork_->setText("Network: " + msg);
+        statusNetwork_->setText("Prolink: " + msg);
     });
     QObject::connect(autoIp_, &AutoIpManager::started, this,
                      [this](const QString& iface, const QString& ip) {
@@ -170,8 +180,27 @@ MainWindow::MainWindow(QWidget* parent)
         setAutoIpChecked(false);
         QMessageBox::warning(this, QStringLiteral("AutoIP"), msg);
     });
+    QObject::connect(autoIp_, &AutoIpManager::noAddress, this,
+                     [this](const QString& iface) {
+        setAutoIpChecked(false);
+        QMessageBox box(QMessageBox::Question, QStringLiteral("AutoIP"),
+            QStringLiteral("No 169.254.x.x address appeared on %1 (is the cable connected?).\n\n"
+                           "Let NetworkManager do it instead? This runs:\n"
+                           "  nmcli con mod <profile> ipv4.link-local enabled\n"
+                           "  nmcli con up <profile>\n"
+                           "and leaves link-local enabled on that connection.").arg(iface),
+            QMessageBox::NoButton, this);
+        QPushButton* nm = box.addButton(QStringLiteral("Use NetworkManager"), QMessageBox::AcceptRole);
+        box.addButton(QMessageBox::Cancel);
+        box.exec();
+        if (box.clickedButton() == nm) {
+            setAutoIpChecked(true);
+            statusBar()->showMessage(QStringLiteral("AutoIP: asking NetworkManager for a link-local address on %1...").arg(iface), 8000);
+            autoIp_->startViaNetworkManager(iface);
+        }
+    });
     QObject::connect(network_, &NetworkManager::masterChanged, this, [this](int pid) {
-        statusMaster_->setText(QString("Master: %1").arg(pid));
+        setMasterStatus(pid);
         masterPid_ = pid;
         // statusUpdated only carries other players' packets, so the local deck's master state comes from here
         if (auto* local = deckAt(int(network_->localPlayerId())))
@@ -264,17 +293,7 @@ MainWindow::MainWindow(QWidget* parent)
     QObject::connect(network_, &NetworkManager::linkExportNeedsPort111, this, [this]() {
         // The players mount a player's USB stick first (portmapper on UDP 111, then mountd) and only then ask for its media and library:
         // without port 111 they never get further, so say it plainly and once.
-        auto* box = new QMessageBox(QMessageBox::Warning, QStringLiteral("LINK export needs UDP port 111"),
-            QStringLiteral("The decks look for the NFS portmapper of a player on UDP port 111, a privileged port, and it could not be opened. "
-                           "Until it can, no deck will list or load tracks from this export.\n\n"
-                           "Run ONE of these once, then switch the export off and on:\n\n"
-                           "  sudo sysctl -w net.ipv4.ip_unprivileged_port_start=111\n"
-                           "      (until the next reboot, survives rebuilds)\n\n"
-                           "  sudo setcap cap_net_bind_service=+ep %1\n"
-                           "      (lost whenever vdj-ui is rebuilt)").arg(QCoreApplication::applicationFilePath()),
-            QMessageBox::Ok, this);
-        box->setAttribute(Qt::WA_DeleteOnClose);
-        box->open();
+        offerPort111Capability();
     });
     QObject::connect(network_, &NetworkManager::linkExportLog, this, [this](const QString& line) { statusBar()->showMessage(line, 8000); });
     if (config_->loadValue(QStringLiteral("link_export"), QStringLiteral("enabled")) == QLatin1String("1")) {
@@ -285,7 +304,7 @@ MainWindow::MainWindow(QWidget* parent)
     setupShortcuts();
     setupDemoDecks();
     setupDemoTrackBrowser();
-    QObject::connect(trackBrowser_, &TrackBrowser::databaseLoaded, this, [this](const QString&) { if (linkExportWanted_) applyLinkExport(); });
+    QObject::connect(trackBrowser_, &TrackBrowser::databaseLoaded, this, [this](const QString&) { if (linkExportWanted_ && explicitExportFolder_.isEmpty()) applyLinkExport(); });
     connectDeckSignals();
     startDemoClocks();
     sequencerTimer_ = new QTimer(this);
@@ -392,6 +411,9 @@ void MainWindow::setupMenus()
     QAction* openDb = file->addAction("&Open Rekordbox Folder...");
     openDb->setShortcut(QKeySequence::Open);
     connect(openDb, &QAction::triggered, this, &MainWindow::openRekordboxFolder);
+    QAction* pendrivesAction = file->addAction("Virtual &Pendrives...");
+    pendrivesAction->setToolTip("Named folders and the pendrives plugged into this PC: open one in the browser or export it to the decks");
+    connect(pendrivesAction, &QAction::triggered, this, &MainWindow::showVirtualPendrives);
     QAction* cloneAction = file->addAction("&Clone Pendrive...");
     connect(cloneAction, &QAction::triggered, this, [this]() {
         PendriveCloneDialog dlg(this);
@@ -435,6 +457,11 @@ void MainWindow::setupMenus()
     linkExportAction_->setToolTip("Serve the rekordbox database that is open in the browser (File > Open Rekordbox Folder) to the other decks like a "
                                   "player with a USB stick in it (experimental, off by default). Takes effect while connected.");
     connect(linkExportAction_, &QAction::triggered, this, [this](bool on) { setLinkExportEnabled(on); });
+    exportMenu_ = network->addMenu("Exported &Pendrive");
+    exportMenu_->setToolTip("Choose which pendrive the decks see; picking another one while exporting swaps it like a deck does (refused while a deck uses it)");
+    connect(exportMenu_, &QMenu::aboutToShow, this, &MainWindow::rebuildExportMenu);
+    QAction* ejectAction = network->addAction("E&ject Exported Pendrive (USB STOP)");
+    connect(ejectAction, &QAction::triggered, this, &MainWindow::ejectPendrive);
     network->addSeparator();
     rbAction_ = network->addAction("&Rekordbox PC Mode...");
     rbAction_->setCheckable(true);
@@ -452,6 +479,15 @@ void MainWindow::setupMenus()
     connect(autoIpMenuAction_, &QAction::triggered, this, &MainWindow::setAutoIp);
 
     QMenu* configMenu = menuBar()->addMenu("&Config");
+    QAction* forgetNicAction = configMenu->addAction("&Forget Saved Network Interface");
+    forgetNicAction->setToolTip("The network interface for the decks is asked once and then reused; forget it after the NIC changes");
+    connect(forgetNicAction, &QAction::triggered, this, &MainWindow::forgetInterface);
+    QAction* fontAction = configMenu->addAction("Application &Font...");
+    fontAction->setToolTip("The font for the whole app");
+    connect(fontAction, &QAction::triggered, this, &MainWindow::chooseAppFont);
+    QAction* fontResetAction = configMenu->addAction("&Reset Font");
+    connect(fontResetAction, &QAction::triggered, this, &MainWindow::resetAppFont);
+    configMenu->addSeparator();
     QAction* usbAction = configMenu->addAction("&USB / MIDI...");
     QAction* instAction = configMenu->addAction("&Instruments...");
     QAction* mapAction = configMenu->addAction("MIDI &Map...");
@@ -490,8 +526,9 @@ void MainWindow::setAutoIp(bool on)
         setAutoIpChecked(false);
         return;
     }
-    // AutoIP must run on the NIC that is cabled to the decks, so always ask
-    const QString iface = NetworkConfigDialog::chooseInterface(this, QStringLiteral("AutoIP"), activeInterface());
+    // AutoIP must run on the NIC that is cabled to the decks: asked once, then the saved one is used (Config > Forget Saved Network Interface)
+    const QString iface = savedInterfaceUsable() ? currentInterface_
+        : NetworkConfigDialog::chooseInterface(this, QStringLiteral("AutoIP"), activeInterface());
     if (iface.isEmpty()) {
         setAutoIpChecked(false);
         return;
@@ -653,12 +690,104 @@ QString MainWindow::activeInterface() const
     return QString();
 }
 
+// UDP 111 is privileged: give this binary cap_net_bind_service with setcap (root via the polkit prompt). A capability only applies to a
+// freshly started process, so after it is granted vdj-ui offers to restart itself.
+void MainWindow::offerPort111Capability()
+{
+    if (port111Offered_)
+        return;
+    port111Offered_ = true;
+    const QString exe = QFileInfo(QCoreApplication::applicationFilePath()).canonicalFilePath();   // setcap fails on a symlink
+    QMessageBox box(QMessageBox::Warning, QStringLiteral("LINK export needs UDP port 111"),
+        QStringLiteral("The decks look for the NFS portmapper of a player on UDP port 111, a privileged port, and it could not be opened. "
+                       "Until it can, no deck will list or load tracks from this export.\n\n"
+                       "Allow vdj-ui to bind low ports? This asks for your password and runs:\n\n"
+                       "  setcap cap_net_bind_service=+ep %1\n\n"
+                       "vdj-ui then restarts. The permission is lost whenever the binary is rebuilt.").arg(exe),
+        QMessageBox::NoButton, this);
+    QPushButton* grant = box.addButton(QStringLiteral("Grant permission"), QMessageBox::AcceptRole);
+    box.addButton(QStringLiteral("Not now"), QMessageBox::RejectRole);
+    box.exec();
+    if (box.clickedButton() != grant) {
+        port111Offered_ = false;
+        return;
+    }
+    QProcess setcap;
+    setcap.setProcessChannelMode(QProcess::MergedChannels);
+    setcap.start(QStringLiteral("/usr/bin/pkexec"), { QStringLiteral("setcap"), QStringLiteral("cap_net_bind_service=+ep"), exe });
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const bool done = setcap.waitForFinished(120000);   // the polkit prompt waits for the password
+    QApplication::restoreOverrideCursor();
+    port111Offered_ = false;
+    if (!done || setcap.exitCode() != 0) {
+        const QString out = QString::fromLocal8Bit(setcap.readAll()).trimmed();
+        QMessageBox::warning(this, QStringLiteral("setcap"),
+            setcap.exitCode() == 126 ? QStringLiteral("Authorisation was cancelled or refused.")
+                                     : QStringLiteral("setcap failed (exit %1): %2").arg(setcap.exitCode()).arg(out.isEmpty() ? QStringLiteral("no output") : out));
+        return;
+    }
+    if (QMessageBox::question(this, QStringLiteral("Restart vdj-ui"),
+            QStringLiteral("Permission granted. It only applies to a new process: restart vdj-ui now?")) != QMessageBox::Yes)
+        return;
+    if (QProcess::startDetached(exe, QCoreApplication::arguments().mid(1)))
+        QCoreApplication::quit();
+    else
+        QMessageBox::warning(this, QStringLiteral("Restart"), QStringLiteral("Could not start %1: restart it by hand.").arg(exe));
+}
+
+// One setting for the whole app: the family goes through the stylesheet (it overrides per-widget fonts), the base size through QApplication.
+// Empty family / size 0 = the built-in defaults.
+void MainWindow::applyAppFont(const QString& family, int pointSize)
+{
+    if (defaultAppFont_ == QFont())
+        defaultAppFont_ = QApplication::font();
+    QFont f = defaultAppFont_;
+    if (pointSize > 0) f.setPointSize(pointSize);
+    QApplication::setFont(f);
+    setStyleSheet(darkThemeStylesheet(family));
+}
+
+void MainWindow::chooseAppFont()
+{
+    bool ok = false;
+    QFont current = QApplication::font();
+    const QString fam = config_->loadValue(QStringLiteral("ui"), QStringLiteral("font_family"));
+    if (!fam.isEmpty()) current.setFamily(fam);
+    const QFont f = QFontDialog::getFont(&ok, current, this, QStringLiteral("Application Font"));
+    if (!ok)
+        return;
+    config_->saveValue(QStringLiteral("ui"), QStringLiteral("font_family"), f.family());
+    config_->saveValue(QStringLiteral("ui"), QStringLiteral("font_size"), QString::number(f.pointSize()));
+    applyAppFont(f.family(), f.pointSize());
+}
+
+void MainWindow::resetAppFont()
+{
+    config_->saveValue(QStringLiteral("ui"), QStringLiteral("font_family"), QString());
+    config_->saveValue(QStringLiteral("ui"), QStringLiteral("font_size"), QString());
+    applyAppFont(QString(), 0);
+}
+
+// grey when nobody is master, the deck widgets' master yellow when somebody is
+void MainWindow::setMasterStatus(int pid)
+{
+    if (pid < 0) {
+        statusMaster_->setText(QStringLiteral("Master: none"));
+        statusMaster_->setStyleSheet(QStringLiteral("color: #8a8a8a;"));
+    } else {
+        statusMaster_->setText(QStringLiteral("Master: %1").arg(pid));
+        statusMaster_->setStyleSheet(QStringLiteral("color: #ffd54a;"));
+    }
+}
+
 void MainWindow::setupStatusBar()
 {
-    statusNetwork_ = new QLabel("Network: down", this);
-    statusMaster_ = new QLabel("Master: none", this);
+    statusNetwork_ = new QLabel("Prolink: down", this);
+    statusMaster_ = new QLabel(this);
+    setMasterStatus(-1);
     statusAutoIp_ = new AutoipStatusWidget(autoIp_, this);
     statusDecks_ = new QLabel("Decks: 0", this);
+    statusAutoIp_->setInterface(currentInterface_);
     statusBar()->addPermanentWidget(statusAutoIp_);
     statusBar()->addPermanentWidget(statusNetwork_);
     statusBar()->addPermanentWidget(statusMaster_);
@@ -718,7 +847,24 @@ void MainWindow::setupDemoDecks()
 
     auto* splitter = new QSplitter(Qt::Horizontal, this);
     splitter->addWidget(deckArea_);
-    splitter->addWidget(trackBrowser_);
+    {   // the drive viewer with its one-line pendrive tool bar on top
+        auto* viewer = new QWidget(this);
+        auto* vl = new QVBoxLayout(viewer);
+        vl->setContentsMargins(0, 0, 0, 0);
+        vl->setSpacing(0);
+        pendriveBar_ = new PendriveToolBar(pendrives(), viewer);
+        vl->addWidget(pendriveBar_);
+        vl->addWidget(trackBrowser_, 1);
+        connect(pendriveBar_, &PendriveToolBar::openRequested, this, &MainWindow::openPendrive);
+        connect(pendriveBar_, &PendriveToolBar::insertRequested, this, &MainWindow::exportPendrive);
+        connect(pendriveBar_, &PendriveToolBar::stopRequested, this, &MainWindow::ejectPendrive);
+        connect(trackBrowser_, &TrackBrowser::databaseLoaded, pendriveBar_, &PendriveToolBar::setViewed);
+        auto* hint = new QTimer(this);
+        hint->setInterval(700);
+        connect(hint, &QTimer::timeout, this, &MainWindow::updatePendriveBar);
+        hint->start();
+        splitter->addWidget(viewer);
+    }
     splitter->setStretchFactor(0, 3);
     splitter->setStretchFactor(1, 1);
     splitter->setSizes(QList<int>() << 1000 << 400);
@@ -753,7 +899,7 @@ void MainWindow::setupDemoDecks()
     deckOrder_ = { 5 };
 
     statusDecks_->setText("Decks: 1");
-    statusMaster_->setText("Master: none");
+    setMasterStatus(-1);
 
     nowPlaying_->setDeck(5);
 
@@ -827,12 +973,14 @@ void MainWindow::connectToNetwork()
             QStringLiteral("Rekordbox PC mode is running and uses the same UDP ports. Stop it first."));
         return;
     }
-    NetworkConfigDialog dialog(this);
-    if (!currentInterface_.isEmpty())
-        dialog.setInterface(currentInterface_);   // e.g. the one AutoIP just ran on
-    if (dialog.exec() != QDialog::Accepted)
-        return;
-    rememberInterface(dialog.interface());
+    if (!savedInterfaceUsable()) {
+        NetworkConfigDialog dialog(this);
+        if (!currentInterface_.isEmpty())
+            dialog.setInterface(currentInterface_);
+        if (dialog.exec() != QDialog::Accepted)
+            return;
+        rememberInterface(dialog.interface());
+    }
     // The model name goes into every claim, keep-alive and status packet. VDJ_UI_MODEL=XDJ announces an XDJ-1000 instead of
     // the default CDJ-1000 (experiment: the players show an "older firmware" warning after we join).
     uint32_t flags = VDJ_FLAG_AUTO_ID | VDJ_FLAG_DEV_CDJ;
@@ -841,9 +989,24 @@ void MainWindow::connectToNetwork()
     network_->connectToLink(currentInterface_, flags);
 }
 
+// The saved NIC is used without asking, as long as it still exists on this machine
+bool MainWindow::savedInterfaceUsable() const
+{
+    return !currentInterface_.isEmpty() && QNetworkInterface::interfaceFromName(currentInterface_).isValid();
+}
+
+void MainWindow::forgetInterface()
+{
+    currentInterface_.clear();
+    if (statusAutoIp_) statusAutoIp_->setInterface(QString());
+    config_->saveValue(QStringLiteral("network"), QStringLiteral("interface"), QString());
+    statusBar()->showMessage(QStringLiteral("Saved network interface forgotten: you will be asked on the next Connect / AutoIP"), 5000);
+}
+
 void MainWindow::rememberInterface(const QString& iface)
 {
     currentInterface_ = iface;
+    if (statusAutoIp_) statusAutoIp_->setInterface(iface);
     if (!iface.isEmpty())
         config_->saveValue(QStringLiteral("network"), QStringLiteral("interface"), iface);
 }
@@ -859,7 +1022,7 @@ void MainWindow::setLinkExportEnabled(bool on)
 
 void MainWindow::applyLinkExport()
 {
-    const QString root = trackBrowser_ ? trackBrowser_->exportRoot() : QString();
+    const QString root = !explicitExportFolder_.isEmpty() ? explicitExportFolder_ : (trackBrowser_ ? trackBrowser_->exportRoot() : QString());
     if (linkExportWanted_ && root.isEmpty()) {
         statusBar()->showMessage(QStringLiteral("LINK export: open a rekordbox folder first (File > Open Rekordbox Folder), it exports that database"), 8000);
         network_->setLinkExportFolder(QString());
@@ -869,6 +1032,142 @@ void MainWindow::applyLinkExport()
     if (!linkExportWanted_) { statusBar()->showMessage(QStringLiteral("LINK export off"), 4000); return; }
     statusBar()->showMessage(QStringLiteral("LINK export: serving %1%2").arg(root, network_->isConnected() ? QString()
                                                                               : QStringLiteral(" (starts when you connect)")), 6000);
+}
+
+PendriveRegistry* MainWindow::pendrives()
+{
+    if (!pendrives_) {
+        pendrives_ = new PendriveRegistry(this);
+        pendrives_->load(config_);
+        connect(pendrives_, &PendriveRegistry::changed, this, [this]() { pendrives_->save(config_); });
+        connect(pendrives_, &PendriveRegistry::physicalChanged, this, [this]() {
+            // a stick pulled out from under the export: the slot goes empty (the decks notice the same way as for USB STOP)
+            LinkExport* le = network_->linkExport();
+            if (le && le->running() && le->usbState() == LinkExport::UsbState::Ready && !PendriveRegistry::isRekordboxFolder(le->folder()))
+                le->forceEmpty(QStringLiteral("the pendrive was unplugged"));
+        });
+        pendrives_->startWatchingPhysical();
+        QObject::connect(network_, &NetworkManager::linkExportMounted, this, [this](const QString& folder, const QString& name, bool mounted) {
+            statusBar()->showMessage(mounted ? QStringLiteral("LINK export: %1 mounted (%2)").arg(name, folder)
+                                             : QStringLiteral("LINK export: %1 unmounted, the slot is empty").arg(name), 6000);
+            if (pendrivesDialog_) pendrivesDialog_->setExported(folder, mounted ? QStringLiteral("exported") : QStringLiteral("ejected"));
+        });
+    }
+    return pendrives_;
+}
+
+// The decks refuse USB STOP while one uses the stick; dim the button then, but keep it pressable (the decks show who uses it)
+void MainWindow::updatePendriveBar()
+{
+    if (!pendriveBar_) return;
+    LinkExport* le = network_->linkExport();
+    const bool live = le && le->running();
+    pendriveBar_->setExported(live && le->usbState() != LinkExport::UsbState::Empty ? le->folder() : QString());
+    if (!live) { pendriveBar_->setStopHint(false, QStringLiteral("the LINK export is not running")); return; }
+    if (le->usbState() != LinkExport::UsbState::Ready) { pendriveBar_->setStopHint(false, QStringLiteral("the slot is already unmounting or empty")); return; }
+    const QString why = le->busyReason();
+    pendriveBar_->setStopHint(why.isEmpty(), why);
+}
+
+void MainWindow::showVirtualPendrives()
+{
+    if (!pendrivesDialog_) {
+        pendrivesDialog_ = new VirtualPendrivesDialog(pendrives(), this);
+        connect(pendrivesDialog_, &VirtualPendrivesDialog::openRequested, this, &MainWindow::openPendrive);
+        connect(pendrivesDialog_, &VirtualPendrivesDialog::exportRequested, this, &MainWindow::exportPendrive);
+        connect(pendrivesDialog_, &VirtualPendrivesDialog::ejectRequested, this, &MainWindow::ejectPendrive);
+        LinkExport* le = network_->linkExport();
+        if (le && le->running()) pendrivesDialog_->setExported(le->folder(), le->usbState() == LinkExport::UsbState::Empty ? QStringLiteral("ejected") : QStringLiteral("exported"));
+    }
+    pendrivesDialog_->show();
+    pendrivesDialog_->raise();
+    pendrivesDialog_->activateWindow();
+}
+
+void MainWindow::openPendrive(const QString& folder)
+{
+    QString err;
+    if (!trackBrowser_->openRekordboxFolder(folder, &err)) {
+        QMessageBox::warning(this, QStringLiteral("Open Pendrive"), err);
+        return;
+    }
+    statusBar()->showMessage(QStringLiteral("Loaded %1 in the browser").arg(folder), 5000);
+}
+
+// Swap the exported pendrive the way a deck does (USB STOP, pull, insert); the decks refuse while a deck uses the current one.
+void MainWindow::exportPendrive(const QString& folder, const QString& nameIn)
+{
+    if (!PendriveRegistry::isRekordboxFolder(folder)) {
+        QMessageBox::warning(this, QStringLiteral("Export Pendrive"), QStringLiteral("%1 has no PIONEER/rekordbox/export.pdb").arg(folder));
+        return;
+    }
+    const QString name = nameIn.isEmpty() ? PendriveRegistry::defaultNameFor(folder) : nameIn;
+    explicitExportFolder_ = folder;
+    explicitExportName_ = name;
+    config_->saveValue(QStringLiteral("link_export"), QStringLiteral("pendrive_folder"), folder);
+    linkExportWanted_ = true;
+    if (linkExportAction_) linkExportAction_->setChecked(true);
+    config_->saveValue(QStringLiteral("link_export"), QStringLiteral("enabled"), QStringLiteral("1"));
+    if (!network_->isConnected()) {
+        network_->setLinkExportFolder(folder);
+        statusBar()->showMessage(QStringLiteral("LINK export: %1 will be served once you connect").arg(name), 6000);
+        return;
+    }
+    const QString why = network_->linkExportSwitch(folder, name);
+    if (!why.isEmpty()) {
+        statusBar()->showMessage(QStringLiteral("LINK export: not switched to %1: %2").arg(name, why), 8000);
+        explicitExportFolder_.clear();                          // the old one is still mounted
+        if (LinkExport* le = network_->linkExport()) explicitExportFolder_ = le->folder();
+        return;
+    }
+    statusBar()->showMessage(QStringLiteral("LINK export: switching to %1").arg(name), 6000);
+}
+
+void MainWindow::ejectPendrive()
+{
+    if (!network_->linkExportRunning()) {
+        statusBar()->showMessage(QStringLiteral("LINK export is not running, nothing to eject"), 4000);
+        return;
+    }
+    const QString why = network_->linkExportUnmount();
+    statusBar()->showMessage(why.isEmpty() ? QStringLiteral("USB STOP: unmounting the exported pendrive")
+                                           : QStringLiteral("USB STOP refused: %1").arg(why), 8000);
+}
+
+void MainWindow::pickAdHocFolder()
+{
+    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Folder to export (contains PIONEER/rekordbox/export.pdb)"),
+                                                          QStringLiteral("/media"));
+    if (!dir.isEmpty()) exportPendrive(dir, QString());
+}
+
+void MainWindow::rebuildExportMenu()
+{
+    exportMenu_->clear();
+    LinkExport* le = network_->linkExport();
+    const QString current = le && le->running() ? le->folder() : explicitExportFolder_;
+    auto add = [&](const QString& label, const QString& folder, const QString& name) {
+        QAction* a = exportMenu_->addAction(label);
+        a->setCheckable(true);
+        a->setChecked(!folder.isEmpty() && QDir::cleanPath(folder) == QDir::cleanPath(current));
+        a->setEnabled(PendriveRegistry::isRekordboxFolder(folder));
+        connect(a, &QAction::triggered, this, [this, folder, name]() { exportPendrive(folder, name); });
+    };
+    QAction* none = exportMenu_->addAction("Whatever the browser shows");
+    none->setCheckable(true);
+    none->setChecked(explicitExportFolder_.isEmpty());
+    connect(none, &QAction::triggered, this, [this]() {
+        explicitExportFolder_.clear();
+        explicitExportName_.clear();
+        setLinkExportEnabled(true);
+    });
+    exportMenu_->addSeparator();
+    for (const auto& p : pendrives()->virtualPendrives()) add(p.name, p.folder, p.name);
+    exportMenu_->addSeparator();
+    for (const auto& p : PendriveRegistry::scanPhysical()) add(p.name + QStringLiteral(" (plugged in)"), p.mountPoint, p.name);
+    exportMenu_->addSeparator();
+    connect(exportMenu_->addAction("Other Folder..."), &QAction::triggered, this, &MainWindow::pickAdHocFolder);
+    connect(exportMenu_->addAction("Manage Virtual Pendrives..."), &QAction::triggered, this, &MainWindow::showVirtualPendrives);
 }
 
 void MainWindow::setLinkExport(const QString& folder)         // --link-export DIR: open that folder in the browser and switch the export on

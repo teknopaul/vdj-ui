@@ -120,3 +120,13 @@ target_link_libraries(vdj-ui-linkexport-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-linkexport-test COMMAND vdj-ui-linkexport-test)
 set_tests_properties(vdj-ui-linkexport-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 # end LINK export
+
+add_executable(vdj-ui-pendrive-registry-test test_pendrive_registry.cpp)
+target_link_libraries(vdj-ui-pendrive-registry-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-pendrive-registry-test COMMAND vdj-ui-pendrive-registry-test)
+set_tests_properties(vdj-ui-pendrive-registry-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-clone-dialog-test test_clone_dialog.cpp)
+target_link_libraries(vdj-ui-clone-dialog-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-clone-dialog-test COMMAND vdj-ui-clone-dialog-test)
+set_tests_properties(vdj-ui-clone-dialog-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

@@ -1121,6 +1121,30 @@ debug/packet_logger.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/debug/packet_logger.cpp.s
 .PHONY : debug/packet_logger.cpp.s
 
+export/pendrive_registry.o: export/pendrive_registry.cpp.o
+.PHONY : export/pendrive_registry.o
+
+# target to build an object file
+export/pendrive_registry.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/export/pendrive_registry.cpp.o
+.PHONY : export/pendrive_registry.cpp.o
+
+export/pendrive_registry.i: export/pendrive_registry.cpp.i
+.PHONY : export/pendrive_registry.i
+
+# target to preprocess a source file
+export/pendrive_registry.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/export/pendrive_registry.cpp.i
+.PHONY : export/pendrive_registry.cpp.i
+
+export/pendrive_registry.s: export/pendrive_registry.cpp.s
+.PHONY : export/pendrive_registry.s
+
+# target to generate assembly for a file
+export/pendrive_registry.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/export/pendrive_registry.cpp.s
+.PHONY : export/pendrive_registry.cpp.s
+
 export/playlist_export.o: export/playlist_export.cpp.o
 .PHONY : export/playlist_export.o
 
@@ -1889,6 +1913,30 @@ ui/pendrive_clone_dialog.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/pendrive_clone_dialog.cpp.s
 .PHONY : ui/pendrive_clone_dialog.cpp.s
 
+ui/pendrive_toolbar.o: ui/pendrive_toolbar.cpp.o
+.PHONY : ui/pendrive_toolbar.o
+
+# target to build an object file
+ui/pendrive_toolbar.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/pendrive_toolbar.cpp.o
+.PHONY : ui/pendrive_toolbar.cpp.o
+
+ui/pendrive_toolbar.i: ui/pendrive_toolbar.cpp.i
+.PHONY : ui/pendrive_toolbar.i
+
+# target to preprocess a source file
+ui/pendrive_toolbar.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/pendrive_toolbar.cpp.i
+.PHONY : ui/pendrive_toolbar.cpp.i
+
+ui/pendrive_toolbar.s: ui/pendrive_toolbar.cpp.s
+.PHONY : ui/pendrive_toolbar.s
+
+# target to generate assembly for a file
+ui/pendrive_toolbar.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/pendrive_toolbar.cpp.s
+.PHONY : ui/pendrive_toolbar.cpp.s
+
 ui/pitch_slider.o: ui/pitch_slider.cpp.o
 .PHONY : ui/pitch_slider.o
 
@@ -2080,6 +2128,30 @@ ui/usb_config_dialog.s: ui/usb_config_dialog.cpp.s
 ui/usb_config_dialog.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/usb_config_dialog.cpp.s
 .PHONY : ui/usb_config_dialog.cpp.s
+
+ui/virtual_pendrives_dialog.o: ui/virtual_pendrives_dialog.cpp.o
+.PHONY : ui/virtual_pendrives_dialog.o
+
+# target to build an object file
+ui/virtual_pendrives_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/virtual_pendrives_dialog.cpp.o
+.PHONY : ui/virtual_pendrives_dialog.cpp.o
+
+ui/virtual_pendrives_dialog.i: ui/virtual_pendrives_dialog.cpp.i
+.PHONY : ui/virtual_pendrives_dialog.i
+
+# target to preprocess a source file
+ui/virtual_pendrives_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/virtual_pendrives_dialog.cpp.i
+.PHONY : ui/virtual_pendrives_dialog.cpp.i
+
+ui/virtual_pendrives_dialog.s: ui/virtual_pendrives_dialog.cpp.s
+.PHONY : ui/virtual_pendrives_dialog.s
+
+# target to generate assembly for a file
+ui/virtual_pendrives_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/virtual_pendrives_dialog.cpp.s
+.PHONY : ui/virtual_pendrives_dialog.cpp.s
 
 ui/waveform_delegate.o: ui/waveform_delegate.cpp.o
 .PHONY : ui/waveform_delegate.o
@@ -2441,6 +2513,9 @@ help:
 	@echo "... debug/packet_logger.o"
 	@echo "... debug/packet_logger.i"
 	@echo "... debug/packet_logger.s"
+	@echo "... export/pendrive_registry.o"
+	@echo "... export/pendrive_registry.i"
+	@echo "... export/pendrive_registry.s"
 	@echo "... export/playlist_export.o"
 	@echo "... export/playlist_export.i"
 	@echo "... export/playlist_export.s"
@@ -2537,6 +2612,9 @@ help:
 	@echo "... ui/pendrive_clone_dialog.o"
 	@echo "... ui/pendrive_clone_dialog.i"
 	@echo "... ui/pendrive_clone_dialog.s"
+	@echo "... ui/pendrive_toolbar.o"
+	@echo "... ui/pendrive_toolbar.i"
+	@echo "... ui/pendrive_toolbar.s"
 	@echo "... ui/pitch_slider.o"
 	@echo "... ui/pitch_slider.i"
 	@echo "... ui/pitch_slider.s"
@@ -2561,6 +2639,9 @@ help:
 	@echo "... ui/usb_config_dialog.o"
 	@echo "... ui/usb_config_dialog.i"
 	@echo "... ui/usb_config_dialog.s"
+	@echo "... ui/virtual_pendrives_dialog.o"
+	@echo "... ui/virtual_pendrives_dialog.i"
+	@echo "... ui/virtual_pendrives_dialog.s"
 	@echo "... ui/waveform_delegate.o"
 	@echo "... ui/waveform_delegate.i"
 	@echo "... ui/waveform_delegate.s"

@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QString>
 #include <QSet>
+#include <QHash>
+#include <QMutex>
 #include <cstdint>
 #include <cmath>
 #include <functional>
@@ -70,6 +72,7 @@ signals:
     void masterChanged(int playerId);
     void linkExportLog(const QString& line);        // what the export does (media queries, dbserver, NFS)
     void linkExportChanged(bool running);
+    void linkExportMounted(const QString& folder, const QString& displayName, bool mounted);   // the exported pendrive changed (STOP, swap)
     void linkExportNeedsPort111();                  // the export runs but UDP 111 is not bound (needs privileges)
 
 public slots:
@@ -85,6 +88,14 @@ public slots:
     void setLinkExportFolder(const QString& folder);
     QString linkExportFolder() const { return linkExportFolder_; }
     bool linkExportRunning() const;
+    // Pretend to press USB STOP on the exported pendrive (see LinkExport::requestUnmount): returns why it was refused, or an empty string.
+    QString linkExportUnmount();
+    // Swap the exported pendrive for another folder like a deck does (stop, pull, insert); starts the export first when it is not running.
+    // Returns why it was refused, or an empty string.
+    QString linkExportSwitch(const QString& folder, const QString& displayName = QString());
+    LinkExport* linkExport() const { return linkExport_; }
+    // from the library's update thread: what a deck says it has loaded (to tell whether our USB slot is in use)
+    void noteRemoteLoad(int playerId, int playingFrom, int slot, int trackType);
     // start sending our status to the link, once; called when a master is known or the wait times out
     void startStatusThread();
     // from the library's update thread: a packet on the status port that is not a status
@@ -107,7 +118,12 @@ private:
     std::atomic<bool> statusStarted_{true};
     std::atomic<bool> joining_{false};   // vdj_exec_discovery() is running: deck events wait until connected() has been emitted
     std::function<bool(double*)> beatProbe_;
+    QString usbInUseBy();                   // GUI thread: which deck has a track loaded from our USB slot, or an empty string
+    struct RemoteLoad { int from = 0, slot = 0, type = 0; qint64 seenMs = 0; };
+    QMutex loadMutex_;
+    QHash<int, RemoteLoad> remoteLoads_;
     QString linkExportFolder_;
+    QString linkExportDisplayName_;
     LinkExport* linkExport_ = nullptr;
 };
 

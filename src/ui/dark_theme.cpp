@@ -2,11 +2,11 @@
 
 namespace vdj {
 
-QString darkThemeStylesheet()
+QString darkThemeStylesheet(const QString& family)
 {
-    return QStringLiteral(
-        "QWidget { background-color: #1a1a1a; color: #e0e0e0;"
-        "  font-family: 'DejaVu Sans Mono', monospace; }"
+    const QString fontFamily = family.isEmpty() ? QStringLiteral("'Liberation Sans', 'DejaVu Sans', sans-serif")
+                                                : QStringLiteral("'%1'").arg(QString(family).remove(QLatin1Char('\'')));
+    return QStringLiteral("QWidget { background-color: #1a1a1a; color: #e0e0e0; font-family: %1; }").arg(fontFamily) + QStringLiteral(
         "QMenuBar { background-color: #242424; color: #e0e0e0;"
         "  border-bottom: 1px solid #333333; }"
         "QMenuBar::item:selected { background-color: #3a3a3a; }"

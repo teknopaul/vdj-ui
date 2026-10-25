@@ -472,6 +472,34 @@ vdj-ui-linkexport-test/fast:
 .PHONY : vdj-ui-linkexport-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-pendrive-registry-test: tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/rule
+.PHONY : vdj-ui-pendrive-registry-test
+
+# fast build rule for target.
+vdj-ui-pendrive-registry-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build
+.PHONY : vdj-ui-pendrive-registry-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-clone-dialog-test: tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/rule
+.PHONY : vdj-ui-clone-dialog-test
+
+# fast build rule for target.
+vdj-ui-clone-dialog-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build
+.PHONY : vdj-ui-clone-dialog-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -1031,6 +1059,62 @@ vdj-ui-linkexport-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build
 .PHONY : vdj-ui-linkexport-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-pendrive-registry-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-pendrive-registry-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-pendrive-registry-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-pendrive-registry-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-pendrive-registry-test_autogen: tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/rule
+.PHONY : vdj-ui-pendrive-registry-test_autogen
+
+# fast build rule for target.
+vdj-ui-pendrive-registry-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test_autogen.dir/build
+.PHONY : vdj-ui-pendrive-registry-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-clone-dialog-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-clone-dialog-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-clone-dialog-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-clone-dialog-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-clone-dialog-test_autogen: tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/rule
+.PHONY : vdj-ui-clone-dialog-test_autogen
+
+# fast build rule for target.
+vdj-ui-clone-dialog-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test_autogen.dir/build
+.PHONY : vdj-ui-clone-dialog-test_autogen/fast
+
 test_audio.o: test_audio.cpp.o
 .PHONY : test_audio.o
 
@@ -1078,6 +1162,30 @@ test_beat_grid.s: test_beat_grid.cpp.s
 test_beat_grid.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beatgrid-test.dir/build.make tests/CMakeFiles/vdj-ui-beatgrid-test.dir/test_beat_grid.cpp.s
 .PHONY : test_beat_grid.cpp.s
+
+test_clone_dialog.o: test_clone_dialog.cpp.o
+.PHONY : test_clone_dialog.o
+
+# target to build an object file
+test_clone_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/test_clone_dialog.cpp.o
+.PHONY : test_clone_dialog.cpp.o
+
+test_clone_dialog.i: test_clone_dialog.cpp.i
+.PHONY : test_clone_dialog.i
+
+# target to preprocess a source file
+test_clone_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/test_clone_dialog.cpp.i
+.PHONY : test_clone_dialog.cpp.i
+
+test_clone_dialog.s: test_clone_dialog.cpp.s
+.PHONY : test_clone_dialog.s
+
+# target to generate assembly for a file
+test_clone_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/test_clone_dialog.cpp.s
+.PHONY : test_clone_dialog.cpp.s
 
 test_config.o: test_config.cpp.o
 .PHONY : test_config.o
@@ -1319,6 +1427,30 @@ test_nfs_mount.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-nfsmount-test.dir/build.make tests/CMakeFiles/vdj-ui-nfsmount-test.dir/test_nfs_mount.cpp.s
 .PHONY : test_nfs_mount.cpp.s
 
+test_pendrive_registry.o: test_pendrive_registry.cpp.o
+.PHONY : test_pendrive_registry.o
+
+# target to build an object file
+test_pendrive_registry.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/test_pendrive_registry.cpp.o
+.PHONY : test_pendrive_registry.cpp.o
+
+test_pendrive_registry.i: test_pendrive_registry.cpp.i
+.PHONY : test_pendrive_registry.i
+
+# target to preprocess a source file
+test_pendrive_registry.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/test_pendrive_registry.cpp.i
+.PHONY : test_pendrive_registry.cpp.i
+
+test_pendrive_registry.s: test_pendrive_registry.cpp.s
+.PHONY : test_pendrive_registry.s
+
+# target to generate assembly for a file
+test_pendrive_registry.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/test_pendrive_registry.cpp.s
+.PHONY : test_pendrive_registry.cpp.s
+
 test_rb_library.o: test_rb_library.cpp.o
 .PHONY : test_rb_library.o
 
@@ -1559,6 +1691,30 @@ vdj-ui-beatgrid-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beatgrid-test.dir/build.make tests/CMakeFiles/vdj-ui-beatgrid-test.dir/vdj-ui-beatgrid-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-beatgrid-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-clone-dialog-test_autogen/mocs_compilation.o: vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-clone-dialog-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-clone-dialog-test_autogen/mocs_compilation.i: vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-clone-dialog-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-clone-dialog-test_autogen/mocs_compilation.s: vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-clone-dialog-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/build.make tests/CMakeFiles/vdj-ui-clone-dialog-test.dir/vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-clone-dialog-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-config-test_autogen/mocs_compilation.o: vdj-ui-config-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-config-test_autogen/mocs_compilation.o
 
@@ -1774,6 +1930,30 @@ vdj-ui-nfsmount-test_autogen/mocs_compilation.s: vdj-ui-nfsmount-test_autogen/mo
 vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-nfsmount-test.dir/build.make tests/CMakeFiles/vdj-ui-nfsmount-test.dir/vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-nfsmount-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-pendrive-registry-test_autogen/mocs_compilation.o: vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-pendrive-registry-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-pendrive-registry-test_autogen/mocs_compilation.i: vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-pendrive-registry-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-pendrive-registry-test_autogen/mocs_compilation.s: vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-pendrive-registry-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-registry-test.dir/vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-pendrive-registry-test_autogen/mocs_compilation.cpp.s
 
 vdj-ui-rblibrary-test_autogen/mocs_compilation.o: vdj-ui-rblibrary-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-rblibrary-test_autogen/mocs_compilation.o
@@ -2010,6 +2190,8 @@ help:
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatgrid-test_autogen"
 	@echo "... vdj-ui-beatgrid-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-clone-dialog-test_autogen"
+	@echo "... vdj-ui-clone-dialog-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-config-test_autogen"
 	@echo "... vdj-ui-config-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-controls-test_autogen"
@@ -2028,6 +2210,8 @@ help:
 	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-nfsmount-test_autogen"
 	@echo "... vdj-ui-nfsmount-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-pendrive-registry-test_autogen"
+	@echo "... vdj-ui-pendrive-registry-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rblibrary-test_autogen"
 	@echo "... vdj-ui-rblibrary-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rbmode-test_autogen"
@@ -2048,6 +2232,7 @@ help:
 	@echo "... vdj-ui-wrapper-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-beatgrid-test"
+	@echo "... vdj-ui-clone-dialog-test"
 	@echo "... vdj-ui-config-test"
 	@echo "... vdj-ui-controls-test"
 	@echo "... vdj-ui-dbcodec-test"
@@ -2057,6 +2242,7 @@ help:
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-nfsmount-test"
+	@echo "... vdj-ui-pendrive-registry-test"
 	@echo "... vdj-ui-rblibrary-test"
 	@echo "... vdj-ui-rbmode-test"
 	@echo "... vdj-ui-rbpackets-test"
@@ -2072,6 +2258,9 @@ help:
 	@echo "... test_beat_grid.o"
 	@echo "... test_beat_grid.i"
 	@echo "... test_beat_grid.s"
+	@echo "... test_clone_dialog.o"
+	@echo "... test_clone_dialog.i"
+	@echo "... test_clone_dialog.s"
 	@echo "... test_config.o"
 	@echo "... test_config.i"
 	@echo "... test_config.s"
@@ -2102,6 +2291,9 @@ help:
 	@echo "... test_nfs_mount.o"
 	@echo "... test_nfs_mount.i"
 	@echo "... test_nfs_mount.s"
+	@echo "... test_pendrive_registry.o"
+	@echo "... test_pendrive_registry.i"
+	@echo "... test_pendrive_registry.s"
 	@echo "... test_rb_library.o"
 	@echo "... test_rb_library.i"
 	@echo "... test_rb_library.s"
@@ -2132,6 +2324,9 @@ help:
 	@echo "... vdj-ui-beatgrid-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-beatgrid-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-beatgrid-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-clone-dialog-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-clone-dialog-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-clone-dialog-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-config-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-config-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-config-test_autogen/mocs_compilation.s"
@@ -2159,6 +2354,9 @@ help:
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-nfsmount-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-pendrive-registry-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-pendrive-registry-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-pendrive-registry-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-rblibrary-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-rblibrary-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-rblibrary-test_autogen/mocs_compilation.s"
