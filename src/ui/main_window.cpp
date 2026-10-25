@@ -346,7 +346,6 @@ void MainWindow::connectDeckSignals()
             nowPlaying_->setDeck(pid);
             nowPlaying_->setTrack(title, artist, bpm, key);
         }
-        if (hud_) hud_->setTrackInfo(pid, title, artist);
         statusBar()->showMessage(QStringLiteral("Now playing: %1").arg(title), 3000);
     });
     QObject::connect(trackBrowser_, &TrackBrowser::previewRequested, playerPanel_, &PlayerPanel::loadTrack);
@@ -452,6 +451,17 @@ void MainWindow::setupMenus()
     hudAction_->setCheckable(true);
     connect(hudAction_, &QAction::toggled, this, &MainWindow::showHud);
 
+    QAction* playerAction = view->addAction("Local Track &Player");
+    playerAction->setCheckable(true);
+    playerAction->setChecked(config_->loadValue(QStringLiteral("ui"), QStringLiteral("local_player")) != QLatin1String("0"));
+    connect(playerAction, &QAction::toggled, this, [this](bool on) {
+        config_->saveValue(QStringLiteral("ui"), QStringLiteral("local_player"), on ? QStringLiteral("1") : QStringLiteral("0"));
+        if (!playerPanel_) return;
+        if (!on && playerPanel_->stopButton()->isEnabled())
+            playerPanel_->stopButton()->click();   // don't leave a hidden player making noise
+        playerPanel_->setVisible(on);
+    });
+
     recordAction_ = view->addAction("&Recording Panel");
     recordAction_->setCheckable(true);
 
@@ -546,8 +556,8 @@ void MainWindow::setupMenus()
         QMessageBox box(this);
         box.setWindowTitle(QStringLiteral("About VDJ UI"));
         box.setText(QStringLiteral("<h3>VDJ UI %1</h3>"
-                                   "<p>A Qt GUI for a virtual DJ on the Pioneer ProLink network: beat grids of all decks, "
-                                   "rekordbox track browsing and a local track preview player.</p>")
+                                   "<p>A Virtual Deck for Pioneer ProLink network: syncing MIDI instruments, beat grids of all decks, "
+                                   "rekordbox track browsing and a local track preview player, virtual pendrive exports.</p>")
                         .arg(QCoreApplication::applicationVersion()));
         // installed: <prefix>/share/vdj-ui; from a build tree: the source's img/
         const QString appDir = QCoreApplication::applicationDirPath();
@@ -935,6 +945,7 @@ void MainWindow::setupDemoDecks()
     auto* centralLayout = new QVBoxLayout(central);
     centralLayout->setContentsMargins(0, 0, 0, 0);
     playerPanel_ = new PlayerPanel(this);
+    playerPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("local_player")) != QLatin1String("0"));
     centralLayout->addWidget(playerPanel_);
     bpmRamp_ = new BpmRampWidget(this);
     centralLayout->addWidget(bpmRamp_);

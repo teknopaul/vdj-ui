@@ -76,7 +76,7 @@ follow the switching when vdj-ui announces itself like an XDJ-700. See `doc/link
 cmake -B build
 cmake --build build
 make -C build deb        # produces vdj-ui_<version>_<arch>.deb in build/
-```
+````
 
 ## Man page
 
