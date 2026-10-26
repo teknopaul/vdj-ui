@@ -51,6 +51,10 @@ DeckWidget::DeckWidget(int playerId, QWidget* parent)
 
     connect(controls_, &DeckControls::playPauseClicked, this,
             [this](int pid, bool play) { emit playPauseClicked(pid, play); });
+    connect(controls_, &DeckControls::restartClicked, this,
+            [this](int pid, bool q) { emit restartClicked(pid, q); });
+    connect(controls_, &DeckControls::beatJumpClicked, this,
+            [this](int pid, int beats) { emit beatJumpClicked(pid, beats); });
     connect(controls_, &DeckControls::syncClicked, this,
             [this](int pid) { emit syncClicked(pid); });
     connect(controls_, &DeckControls::setBpmClicked, this,

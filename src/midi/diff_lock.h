@@ -50,7 +50,7 @@ private:
     int player_ = 0;
     int master_ = 0;
     bool followMaster_ = false;
-    int targetMs_ = 20;
+    int targetMs_ = 0;
     double last_[kMaxPlayers];
     double set_[kMaxPlayers][kAvgSize];
     int pos_[kMaxPlayers];

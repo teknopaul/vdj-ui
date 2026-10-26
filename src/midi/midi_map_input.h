@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cstdint>
 #include <map>
+#include <mutex>
 
 class QThread;
 
@@ -55,13 +56,13 @@ struct AdjmmOp {
 
 struct AdjmmMap {
     std::array<AdjmmOp, ADJMM_MAX_OP> ops;
-    // Sampler controller ops (strip1_mute ... strip8_fader, track_back, track_fwd, mode_toggle), keyed by name.
+    // DJ Tools controller ops (strip1_mute ... strip8_fader, track_back, track_fwd, mode_toggle), keyed by name.
     std::map<QString, AdjmmOp> named;
     // "#! key value" comment lines (adj ignores them as comments).
     QHash<QString, QString> directives;
 
-    // True for the op names the sampler controller uses.
-    static bool isSamplerOpName(const QString& name);
+    // True for the op names the DJ Tools controller uses.
+    static bool isDjtoolzOpName(const QString& name);
 
     // Parse a .adjmm file; returns nullptr on file-open failure (parse
     // errors are logged but do not abort — unknown op names are silently
@@ -81,7 +82,7 @@ public:
     ~MidiMapInput();
 
     // Load map file and start background reader; returns false on error. An empty path starts the reader with an empty
-    // transport map (the port is still there for other listeners, e.g. the sampler controller).
+    // transport map (the port is still there for other listeners, e.g. the DJ Tools controller).
     bool start(const QString& mapPath);
     void stop();
     bool isRunning() const;
@@ -97,6 +98,10 @@ public:
     // While on, every event the port receives is reported through midiEvent(), mapped or not (for the MIDI monitor).
     void setMonitoring(bool on) { monitoring_ = on; }
     bool monitoring() const { return monitoring_; }
+    // Events from the ALSA client whose name contains this (the DJ Tools controller) still reach controlEvent / noteEvent but are
+    // not applied to the transport map. Empty = none.
+    void setExcludedSource(const QString& name);
+    bool isExcluded(const QString& source) const;
     QString mapPath() const { return mapPath_; }
     int mappedOps() const;                       // how many operations the loaded map defines
 
@@ -121,6 +126,8 @@ signals:
 
 private:
     std::atomic<bool> monitoring_{ false };
+    mutable std::mutex excludeMutex_;
+    QString        excluded_;
     QString        mapPath_;
     int            clientId_ = -1;
     int            portId_   = -1;

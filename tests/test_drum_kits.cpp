@@ -10,8 +10,8 @@
 #include "ui/drum_editor.h"
 #include "ui/drum_voice_selector.h"
 #include "ui/sample_chooser.h"
-#include "ui/sampler_module_widget.h"
-#include "ui/sampler_panel.h"
+#include "ui/djtoolz_tool_widget.h"
+#include "ui/djtoolz_panel.h"
 #include "ui/step_chooser.h"
 #include "ui/swing_slider.h"
 
@@ -32,16 +32,18 @@ private slots:
     void sanitising();
     void noStrayTempFiles();
     void uiSaveChangeLoadRestores();
-    void kitListIsSharedBetweenModules();
+    void kitListIsSharedBetweenTools();
     void kitsAndPresetsAreIndependent();
     void kitsKeepTheMute();
     void missingSamplesAreShown();
     void deleteKitFromTheUi();
+    void exportCopiesSamplesAndLoadsBack();
+    void exportRefusesAndLeavesNothing();
 
 private:
     QTemporaryDir* dir_ = nullptr;
     AlsaClock clock_;
-    SamplerPanel* panel_ = nullptr;
+    DjtoolzPanel* panel_ = nullptr;
 
     static DrumKit sampleKit()
     {
@@ -71,7 +73,7 @@ private:
 void TestDrumKits::init()
 {
     dir_ = new QTemporaryDir;
-    panel_ = new SamplerPanel(&clock_, dir_->path());
+    panel_ = new DjtoolzPanel(&clock_, dir_->path());
     panel_->setAudioEnabled(false);
 }
 
@@ -122,18 +124,18 @@ void TestDrumKits::roundTripOfAllVoices()
 
 void TestDrumKits::loadingAKitKeepsNameOnOffAndVolume()
 {
-    auto m = SamplerModule::create(SamplerModule::DrumMachine);
-    ModuleSettings s = m->settings();
+    auto m = DjtoolzTool::create(DjtoolzTool::DrumMachine);
+    ToolSettings s = m->settings();
     s.name = "my drums";
     s.enabled = true;
     s.volume = 55;
     s.gain = 1.5f;
     s.offsetMs = 3;
     m->setSettings(s);
-    ModuleSettings t = m->settings();
+    ToolSettings t = m->settings();
     applyDrumKit(&t, sampleKit());
     m->setSettings(t);
-    const ModuleSettings after = m->settings();
+    const ToolSettings after = m->settings();
     QCOMPARE(after.name, QString("my drums"));
     QVERIFY(after.enabled);
     QCOMPARE(after.volume, 55);
@@ -202,7 +204,7 @@ void TestDrumKits::noStrayTempFiles()
 
 void TestDrumKits::uiSaveChangeLoadRestores()
 {
-    auto* w = panel_->addModule(SamplerModule::DrumMachine);
+    auto* w = panel_->addTool(DjtoolzTool::DrumMachine);
     auto* ed = w->drumEditor();
     w->show();
     QCOMPARE(ed->kitCombo()->count(), 1);            // "(kits)"
@@ -227,32 +229,32 @@ void TestDrumKits::uiSaveChangeLoadRestores()
     QCOMPARE(int(ed->stepChooser()->step(9)), int(StepOff));
     QCOMPARE(ed->swing()->value(), 40);
     QCOMPARE(ed->chokeSpin()->value(), 2);
-    QCOMPARE(w->module()->settings().swing, 40);
+    QCOMPARE(w->tool()->settings().swing, 40);
     // selecting from the combo box applies it too
     ed->swing()->slider()->setValue(1);
     ed->kitCombo()->setCurrentIndex(1);
     emit ed->kitCombo()->activated(1);
-    QCOMPARE(w->module()->settings().swing, 40);
+    QCOMPARE(w->tool()->settings().swing, 40);
 }
 
-void TestDrumKits::kitListIsSharedBetweenModules()
+void TestDrumKits::kitListIsSharedBetweenTools()
 {
-    auto* a = panel_->addModule(SamplerModule::DrumMachine);
-    auto* b = panel_->addModule(SamplerModule::DrumMachine);
+    auto* a = panel_->addTool(DjtoolzTool::DrumMachine);
+    auto* b = panel_->addTool(DjtoolzTool::DrumMachine);
     QCOMPARE(b->drumEditor()->kitCombo()->count(), 1);
     a->drumEditor()->swing()->slider()->setValue(77);
     QVERIFY(a->drumEditor()->saveKitAs("shared"));
     QCOMPARE(b->drumEditor()->kitCombo()->count(), 2);               // refreshed through the panel
     QCOMPARE(b->drumEditor()->kitCombo()->itemText(1), QString("shared"));
     QVERIFY(b->drumEditor()->loadKit("shared"));
-    QCOMPARE(b->module()->settings().swing, 77);
-    QCOMPARE(b->module()->settings().name, b->module()->typeName());  // the name was not taken from the kit
-    QVERIFY(!b->module()->settings().enabled);
+    QCOMPARE(b->tool()->settings().swing, 77);
+    QCOMPARE(b->tool()->settings().name, b->tool()->typeName());  // the name was not taken from the kit
+    QVERIFY(!b->tool()->settings().enabled);
 }
 
 void TestDrumKits::kitsKeepTheMute()
 {
-    auto* w = panel_->addModule(SamplerModule::DrumMachine);
+    auto* w = panel_->addTool(DjtoolzTool::DrumMachine);
     auto* ed = w->drumEditor();
     ed->toggleVoiceMute(1);
     QVERIFY(ed->saveKitAs("muted kit"));
@@ -267,39 +269,115 @@ void TestDrumKits::kitsKeepTheMute()
     ed->toggleVoiceMute(1);                          // unmute SD
     ed->toggleVoiceMute(4);                          // mute HH
     QVERIFY(ed->loadKit("muted kit"));
-    QVERIFY(!w->module()->settings().drums[1].muted);
-    QVERIFY(w->module()->settings().drums[4].muted);
+    QVERIFY(!w->tool()->settings().drums[1].muted);
+    QVERIFY(w->tool()->settings().drums[4].muted);
     QVERIFY(ed->selector()->muted(4));
     QVERIFY(!ed->selector()->muted(1));
 }
 
 void TestDrumKits::kitsAndPresetsAreIndependent()
 {
-    auto* w = panel_->addModule(SamplerModule::DrumMachine);
+    auto* w = panel_->addTool(DjtoolzTool::DrumMachine);
     QVERIFY(w->drumEditor()->saveKitAs("only a kit"));
     QVERIFY(panel_->savePresetAs("only a preset"));
     QCOMPARE(panel_->drumKits()->list(), QStringList({ "only a kit" }));
     QCOMPARE(panel_->presets()->list(), QStringList({ "only a preset" }));
     QVERIFY(QDir(dir_->path() + "/drum-kits").exists());
-    QVERIFY(QDir(dir_->path() + "/sampler-presets").exists());
-    QVERIFY(!QFile::exists(dir_->path() + "/sampler-presets/only a kit.json"));
+    QVERIFY(QDir(dir_->path() + "/djtoolz-presets").exists());
+    QVERIFY(!QFile::exists(dir_->path() + "/djtoolz-presets/only a kit.json"));
     QVERIFY(!QFile::exists(dir_->path() + "/drum-kits/only a preset.json"));
 }
 
 void TestDrumKits::missingSamplesAreShown()
 {
-    auto* w = panel_->addModule(SamplerModule::DrumMachine);
+    auto* w = panel_->addTool(DjtoolzTool::DrumMachine);
     DrumKit kit = sampleKit();
     QVERIFY(panel_->drumKits()->save("gone", kit));
     QVERIFY(w->drumEditor()->loadKit("gone"));
     w->drumEditor()->selectVoice(0);
     QVERIFY(w->drumEditor()->sampleChooser()->nameLabel()->text().contains("missing"));
-    QCOMPARE(w->module()->settings().drums[0].samplePath, kit.voices[0].samplePath);   // kept as it is
+    QCOMPARE(w->tool()->settings().drums[0].samplePath, kit.voices[0].samplePath);   // kept as it is
+}
+
+static QString writeWav(const QString& path, const QByteArray& data)
+{
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QFile f(path);
+    f.open(QIODevice::WriteOnly);
+    f.write(data);
+    return path;
+}
+
+void TestDrumKits::exportCopiesSamplesAndLoadsBack()
+{
+    DrumKit k = sampleKit();
+    const QString a = writeWav(dir_->filePath("src1/kick.wav"), "AAAA");
+    const QString b = writeWav(dir_->filePath("src2/kick.wav"), "BBBB");      // same file name, another folder
+    k.voices[0].samplePath = a;
+    k.voices[1].samplePath = b;
+    k.voices[2].samplePath = a;                                                // used twice: copied once
+    for (int v = 3; v < kDrumVoices; ++v)
+        k.voices[v].samplePath.clear();
+    const QByteArray before = QFile(a).exists() ? [&]() { QFile f(a); f.open(QIODevice::ReadOnly); return f.readAll(); }() : QByteArray();
+
+    const QString out = dir_->filePath("export");
+    QString err;
+    QVERIFY2(DrumKits::exportKit("Mine", k, out, &err), qPrintable(err));
+    QVERIFY(QFile::exists(out + "/drumkit.json"));
+    QCOMPARE(QDir(out + "/samples").entryList(QDir::Files).size(), 2);
+    QVERIFY(QFile::exists(a) && QFile::exists(b));                             // originals stay
+    { QFile f(a); f.open(QIODevice::ReadOnly); QCOMPARE(f.readAll(), before); }
+
+    DrumKit back;
+    QString name;
+    QVERIFY(DrumKits::loadKitFolder(out, &back, &name, &err));
+    QCOMPARE(name, QString("Mine"));
+    QCOMPARE(back.swing, k.swing);
+    QVERIFY(back.voices[0].samplePath.startsWith(out + "/samples/"));
+    QVERIFY(back.voices[0].samplePath != back.voices[1].samplePath);
+    QCOMPARE(back.voices[0].samplePath, back.voices[2].samplePath);
+    QVERIFY(back.voices[3].samplePath.isEmpty());
+    QFile f0(back.voices[1].samplePath);
+    QVERIFY(f0.open(QIODevice::ReadOnly));
+    QCOMPARE(f0.readAll(), QByteArray("BBBB"));
+    QCOMPARE(back.voices[4].volume, k.voices[4].volume);
+
+    // an import folder lists it next to the saved kits, read only
+    DrumKits kits(dir_->filePath("cfg"));
+    QVERIFY(kits.save("Local", k));
+    kits.setImportFolders({ dir_->path() });
+    QVERIFY(kits.list().contains("Mine"));
+    QVERIFY(kits.isImported("Mine"));
+    QVERIFY(!kits.remove("Mine"));
+    QVERIFY(!kits.save("Mine", k));
+    DrumKit viaList;
+    QVERIFY(kits.load("Mine", &viaList, &err));
+    QCOMPARE(viaList.voices[1].samplePath, back.voices[1].samplePath);
+    QCOMPARE(DrumKits::kitFoldersIn(dir_->path()).size(), 1);                  // the folder "export" inside it
+}
+
+void TestDrumKits::exportRefusesAndLeavesNothing()
+{
+    DrumKit k = sampleKit();
+    for (auto& v : k.voices) v.samplePath.clear();
+    k.voices[0].samplePath = writeWav(dir_->filePath("s/ok.wav"), "x");
+    k.voices[1].samplePath = dir_->filePath("s/gone.wav");                     // missing
+    QString err;
+    const QString out = dir_->filePath("out");
+    QVERIFY(!DrumKits::exportKit("K", k, out, &err));
+    QVERIFY(err.contains("missing"));
+    QVERIFY(!QFile::exists(out + "/drumkit.json"));
+    QVERIFY(!QDir(out + "/samples").exists());
+    k.voices[1].samplePath.clear();
+    writeWav(out + "/something", "y");                                         // not empty
+    QVERIFY(!DrumKits::exportKit("K", k, out, &err));
+    QVERIFY(err.contains("not empty"));
+    QVERIFY(QFile::exists(out + "/something"));
 }
 
 void TestDrumKits::deleteKitFromTheUi()
 {
-    auto* w = panel_->addModule(SamplerModule::DrumMachine);
+    auto* w = panel_->addTool(DjtoolzTool::DrumMachine);
     QVERIFY(w->drumEditor()->saveKitAs("temp"));
     QVERIFY(panel_->drumKits()->remove("temp"));
     panel_->drumKitsChanged();

@@ -1,9 +1,10 @@
 #include "joystick_seq_bridge.h"
-#include "alsa_sequencer.h"
+#include "joystick_map.h"
 #include "config/config_manager.h"
 
 #include <QThread>
 #include <fcntl.h>
+#include <time.h>
 #include <unistd.h>
 #include <linux/joystick.h>
 
@@ -14,11 +15,12 @@ namespace vdj {
 class JoystickSeqBridge::Worker : public QObject {
     Q_OBJECT
 public:
-    explicit Worker(AlsaSequencer* seq, const QString& device)
-        : seq_(seq), device_(device) {}
+    explicit Worker(const QString& device) : device_(device) {}
 
     void requestStop() { running_ = false; }
-    void setSeq(AlsaSequencer* s) { seq_ = s; }
+
+signals:
+    void action(int kind, double value);     // queued to the bridge in the GUI thread
 
 public slots:
     void run()
@@ -36,36 +38,17 @@ public slots:
                 nanosleep(&sl, nullptr);
                 continue;
             }
-
-            if (!seq_) continue;
-
-            unsigned int type = ev.type & ~JS_EVENT_INIT;
-
-            if (type == JS_EVENT_AXIS) {
-                if (ev.value == 0) continue;
-                // Default Logitech mapping (mirrors adj_js.c)
-                switch (ev.number) {
-                    case 0: seq_->adjustTempo(ev.value > 0 ?  0.1 : -0.1); break;
-                    case 1: seq_->adjustTempo(ev.value < 0 ?  1.0 : -1.0); break;
-                    case 2: seq_->nudge(ev.value > 0 ?  10 : -10);         break;
-                    case 3: seq_->nudge(ev.value > 0 ?   1 : -1);          break;
-                    default: break;
-                }
-            } else if (type == JS_EVENT_BUTTON && ev.value == 1) {
-                switch (ev.number) {
-                    case 8:  seq_->toggle();            break; // top-left trigger
-                    case 9:  seq_->stop();              break; // bottom-left trigger
-                    case 10: seq_->quantizedRestart();  break; // top-right trigger
-                    case 11: seq_->quantizedRestart();  break; // bottom-right trigger
-                    default: break;
-                }
-            }
+            const unsigned int type = ev.type & ~JS_EVENT_INIT;
+            if (type != JS_EVENT_AXIS && type != JS_EVENT_BUTTON) continue;
+            if (ev.type & JS_EVENT_INIT) continue;          // initial state dump on open: not a user action
+            const JoystickAction a = mapJoystickEvent(type == JS_EVENT_AXIS, ev.number, ev.value);
+            if (a.kind != JoystickAction::None)
+                emit action(int(a.kind), a.value);
         }
         ::close(fd);
     }
 
 private:
-    AlsaSequencer* seq_;
     QString        device_;
     volatile bool  running_ = false;
 };
@@ -80,14 +63,9 @@ JoystickSeqBridge::~JoystickSeqBridge()
     stop();
 }
 
-void JoystickSeqBridge::setSequencer(AlsaSequencer* seq)
-{
-    seq_ = seq;
-    if (worker_) worker_->setSeq(seq);
-}
-
 void JoystickSeqBridge::start()
 {
+    if (worker_) return;
     QString device = config_
         ? config_->loadValue(QStringLiteral("joystick"), QStringLiteral("device"))
         : QString();
@@ -98,10 +76,20 @@ void JoystickSeqBridge::start()
     if (::access(device.toLocal8Bit().constData(), R_OK) != 0) return;
 
     thread_ = new QThread(this);
-    worker_ = new Worker(seq_, device);
+    worker_ = new Worker(device);
     worker_->moveToThread(thread_);
     connect(thread_, &QThread::started,  worker_, &Worker::run);
     connect(thread_, &QThread::finished, worker_, &QObject::deleteLater);
+    connect(worker_, &Worker::action, this, [this](int kind, double value) {
+        switch (kind) {
+        case JoystickAction::Toggle:           emit toggleRequested(); break;
+        case JoystickAction::Stop:             emit stopRequested(); break;
+        case JoystickAction::QuantizedRestart: emit quantizedRestartRequested(); break;
+        case JoystickAction::Nudge:            emit nudgeRequested(int(value)); break;
+        case JoystickAction::TempoAdjust:      emit tempoAdjustRequested(value); break;
+        default: break;
+        }
+    });
     thread_->start();
 }
 

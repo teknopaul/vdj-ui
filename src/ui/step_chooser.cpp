@@ -1,5 +1,5 @@
 #include "step_chooser.h"
-#include "sampler_icons.h"
+#include "djtoolz_icons.h"
 
 #include <QEvent>
 #include <QHBoxLayout>
@@ -76,14 +76,14 @@ void StepChooser::setSteps(const quint8 steps[kDrumSteps])
 void StepChooser::updateIcons()
 {
     for (int i = 0; i < kDrumSteps; ++i) {
-        SamplerIcon icon = SamplerIcon::Yellow;
+        DjtoolzIcon icon = DjtoolzIcon::Yellow;
         if (!isEnabled())
-            icon = SamplerIcon::Grey;
+            icon = DjtoolzIcon::Grey;
         else if (steps_[i] == StepOn)
-            icon = SamplerIcon::Red;
+            icon = DjtoolzIcon::Red;
         else if (steps_[i] == StepHalf)
-            icon = SamplerIcon::Pink;
-        buttons_[i]->setIcon(samplerIcon(icon));
+            icon = DjtoolzIcon::Pink;
+        buttons_[i]->setIcon(djtoolzIcon(icon));
     }
 }
 

@@ -50,19 +50,27 @@ public:
     // False when not running. Callable from any thread.
     bool beatOffsetMs(double* ms) const;
 
+    // Bar position as a label on top of the steady clock: beats since the last start() plus a whole-beat offset (0..3), so a beat jump
+    // moves the bar position without touching the clock's timing. -1 / 0 when not running. start(), stop() and restart() reset the offset.
+    double barBeats() const;
+    int barPos() const;                           // 1..4, 0 when not running
+    void shiftBeats(int beats);                   // the bar position moves by whole beats, now
+
     void start();                                 // MIDI start + clock from tick 0
+    // MIDI STOP, the queue back to tick 0, MIDI START, on the running clock (the drum machines start their pattern again). Not running: nothing.
+    void restart();
     void stop();                                  // MIDI stop, clock ends
     bool running() const { return running_; }
 
     // Names of the ALSA clients subscribed to the clock port (the drum machines / synths following us).
     QStringList subscriberNames() const;
 
-    // A second output port, "Sampler MIDI", for the sampler's MidiMatic notes: notes are scheduled on the same queue as the clock,
+    // A second output port, "DJ Tools MIDI", for the DJ Tools's MidiMatic notes: notes are scheduled on the same queue as the clock,
     // by absolute tick (96 per beat, beat 0 = the last start()), so they are as steady as the clock. kind: 0 note on,
     // 1 note off, 2 all notes off (CC 123); channel 0..15. To the ALSA address destClient:destPort, or to whoever is subscribed to
     // the port when destClient < 0. False when closed or the event could not be queued.
-    bool sendSamplerMidi(int kind, int channel, int note, int velocity, qint64 tick, int destClient, int destPort);
-    int samplerPortId() const { return samplerPort_; }
+    bool sendDjtoolzMidi(int kind, int channel, int note, int velocity, qint64 tick, int destClient, int destPort);
+    int djtoolzPortId() const { return djtoolzPort_; }
 
     int clientId() const { return client_; }
     int portId() const { return port_; }
@@ -75,10 +83,12 @@ private:
     snd_seq_t* seq_ = nullptr;
     int client_ = -1;
     int port_ = -1;
-    int samplerPort_ = -1;
+    int djtoolzPort_ = -1;
     int queue_ = -1;
     std::atomic<double> bpm_{ 120.0 };
     std::atomic<bool> running_{ false };
+    std::atomic<int> beatOffset_{ 0 };
+    std::atomic<bool> resetNext_{ false };        // restart(): the clock thread starts queueing pulses from tick 0 again
     std::atomic<bool> quit_{ false };
     mutable std::mutex mutex_;                    // the sequencer handle is shared by the GUI and the clock thread
     std::chrono::steady_clock::time_point nudgeEnd_{};   // when to restore the tempo; epoch = no nudge

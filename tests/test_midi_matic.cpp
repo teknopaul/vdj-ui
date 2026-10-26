@@ -1,7 +1,7 @@
 #include <QtTest/QtTest>
 #include <vector>
-#include "audio/sampler_module.h"
-#include "audio/sampler_scheduler.h"
+#include "audio/djtoolz_tool.h"
+#include "audio/djtoolz_scheduler.h"
 #include "midi/alsa_clock.h"
 #include "midi/midi_out.h"
 
@@ -33,10 +33,10 @@ private:
     FakeBeatSource beats_;
     std::vector<MidiNoteEvent> got_;
 
-    std::shared_ptr<SamplerModule> midi(quint8 mask, bool enabled = true)
+    std::shared_ptr<DjtoolzTool> midi(quint8 mask, bool enabled = true)
     {
-        auto m = SamplerModule::create(SamplerModule::MidiMatic);
-        ModuleSettings s = m->settings();
+        auto m = DjtoolzTool::create(DjtoolzTool::MidiMatic);
+        ToolSettings s = m->settings();
         s.enabled = enabled;
         s.beatMask = mask;
         s.midiDevice = "20:1";
@@ -46,7 +46,7 @@ private:
         m->setSettings(s);
         return m;
     }
-    void run(SamplerScheduler& sch, int fromMs, int toMs)
+    void run(DjtoolzScheduler& sch, int fromMs, int toMs)
     {
         for (int t = fromMs; t <= toMs; t += 5)
             sch.tick(qint64(t) * 1000000);
@@ -55,7 +55,7 @@ private:
 
 void TestMidiMatic::noteOnAndOffTicks()
 {
-    ModuleSettings s;
+    ToolSettings s;
     s.midiChannel = 10;
     s.midiNote = 48;
     s.midiVelocity = 127;
@@ -76,7 +76,7 @@ void TestMidiMatic::noteOnAndOffTicks()
 
 void TestMidiMatic::offsetBecomesTicks()
 {
-    ModuleSettings s;
+    ToolSettings s;
     s.offsetMs = -25;                                // at 120 BPM a beat is 500 ms = 96 ticks: -25 ms = -4.8 ticks
     QCOMPARE(buildNoteEvents(2.0, s, 120.0)[0].tick, qint64(2 * 96 - 5));
     s.offsetMs = 25;
@@ -89,7 +89,7 @@ void TestMidiMatic::offsetBecomesTicks()
 
 void TestMidiMatic::channelAndNoteAreClamped()
 {
-    ModuleSettings s;
+    ToolSettings s;
     s.midiChannel = 99;
     s.midiNote = 500;
     s.midiVelocity = 0;
@@ -105,7 +105,7 @@ void TestMidiMatic::channelAndNoteAreClamped()
 
 void TestMidiMatic::volumeIsTheVelocity()
 {
-    ModuleSettings s;
+    ToolSettings s;
     s.midiVelocity = 100;
     QCOMPARE(buildNoteEvents(0.0, s, 120.0)[0].velocity, 100);   // volume 127 leaves it as set
     s.volume = 64;
@@ -147,10 +147,10 @@ void TestMidiMatic::beatChooserSelectsBeatsOfTheBar()
 
 void TestMidiMatic::schedulerEmitsEventsWithoutASample()
 {
-    SamplerScheduler sch(&beats_, &cache_, [](const Trigger&) { QFAIL("no audio expected"); });
+    DjtoolzScheduler sch(&beats_, &cache_, [](const Trigger&) { QFAIL("no audio expected"); });
     sch.setMidiSink([this](const MidiNoteEvent& e) { got_.push_back(e); });
     auto m = midi(0b1111);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 2000);
     // beats 0..4 on and off: ten events, ticks 0, 24, 96, 120, ...
     QVERIFY(got_.size() >= 10);
@@ -164,13 +164,13 @@ void TestMidiMatic::schedulerEmitsEventsWithoutASample()
 
 void TestMidiMatic::schedulerHonoursOffsetAndDisabled()
 {
-    SamplerScheduler sch(&beats_, &cache_, [](const Trigger&) {});
+    DjtoolzScheduler sch(&beats_, &cache_, [](const Trigger&) {});
     sch.setMidiSink([this](const MidiNoteEvent& e) { got_.push_back(e); });
     auto off = midi(0b1111, false);
-    sch.addModule(off);
+    sch.addTool(off);
     run(sch, 0, 1000);
     QVERIFY(got_.empty());
-    ModuleSettings s = off->settings();
+    ToolSettings s = off->settings();
     s.enabled = true;
     s.beatMask = 0b0001;                             // only beat 1 of the bar
     s.offsetMs = -20;                                // -3.84 ticks at 120 BPM -> -4
@@ -183,9 +183,9 @@ void TestMidiMatic::schedulerHonoursOffsetAndDisabled()
 
 void TestMidiMatic::sequencerStopReleasesNotes()
 {
-    SamplerScheduler sch(&beats_, &cache_, [](const Trigger&) {});
+    DjtoolzScheduler sch(&beats_, &cache_, [](const Trigger&) {});
     sch.setMidiSink([this](const MidiNoteEvent& e) { got_.push_back(e); });
-    sch.addModule(midi(0b1111));
+    sch.addTool(midi(0b1111));
     run(sch, 0, 600);
     got_.clear();
     beats_.isRunning = false;
@@ -207,8 +207,8 @@ void TestMidiMatic::closedClockRefusesToSend()
     MidiOut out(&clock);
     MidiNoteEvent e;
     QVERIFY(!out.send(e));
-    QVERIFY(!clock.sendSamplerMidi(0, 0, 36, 100, 0, -1, 0));
-    QCOMPARE(clock.samplerPortId(), -1);
+    QVERIFY(!clock.sendDjtoolzMidi(0, 0, 36, 100, 0, -1, 0));
+    QCOMPARE(clock.djtoolzPortId(), -1);
     MidiOut none(nullptr);
     QVERIFY(!none.send(e));
 }

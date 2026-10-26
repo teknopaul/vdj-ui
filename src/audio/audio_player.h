@@ -10,9 +10,16 @@
 #include <mutex>
 #include <thread>
 #include "audio_decoder.h"
+#include "fx_rack.h"
 #include "time_stretcher.h"
 
 namespace vdj {
+
+// Where a pending jump falls inside the next render chunk. posFrame / triggerFrame are source frames, tempo the
+// source-per-output ratio. Returns -1 when the trigger is not reached within this chunk, otherwise the number of
+// output frames to render before the jump (0 = jump first). The heard position is an estimate (it already subtracts
+// buffered output), good to well under a chunk.
+int splitAtTrigger(double posFrame, double tempo, double triggerFrame, int chunkFrames);
 
 // Previews one track on a local output device. A worker thread renders (tempo changed) audio and writes it to
 // PulseAudio/PipeWire; the GUI thread only sees the position through a timer.
@@ -20,6 +27,8 @@ class AudioPlayer : public QObject {
     Q_OBJECT
 
 public:
+    // The effects applied to what this player plays. Call before the first play().
+    void setFxRack(const FxRack* rack) { fx_ = std::make_unique<FxRunner>(rack); }
     enum State { Stopped, Playing, Paused };
 
     explicit AudioPlayer(QObject* parent = nullptr);
@@ -34,6 +43,7 @@ public:
     State state() const { return state_.load(); }
     double positionMs() const;
     double tempo() const;
+    bool hasPendingJump() const;
 
     void setDevice(const QString& sinkName);     // empty = default; takes effect immediately
     QString device() const;
@@ -43,15 +53,21 @@ public slots:
     void pause();
     void stop();                                 // pause and go back to the start
     void seekMs(double ms);
+    // When the heard (source) position reaches triggerSourceMs, seek to targetMs, sample-accurately inside the render
+    // chunk. A trigger already passed (or not playing) seeks at once. A newer request replaces the pending one.
+    void seekAtMs(double triggerSourceMs, double targetMs);
+    void cancelJump();                           // also done by stop, pause, seek, tempo change, load and unload
     void setTempo(double ratio);                 // 1.0 = original speed, key is kept
 
 signals:
     void stateChanged(int state);
     void positionChanged(double ms);             // ~30 times a second while playing
+    void jumped(double targetMs);                // a seekAtMs request was executed
     void finished();
     void deviceError(const QString& message);
 
 private:
+    std::unique_ptr<FxRunner> fx_;
     void run();
     void tick();
 
@@ -67,6 +83,9 @@ private:
     std::atomic<bool> quit_{ false };
     std::atomic<bool> ended_{ false };
     std::atomic<bool> failed_{ false };
+    std::atomic<bool> jumped_{ false };
+    bool pendingJump_ = false;                   // guarded by mutex_
+    double jumpTriggerFrame_ = 0.0, jumpTargetFrame_ = 0.0;
     QString failure_;                            // guarded by mutex_
     std::thread thread_;
     QTimer timer_;

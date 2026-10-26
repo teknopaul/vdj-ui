@@ -81,6 +81,7 @@ kind of field (`0x0ceea950`, `0x0ceeeab4` seen) and now also carries a non-zero 
 - Cue points, loops and the colour/extended waveforms are served from the ANLZ files but only the monochrome waveform was verified on a deck.
 - Only an XDJ-700 was used as the browsing deck; only a 7-track export with MP3 files.
 - Port 111 needs a one-off privilege (`setcap`, offered by the app); it is lost when the binary is rebuilt.
+  - If its EVER missing and deck tries connect, it breaks and you ahve to reboot the deck before readind virtual pendrives works
 
 ## Not the same as the Rekordbox PC mode
 

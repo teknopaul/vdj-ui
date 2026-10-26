@@ -3,7 +3,7 @@
 
 #include <QString>
 #include <vector>
-#include "audio/sampler_module.h"
+#include "audio/djtoolz_tool.h"
 
 namespace vdj {
 
@@ -17,18 +17,18 @@ struct MidiNoteEvent {
     int channel = 0;             // 0..15
     int note = 0;
     int velocity = 0;
-    QString device;              // "client:port" (ALSA numbers); empty = whoever is connected to the "Sampler MIDI" port
-    int tag = 0;                 // the module's id
+    QString device;              // "client:port" (ALSA numbers); empty = whoever is connected to the "DJ Tools MIDI" port
+    int tag = 0;                 // the tool's id
 };
 
 // The note on / note off pair for a hit at integer `beat`. The offset (ms) is converted to whole ticks, so it is only accurate to
 // 1 tick (about 5 ms at 120 BPM). The note off comes a quarter of a beat after the note on, like the ADJ bombomatic.
-std::vector<MidiNoteEvent> buildNoteEvents(double beat, const ModuleSettings& s, double bpm, int moduleId = 0);
+std::vector<MidiNoteEvent> buildNoteEvents(double beat, const ToolSettings& s, double bpm, int toolId = 0);
 
 // "20:0" -> client 20, port 0. False for anything else (empty included).
 bool parseMidiAddress(const QString& text, int* client, int* port);
 
-// Sends events to the ALSA sequencer through the VDJ's AlsaClock ("Sampler MIDI" port, same queue as the clock).
+// Sends events to the ALSA sequencer through the VDJ's AlsaClock ("DJ Tools MIDI" port, same queue as the clock).
 class MidiOut {
 public:
     explicit MidiOut(AlsaClock* clock) : clock_(clock) {}

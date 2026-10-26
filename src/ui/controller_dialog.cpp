@@ -1,6 +1,6 @@
 #include "controller_dialog.h"
 
-#include "midi/sampler_midi_control.h"
+#include "midi/djtoolz_midi_control.h"
 
 #include <QCheckBox>
 #include <QDialogButtonBox>
@@ -10,6 +10,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QShortcut>
+#include <QTimer>
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <memory>
@@ -22,20 +24,20 @@ static const char* const kRowNames[ControllerDialog::kRows] = {
 QString ControllerDialog::opNameFor(int row, int strip)
 {
     if (row >= 0 && row < 6 && strip >= 1 && strip <= kStrips)
-        return SamplerCtlMap::opName(ControlAction::Strip, Control(row), strip);
+        return DjtoolzCtlMap::opName(ControlAction::Strip, Control(row), strip);
     if (strip != 1)
         return QString();
-    if (row == 6) return SamplerCtlMap::opName(ControlAction::TrackBack, Control::Mute, 0);
-    if (row == 7) return SamplerCtlMap::opName(ControlAction::TrackForward, Control::Mute, 0);
-    if (row == 8) return SamplerCtlMap::opName(ControlAction::ModeToggle, Control::Mute, 0);
+    if (row == 6) return DjtoolzCtlMap::opName(ControlAction::TrackBack, Control::Mute, 0);
+    if (row == 7) return DjtoolzCtlMap::opName(ControlAction::TrackForward, Control::Mute, 0);
+    if (row == 8) return DjtoolzCtlMap::opName(ControlAction::ModeToggle, Control::Mute, 0);
     return QString();
 }
 
-ControllerDialog::ControllerDialog(SamplerMidiControl* control, QWidget* parent)
+ControllerDialog::ControllerDialog(DjtoolzMidiControl* control, QWidget* parent)
     : QDialog(parent)
     , control_(control)
 {
-    setWindowTitle(tr("Sampler controller"));
+    setWindowTitle(tr("DJ Tools controller"));
     resize(820, 470);
 
     path_ = new QLabel(this);
@@ -64,9 +66,12 @@ ControllerDialog::ControllerDialog(SamplerMidiControl* control, QWidget* parent)
     table_->setSelectionMode(QAbstractItemView::SingleSelection);
     table_->setSelectionBehavior(QAbstractItemView::SelectItems);
     table_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    table_->setToolTip(tr("Select a cell and press Learn (or double click it), then move or press that control"));
+    table_->setToolTip(tr("Select a cell and press Learn (or double click it), then move or press that control; it moves on to the next cell down by itself (Skip or Tab leaves one out)"));
 
     learn_ = new QPushButton(tr("Learn"), this);
+    skip_ = new QPushButton(tr("Skip"), this);
+    skip_->setToolTip(tr("Leave this cell as it is and learn the next one down (Tab)"));
+    skip_->setEnabled(false);
     clear_ = new QPushButton(tr("Clear cell"), this);
     reset_ = new QPushButton(tr("Reset to the example"), this);
     reset_->setToolTip(tr("Fills the table with the example mapping (a guess at the nanoKONTROL layout); Save writes it"));
@@ -86,6 +91,7 @@ ControllerDialog::ControllerDialog(SamplerMidiControl* control, QWidget* parent)
     opts->addWidget(recForward_);
     auto* learnRow = new QHBoxLayout;
     learnRow->addWidget(learn_);
+    learnRow->addWidget(skip_);
     learnRow->addWidget(clear_);
     learnRow->addWidget(anyChannel_);
     learnRow->addWidget(fill_);
@@ -111,6 +117,11 @@ ControllerDialog::ControllerDialog(SamplerMidiControl* control, QWidget* parent)
         emit saved(f);
     });
     connect(learn_, &QPushButton::clicked, this, [this]() { learnSelected(); });
+    connect(skip_, &QPushButton::clicked, this, [this]() { skipLearn(); });
+    // Tab skips while learning; otherwise it moves the focus as usual
+    connect(new QShortcut(QKeySequence(Qt::Key_Tab), this), &QShortcut::activated, this, [this]() {
+        if (learning()) skipLearn(); else focusNextChild();
+    });
     connect(table_, &QTableWidget::cellDoubleClicked, this, [this](int r, int c) { startLearn(r, c + 1); });
     connect(clear_, &QPushButton::clicked, this, [this]() {
         const QModelIndex i = table_->currentIndex();
@@ -122,9 +133,12 @@ ControllerDialog::ControllerDialog(SamplerMidiControl* control, QWidget* parent)
     connect(reset_, &QPushButton::clicked, this, [this]() { resetToExample(); });
     connect(save_, &QPushButton::clicked, this, [this]() { saveFile(); });
     connect(close, &QPushButton::clicked, this, &QDialog::accept);
-    connect(control_, &SamplerMidiControl::learned, this, &ControllerDialog::onLearned);
-    connect(control_, &SamplerMidiControl::eventSeen, this, [this](const QString& d) { live_->setText(tr("Last event: %1").arg(d)); });
-    connect(this, &QDialog::finished, this, [this]() { stopLearning(); });
+    connect(control_, &DjtoolzMidiControl::learned, this, &ControllerDialog::onLearned);
+    connect(control_, &DjtoolzMidiControl::eventSeen, this, [this](const QString& d) { live_->setText(tr("Last event: %1").arg(d)); });
+    connect(this, &QDialog::finished, this, [this]() { advanceTimer_->stop(); stopLearning(); });
+
+    advanceTimer_ = new QTimer(this);
+    advanceTimer_->setSingleShot(true);
 
     reloadFromFile();
 }
@@ -154,14 +168,14 @@ void ControllerDialog::reloadFromFile()
 
 void ControllerDialog::resetToExample()
 {
-    std::unique_ptr<AdjmmMap> m(AdjmmMap::readFromFile(SamplerMidiControl::examplePath()));
+    std::unique_ptr<AdjmmMap> m(AdjmmMap::readFromFile(DjtoolzMidiControl::examplePath()));
     if (!m)
         return;
     for (auto& kv : ops_)
         kv.second = AdjmmOp();                       // anything the example does not set is removed on Save
     for (const auto& kv : m->named)
         ops_[kv.first] = kv.second;
-    const SamplerCtlMap ex = SamplerCtlMap::fromAdjmm(*m);
+    const DjtoolzCtlMap ex = DjtoolzCtlMap::fromAdjmm(*m);
     source_->setText(ex.source());
     pickup_->setChecked(ex.pickup());
     recForward_->setChecked(ex.recIsForward());
@@ -217,12 +231,55 @@ void ControllerDialog::startLearn(int row, int strip)
 {
     if (opNameFor(row, strip).isEmpty())
         return;
+    advanceTimer_->stop();
     learnRow_ = row;
     learnStrip_ = strip;
     control_->setLearning(true);
     table_->setCurrentCell(row, strip - 1);
     status_->setText(tr("Learning %1: move or press the control...").arg(opNameFor(row, strip)));
     learn_->setText(tr("Learning..."));
+    skip_->setEnabled(true);
+}
+
+// The next cell below that has an op (rows 6-8 exist for strip 1 only); -1 when there is none
+int ControllerDialog::nextRow(int row, int strip)
+{
+    for (int r = row + 1; r < kRows; ++r)
+        if (!opNameFor(r, strip).isEmpty())
+            return r;
+    return -1;
+}
+
+void ControllerDialog::advanceLearn(int row, int strip)
+{
+    const int next = nextRow(row, strip);
+    if (next < 0) {
+        status_->setText(status_->text() + tr(" - end of the column"));
+        return;
+    }
+    const QString text = status_->text();
+    const auto go = [this, next, strip, text]() {
+        startLearn(next, strip);
+        status_->setText(text + tr(" - now %1: move or press the control, Skip or Tab to leave it").arg(opNameFor(next, strip)));
+    };
+    if (advanceDelayMs_ <= 0) {
+        go();
+        return;
+    }
+    // A button sends a press and a release: wait until the release is over before listening again
+    advanceTimer_->disconnect(this);
+    connect(advanceTimer_, &QTimer::timeout, this, go);
+    advanceTimer_->start(advanceDelayMs_);
+}
+
+void ControllerDialog::skipLearn()
+{
+    if (!learning())
+        return;
+    const int row = learnRow_, strip = learnStrip_;
+    stopLearning();
+    status_->setText(tr("%1 skipped").arg(opNameFor(row, strip)));
+    advanceLearn(row, strip);
 }
 
 void ControllerDialog::stopLearning()
@@ -230,6 +287,7 @@ void ControllerDialog::stopLearning()
     learnRow_ = -1;
     control_->setLearning(false);
     learn_->setText(tr("Learn"));
+    skip_->setEnabled(false);
 }
 
 void ControllerDialog::onLearned(int channel, int controller, bool isNote, int value)
@@ -261,6 +319,7 @@ void ControllerDialog::onLearned(int channel, int controller, bool isNote, int v
         fillTable();
     }
     status_->setText(tr("%1 = %2").arg(opNameFor(row, strip), cellText(row, strip)));
+    advanceLearn(row, strip);
 }
 
 bool ControllerDialog::saveFile()
@@ -295,7 +354,7 @@ bool ControllerDialog::saveFile()
             dirs.insert(it.key(), it.value());
     }
     QString err;
-    if (!writeSamplerOps(path, changed, dirs, &err)) {
+    if (!writeDjtoolzOps(path, changed, dirs, &err)) {
         status_->setText(err);
         return false;
     }

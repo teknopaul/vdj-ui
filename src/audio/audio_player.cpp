@@ -9,6 +9,18 @@ namespace {
 constexpr int kChunkFrames = 1024;
 }
 
+int splitAtTrigger(double posFrame, double tempo, double triggerFrame, int chunkFrames)
+{
+    if (tempo <= 0.0)
+        return -1;
+    const double n = (triggerFrame - posFrame) / tempo;
+    if (n <= 0.0)
+        return 0;
+    if (n >= chunkFrames)
+        return -1;
+    return int(n);
+}
+
 AudioPlayer::AudioPlayer(QObject* parent)
     : QObject(parent)
 {
@@ -35,6 +47,7 @@ bool AudioPlayer::load(const QString& path, QString* error)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         // the worker never touches the source while stopped, but make the swap atomic with the stretcher anyway
+        pendingJump_ = false;
         decoded_ = std::move(audio);
         frames_ = decoded_.frames();
         stretcher_.setSource(decoded_.samples.constData(), frames_);
@@ -47,6 +60,7 @@ void AudioPlayer::unload()
 {
     stop();
     std::lock_guard<std::mutex> lock(mutex_);
+    pendingJump_ = false;
     stretcher_.setSource(nullptr, 0);
     decoded_ = DecodedAudio();
     frames_ = 0;
@@ -97,8 +111,41 @@ void AudioPlayer::play()
     tick();
 }
 
+bool AudioPlayer::hasPendingJump() const
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return pendingJump_;
+}
+
+void AudioPlayer::cancelJump()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    pendingJump_ = false;
+}
+
+void AudioPlayer::seekAtMs(double triggerSourceMs, double targetMs)
+{
+    bool now = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        const double toFrames = DecodedAudio::kSampleRate / 1000.0;
+        const double trigger = triggerSourceMs * toFrames;
+        now = state_ != Playing || trigger <= stretcher_.position();
+        if (!now) {
+            pendingJump_ = true;
+            jumpTriggerFrame_ = trigger;
+            jumpTargetFrame_ = targetMs * toFrames;
+        }
+    }
+    if (now)
+        seekMs(targetMs);
+    else
+        wake_.notify_all();
+}
+
 void AudioPlayer::pause()
 {
+    cancelJump();
     if (state_ == Playing)
         state_ = Paused;
     tick();
@@ -110,6 +157,7 @@ void AudioPlayer::stop()
         std::lock_guard<std::mutex> lock(mutex_);
         state_ = Stopped;
         ended_ = false;
+        pendingJump_ = false;
         stretcher_.seek(0);
     }
     tick();
@@ -122,6 +170,7 @@ void AudioPlayer::seekMs(double ms)
         std::lock_guard<std::mutex> lock(mutex_);
         stretcher_.seek(ms * DecodedAudio::kSampleRate / 1000.0);
         ended_ = false;
+        pendingJump_ = false;
     }
     emit positionChanged(positionMs());
 }
@@ -129,6 +178,7 @@ void AudioPlayer::seekMs(double ms)
 void AudioPlayer::setTempo(double ratio)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    pendingJump_ = false;
     stretcher_.setTempo(ratio);
 }
 
@@ -146,6 +196,14 @@ void AudioPlayer::tick()
             msg = failure_;
         }
         emit deviceError(msg);
+    }
+    if (jumped_.exchange(false)) {
+        double target;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            target = jumpTargetFrame_ * 1000.0 / DecodedAudio::kSampleRate;
+        }
+        emit jumped(target);
     }
     if (ended_.exchange(false)) {
         state_ = Stopped;
@@ -196,10 +254,25 @@ void AudioPlayer::run()
                     closeStream();           // release the device while idle
                 continue;
             }
-            stretcher_.render(chunk.data(), kChunkFrames);
+            int head = pendingJump_
+                ? splitAtTrigger(stretcher_.position(), stretcher_.tempo(), jumpTriggerFrame_, kChunkFrames)
+                : -1;
+            if (head < 0) {
+                stretcher_.render(chunk.data(), kChunkFrames);
+            } else {
+                if (head > 0)
+                    stretcher_.render(chunk.data(), head);
+                stretcher_.seek(jumpTargetFrame_);
+                stretcher_.render(chunk.data() + size_t(head) * DecodedAudio::kChannels, kChunkFrames - head);
+                pendingJump_ = false;
+                jumped_ = true;
+            }
             if (stretcher_.atEnd())
                 ended_ = true;
         }
+
+        if (fx_)
+            fx_->process(chunk.data(), int(chunk.size() / DecodedAudio::kChannels));
 
         if (!pa || openDevice != wanted) {
             closeStream();

@@ -13,6 +13,7 @@ private slots:
     void deckAreaAddRemove();
     void bpmAndBarPosSetters();
     void playheadSpansFullBar();
+    void sequencerBarLabelMoves();
     void beatGridMinWidthMatchesControls();
     void deckTitleShowsModelAndState();
     void playheadTakesFullBarToCross();
@@ -53,6 +54,20 @@ void TestBeatGrid::bpmAndBarPosSetters()
 
     grid.setBpm(0.0);
     QCOMPARE(grid.bpm(), 124.0);
+}
+
+void TestBeatGrid::sequencerBarLabelMoves()
+{
+    // the sequencer's bar position is raw beats + the whole-beat offset: one more beat puts the playhead on another beat of the bar
+    vdj::BeatGridWidget w;
+    w.resize(400, 60);
+    w.setSequencerBeats(5.3);
+    const QImage a = w.grab().toImage();
+    w.setSequencerBeats(6.3);
+    const QImage b = w.grab().toImage();
+    QVERIFY(a != b);
+    w.setSequencerBeats(9.3);                    // a bar later: the same place
+    QCOMPARE(w.grab().toImage(), a);
 }
 
 void TestBeatGrid::playheadSpansFullBar()

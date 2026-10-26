@@ -10,6 +10,8 @@ QString darkThemeStylesheet(const QString& family)
         "QMenuBar { background-color: #242424; color: #e0e0e0;"
         "  border-bottom: 1px solid #333333; }"
         "QMenuBar::item:selected { background-color: #3a3a3a; }"
+        "QMenuBar QToolButton { border: none; padding: 0; }"
+        "QMenuBar QToolButton:hover { background-color: #3a3a3a; }"
         "QMenu { background-color: #242424; color: #e0e0e0;"
         "  border: 1px solid #333333; }"
         "QMenu::item:selected { background-color: #3a3a3a; }"

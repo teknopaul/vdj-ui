@@ -34,7 +34,7 @@ struct DrumVoice {
 
 QString drumPatternToString(const quint8 steps[kDrumSteps]);                 // 16 characters of '0' '1' '2'
 bool drumPatternFromString(const QString& text, quint8 out[kDrumSteps]);     // false (out untouched) for a wrong length or character
-// One voice as a QVariantMap { sample, volume, offsetMs, choke, pattern } (module presets and drum kits use the same form);
+// One voice as a QVariantMap { sample, volume, offsetMs, choke, pattern } (tool presets and drum kits use the same form);
 // fromVariant keeps the voice's current value for every key the map does not have, a bad pattern string leaves the pattern as it is.
 // "muted" is written only when true (old files stay identical); drum kits leave it out (withMute = false): a kit is a sound, not a mix.
 QVariantMap drumVoiceToVariant(const DrumVoice& v, bool withMute = true);

@@ -6,7 +6,7 @@
 
 namespace vdj {
 
-std::vector<MidiNoteEvent> buildNoteEvents(double beat, const ModuleSettings& s, double bpm, int moduleId)
+std::vector<MidiNoteEvent> buildNoteEvents(double beat, const ToolSettings& s, double bpm, int toolId)
 {
     std::vector<MidiNoteEvent> out;
     if (bpm <= 0.0 || s.volume <= 0)
@@ -17,10 +17,10 @@ std::vector<MidiNoteEvent> buildNoteEvents(double beat, const ModuleSettings& s,
     e.channel = std::clamp(s.midiChannel, 1, 16) - 1;
     e.note = std::clamp(s.midiNote, 0, 127);
     e.device = s.midiDevice;
-    e.tag = moduleId;
+    e.tag = toolId;
     e.kind = MidiNoteEvent::NoteOn;
     e.tick = on;
-    e.velocity = std::clamp(int(std::lround(double(s.midiVelocity) * s.volume / SamplerModule::kMaxVolume)), 1, 127);
+    e.velocity = std::clamp(int(std::lround(double(s.midiVelocity) * s.volume / DjtoolzTool::kMaxVolume)), 1, 127);
     out.push_back(e);
     e.kind = MidiNoteEvent::NoteOff;
     e.tick = on + AlsaClock::kPpq / 4;
@@ -50,7 +50,7 @@ bool MidiOut::send(const MidiNoteEvent& e) const
     int c = -1, p = 0;
     if (!e.device.isEmpty() && !parseMidiAddress(e.device, &c, &p))
         return false;                              // a device name that is not an address: do not spray the subscribers
-    return clock_->sendSamplerMidi(int(e.kind), e.channel, e.note, e.velocity, e.tick, c, p);
+    return clock_->sendDjtoolzMidi(int(e.kind), e.channel, e.note, e.velocity, e.tick, c, p);
 }
 
 } // namespace vdj

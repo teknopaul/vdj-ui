@@ -1,5 +1,5 @@
 #include "drum_voice_selector.h"
-#include "sampler_icons.h"
+#include "djtoolz_icons.h"
 
 #include <QButtonGroup>
 #include <QEvent>

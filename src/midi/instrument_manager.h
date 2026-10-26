@@ -52,13 +52,19 @@ public:
     QString midiInputKey()  const;
     QString midiOutputKey() const;
     void setMidiInputKey(const QString& key);
-    // A second controller wired to the same port, for the sampler (config [instruments] midi_input_sampler; no dialog yet).
-    QString samplerInputKey() const;
+    // A second controller wired to the same port, for the DJ Tools (config [instruments] midi_input_djtoolz, Config > Instruments).
+    QString djtoolzInputKey() const;
+    void setDjtoolzInputKey(const QString& key);
+    // The ALSA client name of the device with this key (what events carry as their source), empty when it is not connected.
+    QString alsaNameFor(const QString& key) const;
     // The .adjmm map paired with an input device (stored per device key, "instrument_maps" config section).
     // Empty when none was chosen.
     QString midiMapFor(const QString& deviceKey) const;
     void setMidiMapFor(const QString& deviceKey, const QString& path);
     void setMidiOutputKey(const QString& key);
+    // Folders of exported drum kits (DR-6S) to list next to the saved ones ("drum_kit_folders" config section, Config > Instruments > Presets).
+    static QStringList drumKitFolders(const ConfigManager* config);
+    static void setDrumKitFolders(ConfigManager* config, const QStringList& folders);
 
     // Create ALSA subscriptions for the configured devices.
     // Safe to call multiple times; duplicate subscriptions are silently ignored by ALSA.

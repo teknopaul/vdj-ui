@@ -15,7 +15,7 @@ namespace vdj {
 
 // ── .adjmm parser ─────────────────────────────────────────────────────────────
 
-bool AdjmmMap::isSamplerOpName(const QString& name)
+bool AdjmmMap::isDjtoolzOpName(const QString& name)
 {
     static const QRegularExpression strip(QStringLiteral("^strip[1-8]_(mute|solo|rec|select|knob|fader)$"));
     return name == QStringLiteral("track_back") || name == QStringLiteral("track_fwd")
@@ -116,13 +116,13 @@ static void parseLine(const QString& rawLine, int lineNo, AdjmmMap* map)
     else if (name == QStringLiteral("slider_off"))    idx = ADJMM_OP_SLIDER_OFF - 1;
     else if (name == QStringLiteral("copy_master"))   idx = ADJMM_OP_COPY_MASTER - 1;
     else if (name == QStringLiteral("become_master")) idx = ADJMM_OP_BECOME_MASTER - 1;
-    else if (AdjmmMap::isSamplerOpName(name)) {
+    else if (AdjmmMap::isDjtoolzOpName(name)) {
         AdjmmOp op;
         if (parseFields(ch, ctrl, val, lineNo, &op)) map->named[name] = op;
         return;
     } else {
         if (name.startsWith(QStringLiteral("strip")))
-            qWarning("adjmm line %d: bad sampler op '%s' (strips are 1-8)", lineNo, qPrintable(name));
+            qWarning("adjmm line %d: bad DJ Tools op '%s' (strips are 1-8)", lineNo, qPrintable(name));
         // skip unknown names — forward compatibility when new ops are added
         return;
     }
@@ -272,7 +272,9 @@ private:
             int ch  = ev->data.control.channel + 1; // ALSA 0-15 → human 1-16
             int par = ev->data.control.param;
             int val = ev->data.control.value;
-            emit owner_->controlEvent(ch, par, val, sourceName(ev->source.client));
+            const QString src = sourceName(ev->source.client);
+            emit owner_->controlEvent(ch, par, val, src);
+            if (owner_->isExcluded(src)) return;
             op = matchCtrl(map_, ch, par, val);
             if (op == 0) op = matchWheel(map_, ch, par, val);
             report(QStringLiteral("ch %1  CC %2 = %3").arg(ch).arg(par).arg(val), op);
@@ -282,7 +284,9 @@ private:
             }
         } else if (ev->type == SND_SEQ_EVENT_NOTEON) {
             const int ch = ev->data.note.channel + 1;
-            emit owner_->noteEvent(ch, ev->data.note.note, ev->data.note.velocity, true, sourceName(ev->source.client));
+            const QString src = sourceName(ev->source.client);
+            emit owner_->noteEvent(ch, ev->data.note.note, ev->data.note.velocity, true, src);
+            if (owner_->isExcluded(src)) return;
             op = matchNote(map_, ch, ev->data.note.note);
             report(QStringLiteral("ch %1  NOTE ON  note %2 velocity %3").arg(ch).arg(ev->data.note.note).arg(ev->data.note.velocity), op);
         } else if (ev->type == SND_SEQ_EVENT_NOTEOFF) {
@@ -413,6 +417,18 @@ int MidiMapInput::mappedOps() const
         for (const AdjmmOp& op : map_->ops)
             if (op.controller != ADJMM_UNSET) ++n;
     return n;
+}
+
+void MidiMapInput::setExcludedSource(const QString& name)
+{
+    std::lock_guard<std::mutex> lock(excludeMutex_);
+    excluded_ = name;
+}
+
+bool MidiMapInput::isExcluded(const QString& source) const
+{
+    std::lock_guard<std::mutex> lock(excludeMutex_);
+    return !excluded_.isEmpty() && source.contains(excluded_, Qt::CaseInsensitive);
 }
 
 QStringList MidiMapInput::sourceNames() const

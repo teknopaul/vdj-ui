@@ -6,6 +6,7 @@
 #include "config/config_manager.h"
 #include "debug/packet_logger.h"
 #include "ui/deck_widget.h"
+#include "ui/deck_controls.h"
 #include "midi/alsa_clock.h"
 #include <QDoubleSpinBox>
 #include <QTemporaryDir>
@@ -39,7 +40,7 @@ void TestIntegration::mainWindowConstructs()
     vdj::MainWindow window;
     window.show();
     QVERIFY(window.isVisible());
-    QCOMPARE(window.windowTitle(), QStringLiteral("VDJ UI"));
+    QCOMPARE(window.windowTitle(), QStringLiteral("🎧 VDJ UI"));
 
     // Give Qt a moment to process show/rendering events
     QTest::qWait(50);
@@ -286,7 +287,7 @@ void TestIntegration::vdjPlayRunsSequencerAndPlayhead()
 
     QPushButton* play = nullptr;
     for (auto* b : vdjDeck->findChildren<QPushButton*>())
-        if (b->isCheckable() && b->isVisibleTo(vdjDeck)) play = b;
+        if (b->isCheckable() && b->isVisibleTo(vdjDeck) && b != vdjDeck->controls()->quantizeButton()) play = b;   // the Q button is checkable too
     QVERIFY(play);
     QVERIFY(!clock->running());
     play->click();                                 // Play on the VDJ deck

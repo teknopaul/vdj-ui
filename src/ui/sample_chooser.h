@@ -14,9 +14,9 @@ namespace vdj {
 
 class SampleTreeModel;
 
-// The sample of a module: its file name, a button to pick another one (a dialog with the folder tree and a preview button)
+// The sample of a tool: its file name, a button to pick another one (a dialog with the folder tree and a preview button)
 // and up / down to step through the .wav files of the same folder (ASCIIbetical). Stepping emits sampleChanged at once;
-// the sampler plays the new one from its next hit.
+// the DJ Tools plays the new one from its next hit.
 class SampleChooser : public QWidget {
     Q_OBJECT
 

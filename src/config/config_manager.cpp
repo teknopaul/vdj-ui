@@ -7,9 +7,42 @@
 
 namespace vdj {
 
+// The sampler was renamed DJ Tools (sanename DJ Tools): move the user's files and settings over, once, keeping anything already there.
+static void migrateLegacyNames(ConfigManager* c)
+{
+    static bool done = false;
+    if (done) return;
+    done = true;
+    const QString dir = ConfigManager::configDir();
+    const auto move = [&dir](const char* from, const char* to) {
+        const QString f = dir + QLatin1Char('/') + QLatin1String(from), t = dir + QLatin1Char('/') + QLatin1String(to);
+        if (QFileInfo::exists(f) && !QFileInfo::exists(t)) QFile::rename(f, t);
+    };
+    move("sampler-current.json", "djtoolz-current.json");
+    move("sampler-presets", "djtoolz-presets");
+    move("sampler-control.adjmm", "djtoolz-control.adjmm");
+    move("sampler.conf", "djtoolz.conf");
+    const auto key = [c](const QString& section, const char* from, const char* to) {
+        const QString v = c->loadValue(section, QLatin1String(from));
+        if (!v.isEmpty() && c->loadValue(section, QLatin1String(to)).isEmpty()) {
+            c->saveValue(section, QLatin1String(to), v);
+            c->saveValue(section, QLatin1String(from), QString());
+        }
+    };
+    key(QStringLiteral("ui"), "sampler", "djtoolz");
+    key(QStringLiteral("ui"), "sampler_height", "djtoolz_height");
+    key(QStringLiteral("instruments"), "midi_input_sampler", "midi_input_djtoolz");
+    QString map = c->loadValue(QStringLiteral("midi"), QStringLiteral("sampler_map"));
+    if (!map.isEmpty() && c->loadValue(QStringLiteral("midi"), QStringLiteral("djtoolz_map")).isEmpty()) {
+        c->saveValue(QStringLiteral("midi"), QStringLiteral("djtoolz_map"), map.replace(QLatin1String("sampler-control"), QLatin1String("djtoolz-control")));
+        c->saveValue(QStringLiteral("midi"), QStringLiteral("sampler_map"), QString());
+    }
+}
+
 ConfigManager::ConfigManager(QObject* parent)
     : QObject(parent)
 {
+    migrateLegacyNames(this);
 }
 
 QString ConfigManager::configDir()

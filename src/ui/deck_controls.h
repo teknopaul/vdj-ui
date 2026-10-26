@@ -40,6 +40,14 @@ public:
     void setBpmLocked(bool locked, const QString& tip = QString());
     bool barEditable() const;
     bool playVisible() const;
+    QPushButton* quantizeButton() const { return quantize_; }
+    QPushButton* restartButton() const { return restart_; }
+    QPushButton* backButton() const { return back_; }
+    QPushButton* forwardButton() const { return forward_; }
+    bool quantizeOn() const;
+    // The restart / beat jump buttons only make sense while the sequencer runs.
+    void setJumpsEnabled(bool enabled);
+    bool jumpsVisible() const;
     bool copyBpmVisible() const;
     bool syncVisible() const;
     // Mark the Sync button of the deck the VDJ is difflocked to.
@@ -48,6 +56,8 @@ public:
 
 signals:
     void playPauseClicked(int playerId, bool play);
+    void restartClicked(int playerId, bool quantize);   // MIDI stop / start at the start of the bar
+    void beatJumpClicked(int playerId, int beats);       // -1 / +1: the bar position moves one beat
     void syncClicked(int playerId);
     void setBpmClicked(int playerId, double bpm);
     void becomeMasterClicked(int playerId);
@@ -59,6 +69,10 @@ private:
     bool remote_ = false;
     bool syncLocked_ = false;
     QPushButton* playPause_;
+    QPushButton* quantize_;
+    QPushButton* restart_;
+    QPushButton* back_;
+    QPushButton* forward_;
     QPushButton* sync_;
     QPushButton* becomeMaster_;
     QPushButton* copyBpm_;

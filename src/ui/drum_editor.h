@@ -4,7 +4,7 @@
 #include <QSpinBox>
 #include <QWidget>
 #include <memory>
-#include "audio/sampler_module.h"
+#include "audio/djtoolz_tool.h"
 #include "wheel_notches.h"
 
 class QComboBox;
@@ -17,7 +17,7 @@ namespace vdj {
 
 class DrumVoiceSelector;
 class SampleChooser;
-class SamplerPanel;
+class DjtoolzPanel;
 class StepChooser;
 class SwingSlider;
 
@@ -37,17 +37,18 @@ protected:
     void fixup(QString& input) const override;
 };
 
-// The editor of the DR-6S inside its module widget: the six voice buttons and the swing, the sample / offset / volume / choke of the
-// voice that is selected, and its 16 step pattern. Every edit goes straight into the module's settings.drums[voice].
+// The editor of the DR-6S inside its tool widget: the six voice buttons and the swing, the sample / offset / volume / choke of the
+// voice that is selected, and its 16 step pattern. Every edit goes straight into the tool's settings.drums[voice].
 class DrumEditor : public QWidget {
     Q_OBJECT
 
 public:
-    DrumEditor(std::shared_ptr<SamplerModule> module, SamplerPanel* panel, QWidget* parent = nullptr);
+    DrumEditor(std::shared_ptr<DjtoolzTool> tool, DjtoolzPanel* panel, QWidget* parent = nullptr);
 
-    void reload();                                   // everything from the module's settings (a preset or kit was loaded)
+    void reload();                                   // everything from the tool's settings (a preset or kit was loaded)
     int selectedVoice() const;
     void selectVoice(int voice);
+    bool setVoiceSample(int voice, const QString& path);   // as if chosen with the sample chooser; selects the voice. False for a bad voice
     void wheelVolume(QWheelEvent* event);
     // Mute of a voice, shown or not (also for the MIDI controller)
     void setVoiceMuted(int voice, bool muted);
@@ -61,8 +62,9 @@ public:
     // stops at the ends. False when there are no kits or the kit cannot be loaded.
     bool stepKit(int dir);
 
-    // Drum kits: the six voices and the swing, saved apart from the sampler presets (the module's name, on/off and master volume
+    // Drum kits: the six voices and the swing, saved apart from the DJ Tools presets (the tool's name, on/off and master volume
     // are not part of a kit).
+    bool exportKitTo(const QString& name, const QString& folder, QString* error = nullptr);   // no dialogs: samples copied, see DrumKits::exportKit
     bool saveKitAs(const QString& name);             // no dialog (the Save button asks for the name)
     bool loadKit(const QString& name);
     void refreshKits();
@@ -81,9 +83,10 @@ public:
 private:
     template <typename F> void edit(F f);
     void loadVoice();
+    void saveKitDialog();
 
-    std::shared_ptr<SamplerModule> module_;
-    SamplerPanel* panel_;
+    std::shared_ptr<DjtoolzTool> tool_;
+    DjtoolzPanel* panel_;
     bool loading_ = false;
     DrumVoiceSelector* selector_;
     SwingSlider* swing_;

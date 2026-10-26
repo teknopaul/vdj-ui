@@ -27,6 +27,8 @@ private slots:
     void stretcherTempo();
     void stretcherKeepsPitch();
     void playerLoadSeek();
+    void splitArithmetic();
+    void jumpScheduling();
     void deviceList();
     void playbackRuns();
     void panelCuesAndBpm();
@@ -34,6 +36,7 @@ private slots:
     void deckUnreachable();
     void alsaClockTempo();
     void alsaClockEmitsMidiClock();
+    void alsaClockRestartAndBar();
 
 private:
     static QString writeWav(const QString& dir, int seconds, double freq)
@@ -157,6 +160,67 @@ void TestAudio::playerLoadSeek()
     QVERIFY(!p.isLoaded());
 }
 
+void TestAudio::splitArithmetic()
+{
+    // trigger inside the chunk
+    QCOMPARE(splitAtTrigger(1000, 1.0, 1300, 1024), 300);
+    // beyond the chunk: nothing yet
+    QCOMPARE(splitAtTrigger(1000, 1.0, 2024, 1024), -1);
+    QCOMPARE(splitAtTrigger(1000, 1.0, 5000, 1024), -1);
+    // already passed or exactly now: jump first
+    QCOMPARE(splitAtTrigger(1000, 1.0, 1000, 1024), 0);
+    QCOMPARE(splitAtTrigger(1000, 1.0, 900, 1024), 0);
+    // tempo 0.5: 300 source frames take 600 output frames; tempo 1.5: 150
+    QCOMPARE(splitAtTrigger(1000, 0.5, 1300, 1024), 600);
+    QCOMPARE(splitAtTrigger(1000, 1.5, 1300, 1024), 200);
+    QCOMPARE(splitAtTrigger(1000, 0.5, 1600, 1024), -1);
+    QCOMPARE(splitAtTrigger(1000, 0.0, 1300, 1024), -1);
+}
+
+void TestAudio::jumpScheduling()
+{
+    QTemporaryDir dir;
+    AudioPlayer p;
+    QVERIFY(p.load(writeWav(dir.path(), 3, 220.0)));
+    // not playing: a request seeks at once and leaves nothing pending
+    p.seekAtMs(1000, 2000);
+    QVERIFY(!p.hasPendingJump());
+    QVERIFY(std::abs(p.positionMs() - 2000) < 1);
+
+    QSignalSpy errors(&p, &AudioPlayer::deviceError);
+    QSignalSpy jumped(&p, &AudioPlayer::jumped);
+    p.seekMs(0);
+    p.play();
+    QTest::qWait(300);
+    if (errors.count())
+        QSKIP("no audio output available");
+    // trigger already passed: immediate
+    p.seekAtMs(0, 1500);
+    QVERIFY(!p.hasPendingJump());
+    // pending, then cancelled by seek, pause and tempo change
+    p.seekAtMs(p.positionMs() + 60000, 100);
+    QVERIFY(p.hasPendingJump());
+    p.seekMs(500);
+    QVERIFY(!p.hasPendingJump());
+    p.seekAtMs(p.positionMs() + 60000, 100);
+    p.setTempo(1.1);
+    QVERIFY(!p.hasPendingJump());
+    p.seekAtMs(p.positionMs() + 60000, 100);
+    p.pause();
+    QVERIFY(!p.hasPendingJump());
+    p.play();
+    QTest::qWait(100);
+    // a trigger ~150 ms ahead is executed by the worker and reported
+    p.seekAtMs(p.positionMs() + 150, 100);
+    QTest::qWait(500);
+    QCOMPARE(jumped.count(), 1);
+    QVERIFY(!p.hasPendingJump());
+    QVERIFY2(p.positionMs() < 1000.0, qPrintable(QString::number(p.positionMs())));
+    p.seekAtMs(p.positionMs() + 60000, 100);
+    p.stop();
+    QVERIFY(!p.hasPendingJump());
+}
+
 void TestAudio::deviceList()
 {
     const auto devices = listAudioDevices();
@@ -198,8 +262,17 @@ void TestAudio::panelCuesAndBpm()
     info.fields.append(qMakePair(QStringLiteral("BPM"), QStringLiteral("120.00")));
     QVERIFY(panel.loadTrack(info));
     QVERIFY(panel.playButton()->isEnabled());
-    QVERIFY(!panel.pauseButton()->isEnabled());
     QCOMPARE(panel.originalBpm(), 120.0);
+    // back / forward are pure BPM jumps in source time: one beat = 500 ms at 120 BPM, a bar = 2000 ms
+    QVERIFY(panel.forwardButton()->isEnabled());
+    panel.forwardButton()->click();
+    QVERIFY(std::abs(panel.player()->positionMs() - 2000) < 1);
+    panel.player()->seekMs(2500);
+    panel.backButton()->click();
+    QVERIFY(std::abs(panel.player()->positionMs() - 500) < 1);
+    panel.backButton()->click();
+    QVERIFY(std::abs(panel.player()->positionMs()) < 1);     // clamped at the start
+    panel.player()->seekMs(0);
     panel.bpmUpButton()->click();
     QVERIFY(std::abs(panel.targetBpm() - 120.1) < 1e-6);
     QVERIFY(std::abs(panel.player()->tempo() - 120.1 / 120.0) < 1e-6);
@@ -296,6 +369,67 @@ void TestAudio::alsaClockEmitsMidiClock()
     QCOMPARE(stops, 1);
     QVERIFY2(clocks > 80 && clocks < 130, qPrintable(QString::number(clocks)));   // ~96 in a second
     QVERIFY(!c.running());
+}
+
+void TestAudio::alsaClockRestartAndBar()
+{
+    AlsaClock c;
+    if (!c.open(QStringLiteral("vdj-ui-test"), nullptr))
+        QSKIP("no ALSA sequencer available");
+    QVERIFY(c.setBpm(240.0));
+    QCOMPARE(c.barPos(), 0);                           // stopped
+    c.shiftBeats(1);                                   // ignored while stopped
+
+    snd_seq_t* rx = nullptr;
+    QVERIFY(snd_seq_open(&rx, "default", SND_SEQ_OPEN_INPUT, SND_SEQ_NONBLOCK) == 0);
+    snd_seq_set_client_name(rx, "vdj-ui-test-rx2");
+    const int rxPort = snd_seq_create_simple_port(rx, "in", SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
+                                                  SND_SEQ_PORT_TYPE_APPLICATION);
+    QVERIFY(snd_seq_connect_from(rx, rxPort, c.clientId(), c.portId()) == 0);
+    QList<int> events;                                 // START / STOP in the order received
+    int clocksAfterRestart = 0;
+    bool restarted = false;
+    auto drain = [&] {
+        snd_seq_event_t* ev = nullptr;
+        while (snd_seq_event_input(rx, &ev) >= 0 && ev) {
+            if (ev->type == SND_SEQ_EVENT_START || ev->type == SND_SEQ_EVENT_STOP)
+                events << int(ev->type);
+            else if (ev->type == SND_SEQ_EVENT_CLOCK && restarted)
+                ++clocksAfterRestart;
+        }
+    };
+
+    c.restart();                                       // not running: nothing
+    QVERIFY(!c.running());
+    c.start();
+    QVERIFY(c.running());
+    QTest::qWait(1300);                                // 240 BPM: more than 4 beats
+    QVERIFY2(c.positionBeats() > 4.0, qPrintable(QString::number(c.positionBeats())));
+    const int before = c.barPos();
+    QVERIFY(before >= 1 && before <= 4);
+    c.shiftBeats(1);
+    QCOMPARE(c.barPos(), before % 4 + 1);
+    c.shiftBeats(-1);
+    QCOMPARE(c.barPos(), before);
+
+    drain();
+    restarted = true;
+    c.shiftBeats(2);
+    c.restart();
+    QVERIFY(c.running());                              // the clock keeps running
+    QVERIFY2(c.positionBeats() >= 0.0 && c.positionBeats() < 0.5, qPrintable(QString::number(c.positionBeats())));
+    QCOMPARE(c.barPos(), 1);                           // restart resets the offset: tick 0 is beat 1
+    QTest::qWait(600);
+    drain();
+    QVERIFY2(clocksAfterRestart > 30, qPrintable(QString::number(clocksAfterRestart)));   // pulses restarted from tick 0
+    QVERIFY2(c.positionBeats() > 1.0 && c.positionBeats() < 3.5, qPrintable(QString::number(c.positionBeats())));
+    c.stop();
+    QCOMPARE(c.barPos(), 0);
+    QTest::qWait(50);
+    drain();
+    snd_seq_close(rx);
+    // start, then stop + start from the restart, then the final stop
+    QCOMPARE(events, (QList<int>{ SND_SEQ_EVENT_START, SND_SEQ_EVENT_STOP, SND_SEQ_EVENT_START, SND_SEQ_EVENT_STOP }));
 }
 
 QTEST_MAIN(TestAudio)

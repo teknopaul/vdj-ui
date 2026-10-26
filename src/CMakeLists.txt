@@ -38,26 +38,34 @@ add_library(vdj-cdj STATIC
     config/config_manager.cpp
     debug/packet_logger.cpp
     audio/audio_decoder.cpp
+    audio/ladspa_host.cpp
+    audio/fx_rack.cpp
     audio/audio_output.cpp
     audio/audio_player.cpp
+    audio/beat_clock.cpp
+    audio/quantize_settings.cpp
+    audio/deck_phase.cpp
     audio/beat_source.cpp
     audio/sample_cache.cpp
     audio/wav_info.cpp
     audio/voice_mixer.cpp
-    audio/sampler_engine.cpp
-    audio/sampler_module.cpp
-    audio/sampler_scheduler.cpp
+    audio/djtoolz_engine.cpp
+    audio/djtoolz_tool.cpp
+    audio/djtoolz_scheduler.cpp
     audio/sample_stretch.cpp
-    audio/sampler_presets.cpp
+    audio/djtoolz_presets.cpp
     audio/swing.cpp
     audio/drum_pattern.cpp
     audio/drum_kits.cpp
     audio/time_stretcher.cpp
     midi/alsa_clock.cpp
+    midi/seq_bar.cpp
+    midi/joystick_map.cpp
+    midi/joystick_seq_bridge.cpp
     midi/diff_lock.cpp
     midi/midi_map_input.cpp
-    midi/sampler_ctl_map.cpp
-    midi/sampler_midi_control.cpp
+    midi/djtoolz_ctl_map.cpp
+    midi/djtoolz_midi_control.cpp
     midi/midi_router.cpp
     midi/midi_out.cpp
     midi/instrument_manager.cpp
@@ -77,16 +85,16 @@ add_library(vdj-cdj STATIC
     ui/joystick_config_dialog.cpp
     ui/track_browser.cpp
     ui/sample_tree_model.cpp
-    ui/sampler_icons.cpp
+    ui/djtoolz_icons.cpp
     ui/drum_voice_selector.cpp
     ui/step_chooser.cpp
     ui/drum_editor.cpp
     ui/swing_slider.cpp
     ui/beat_chooser.cpp
     ui/sample_chooser.cpp
-    ui/sampler_module_widget.cpp
-    ui/sampler_panel.cpp
-    ui/sampler_controller.cpp
+    ui/djtoolz_tool_widget.cpp
+    ui/djtoolz_panel.cpp
+    ui/djtoolz_controller.cpp
     ${CMAKE_SOURCE_DIR}/resources.qrc
     ui/track_details.cpp
     ui/track_analysis.cpp
@@ -94,8 +102,8 @@ add_library(vdj-cdj STATIC
     ui/waveform_widget.cpp
     ui/waveform_window.cpp
     ui/player_panel.cpp
+    ui/quantize_button.cpp
     export/playlist_export.cpp
-    ui/now_playing.cpp
     ui/debug_panel.cpp
     ui/debug_overlay.cpp
     ui/autoip_status_widget.cpp
@@ -124,7 +132,7 @@ target_include_directories(vdj-cdj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 pkg_check_modules(AUDIO REQUIRED IMPORTED_TARGET libavformat libavcodec libswresample libavutil libpulse libpulse-simple)
-target_link_libraries(vdj-cdj PUBLIC PkgConfig::AUDIO Threads::Threads)
+target_link_libraries(vdj-cdj PUBLIC PkgConfig::AUDIO Threads::Threads ${CMAKE_DL_LIBS})
 target_link_libraries(vdj-cdj PUBLIC xdj-nfs cdj_imported vdj_imported)
 
 # rekordbox mode: dbserver protocol (see .planning/plans/rekordbox-pc-mode_PLAN.md)
@@ -179,5 +187,19 @@ endif()
 
 add_executable(vdj-ui main.cpp)
 target_link_libraries(vdj-ui PRIVATE vdj-cdj)
+
+# A rebuilt binary loses its file capability, and UDP port 111 (LINK export) needs it: give it back after every link, as root.
+# sudo asks for the password in the terminal when it has to; a failure only prints a warning. Turn off with cmake -DVDJ_SETCAP=OFF .
+option(VDJ_SETCAP "setcap cap_net_bind_service on vdj-ui after building (uses sudo)" ON)
+if(VDJ_SETCAP)
+    find_program(SETCAP_PROGRAM setcap PATHS /usr/sbin /sbin)
+    if(SETCAP_PROGRAM)
+        add_custom_command(TARGET vdj-ui POST_BUILD
+            COMMAND sudo ${SETCAP_PROGRAM} cap_net_bind_service=+ep $<TARGET_FILE:vdj-ui>
+                    || ${CMAKE_COMMAND} -E echo "WARNING: setcap failed, UDP port 111 (LINK export) needs root. See doc/privileged-port-111.md"
+            COMMENT "setcap cap_net_bind_service on vdj-ui (sudo)"
+            VERBATIM)
+    endif()
+endif()
 
 install(TARGETS vdj-ui RUNTIME DESTINATION bin)

@@ -1,5 +1,5 @@
 #include "beat_chooser.h"
-#include "sampler_icons.h"
+#include "djtoolz_icons.h"
 
 #include <QEvent>
 #include <QHBoxLayout>
@@ -54,7 +54,7 @@ void BeatChooser::setMask(quint8 mask)
 void BeatChooser::updateIcons()
 {
     for (QToolButton* b : buttons_)
-        b->setIcon(samplerIcon(!isEnabled() ? SamplerIcon::Grey : b->isChecked() ? SamplerIcon::Red : SamplerIcon::Yellow));
+        b->setIcon(djtoolzIcon(!isEnabled() ? DjtoolzIcon::Grey : b->isChecked() ? DjtoolzIcon::Red : DjtoolzIcon::Yellow));
 }
 
 void BeatChooser::changeEvent(QEvent* event)

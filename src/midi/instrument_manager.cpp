@@ -179,9 +179,43 @@ QString InstrumentManager::midiInputKey() const
     return config_->loadValue(QStringLiteral("instruments"), QStringLiteral("midi_input"));
 }
 
-QString InstrumentManager::samplerInputKey() const
+QString InstrumentManager::djtoolzInputKey() const
 {
-    return config_->loadValue(QStringLiteral("instruments"), QStringLiteral("midi_input_sampler"));
+    return config_->loadValue(QStringLiteral("instruments"), QStringLiteral("midi_input_djtoolz"));
+}
+
+QStringList InstrumentManager::drumKitFolders(const ConfigManager* config)
+{
+    QStringList out;
+    const QString section = QStringLiteral("drum_kit_folders");
+    QStringList keys = config->keysOf(section);
+    keys.sort();
+    for (const QString& k : keys) {
+        const QString v = config->loadValue(section, k);
+        if (!v.isEmpty() && !out.contains(v)) out << v;
+    }
+    return out;
+}
+
+void InstrumentManager::setDrumKitFolders(ConfigManager* config, const QStringList& folders)
+{
+    const QString section = QStringLiteral("drum_kit_folders");
+    config->clearSection(section);
+    for (int i = 0; i < folders.size(); ++i)
+        config->saveValue(section, QStringLiteral("%1").arg(i + 1, 3, 10, QLatin1Char('0')), folders[i]);
+}
+
+void InstrumentManager::setDjtoolzInputKey(const QString& key)
+{
+    config_->saveValue(QStringLiteral("instruments"), QStringLiteral("midi_input_djtoolz"), key);
+}
+
+QString InstrumentManager::alsaNameFor(const QString& key) const
+{
+    if (key.isEmpty()) return QString();
+    for (const DetectedDevice& d : detectDevices())
+        if (d.key == key) return d.alsaName;
+    return QString();
 }
 
 QString InstrumentManager::midiOutputKey() const
@@ -241,7 +275,7 @@ void InstrumentManager::wireDevices()
 
     // MIDI input: controller → VDJ clock
     // (e.g. XDJ-700 MIDI out → vdj-ui:MIDI clock, exactly like adj_mod_xdj700)
-    for (const QString& inKey : { midiInputKey(), samplerInputKey() }) {
+    for (const QString& inKey : { midiInputKey(), djtoolzInputKey() }) {
         if (inKey.isEmpty() || vdjWritePort.clientId <= 0)
             continue;
         for (const DetectedDevice& d : devs) {

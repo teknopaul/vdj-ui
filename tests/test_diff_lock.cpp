@@ -203,7 +203,7 @@ void TestDiffLock::panelAndSyncButtons()
     QVERIFY(!remote->diffLockBar()->isVisibleTo(remote));
     QVERIFY(remote->controls()->syncVisible());
     auto* bar = vdjDeck->diffLockBar();
-    QCOMPARE(bar->targetMs(), 20);                // default 20 ms
+    QCOMPARE(bar->targetMs(), 0);                 // default 0 ms
     QCOMPARE(bar->nudgeButtons().size(), 4);
     QStringList labels;
     for (auto* b : bar->nudgeButtons()) labels << b->text();
@@ -251,15 +251,15 @@ void TestDiffLock::nudgeButtonsMoveTheTargetWhileLocked()
 
     bar->nudgeButtons()[3]->click();              // +10 while not locked: the playhead goes forward (a shorter beat), the target is not nudged
     QVERIFY(clock->queueBpm() > 120.0);
-    QCOMPARE(bar->targetMs(), 20);
+    QCOMPARE(bar->targetMs(), 0);
     QTest::qWait(600);
 
     for (auto* b : remote->findChildren<QPushButton*>())
         if (b->text() == QLatin1String("Sync")) b->click();
     bar->nudgeButtons()[3]->click();              // locked: +10 delays us by 10, so the offset to keep drops by 10
-    QCOMPARE(bar->targetMs(), 10);
+    QCOMPARE(bar->targetMs(), -10);
     bar->nudgeButtons()[1]->click();              // -1
-    QCOMPARE(bar->targetMs(), 11);
+    QCOMPARE(bar->targetMs(), -9);
     clock->stop();
     window.close();
 }
@@ -283,9 +283,9 @@ void TestDiffLock::deckBeatsNudgeTheSequencer()
     clock->setBpm(120.0);
     clock->start();
     for (auto* b : remote->findChildren<QPushButton*>())
-        if (b->text() == QLatin1String("Sync")) b->click();      // lock to deck 1, target 20 ms
+        if (b->text() == QLatin1String("Sync")) b->click();      // lock to deck 1, target 0 ms
 
-    // the deck's beats arrive 50 ms after ours: 30 ms too much, the limit is 20
+    // the deck's beats arrive 50 ms after ours: 50 ms off, the limit is 20
     for (int beat = 1; beat <= 3; ++beat)
         emit net->beatReceived(1, 120.0, beat, 50.0);
     QVERIFY(std::abs(clock->queueBpm() - 120.0) < 0.01);         // nothing until the last beat of the bar

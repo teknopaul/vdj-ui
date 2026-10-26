@@ -5,7 +5,7 @@
 
 namespace vdj {
 
-// The sampler's sample folder as a tree: sub folders and .wav files (any case), nothing else.
+// The DJ Tools's sample folder as a tree: sub folders and .wav files (any case), nothing else.
 class SampleTreeModel : public QFileSystemModel {
     Q_OBJECT
 

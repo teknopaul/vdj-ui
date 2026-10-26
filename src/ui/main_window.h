@@ -2,6 +2,7 @@
 #define MAIN_WINDOW_H
 
 #include <QMainWindow>
+#include "audio/deck_phase.h"
 #include <QFont>
 #include <QVector>
 #include <QElapsedTimer>
@@ -24,9 +25,10 @@ class AutoIpManager;
 class DeckArea;
 class DeckWidget;
 class ConfigManager;
+class QuantizeSettings;
+class JoystickSeqBridge;
 class NfsMountManager;
 class TrackBrowser;
-class NowPlaying;
 class DebugPanel;
 class AlsaClock;
 class PlayerPanel;
@@ -34,12 +36,12 @@ class DiffLockBar;
 class AutoipStatusWidget;
 class BpmRampWidget;
 class HudWindow;
-class SamplerPanel;
+class DjtoolzPanel;
 class RecordingPanel;
 class AudioRecorder;
 class InstrumentManager;
 class MidiMonitorDialog;
-class SamplerMidiControl;
+class DjtoolzMidiControl;
 class MidiRouter;
 class MidiMapInput;
 class PendriveRegistry;       // src/export/pendrive_registry.h
@@ -69,6 +71,10 @@ protected:
 private slots:
     void connectToNetwork();
     void disconnectFromNetwork();
+    // What leaving the link now would do to the sound the audience hears: a deck playing a track off our virtual pendrive, or
+    // we are the master the other decks follow. Empty when nothing is affected (or we are not connected).
+    QStringList liveImpact();
+    bool confirmLeavingLink(const QString& action);   // asks when liveImpact() is not empty; false = the user cancelled
 
 private:
     void openRekordboxFolder();
@@ -97,6 +103,9 @@ private:
     int bpmLockedTo() const;                     // the deck whose BPM we must follow (difflock), 0 = free
     void followLockedBpm();                      // adopt the locked deck's BPM
     void setVdjPlaying(bool playing);
+    void vdjRestart(bool quantize);                 // MIDI stop / start at the bar start; quantized: on the sync deck's next downbeat
+    void cancelPendingRestart();
+    void cancelPendingStart();
     void updateSequencerPlayhead();
     // difflock (see DiffLock): the sequencer keeps a fixed offset from one deck's beat
     void lockDiffLockTo(int playerId);
@@ -112,7 +121,7 @@ private:
     void setupRecording();
     void startMidiMap(const QString& path);
     void applyMidiMap();
-    void checkSamplerControllerConnected();
+    void checkDjtoolzControllerConnected();
     QString defaultMidiMapPath() const;
     void setVdjTransport(bool playing);
     void startBpmRamp(double targetBpm, int bars);
@@ -145,11 +154,16 @@ private:
     DiffLock difflock_;
     AutoIpManager* autoIp_;
     ConfigManager* config_;
+    QTimer* startTimer_ = nullptr;              // single shot: a quantized Play waiting for the sync deck's beat
+    int pendingStartPid_ = 0;
+    bool staleWarned_ = false;
+    QTimer* restartTimer_ = nullptr;            // single shot: a quantized restart waiting for its moment
+    DeckPhase deckPhase_;                       // where the other decks are in their beat / bar (fed from their beat packets)
+    QuantizeSettings* quantize_ = nullptr;      // the DJ's global quantize resolution
     NfsMountManager* nfs_;
     TrackBrowser* trackBrowser_;
-    NowPlaying* nowPlaying_;
     PlayerPanel* playerPanel_ = nullptr;
-    SamplerPanel* samplerPanel_ = nullptr;
+    DjtoolzPanel* djtoolzPanel_ = nullptr;
     DebugPanel* debugPanel_;
     QDockWidget* debugDock_;
     bool debugMode_ = false;
@@ -186,11 +200,12 @@ private:
     MidiRouter* midiRouter_ = nullptr;
     InstrumentManager* instruments_ = nullptr;
     MidiMonitorDialog* midiMonitor_ = nullptr;
-    SamplerMidiControl* samplerControl_ = nullptr;
+    DjtoolzMidiControl* djtoolzControl_ = nullptr;
     QElapsedTimer followersClock_;       // throttles the ALSA subscriber query
     QStringList followerNames_;
     std::map<int, BeatTempo> beatTempo_;   // per deck: tempo measured from the beat packets
     MidiMapInput* midiIn_ = nullptr;
+    JoystickSeqBridge* joystick_ = nullptr;
     QLabel* statusDecks_;
     QTimer* demoClock_;
     QTimer* sequencerTimer_ = nullptr;

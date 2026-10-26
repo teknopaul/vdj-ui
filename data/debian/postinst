@@ -1,0 +1,13 @@
+#!/bin/sh
+# Let vdj-ui listen on the privileged UDP port 111 (portmapper for the LINK export) without root. See doc/privileged-port-111.md.
+# File capabilities are lost whenever the binary is replaced, so this runs on every install and upgrade.
+set -e
+case "$1" in
+    configure)
+        BIN=$(readlink -f /usr/bin/vdj-ui 2>/dev/null || true)
+        if [ -n "$BIN" ] && [ -x "$BIN" ] && command -v setcap >/dev/null 2>&1; then
+            setcap cap_net_bind_service=+ep "$BIN" || echo "vdj-ui: setcap failed, port 111 needs root (see doc/privileged-port-111.md)" >&2
+        fi
+        ;;
+esac
+exit 0

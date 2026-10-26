@@ -11,12 +11,13 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QTableWidget;
+class QTimer;
 
 namespace vdj {
 
-class SamplerMidiControl;
+class DjtoolzMidiControl;
 
-// Edits the sampler part of the controller's .adjmm file: what each strip's buttons, knob and fader send. "Learn" waits for the
+// Edits the DJ Tools part of the controller's .adjmm file: what each strip's buttons, knob and fader send. "Learn" waits for the
 // next event of the controller and writes it into the selected cell the way adj_midilearn would (buttons: the pressed value,
 // knobs and faders: any value, notes: N <note>). Save keeps every other line of the file (deck ops, comments).
 class ControllerDialog : public QDialog {
@@ -27,11 +28,12 @@ public:
     static constexpr int kRows = 9;
     static constexpr int kStrips = 8;
 
-    ControllerDialog(SamplerMidiControl* control, QWidget* parent = nullptr);
+    ControllerDialog(DjtoolzMidiControl* control, QWidget* parent = nullptr);
     ~ControllerDialog() override;
 
     QTableWidget* table() const { return table_; }
     QPushButton* learnButton() const { return learn_; }
+    QPushButton* skipButton() const { return skip_; }
     QPushButton* saveButton() const { return save_; }
     QPushButton* resetButton() const { return reset_; }
     QPushButton* clearButton() const { return clear_; }
@@ -46,6 +48,8 @@ public:
     // Name of the op of a table cell ("strip3_fader", "track_fwd"); empty for a cell without one
     static QString opNameFor(int row, int strip);
     void startLearn(int row, int strip);             // as the Learn button does for the selected cell
+    // Pause after a control is learned before the next cell listens (a button sends press and release); default 500 ms
+    void setAdvanceDelayMs(int ms) { advanceDelayMs_ = ms; }
     bool learning() const { return learnRow_ >= 0; }
     // The cell as shown: "ch 2 / CC 18", "any / CC 18", "any / N 36" or "-"
     QString cellText(int row, int strip) const;
@@ -60,10 +64,13 @@ private:
     void fillTable();
     void onLearned(int channel, int controller, bool isNote, int value);
     void learnSelected();
+    void skipLearn();
+    void advanceLearn(int row, int strip);
+    static int nextRow(int row, int strip);
     void stopLearning();
     void setOp(const QString& name, const AdjmmOp& op);
 
-    SamplerMidiControl* control_;
+    DjtoolzMidiControl* control_;
     QLabel* path_;
     QLineEdit* source_;
     QCheckBox* pickup_;
@@ -72,6 +79,7 @@ private:
     QCheckBox* fill_;
     QTableWidget* table_;
     QPushButton* learn_;
+    QPushButton* skip_;
     QPushButton* clear_;
     QPushButton* reset_;
     QPushButton* save_;
@@ -80,6 +88,8 @@ private:
     std::map<QString, AdjmmOp> ops_;                 // what the table shows (an op with controller ADJMM_UNSET = removed)
     std::map<QString, AdjmmOp> orig_;                // as read from the file: only changed ops are written back
     QHash<QString, QString> origDirectives_;
+    QTimer* advanceTimer_ = nullptr;
+    int advanceDelayMs_ = 500;
     int learnRow_ = -1;
     int learnStrip_ = 0;
 };

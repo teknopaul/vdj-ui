@@ -1,4 +1,5 @@
 #include "main_window.h"
+#include "audio/audio_player.h"
 #include "deck_area.h"
 #include "deck_widget.h"
 #include "beat_grid_widget.h"
@@ -15,7 +16,6 @@
 #include "config/config_manager.h"
 #include "nfs/nfs_mount_manager.h"
 #include "track_browser.h"
-#include "now_playing.h"
 #include "debug_panel.h"
 #include "debug/packet_logger.h"
 #include "debug_overlay.h"
@@ -23,7 +23,7 @@
 #include "autoip_status_widget.h"
 #include "bpm_ramp_widget.h"
 #include "hud_window.h"
-#include "sampler_panel.h"
+#include "djtoolz_panel.h"
 #include "recording_panel.h"
 #include "pendrive_clone_dialog.h"
 #include "virtual_pendrives_dialog.h"
@@ -33,17 +33,23 @@
 #include "instrument_config_dialog.h"
 #include "midi_monitor_dialog.h"
 #include "audio/audio_recorder.h"
+#include "audio/quantize_settings.h"
+#include "midi/joystick_seq_bridge.h"
+#include <QActionGroup>
 #include "midi/instrument_manager.h"
 #include "midi/midi_map_input.h"
-#include "midi/sampler_midi_control.h"
+#include "midi/djtoolz_midi_control.h"
 #include "controller_dialog.h"
-#include "sampler_controller.h"
+#include "djtoolz_controller.h"
 #include "midi/midi_router.h"
 #include "midi/alsa_clock.h"
 #include "diff_lock_bar.h"
 #include <cmath>
+#include <chrono>
 
 #include <QMenuBar>
+#include <QToolButton>
+#include <QIcon>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFontDialog>
@@ -80,7 +86,7 @@ namespace vdj {
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
-    setWindowTitle("VDJ UI");
+    setWindowTitle("🎧 VDJ UI");
     setMinimumWidth(1400);
     // Open at a height that fits the available screen: with the title bar,
     // menu, toolbar and status bar the full window must not overflow the
@@ -106,12 +112,32 @@ MainWindow::MainWindow(QWidget* parent)
     network_->setBeatProbe([this](double* ms) { return clock_ && clock_->beatOffsetMs(ms); });
     autoIp_ = new AutoIpManager(this);
     config_ = new ConfigManager(this);
+    quantize_ = new QuantizeSettings(config_, this);
+    restartTimer_ = new QTimer(this);
+    restartTimer_->setSingleShot(true);
+    restartTimer_->setTimerType(Qt::PreciseTimer);
+    startTimer_ = new QTimer(this);
+    startTimer_->setSingleShot(true);
+    startTimer_->setTimerType(Qt::PreciseTimer);
+    connect(startTimer_, &QTimer::timeout, this, [this]() {
+        const int pid = pendingStartPid_;
+        pendingStartPid_ = 0;
+        if (auto* deck = deckAt(pid))
+            deck->setPlaying(true);
+        network_->setLocalPlaying(true);
+        setVdjPlaying(true);
+    });
+    connect(restartTimer_, &QTimer::timeout, this, [this]() {
+        if (!clock_) return;
+        clock_->restart();
+        updateSequencerPlayhead();
+        statusBar()->showMessage(QStringLiteral("Restarted"), 2000);
+    });
     applyAppFont(config_->loadValue(QStringLiteral("ui"), QStringLiteral("font_family")),
                  config_->loadValue(QStringLiteral("ui"), QStringLiteral("font_size")).toInt());
     currentInterface_ = config_->loadValue(QStringLiteral("network"), QStringLiteral("interface"));   // last NIC used for prolink
     nfs_ = new NfsMountManager(this);
     trackBrowser_ = nullptr; // created in setupDemoDecks
-    nowPlaying_ = nullptr;
     QObject::connect(network_, &NetworkManager::connected, this, [this]() {
         statusNetwork_->setText("Prolink: connected");
         updateRampEnabled();
@@ -124,7 +150,6 @@ MainWindow::MainWindow(QWidget* parent)
         for (int i = 0; i < deckArea_->deckCount(); ++i)
             if (deckArea_->deckAt(i)->model() == QLatin1String("VDJ")) {
                 deckArea_->deckAt(i)->setPlayerId(localId);
-                nowPlaying_->setDeck(localId);
             }
         deckOrder_ = { localId };
         statusDecks_->setText(QString("Decks: %1").arg(deckArea_->deckCount()));
@@ -154,10 +179,6 @@ MainWindow::MainWindow(QWidget* parent)
         if (nfs_) {
             const auto players = nfs_->mountedPlayerIds();
             for (int pid : players) nfs_->unmountPlayer(pid);
-        }
-        if (nowPlaying_) {
-            nowPlaying_->setNfsStatus(false);
-            nowPlaying_->setDeck(5);
         }
         updateRampEnabled();
         statusBar()->showMessage(QStringLiteral("Disconnected from the link"), 4000);
@@ -245,6 +266,8 @@ MainWindow::MainWindow(QWidget* parent)
             if (nudge) clock_->nudgeMillis(nudge);
             if (pid == difflock_.player()) refreshDiffLock();
         }
+        if (!isVdjDeck(pid))
+            deckPhase_.setBpm(pid, bpm);
         for (int i = 0; i < deckArea_->deckCount(); ++i) {
             auto* deck = deckArea_->deckAt(i);
             if (deck && deck->playerId() == pid) {
@@ -258,11 +281,10 @@ MainWindow::MainWindow(QWidget* parent)
             }
         }
         if (pid == bpmLockedTo()) followLockedBpm();
-        if (nowPlaying_)
-            nowPlaying_->setBpm(bpm);
     });
     QObject::connect(network_, &NetworkManager::beatTimed, this, [this](int pid, int barPos, qint64 steadyNs) {
         if (isVdjDeck(pid)) return;                  // ours: the ALSA sequencer's tempo is shown instead
+        deckPhase_.onBeat(pid, double(steadyNs) / 1e6, barPos);   // the packet's arrival, steady clock
         BeatTempo& tempo = beatTempo_[pid];
         tempo.addBeat(barPos, steadyNs);
         if (auto* deck = deckAt(pid))
@@ -289,9 +311,6 @@ MainWindow::MainWindow(QWidget* parent)
         if (nfs_->isMounted(pid)) {
             nfs_->unmountPlayer(pid);
         }
-        if (nowPlaying_ && nowPlaying_->deck() == pid) {
-            nowPlaying_->setNfsStatus(false);
-        }
         statusBar()->showMessage(QStringLiteral("Deck %1 left the network").arg(pid), 3000);
     });
 
@@ -300,12 +319,10 @@ MainWindow::MainWindow(QWidget* parent)
             trackBrowser_->setPlayerId(pid);
             trackBrowser_->setMount(mp);
         }
-        if (nowPlaying_) nowPlaying_->setNfsStatus(true);
         statusBar()->showMessage(QStringLiteral("NFS mounted for deck %1").arg(pid), 3000);
     });
     QObject::connect(nfs_, &NfsMountManager::mountFailed, this, [this](int pid, const QString& err) {
         statusBar()->showMessage(QStringLiteral("NFS mount failed (deck %1): %2").arg(pid).arg(err), 5000);
-        if (nowPlaying_) nowPlaying_->setNfsStatus(false);
     });
 
     setupMenus();
@@ -338,7 +355,7 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
     if (midiIn_) midiIn_->stop();
-    if (samplerPanel_) samplerPanel_->shutdown();   // its threads read the clock
+    if (djtoolzPanel_) djtoolzPanel_->shutdown();   // its threads read the clock
     delete clock_;
 }
 
@@ -347,25 +364,52 @@ void MainWindow::connectDeckSignals()
     QObject::connect(trackBrowser_, &TrackBrowser::trackSelected, this,
                      [this](int pid, const QString& title, const QString& artist,
                             const QString& bpm, const QString& key) {
-        if (nowPlaying_) {
-            nowPlaying_->setDeck(pid);
-            nowPlaying_->setTrack(title, artist, bpm, key);
-        }
-        statusBar()->showMessage(QStringLiteral("Now playing: %1").arg(title), 3000);
+        statusBar()->showMessage(QStringLiteral("Selected: %1").arg(title), 3000);
     });
     QObject::connect(trackBrowser_, &TrackBrowser::previewRequested, playerPanel_, &PlayerPanel::loadTrack);
     QObject::connect(playerPanel_, &PlayerPanel::status, this, [this](const QString& msg) {
         statusBar()->showMessage(msg, 5000);
     });
     QObject::connect(deckArea_, &DeckArea::playPauseClicked, this, [this](int pid, bool play) {
+        const bool vdj = isVdjDeck(pid);
+        if (vdj) cancelPendingStart();                    // pressing the button again cancels a Play that is waiting
+        if (vdj && play) {
+            // Q on and synced to a deck: start on that deck's next grid point (the global resolution); otherwise at once
+            const double nowMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+            DeckControls* ctl = deckAt(pid) ? deckAt(pid)->controls() : nullptr;
+            bool stale = false;
+            const double wait = playWaitMs(ctl && ctl->quantizeOn(), difflock_.player(), deckPhase_, nowMs, quantize_->subdivisions(), &stale);
+            if (stale && !staleWarned_) {
+                staleWarned_ = true;
+                statusBar()->showMessage(QStringLiteral("Quantize: sync deck not seen"), 4000);
+            } else if (!stale) {
+                staleWarned_ = false;
+            }
+            if (wait > 0.0) {
+                pendingStartPid_ = pid;
+                startTimer_->start(int(std::lround(wait)));
+                statusBar()->showMessage(QStringLiteral("Play queued (%1 ms)").arg(qRound(wait)), 4000);
+                applyPitchFromDeck(pid);
+                return;                                   // the timer does the rest
+            }
+        }
         // Reflect transport state so the demo clock / beat grid actually runs
         // for the local deck; on a live link the next status packet keeps it
         // in sync anyway.
         if (auto* deck = deckAt(pid))
             deck->setPlaying(play);
         network_->setLocalPlaying(play);
-        if (isVdjDeck(pid)) setVdjPlaying(play);
+        if (vdj) setVdjPlaying(play);
         applyPitchFromDeck(pid);
+    });
+    QObject::connect(deckArea_, &DeckArea::restartClicked, this, [this](int pid, bool quantize) {
+        if (isVdjDeck(pid)) vdjRestart(quantize);
+    });
+    QObject::connect(deckArea_, &DeckArea::beatJumpClicked, this, [this](int pid, int beats) {
+        // the bar position moves, the clock does not: inherently on the beat, Q makes no difference
+        if (!isVdjDeck(pid) || !clock_ || !clock_->running()) return;
+        clock_->shiftBeats(beats);
+        updateSequencerPlayhead();
     });
     QObject::connect(deckArea_, &DeckArea::syncClicked, this, [this](int pid) {
         if (isVdjDeck(pid)) syncToMaster();
@@ -445,7 +489,7 @@ void MainWindow::setupMenus()
 
     QMenu* view = menuBar()->addMenu("&View");
     QAction* fullscr = view->addAction("Full&screen");
-    fullscr->setShortcut(Qt::CTRL | Qt::Key_F11);   // F1..F12 switch the sampler modules
+    fullscr->setShortcut(Qt::CTRL | Qt::Key_F11);   // F1..F12 switch the DJ Tools tools
     connect(fullscr, &QAction::triggered, this, [this]() {
         if (isFullScreen()) showNormal();
         else showFullScreen();
@@ -455,6 +499,14 @@ void MainWindow::setupMenus()
     hudAction_->setShortcut(Qt::CTRL | Qt::Key_H);
     hudAction_->setCheckable(true);
     connect(hudAction_, &QAction::toggled, this, &MainWindow::showHud);
+
+    QAction* browserAction = view->addAction("Rekordbox &Folder View");
+    browserAction->setCheckable(true);
+    browserAction->setChecked(config_->loadValue(QStringLiteral("ui"), QStringLiteral("rekordbox_view")) != QLatin1String("0"));
+    connect(browserAction, &QAction::toggled, this, [this](bool on) {
+        config_->saveValue(QStringLiteral("ui"), QStringLiteral("rekordbox_view"), on ? QStringLiteral("1") : QStringLiteral("0"));
+        if (trackBrowser_) trackBrowser_->setVisible(on);
+    });
 
     QAction* playerAction = view->addAction("Local Track &Player");
     playerAction->setCheckable(true);
@@ -467,15 +519,15 @@ void MainWindow::setupMenus()
         playerPanel_->setVisible(on);
     });
 
-    QAction* samplerAction = view->addAction("&Sampler");
-    samplerAction->setCheckable(true);
-    samplerAction->setToolTip("The live sampler (bombomatic, stabs, acid loops, one shots, MIDI notes) in time with the VDJ sequencer. "
+    QAction* djtoolzAction = view->addAction("DJ &Tools");
+    djtoolzAction->setCheckable(true);
+    djtoolzAction->setToolTip("The live DJ Tools (bombomatic, stabs, acid loops, one shots, MIDI notes) in time with the VDJ sequencer. "
                               "Hiding the panel does not stop it.");
-    samplerAction->setChecked(config_->loadValue(QStringLiteral("ui"), QStringLiteral("sampler")) == QLatin1String("1"));
-    connect(samplerAction, &QAction::toggled, this, [this](bool on) {
-        config_->saveValue(QStringLiteral("ui"), QStringLiteral("sampler"), on ? QStringLiteral("1") : QStringLiteral("0"));
-        if (samplerPanel_)
-            samplerPanel_->setVisible(on);
+    djtoolzAction->setChecked(config_->loadValue(QStringLiteral("ui"), QStringLiteral("djtoolz")) == QLatin1String("1"));
+    connect(djtoolzAction, &QAction::toggled, this, [this](bool on) {
+        config_->saveValue(QStringLiteral("ui"), QStringLiteral("djtoolz"), on ? QStringLiteral("1") : QStringLiteral("0"));
+        if (djtoolzPanel_)
+            djtoolzPanel_->setVisible(on);
     });
 
     recordAction_ = view->addAction("&Recording Panel");
@@ -504,6 +556,16 @@ void MainWindow::setupMenus()
     QAction* disconnectAction = network->addAction("&Disconnect");
     connect(connectAction_, &QAction::triggered, this, &MainWindow::connectToNetwork);
     connect(disconnectAction, &QAction::triggered, this, &MainWindow::disconnectFromNetwork);
+
+    // Connect: plain push button at the left of the menu bar (same action as Network > Connect)
+    auto* connectBtn = new QToolButton(menuBar());
+    connectBtn->setDefaultAction(connectAction_);
+    connectBtn->setIcon(QIcon(QStringLiteral(":/img/connect-22.png")));
+    connectBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    connectBtn->setToolTip(QStringLiteral("Connect to the ProLink network"));
+    connectBtn->setAutoRaise(true);
+    connectBtn->setFixedSize(22, 22);
+    menuBar()->setCornerWidget(connectBtn, Qt::TopLeftCorner);
 
     network->addSeparator();
     linkExportAction_ = network->addAction("E&xport the Loaded Database as a LINK Player");
@@ -539,6 +601,16 @@ void MainWindow::setupMenus()
     QAction* fontAction = configMenu->addAction("Application &Font...");
     fontAction->setToolTip("The font for the whole app");
     connect(fontAction, &QAction::triggered, this, &MainWindow::chooseAppFont);
+    QMenu* quantizeMenu = configMenu->addMenu("&Quantize");
+    quantizeMenu->setToolTip("How close to the beat quantized jumps and starts land: the grid step for every quantize button");
+    auto* quantizeGroup = new QActionGroup(this);
+    for (auto r : {QuantizeSettings::Beat, QuantizeSettings::Half, QuantizeSettings::Quarter}) {
+        QAction* a = quantizeMenu->addAction(QuantizeSettings::label(r));
+        a->setCheckable(true);
+        a->setChecked(quantize_->resolution() == r);
+        quantizeGroup->addAction(a);
+        connect(a, &QAction::triggered, this, [this, r]() { quantize_->setResolution(r); });
+    }
     configMenu->addSeparator();
     QAction* usbAction = configMenu->addAction("&USB / MIDI...");
     QAction* instAction = configMenu->addAction("&Instruments...");
@@ -556,6 +628,8 @@ void MainWindow::setupMenus()
         InstrumentConfigDialog dlg(instruments_, config_, this);
         dlg.exec();
         applyMidiMap();
+        djtoolzPanel_->drumKits()->setImportFolders(InstrumentManager::drumKitFolders(config_));
+        djtoolzPanel_->drumKitsChanged();
     });
     connect(usbAction, &QAction::triggered, this, [this]() {
         UsbConfigDialog dlg(config_, this);
@@ -591,6 +665,15 @@ void MainWindow::setupMenus()
         }
         box.exec();
     });
+
+    // App logo at the right of the menu bar opens the About box
+    auto* logoBtn = new QToolButton(menuBar());
+    logoBtn->setIcon(QIcon(QStringLiteral(":/img/vdj-22x22.png")));
+    logoBtn->setToolTip(QStringLiteral("About VDJ UI"));
+    logoBtn->setAutoRaise(true);
+    logoBtn->setFixedSize(22, 22);
+    connect(logoBtn, &QToolButton::clicked, aboutAction, &QAction::trigger);
+    menuBar()->setCornerWidget(logoBtn, Qt::TopRightCorner);
 }
 
 void MainWindow::setAutoIp(bool on)
@@ -931,7 +1014,8 @@ void MainWindow::setupDemoDecks()
     deckArea_ = new DeckArea(this);
     deckArea_->setMinimumWidth(1000);
     trackBrowser_ = new TrackBrowser(this);
-    nowPlaying_ = new NowPlaying(this);
+    if (config_->loadValue(QStringLiteral("ui"), QStringLiteral("rekordbox_view")) == QLatin1String("0"))
+        trackBrowser_->setVisible(false);
 
     auto* splitter = new QSplitter(Qt::Horizontal, this);
     splitter->addWidget(deckArea_);
@@ -961,52 +1045,55 @@ void MainWindow::setupDemoDecks()
     auto* centralLayout = new QVBoxLayout(central);
     centralLayout->setContentsMargins(0, 0, 0, 0);
     playerPanel_ = new PlayerPanel(this);
+    playerPanel_->setQuantizeSettings(quantize_);
     playerPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("local_player")) != QLatin1String("0"));
     centralLayout->addWidget(playerPanel_);
-    samplerPanel_ = new SamplerPanel(clock_, ConfigManager::configDir(), this);
-    samplerPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("sampler")) == QLatin1String("1"));
+    djtoolzPanel_ = new DjtoolzPanel(clock_, ConfigManager::configDir(), this);
+    playerPanel_->player()->setFxRack(djtoolzPanel_->fxRack());     // the FX tools colour the local player too
+    djtoolzPanel_->drumKits()->setImportFolders(InstrumentManager::drumKitFolders(config_));
+    djtoolzPanel_->drumKitsChanged();
+    djtoolzPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("djtoolz")) == QLatin1String("1"));
     {
         bool ok = false;
-        const double latency = config_->loadValue(QStringLiteral("sampler"), QStringLiteral("latency_ms")).toDouble(&ok);
+        const double latency = config_->loadValue(QStringLiteral("djtoolz"), QStringLiteral("latency_ms")).toDouble(&ok);
         if (ok && latency > 0)
-            samplerPanel_->setLatencyMs(latency);
-        // the sampler plays on the output chosen for the local track player
-        auto syncDevice = [this]() { samplerPanel_->engine()->setDevice(playerPanel_->deviceCombo()->currentData().toString()); };
+            djtoolzPanel_->setLatencyMs(latency);
+        // the DJ Tools plays on the output chosen for the local track player
+        auto syncDevice = [this]() { djtoolzPanel_->engine()->setDevice(playerPanel_->deviceCombo()->currentData().toString()); };
         connect(playerPanel_->deviceCombo(), QOverload<int>::of(&QComboBox::currentIndexChanged), this, syncDevice);
         syncDevice();
     }
-    for (int i = 0; i < SamplerPanel::kFunctionKeys; ++i) {
-        // window wide, and the panel may be hidden: the sampler keeps playing and can still be switched
+    for (int i = 0; i < DjtoolzPanel::kFunctionKeys; ++i) {
+        // window wide, and the panel may be hidden: the DJ Tools keeps playing and can still be switched
         auto* sc = new QShortcut(QKeySequence(Qt::Key_F1 + i), this);
         sc->setContext(Qt::WindowShortcut);
-        connect(sc, &QShortcut::activated, this, [this, i]() { samplerPanel_->toggleModuleAt(i); });
+        connect(sc, &QShortcut::activated, this, [this, i]() { djtoolzPanel_->toggleToolAt(i); });
     }
-    connect(samplerPanel_, &SamplerPanel::message, this, [this](const QString& m) { statusBar()->showMessage(m, 5000); });
+    connect(djtoolzPanel_, &DjtoolzPanel::message, this, [this](const QString& m) { statusBar()->showMessage(m, 5000); });
     bpmRamp_ = new BpmRampWidget(this);
     connect(bpmRamp_, &BpmRampWidget::rampRequested, this, &MainWindow::startBpmRamp);
     connect(bpmRamp_, &BpmRampWidget::bpmNudged, this, [this](double d) { nudgeLocalBpm(d); });
-    // the sampler sits above the rest in a vertical splitter: drag the handle between them to give it more room for many modules
+    // the DJ Tools sits above the rest in a vertical splitter: drag the handle between them to give it more room for many tools
     auto* lower = new QWidget(this);
     auto* lowerLayout = new QVBoxLayout(lower);
     lowerLayout->setContentsMargins(0, 0, 0, 0);
     lowerLayout->addWidget(bpmRamp_);
     lowerLayout->addWidget(splitter, 1);
-    auto* samplerSplit = new QSplitter(Qt::Vertical, this);
-    samplerSplit->setChildrenCollapsible(false);
-    samplerSplit->addWidget(samplerPanel_);
-    samplerSplit->addWidget(lower);
-    samplerSplit->setStretchFactor(0, 0);
-    samplerSplit->setStretchFactor(1, 1);
+    auto* djtoolzSplit = new QSplitter(Qt::Vertical, this);
+    djtoolzSplit->setChildrenCollapsible(false);
+    djtoolzSplit->addWidget(djtoolzPanel_);
+    djtoolzSplit->addWidget(lower);
+    djtoolzSplit->setStretchFactor(0, 0);
+    djtoolzSplit->setStretchFactor(1, 1);
     {
-        const int h = config_->loadValue(QStringLiteral("ui"), QStringLiteral("sampler_height")).toInt();
-        samplerSplit->setSizes(QList<int>() << (h >= 120 ? h : 260) << 1000);
+        const int h = config_->loadValue(QStringLiteral("ui"), QStringLiteral("djtoolz_height")).toInt();
+        djtoolzSplit->setSizes(QList<int>() << (h >= 120 ? h : 260) << 1000);
     }
-    connect(samplerSplit, &QSplitter::splitterMoved, this, [this, samplerSplit]() {
-        if (samplerPanel_->isVisible())
-            config_->saveValue(QStringLiteral("ui"), QStringLiteral("sampler_height"), QString::number(samplerSplit->sizes().value(0)));
+    connect(djtoolzSplit, &QSplitter::splitterMoved, this, [this, djtoolzSplit]() {
+        if (djtoolzPanel_->isVisible())
+            config_->saveValue(QStringLiteral("ui"), QStringLiteral("djtoolz_height"), QString::number(djtoolzSplit->sizes().value(0)));
     });
-    centralLayout->addWidget(samplerSplit, 1);
-    centralLayout->addWidget(nowPlaying_);
+    centralLayout->addWidget(djtoolzSplit, 1);
     setCentralWidget(central);
 
     auto* master = deckArea_->addDeck(5);
@@ -1028,7 +1115,6 @@ void MainWindow::setupDemoDecks()
     statusDecks_->setText("Decks: 1");
     setMasterStatus(-1);
 
-    nowPlaying_->setDeck(5);
 
     demoClock_ = new QTimer(this);
     demoClock_->setInterval(16); // ~60fps
@@ -1309,7 +1395,38 @@ void MainWindow::setLinkExport(const QString& folder)         // --link-export D
 
 void MainWindow::disconnectFromNetwork()
 {
+    if (!confirmLeavingLink(tr("Disconnect")))
+        return;
     network_->disconnectFromLink();
+}
+
+QStringList MainWindow::liveImpact()
+{
+    QStringList reasons;
+    if (!network_ || !network_->isConnected())
+        return reasons;
+    const QString usb = network_->usbInUseBy();
+    if (!usb.isEmpty())
+        reasons << tr("A deck is playing from our virtual pendrive (%1): its audio would stop.").arg(usb);
+    if (masterPid_ == localVdjId())
+        reasons << tr("We are the master: the other decks follow our tempo and would lose it.");
+    return reasons;
+}
+
+bool MainWindow::confirmLeavingLink(const QString& action)
+{
+    const QStringList reasons = liveImpact();
+    if (reasons.isEmpty())
+        return true;
+    QMessageBox box(QMessageBox::Warning, tr("%1 while live").arg(action),
+                    tr("%1 now would affect what the audience hears:\n\n%2").arg(action, reasons.join(QStringLiteral("\n"))),
+                    QMessageBox::NoButton, this);
+    QPushButton* go = box.addButton(tr("%1 anyway").arg(action), QMessageBox::DestructiveRole);
+    QPushButton* stay = box.addButton(tr("Cancel"), QMessageBox::RejectRole);
+    box.setDefaultButton(stay);
+    box.setEscapeButton(stay);
+    box.exec();
+    return box.clickedButton() == go;
 }
 
 DeckWidget* MainWindow::deckAt(int playerId) const
@@ -1464,9 +1581,43 @@ bool MainWindow::isVdjDeck(int playerId) const
     return isVdjRow(deckAt(playerId));
 }
 
+void MainWindow::cancelPendingStart()
+{
+    if (startTimer_) startTimer_->stop();
+    pendingStartPid_ = 0;
+}
+
+void MainWindow::cancelPendingRestart()
+{
+    if (restartTimer_) restartTimer_->stop();
+}
+
+// The one entry point for restarting the sequencer (the drum machines start their pattern again, our bar position is 1).
+// Quantized: wait for the sync deck's next downbeat so our bar 1 coincides with its bar; as the master, for our own next beat.
+void MainWindow::vdjRestart(bool quantize)
+{
+    if (!clock_ || !clock_->running()) return;
+    cancelPendingRestart();                          // a newer request replaces the pending one
+    if (!quantize) {
+        clock_->restart();
+        updateSequencerPlayhead();
+        return;
+    }
+    const double nowMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    bool fallback = false;
+    const double wait = restartWaitMs(difflock_.player(), deckPhase_, nowMs, clock_->positionBeats(), clock_->effectiveBpm(), &fallback);
+    if (fallback)
+        statusBar()->showMessage(QStringLiteral("Quantize: sync deck not seen, restarting on our own beat"), 4000);
+    else
+        statusBar()->showMessage(QStringLiteral("Restart queued (%1 ms)").arg(qRound(wait)), 4000);
+    restartTimer_->start(std::max(0, int(std::lround(wait))));
+}
+
 void MainWindow::setVdjPlaying(bool playing)
 {
     if (!clock_) return;
+    cancelPendingRestart();
+    cancelPendingStart();
     if (playing) clock_->start();
     else clock_->stop();
     updateSequencerPlayhead();
@@ -1475,7 +1626,9 @@ void MainWindow::setVdjPlaying(bool playing)
 // While the ALSA sequencer runs, the VDJ rows' four beat grids show its queue position instead of the network's.
 void MainWindow::updateSequencerPlayhead()
 {
-    const double beats = clock_ ? clock_->positionBeats() : -1.0;
+    // barBeats = beats since start plus the whole-beat offset of ⏪/⏩: the label moves, the clock does not
+    const double beats = clock_ ? clock_->barBeats() : -1.0;
+    const int seqBarPos = clock_ ? clock_->barPos() : 0;
     // Subscribers change rarely; querying ALSA every 16 ms frame is needless.
     const bool refreshFollowers = !followersClock_.isValid() || followersClock_.elapsed() >= 500;
     if (refreshFollowers) {
@@ -1486,6 +1639,11 @@ void MainWindow::updateSequencerPlayhead()
         DeckWidget* d = deckArea_->deckAt(i);
         if (!isVdjRow(d)) continue;
         d->beatGrid()->setSequencerBeats(beats);
+        if (d->controls())
+            d->controls()->setJumpsEnabled(clock_ && clock_->running());
+        // the bar position the VDJ sends on the link (broadcastBeat reads it from the controls) is the sequencer's
+        if (seqBarPos > 0 && d->controls() && d->controls()->barPos() != seqBarPos)
+            d->setBarPos(seqBarPos);
         if (refreshFollowers && d->diffLockBar())
             d->diffLockBar()->setSequencerFollowers(followerNames_, clock_ && clock_->running());
         if (refreshFollowers)
@@ -1509,6 +1667,10 @@ void MainWindow::setDebugModeFromCli()
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
+    if (!confirmLeavingLink(tr("Quit"))) {
+        event->ignore();
+        return;
+    }
     shutdown();
     QMainWindow::closeEvent(event);
 }
@@ -1524,6 +1686,10 @@ void MainWindow::shutdown()
         midiIn_->stop();
     if (hud_)
         hud_->close();
+    cancelPendingRestart();
+    cancelPendingStart();
+    if (joystick_)
+        joystick_->stop();
     if (clock_) {
         clock_->stop();
     }
@@ -1645,12 +1811,8 @@ void MainWindow::setupMidi()
     connect(midiIn_, &MidiMapInput::toggleRequested, this, [this]() {
         setVdjTransport(!(clock_ && clock_->running()));
     });
-    connect(midiIn_, &MidiMapInput::restartRequested, this, [this]() {
-        if (!clock_) return;
-        clock_->stop();
-        clock_->start();                           // MIDI start + clock from tick 0
-        updateSequencerPlayhead();
-    });
+    // q_restart is always quantized (like adj): the sync deck's next downbeat, or our own next beat when we are the master
+    connect(midiIn_, &MidiMapInput::restartRequested, this, [this]() { vdjRestart(true); });
     connect(midiIn_, &MidiMapInput::nudgeRequested, this, &MainWindow::nudgeSequencer);
     connect(midiIn_, &MidiMapInput::tempoAdjustRequested, this, &MainWindow::nudgeLocalBpm);
     connect(midiIn_, &MidiMapInput::copyMasterRequested, this,
@@ -1660,40 +1822,51 @@ void MainWindow::setupMidi()
     connect(instruments_, &InstrumentManager::wired, this,
             [this](const QString& d) { statusBar()->showMessage(QStringLiteral("MIDI: ") + d, 6000); });
 
+    // A joystick does exactly what the MIDI map does (untested on real hardware: only its event map is unit tested)
+    joystick_ = new JoystickSeqBridge(config_, this);
+    connect(joystick_, &JoystickSeqBridge::toggleRequested, this, [this]() {
+        setVdjTransport(!(clock_ && clock_->running()));
+    });
+    connect(joystick_, &JoystickSeqBridge::stopRequested, this, [this]() { setVdjTransport(false); });
+    connect(joystick_, &JoystickSeqBridge::quantizedRestartRequested, this, [this]() { vdjRestart(true); });
+    connect(joystick_, &JoystickSeqBridge::nudgeRequested, this, &MainWindow::nudgeSequencer);
+    connect(joystick_, &JoystickSeqBridge::tempoAdjustRequested, this, &MainWindow::nudgeLocalBpm);
+    joystick_->start();
+
     instruments_->setSequencer(clock_);
     instruments_->setRouter(midiRouter_);
     instruments_->loadProfiles();
 
-    // The sampler controller (nanoKONTROL ...): an .adjmm file with the stripN_* ops, next to or inside the deck map.
-    samplerControl_ = new SamplerMidiControl(this);
-    QString samplerMap = config_->loadValue(QStringLiteral("midi"), QStringLiteral("sampler_map"));
-    if (samplerMap.isEmpty())
-        samplerMap = ConfigManager::configDir() + QStringLiteral("/sampler-control.adjmm");
-    SamplerMidiControl::installExample(samplerMap);          // only when the file does not exist
-    if (!samplerControl_->loadFromFile(samplerMap))
-        statusBar()->showMessage(tr("Sampler controller: cannot read %1").arg(samplerMap), 6000);
-    wireSamplerControl(midiIn_, samplerPanel_, samplerControl_);
-    connect(samplerPanel_, &SamplerPanel::controllerDialogRequested, this, [this]() {
-        ControllerDialog dlg(samplerControl_, this);
+    // The DJ Tools controller (nanoKONTROL ...): an .adjmm file with the stripN_* ops, next to or inside the deck map.
+    djtoolzControl_ = new DjtoolzMidiControl(this);
+    QString djtoolzMap = config_->loadValue(QStringLiteral("midi"), QStringLiteral("djtoolz_map"));
+    if (djtoolzMap.isEmpty())
+        djtoolzMap = ConfigManager::configDir() + QStringLiteral("/djtoolz-control.adjmm");
+    DjtoolzMidiControl::installExample(djtoolzMap);          // only when the file does not exist
+    if (!djtoolzControl_->loadFromFile(djtoolzMap))
+        statusBar()->showMessage(tr("DJ Tools controller: cannot read %1").arg(djtoolzMap), 6000);
+    wireDjtoolzControl(midiIn_, djtoolzPanel_, djtoolzControl_);
+    connect(djtoolzPanel_, &DjtoolzPanel::controllerDialogRequested, this, [this]() {
+        ControllerDialog dlg(djtoolzControl_, this);
         connect(&dlg, &ControllerDialog::saved, this, [this](const QString& p) {
-            config_->saveValue(QStringLiteral("midi"), QStringLiteral("sampler_map"), p);
+            config_->saveValue(QStringLiteral("midi"), QStringLiteral("djtoolz_map"), p);
         });
         dlg.exec();
-        checkSamplerControllerConnected();
+        checkDjtoolzControllerConnected();
     });
     applyMidiMap();
 }
 
 // Tells the human when no connected MIDI client matches the controller's "#! source" name.
-void MainWindow::checkSamplerControllerConnected()
+void MainWindow::checkDjtoolzControllerConnected()
 {
-    const QString filter = samplerControl_->map().source();
+    const QString filter = djtoolzControl_->map().source();
     if (filter.isEmpty() || !midiIn_->isRunning())
         return;
     for (const QString& n : midiIn_->sourceNames())
         if (n.contains(filter, Qt::CaseInsensitive))
             return;
-    statusBar()->showMessage(tr("Sampler controller: no MIDI client named \"%1\" is connected to the MIDI port - connect it with aconnect or Config > Instruments").arg(filter), 8000);
+    statusBar()->showMessage(tr("DJ Tools controller: no MIDI client named \"%1\" is connected to the MIDI port - connect it with aconnect or Config > Instruments").arg(filter), 8000);
 }
 
 // The map comes from the input device it is paired with (Config > Instruments); without a pairing, from the
@@ -1707,7 +1880,11 @@ void MainWindow::applyMidiMap()
     if (!map.isEmpty() && (map != midiIn_->mapPath() || !midiIn_->isRunning()))
         startMidiMap(map);
     else if (map.isEmpty() && !midiIn_->isRunning())
-        startMidiMap(QString());                    // no deck map: the port is still there for the sampler controller
+        startMidiMap(QString());                    // no deck map: the port is still there for the DJ Tools controller
+    // The DJ Tools controller is its own device: its events drive only the DJ Tools, never the deck map
+    const QString djtoolzName = instruments_->alsaNameFor(instruments_->djtoolzInputKey());
+    midiIn_->setExcludedSource(djtoolzName);
+    djtoolzControl_->setSourceOverride(djtoolzName);
     instruments_->setInputPort(midiIn_->clientId(), midiIn_->portId());
     instruments_->autowire();
 }

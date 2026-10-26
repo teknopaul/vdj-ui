@@ -1,0 +1,72 @@
+# adj midi map: Korg nanoKONTROL Studio driving the DJ Tools (vdj-ui)
+#
+# THE NUMBERS BELOW ARE A GUESS (nanoKONTROL2 style layout), not verified on the Studio.
+# Capture the real ones with Controller... > Learn in the DJ Tools panel, or watch View > MIDI monitor
+# and edit this file. Format: name  channel  controller  value
+#   channel 0 = any, controller N = note on (value = note), value * = any value (knobs and faders).
+# Buttons are momentary: the pressed value (127) acts, the release (0) is ignored.
+# This file may also contain deck ops (start, stop, nudge_fwd ...): both programs read the same format.
+#
+#! source nanoKONTROL
+#! pickup 1
+#! rec_is_forward 1
+#
+# name           ch  ctrl  val
+
+strip1_fader     0    0    *
+strip2_fader     0    1    *
+strip3_fader     0    2    *
+strip4_fader     0    3    *
+strip5_fader     0    4    *
+strip6_fader     0    5    *
+strip7_fader     0    6    *
+strip8_fader     0    7    *
+strip1_knob      0   16    *
+strip2_knob      0   17    *
+strip3_knob      0   18    *
+strip4_knob      0   19    *
+strip5_knob      0   20    *
+strip6_knob      0   21    *
+strip7_knob      0   22    *
+strip8_knob      0   23    *
+
+strip1_solo      0   32  127
+strip2_solo      0   33  127
+strip3_solo      0   34  127
+strip4_solo      0   35  127
+strip5_solo      0   36  127
+strip6_solo      0   37  127
+strip7_solo      0   38  127
+strip8_solo      0   39  127
+
+strip1_mute      0   48  127
+strip2_mute      0   49  127
+strip3_mute      0   50  127
+strip4_mute      0   51  127
+strip5_mute      0   52  127
+strip6_mute      0   53  127
+strip7_mute      0   54  127
+strip8_mute      0   55  127
+
+strip1_rec       0   64  127
+strip2_rec       0   65  127
+strip3_rec       0   66  127
+strip4_rec       0   67  127
+strip5_rec       0   68  127
+strip6_rec       0   69  127
+strip7_rec       0   70  127
+strip8_rec       0   71  127
+
+# select is not on the nanoKONTROL2 layout: learn it, then remove the #
+#strip1_select    0    0  127
+#strip2_select    0    0  127
+#strip3_select    0    0  127
+#strip4_select    0    0  127
+#strip5_select    0    0  127
+#strip6_select    0    0  127
+#strip7_select    0    0  127
+#strip8_select    0    0  127
+
+track_back       0   58  127
+track_fwd        0   59  127
+#mode_toggle      0   60  127

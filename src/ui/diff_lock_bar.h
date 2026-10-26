@@ -17,7 +17,7 @@ class DiffLockBar : public QWidget {
     Q_OBJECT
 
 public:
-    static constexpr int kDefaultTargetMs = 20;
+    static constexpr int kDefaultTargetMs = 0;
 
     explicit DiffLockBar(QWidget* parent = nullptr);
 

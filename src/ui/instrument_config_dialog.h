@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QList>
 #include <QString>
+#include <QStringList>
 
 class QTabWidget;
 class QTableWidget;
@@ -35,6 +36,10 @@ private slots:
 private:
     void buildMidiTab(QWidget* tab);
     void buildJoystickTab(QWidget* tab);
+    void buildPresetsTab(QWidget* tab);
+    void refreshPresetFolders();
+    void addPresetFolder();
+    void removePresetFolder();
     void populateMidiTab();
     void populateJoystickTab();
 
@@ -44,6 +49,7 @@ private:
     // MIDI tab
     QTableWidget* deviceTable_;
     QComboBox*    inputCombo_;
+    QComboBox*    djtoolzCombo_;
     QComboBox*    outputCombo_;
     QList<QString> comboKeys_; // parallel to both combos: device key or ""
     QLineEdit*    mapEdit_;
@@ -51,6 +57,10 @@ private:
     QPushButton*  mapClear_;
     QHash<QString, QString> maps_;   // device key -> map path, saved with the dialog
     QString shownKey_;               // the input device the map row currently belongs to
+
+    // Presets tab: folders of exported drum kits
+    QTableWidget* kitFolderTable_ = nullptr;
+    QStringList   kitFolders_;
 
     // Joystick tab
     QComboBox*   jsDeviceCombo_;

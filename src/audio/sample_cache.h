@@ -10,7 +10,7 @@
 
 namespace vdj {
 
-// A decoded sampler sample. bpm is 0 when unknown.
+// A decoded DJ Tools sample. bpm is 0 when unknown.
 struct Sample {
     QString path;
     QString name;                // file name without folder

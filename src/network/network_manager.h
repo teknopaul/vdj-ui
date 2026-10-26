@@ -97,6 +97,7 @@ public slots:
     // Returns why it was refused, or an empty string.
     QString linkExportSwitch(const QString& folder, const QString& displayName = QString());
     LinkExport* linkExport() const { return linkExport_; }
+    QString usbInUseBy();                   // GUI thread: which deck has a track loaded from our USB slot, or an empty string
     // from the library's update thread: what a deck says it has loaded (to tell whether our USB slot is in use)
     void noteRemoteLoad(int playerId, int playingFrom, int slot, int trackType);
     // start sending our status to the link, once; called when a master is known or the wait times out
@@ -121,7 +122,6 @@ private:
     std::atomic<bool> statusStarted_{true};
     std::atomic<bool> joining_{false};   // vdj_exec_discovery() is running: deck events wait until connected() has been emitted
     std::function<bool(double*)> beatProbe_;
-    QString usbInUseBy();                   // GUI thread: which deck has a track loaded from our USB slot, or an empty string
     struct RemoteLoad { int from = 0, slot = 0, type = 0; qint64 seenMs = 0; };
     QMutex loadMutex_;
     QHash<int, RemoteLoad> remoteLoads_;

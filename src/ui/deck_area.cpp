@@ -32,6 +32,8 @@ DeckWidget* DeckArea::addDeck(int playerId)
 
     connect(deck, &DeckWidget::deckClicked, this, &DeckArea::deckClicked);
     connect(deck, &DeckWidget::playPauseClicked, this, &DeckArea::playPauseClicked);
+    connect(deck, &DeckWidget::restartClicked, this, &DeckArea::restartClicked);
+    connect(deck, &DeckWidget::beatJumpClicked, this, &DeckArea::beatJumpClicked);
     connect(deck, &DeckWidget::syncClicked, this, &DeckArea::syncClicked);
     connect(deck, &DeckWidget::setBpmClicked, this, &DeckArea::setBpmClicked);
     connect(deck, &DeckWidget::becomeMasterClicked, this, &DeckArea::becomeMasterClicked);

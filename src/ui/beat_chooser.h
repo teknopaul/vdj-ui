@@ -7,7 +7,7 @@ class QToolButton;
 
 namespace vdj {
 
-// Four round buttons, beat 1..4 of the bar: red = the sampler plays on this beat, yellow = it does not, grey = the whole
+// Four round buttons, beat 1..4 of the bar: red = the DJ Tools plays on this beat, yellow = it does not, grey = the whole
 // chooser is disabled. mask() has bit 0..3 for beat 1..4.
 class BeatChooser : public QWidget {
     Q_OBJECT

@@ -1,8 +1,11 @@
 #include "drum_editor.h"
+#include <QFileDialog>
+#include <QDialogButtonBox>
+#include <QDialog>
 #include "audio/drum_kits.h"
 #include "drum_voice_selector.h"
 #include "sample_chooser.h"
-#include "sampler_panel.h"
+#include "djtoolz_panel.h"
 #include "step_chooser.h"
 #include "swing_slider.h"
 
@@ -71,9 +74,9 @@ void ChokeSpinBox::fixup(QString& input) const
     input = QString::number(valueFromText(input));
 }
 
-DrumEditor::DrumEditor(std::shared_ptr<SamplerModule> module, SamplerPanel* panel, QWidget* parent)
+DrumEditor::DrumEditor(std::shared_ptr<DjtoolzTool> tool, DjtoolzPanel* panel, QWidget* parent)
     : QWidget(parent)
-    , module_(std::move(module))
+    , tool_(std::move(tool))
     , panel_(panel)
 {
     selector_ = new DrumVoiceSelector(this);
@@ -82,11 +85,11 @@ DrumEditor::DrumEditor(std::shared_ptr<SamplerModule> module, SamplerPanel* pane
     sample_ = new SampleChooser(this);
     sample_->setPreview([panel](const QString& p) { panel->previewSample(p); });
     offset_ = new QSpinBox(this);
-    offset_->setRange(int(-SamplerModule::kMaxOffsetMs), int(SamplerModule::kMaxOffsetMs));
+    offset_->setRange(int(-DjtoolzTool::kMaxOffsetMs), int(DjtoolzTool::kMaxOffsetMs));
     offset_->setSuffix(QStringLiteral(" ms"));
     offset_->setToolTip(tr("Offset of this voice to the beat: negative plays early, positive late"));
     volume_ = new QSlider(Qt::Horizontal, this);
-    volume_->setRange(0, SamplerModule::kMaxVolume);
+    volume_->setRange(0, DjtoolzTool::kMaxVolume);
     volume_->setFixedWidth(80);
     volume_->setFocusPolicy(Qt::NoFocus);
     volumeLabel_ = new QLabel(this);
@@ -127,10 +130,10 @@ DrumEditor::DrumEditor(std::shared_ptr<SamplerModule> module, SamplerPanel* pane
     connect(swing_, &SwingSlider::valueChanged, this, [this](int v) {
         if (loading_)
             return;
-        ModuleSettings s = module_->settings();
+        ToolSettings s = tool_->settings();
         s.swing = v;
-        module_->setSettings(s);
-        panel_->moduleEdited(module_->id());
+        tool_->setSettings(s);
+        panel_->toolEdited(tool_->id());
     });
     connect(sample_, &SampleChooser::sampleChanged, this, [this](const QString& p) { edit([&](DrumVoice& v) { v.samplePath = p; }); });
     connect(offset_, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int ms) { edit([ms](DrumVoice& v) { v.offsetMs = ms; }); });
@@ -145,23 +148,22 @@ DrumEditor::DrumEditor(std::shared_ptr<SamplerModule> module, SamplerPanel* pane
         if (i > 0)
             loadKit(kits_->itemText(i));
     });
-    connect(saveKit_, &QPushButton::clicked, this, [this]() {
-        const QString current = kits_->currentIndex() > 0 ? kits_->currentText() : QString();
-        bool ok = false;
-        const QString name = QInputDialog::getText(this, tr("Save drum kit"), tr("Name"), QLineEdit::Normal, current, &ok);
-        if (ok && !name.trimmed().isEmpty() && !saveKitAs(name))
-            QMessageBox::warning(this, tr("Save drum kit"), tr("Cannot save the kit \"%1\"").arg(name));
-    });
+    connect(saveKit_, &QPushButton::clicked, this, [this]() { saveKitDialog(); });
     connect(deleteKit_, &QPushButton::clicked, this, [this]() {
         if (kits_->currentIndex() <= 0)
             return;
         const QString name = kits_->currentText();
+        if (panel_->drumKits()->isImported(name)) {
+            QMessageBox::information(this, tr("Delete drum kit"),
+                                     tr("\"%1\" is an imported kit. Remove its folder in Config > Instruments > Presets.").arg(name));
+            return;
+        }
         if (QMessageBox::question(this, tr("Delete drum kit"), tr("Delete the kit \"%1\"?").arg(name)) == QMessageBox::Yes) {
             panel_->drumKits()->remove(name);
             panel_->drumKitsChanged();
         }
     });
-    connect(panel_, &SamplerPanel::kitsChanged, this, [this]() { refreshKits(); });
+    connect(panel_, &DjtoolzPanel::kitsChanged, this, [this]() { refreshKits(); });
     refreshKits();
     reload();
 }
@@ -171,28 +173,28 @@ void DrumEditor::setVoiceMuted(int voice, bool muted)
     if (voice < 0 || voice >= kDrumVoices)
         return;
     selector_->setMuted(voice, muted);
-    ModuleSettings s = module_->settings();
+    ToolSettings s = tool_->settings();
     if (s.drums[voice].muted == muted)
         return;
     s.drums[voice].muted = muted;
-    module_->setSettings(s);
-    panel_->moduleEdited(module_->id());
+    tool_->setSettings(s);
+    panel_->toolEdited(tool_->id());
 }
 
 void DrumEditor::toggleVoiceMute(int voice)
 {
     if (voice >= 0 && voice < kDrumVoices)
-        setVoiceMuted(voice, !module_->settings().drums[voice].muted);
+        setVoiceMuted(voice, !tool_->settings().drums[voice].muted);
 }
 
 int DrumEditor::voiceVolume(int voice) const
 {
-    return module_->settings().drums[std::clamp(voice, 0, kDrumVoices - 1)].volume;
+    return tool_->settings().drums[std::clamp(voice, 0, kDrumVoices - 1)].volume;
 }
 
 double DrumEditor::voiceOffsetMs(int voice) const
 {
-    return module_->settings().drums[std::clamp(voice, 0, kDrumVoices - 1)].offsetMs;
+    return tool_->settings().drums[std::clamp(voice, 0, kDrumVoices - 1)].offsetMs;
 }
 
 void DrumEditor::setVoiceVolume(int voice, int volume)
@@ -200,28 +202,28 @@ void DrumEditor::setVoiceVolume(int voice, int volume)
     if (voice < 0 || voice >= kDrumVoices)
         return;
     if (voice == selector_->selected()) {
-        volume_->setValue(std::clamp(volume, 0, SamplerModule::kMaxVolume));    // its signal writes the module
+        volume_->setValue(std::clamp(volume, 0, DjtoolzTool::kMaxVolume));    // its signal writes the tool
         return;
     }
-    ModuleSettings s = module_->settings();
-    s.drums[voice].volume = std::clamp(volume, 0, SamplerModule::kMaxVolume);
-    module_->setSettings(s);
-    panel_->moduleEdited(module_->id());
+    ToolSettings s = tool_->settings();
+    s.drums[voice].volume = std::clamp(volume, 0, DjtoolzTool::kMaxVolume);
+    tool_->setSettings(s);
+    panel_->toolEdited(tool_->id());
 }
 
 void DrumEditor::setVoiceOffsetMs(int voice, double ms)
 {
     if (voice < 0 || voice >= kDrumVoices)
         return;
-    const double v = std::clamp(std::round(ms), -SamplerModule::kMaxOffsetMs, SamplerModule::kMaxOffsetMs);
+    const double v = std::clamp(std::round(ms), -DjtoolzTool::kMaxOffsetMs, DjtoolzTool::kMaxOffsetMs);
     if (voice == selector_->selected()) {
         offset_->setValue(int(v));
         return;
     }
-    ModuleSettings s = module_->settings();
+    ToolSettings s = tool_->settings();
     s.drums[voice].offsetMs = v;
-    module_->setSettings(s);
-    panel_->moduleEdited(module_->id());
+    tool_->setSettings(s);
+    panel_->toolEdited(tool_->id());
 }
 
 bool DrumEditor::stepKit(int dir)
@@ -247,9 +249,56 @@ bool DrumEditor::stepKit(int dir)
     return true;
 }
 
+// The Save kit popup: the name, then Save (into the config folder) or Export (a folder with copies of the samples, to back up or move).
+void DrumEditor::saveKitDialog()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Save drum kit"));
+    auto* form = new QVBoxLayout(&dlg);
+    form->addWidget(new QLabel(tr("Name"), &dlg));
+    auto* name = new QLineEdit(&dlg);
+    if (kits_->currentIndex() > 0 && !panel_->drumKits()->isImported(kits_->currentText()))
+        name->setText(kits_->currentText());
+    form->addWidget(name);
+    auto* hint = new QLabel(tr("Export copies the samples the kit uses into an empty folder, with a file that loads the kit back "
+                               "on this or another PC (Config > Instruments > Presets). The original samples are not touched."), &dlg);
+    hint->setWordWrap(true);
+    form->addWidget(hint);
+    auto* box = new QDialogButtonBox(&dlg);
+    QPushButton* save = box->addButton(tr("Save"), QDialogButtonBox::AcceptRole);
+    QPushButton* exp = box->addButton(tr("Export to Folder..."), QDialogButtonBox::ActionRole);
+    box->addButton(QDialogButtonBox::Cancel);
+    form->addWidget(box);
+    bool exporting = false;
+    connect(save, &QPushButton::clicked, &dlg, &QDialog::accept);
+    connect(exp, &QPushButton::clicked, &dlg, [&]() { exporting = true; dlg.accept(); });
+    connect(box, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted || name->text().trimmed().isEmpty())
+        return;
+    const QString n = name->text().trimmed();
+    if (!exporting) {
+        if (!saveKitAs(n))
+            QMessageBox::warning(this, tr("Save drum kit"), tr("Cannot save the kit \"%1\"").arg(n));
+        return;
+    }
+    const QString folder = QFileDialog::getExistingDirectory(this, tr("Export drum kit: choose an empty folder"));
+    if (folder.isEmpty())
+        return;
+    QString err;
+    if (exportKitTo(n, folder, &err))
+        emit panel_->message(tr("Exported the drum kit \"%1\" to %2").arg(n, folder));
+    else
+        QMessageBox::warning(this, tr("Export drum kit"), err);
+}
+
+bool DrumEditor::exportKitTo(const QString& name, const QString& folder, QString* error)
+{
+    return DrumKits::exportKit(name, drumKitFromSettings(tool_->settings()), folder, error);
+}
+
 bool DrumEditor::saveKitAs(const QString& name)
 {
-    if (!panel_->drumKits()->save(name, drumKitFromSettings(module_->settings())))
+    if (!panel_->drumKits()->save(name, drumKitFromSettings(tool_->settings())))
         return false;
     panel_->drumKitsChanged();                       // every DR-6S refreshes its list (this one too)
     const int i = kits_->findText(DrumKits::sanitise(name));
@@ -266,11 +315,11 @@ bool DrumEditor::loadKit(const QString& name)
         emit panel_->message(tr("Cannot load drum kit: %1").arg(err));
         return false;
     }
-    ModuleSettings s = module_->settings();
+    ToolSettings s = tool_->settings();
     applyDrumKit(&s, kit);                           // the voices and the swing only
-    module_->setSettings(s);
+    tool_->setSettings(s);
     reload();
-    panel_->moduleEdited(module_->id());
+    panel_->toolEdited(tool_->id());
     return true;
 }
 
@@ -302,26 +351,36 @@ void DrumEditor::edit(F f)
 {
     if (loading_)
         return;
-    ModuleSettings s = module_->settings();
+    ToolSettings s = tool_->settings();
     f(s.drums[selector_->selected()]);
-    module_->setSettings(s);
-    panel_->moduleEdited(module_->id());
+    tool_->setSettings(s);
+    panel_->toolEdited(tool_->id());
 }
 
 void DrumEditor::reload()
 {
     loading_ = true;
-    swing_->setValue(module_->settings().swing);
+    swing_->setValue(tool_->settings().swing);
     loading_ = false;
-    const ModuleSettings s = module_->settings();
+    const ToolSettings s = tool_->settings();
     for (int v = 0; v < kDrumVoices; ++v)
         selector_->setMuted(v, s.drums[v].muted);
     loadVoice();
 }
 
+bool DrumEditor::setVoiceSample(int voice, const QString& path)
+{
+    if (voice < 0 || voice >= kDrumVoices)
+        return false;
+    selectVoice(voice);
+    sample_->setSample(path);                        // (setSample does not emit: write the voice here)
+    edit([&](DrumVoice& v) { v.samplePath = path; });
+    return true;
+}
+
 void DrumEditor::loadVoice()
 {
-    const ModuleSettings s = module_->settings();
+    const ToolSettings s = tool_->settings();
     const DrumVoice& v = s.drums[selector_->selected()];
     loading_ = true;
     sample_->setFolder(panel_->sampleFolder());
@@ -342,7 +401,7 @@ void DrumEditor::wheelVolume(QWheelEvent* event)
     if (notches == 0)
         return;
     const int step = (event->modifiers() & Qt::ShiftModifier) ? 10 : 1;
-    volume_->setValue(std::clamp(volume_->value() + notches * step, 0, SamplerModule::kMaxVolume));   // the slider's signal writes the voice
+    volume_->setValue(std::clamp(volume_->value() + notches * step, 0, DjtoolzTool::kMaxVolume));   // the slider's signal writes the voice
 }
 
 } // namespace vdj

@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QPushButton>
 #include "ui/deck_controls.h"
 #include "ui/deck_widget.h"
 #include "ui/pitch_slider.h"
@@ -13,6 +14,8 @@ private slots:
     void deckControlsSignals();
     void remoteDecksAreDisplayOnly();
     void deckWidgetRemoteMode();
+    void quantizeAndJumpButtons();
+    void playGlyphToggles();
 };
 
 void TestControls::pitchSliderSignals()
@@ -91,6 +94,65 @@ void TestControls::remoteDecksAreDisplayOnly()
     QVERIFY(!local.bpmEditable());
     QVERIFY(!local.playVisible());
     QVERIFY(local.copyBpmVisible());
+}
+
+void TestControls::quantizeAndJumpButtons()
+{
+    vdj::DeckControls c(5);
+    QCOMPARE(c.quantizeButton()->text(), QStringLiteral("Q"));
+    QCOMPARE(c.quantizeButton()->toolTip(), QStringLiteral("Quantize"));
+    QVERIFY(c.quantizeButton()->isCheckable());
+    QVERIFY(!c.quantizeOn());
+    QVERIFY(c.jumpsVisible());
+    QCOMPARE(c.restartButton()->text(), QString::fromUtf8("\u23ee\ufe0f"));
+    QCOMPARE(c.backButton()->text(), QString::fromUtf8("\u23ea"));
+    QCOMPARE(c.forwardButton()->text(), QString::fromUtf8("\u23e9"));
+
+    // disabled until the sequencer runs
+    QVERIFY(!c.restartButton()->isEnabled());
+    QVERIFY(!c.backButton()->isEnabled());
+    QVERIFY(!c.forwardButton()->isEnabled());
+    c.setJumpsEnabled(true);
+
+    int restartPid = 0, jumps = 0, lastBeats = 0;
+    bool restartQ = false;
+    QObject::connect(&c, &vdj::DeckControls::restartClicked, [&](int pid, bool q) { restartPid = pid; restartQ = q; });
+    QObject::connect(&c, &vdj::DeckControls::beatJumpClicked, [&](int, int beats) { ++jumps; lastBeats = beats; });
+    c.restartButton()->click();
+    QCOMPARE(restartPid, 5);
+    QVERIFY(!restartQ);
+    c.quantizeButton()->click();
+    QVERIFY(c.quantizeOn());
+    c.restartButton()->click();
+    QVERIFY(restartQ);
+    c.backButton()->click();
+    QCOMPARE(lastBeats, -1);
+    c.forwardButton()->click();
+    QCOMPARE(lastBeats, 1);
+    QCOMPARE(jumps, 2);
+
+    // remote decks are display-only
+    c.setRemote(true);
+    QVERIFY(!c.jumpsVisible());
+    QVERIFY(c.quantizeButton()->isHidden());
+    QVERIFY(c.restartButton()->isHidden());
+    c.setRemote(false);
+    QVERIFY(c.jumpsVisible());
+}
+
+void TestControls::playGlyphToggles()
+{
+    vdj::DeckControls c(5);
+    QPushButton* toggle = nullptr;
+    for (auto* b : c.findChildren<QPushButton*>())
+        if (b->isCheckable() && b != c.quantizeButton())   // the play | pause toggle
+            toggle = b;
+    QVERIFY(toggle);
+    QCOMPARE(toggle->text(), QString::fromUtf8("\u25b6\ufe0f"));
+    c.setPlaying(true);
+    QCOMPARE(toggle->text(), QString::fromUtf8("\u23f8\ufe0f"));
+    c.setPlaying(false);
+    QCOMPARE(toggle->text(), QString::fromUtf8("\u25b6\ufe0f"));
 }
 
 void TestControls::deckWidgetRemoteMode()

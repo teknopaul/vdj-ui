@@ -1,6 +1,7 @@
 #include "instrument_config_dialog.h"
 #include "midi/instrument_manager.h"
 #include "midi/instrument_profile.h"
+#include "audio/drum_kits.h"
 #include "config/config_manager.h"
 
 #include <QTabWidget>
@@ -39,6 +40,9 @@ InstrumentConfigDialog::InstrumentConfigDialog(InstrumentManager* manager,
     buildJoystickTab(jsTab);
     tabs->addTab(midiTab, QStringLiteral("MIDI Devices"));
     tabs->addTab(jsTab,   QStringLiteral("Joystick Profiles"));
+    auto* presetsTab = new QWidget;
+    buildPresetsTab(presetsTab);
+    tabs->addTab(presetsTab, QStringLiteral("Presets"));
     layout->addWidget(tabs, 1);
 
     auto* buttons = new QDialogButtonBox(
@@ -78,8 +82,12 @@ void InstrumentConfigDialog::buildMidiTab(QWidget* tab)
 
     auto* form = new QFormLayout;
     inputCombo_  = new QComboBox(tab);
+    djtoolzCombo_ = new QComboBox(tab);
+    djtoolzCombo_->setToolTip(QStringLiteral("The controller for the DJ Tools. Its events never drive the decks. The DJ Tools panel's mode "
+                                             "switch (or the controller's mode button) sets whether it plays the whole bank of tools or one drum machine."));
     outputCombo_ = new QComboBox(tab);
     form->addRow(QStringLiteral("MIDI Input (controller → VDJ):"),          inputCombo_);
+    form->addRow(QStringLiteral("DJ Tools Input (controller → DJ Tools):"), djtoolzCombo_);
     form->addRow(QStringLiteral("MIDI Output (VDJ clock → drum machine):"), outputCombo_);
     layout->addLayout(form);
 
@@ -114,16 +122,19 @@ void InstrumentConfigDialog::populateMidiTab()
     deviceTable_->setRowCount(0);
     inputCombo_->clear();
     outputCombo_->clear();
+    djtoolzCombo_->clear();
     comboKeys_.clear();
 
     // First entry = none
     inputCombo_->addItem(QStringLiteral("(none)"));
     outputCombo_->addItem(QStringLiteral("(none)"));
+    djtoolzCombo_->addItem(QStringLiteral("(none)"));
     comboKeys_.append(QString());
 
     const QString savedIn  = manager_->midiInputKey();
     const QString savedOut = manager_->midiOutputKey();
-    int selIn = 0, selOut = 0;
+    const QString savedDjtoolz = manager_->djtoolzInputKey();
+    int selIn = 0, selOut = 0, selDjtoolz = 0;
 
     const QList<InstrumentManager::DetectedDevice> devs = manager_->detectDevices();
     for (const InstrumentManager::DetectedDevice& d : devs) {
@@ -148,6 +159,8 @@ void InstrumentConfigDialog::populateMidiTab()
         if (d.inputPorts > 0) {
             inputCombo_->addItem(d.displayName, d.key);
             if (d.key == savedIn)  selIn  = inputCombo_->count() - 1;
+            djtoolzCombo_->addItem(d.displayName, d.key);
+            if (d.key == savedDjtoolz) selDjtoolz = djtoolzCombo_->count() - 1;
         }
         if (d.outputPorts > 0) {
             outputCombo_->addItem(d.displayName, d.key);
@@ -158,6 +171,7 @@ void InstrumentConfigDialog::populateMidiTab()
 
     inputCombo_->setCurrentIndex(selIn);
     outputCombo_->setCurrentIndex(selOut);
+    djtoolzCombo_->setCurrentIndex(selDjtoolz);
     shownKey_.clear();
     inputDeviceChanged();
 }
@@ -197,6 +211,79 @@ void InstrumentConfigDialog::clearMap()
     if (shownKey_.isEmpty()) return;
     maps_.insert(shownKey_, QString());
     inputDeviceChanged();
+}
+
+// ── Presets tab ───────────────────────────────────────────────────────────────
+
+void InstrumentConfigDialog::buildPresetsTab(QWidget* tab)
+{
+    auto* layout = new QVBoxLayout(tab);
+    auto* hint = new QLabel(
+        QStringLiteral("Folders of DR-6S drum kits exported with Save kit > Export to Folder (a folder with drumkit.json, or a folder of such "
+                       "folders). Their kits are listed in every DR-6S next to the saved kits. The folders are only read: keep them where they are."), tab);
+    hint->setWordWrap(true);
+    layout->addWidget(hint);
+
+    kitFolderTable_ = new QTableWidget(0, 2, tab);
+    kitFolderTable_->setHorizontalHeaderLabels({ QStringLiteral("Folder"), QStringLiteral("Drum kits found") });
+    kitFolderTable_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    kitFolderTable_->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    kitFolderTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    kitFolderTable_->setSelectionBehavior(QAbstractItemView::SelectRows);
+    layout->addWidget(kitFolderTable_, 1);
+
+    auto* row = new QHBoxLayout;
+    auto* add = new QPushButton(QStringLiteral("Add Folder..."), tab);
+    auto* remove = new QPushButton(QStringLiteral("Remove"), tab);
+    row->addWidget(add);
+    row->addWidget(remove);
+    row->addStretch(1);
+    layout->addLayout(row);
+    connect(add, &QPushButton::clicked, this, &InstrumentConfigDialog::addPresetFolder);
+    connect(remove, &QPushButton::clicked, this, &InstrumentConfigDialog::removePresetFolder);
+
+    kitFolders_ = InstrumentManager::drumKitFolders(config_);
+    refreshPresetFolders();
+}
+
+void InstrumentConfigDialog::refreshPresetFolders()
+{
+    kitFolderTable_->setRowCount(0);
+    for (const QString& folder : kitFolders_) {
+        QStringList names;
+        for (const QString& kf : DrumKits::kitFoldersIn(folder)) {
+            QString name;
+            DrumKits::loadKitFolder(kf, nullptr, &name);
+            names << (name.isEmpty() ? QDir(kf).dirName() : name);
+        }
+        const int r = kitFolderTable_->rowCount();
+        kitFolderTable_->insertRow(r);
+        kitFolderTable_->setItem(r, 0, new QTableWidgetItem(folder));
+        kitFolderTable_->setItem(r, 1, new QTableWidgetItem(names.isEmpty() ? QStringLiteral("(none found)") : names.join(QStringLiteral(", "))));
+    }
+}
+
+void InstrumentConfigDialog::addPresetFolder()
+{
+    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Folder with exported drum kits"));
+    if (dir.isEmpty() || kitFolders_.contains(dir))
+        return;
+    if (DrumKits::kitFoldersIn(dir).isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("Presets"),
+            QStringLiteral("No exported drum kit (drumkit.json) found in %1 or in the folders directly inside it.").arg(dir));
+        return;
+    }
+    kitFolders_ << dir;
+    refreshPresetFolders();
+}
+
+void InstrumentConfigDialog::removePresetFolder()
+{
+    const int r = kitFolderTable_->currentRow();
+    if (r < 0 || r >= kitFolders_.size())
+        return;
+    kitFolders_.removeAt(r);
+    refreshPresetFolders();
 }
 
 // ── Joystick tab ──────────────────────────────────────────────────────────────
@@ -270,6 +357,11 @@ void InstrumentConfigDialog::saveAndWire()
     manager_->setMidiInputKey(si > 0 ? inputCombo_->itemData(si).toString() : QString());
     for (auto it = maps_.cbegin(); it != maps_.cend(); ++it)
         manager_->setMidiMapFor(it.key(), it.value());
+
+    const int ss = djtoolzCombo_->currentIndex();
+    manager_->setDjtoolzInputKey(ss > 0 ? djtoolzCombo_->itemData(ss).toString() : QString());
+
+    InstrumentManager::setDrumKitFolders(config_, kitFolders_);
 
     // Save output selection
     int di = outputCombo_->currentIndex();

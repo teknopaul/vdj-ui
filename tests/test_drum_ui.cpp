@@ -14,11 +14,11 @@
 #include "midi/alsa_clock.h"
 #include "ui/drum_editor.h"
 #include "ui/sample_chooser.h"
-#include "ui/sampler_module_widget.h"
-#include "ui/sampler_panel.h"
+#include "ui/djtoolz_tool_widget.h"
+#include "ui/djtoolz_panel.h"
 #include "ui/sample_tree_model.h"
 #include "ui/drum_voice_selector.h"
-#include "ui/sampler_icons.h"
+#include "ui/djtoolz_icons.h"
 #include "ui/step_chooser.h"
 #include "ui/swing_slider.h"
 
@@ -35,7 +35,7 @@ private slots:
         a_ = touch(dir_->path() + "/a.wav");
         b_ = touch(dir_->path() + "/b.wav");
         c_ = touch(dir_->path() + "/c.wav");
-        panel_ = new SamplerPanel(&clock_, dir_->path());
+        panel_ = new DjtoolzPanel(&clock_, dir_->path());
         panel_->setAudioEnabled(false);
     }
     void cleanup()
@@ -64,7 +64,7 @@ private slots:
     void stepChooserEditsOnlyTheSelectedVoice();
     void perVoiceSampleViaUpDownAndSetSample();
     void wheelOverTheEditorIsTheVoiceVolume();
-    void wheelElsewhereIsTheModuleVolume();
+    void wheelElsewhereIsTheToolVolume();
     void smallWheelDeltasInTheEditor();
     void swingSliderReachesTheSettings();
     void chokeSpinnerValuesAndKeys();
@@ -80,7 +80,7 @@ private slots:
 private:
     QTemporaryDir* dir_ = nullptr;
     AlsaClock clock_;
-    SamplerPanel* panel_ = nullptr;
+    DjtoolzPanel* panel_ = nullptr;
     QString a_, b_, c_;
 
     static QString touch(const QString& path)
@@ -90,9 +90,9 @@ private:
         f.write("x");
         return path;
     }
-    SamplerModuleWidget* newDrums()
+    DjtoolzToolWidget* newDrums()
     {
-        return panel_->addModule(SamplerModule::DrumMachine);
+        return panel_->addTool(DjtoolzTool::DrumMachine);
     }
     static void wheel(QWidget* target, int notches, Qt::KeyboardModifiers mods = Qt::NoModifier)
     {
@@ -225,12 +225,12 @@ void TestDrumUi::stepIconsPerState()
     steps[1] = StepOn;
     steps[2] = StepHalf;
     c.setSteps(steps);
-    QCOMPARE(image(c.button(0)->icon()), image(samplerIcon(SamplerIcon::Yellow)));
-    QCOMPARE(image(c.button(1)->icon()), image(samplerIcon(SamplerIcon::Red)));
-    QCOMPARE(image(c.button(2)->icon()), image(samplerIcon(SamplerIcon::Pink)));
+    QCOMPARE(image(c.button(0)->icon()), image(djtoolzIcon(DjtoolzIcon::Yellow)));
+    QCOMPARE(image(c.button(1)->icon()), image(djtoolzIcon(DjtoolzIcon::Red)));
+    QCOMPARE(image(c.button(2)->icon()), image(djtoolzIcon(DjtoolzIcon::Pink)));
     c.show();
     click(c.button(0));
-    QCOMPARE(image(c.button(0)->icon()), image(samplerIcon(SamplerIcon::Red)));
+    QCOMPARE(image(c.button(0)->icon()), image(djtoolzIcon(DjtoolzIcon::Red)));
 }
 
 void TestDrumUi::stepGapAfterEveryFourth()
@@ -271,13 +271,13 @@ void TestDrumUi::stepDisabledShowsGrey()
     c.show();
     click(c.button(0));
     c.setEnabled(false);
-    QCOMPARE(image(c.button(0)->icon()), image(samplerIcon(SamplerIcon::Grey)));
-    QCOMPARE(image(c.button(5)->icon()), image(samplerIcon(SamplerIcon::Grey)));
+    QCOMPARE(image(c.button(0)->icon()), image(djtoolzIcon(DjtoolzIcon::Grey)));
+    QCOMPARE(image(c.button(5)->icon()), image(djtoolzIcon(DjtoolzIcon::Grey)));
     QSignalSpy spy(&c, &StepChooser::changed);
     click(c.button(1));                              // a disabled chooser does not react
     QCOMPARE(spy.count(), 0);
     c.setEnabled(true);
-    QCOMPARE(image(c.button(0)->icon()), image(samplerIcon(SamplerIcon::Red)));
+    QCOMPARE(image(c.button(0)->icon()), image(djtoolzIcon(DjtoolzIcon::Red)));
 }
 
 void TestDrumUi::stepIgnoresRightClick()
@@ -320,14 +320,14 @@ void TestDrumUi::drumMachineWidgetHasAnEditorAndNoGenericRows()
     QVERIFY(w->drumEditor());
     QVERIFY(!w->sampleChooser());                    // the samples are per voice
     QVERIFY(!w->beatChooser());
-    QVERIFY(!w->offsetSpin());                       // no module level offset
+    QVERIFY(!w->offsetSpin());                       // no tool level offset
     QVERIFY(!w->reverseSyncBox());
     QVERIFY(!w->swingSlider());                      // the swing is in the editor
     QVERIFY(w->drumEditor()->swing());
     QVERIFY(w->oneBarButton());
     QVERIFY(w->wantsFullRow());
-    QCOMPARE(w->module()->typeName(), QString("DR-6S"));
-    QVERIFY(w->volumeSlider());                      // the module (master) volume
+    QCOMPARE(w->tool()->typeName(), QString("DR-6S"));
+    QVERIFY(w->volumeSlider());                      // the tool (master) volume
     QVERIFY(w->typeLabel()->font().bold());          // the type is bold, the name the user types is not
     QVERIFY(!w->nameEdit()->font().bold());
     QCOMPARE(w->typeLabel()->text(), QString("DR-6S"));
@@ -336,8 +336,8 @@ void TestDrumUi::drumMachineWidgetHasAnEditorAndNoGenericRows()
 void TestDrumUi::selectingAVoiceShowsItsSettings()
 {
     auto* w = newDrums();
-    auto m = w->module();
-    ModuleSettings s = m->settings();
+    auto m = w->tool();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = a_;
     s.drums[0].offsetMs = -5;
     s.drums[0].volume = 90;
@@ -363,7 +363,7 @@ void TestDrumUi::selectingAVoiceShowsItsSettings()
     QCOMPARE(ed->chokeSpin()->value(), 4);
     QCOMPARE(int(ed->stepChooser()->step(6)), int(StepHalf));
     QCOMPARE(int(ed->stepChooser()->step(0)), int(StepOff));
-    // selecting does not change anything in the module
+    // selecting does not change anything in the tool
     QCOMPARE(m->settings().drums[0].samplePath, a_);
     QCOMPARE(m->settings().drums[3].chokeSteps, 4);
 }
@@ -376,7 +376,7 @@ void TestDrumUi::stepChooserEditsOnlyTheSelectedVoice()
     click(ed->stepChooser()->button(4));             // BD step 5 on
     click(ed->selector()->button(1));                // SD
     click(ed->stepChooser()->button(8), Qt::ControlModifier);   // SD step 9 half
-    const ModuleSettings s = w->module()->settings();
+    const ToolSettings s = w->tool()->settings();
     QCOMPARE(int(s.drums[0].steps[4]), int(StepOn));
     QCOMPARE(int(s.drums[1].steps[8]), int(StepHalf));
     QCOMPARE(int(s.drums[1].steps[4]), int(StepOff));
@@ -392,20 +392,29 @@ void TestDrumUi::perVoiceSampleViaUpDownAndSetSample()
     click(ed->selector()->button(2));                // SY
     ed->sampleChooser()->setSample(a_);
     ed->sampleChooser()->downButton()->click();      // a -> b
-    QCOMPARE(w->module()->settings().drums[2].samplePath, b_);
+    QCOMPARE(w->tool()->settings().drums[2].samplePath, b_);
     ed->sampleChooser()->downButton()->click();
-    QCOMPARE(w->module()->settings().drums[2].samplePath, c_);
+    QCOMPARE(w->tool()->settings().drums[2].samplePath, c_);
     ed->sampleChooser()->upButton()->click();
-    QCOMPARE(w->module()->settings().drums[2].samplePath, b_);
-    QVERIFY(w->module()->settings().drums[0].samplePath.isEmpty());          // the other voices are untouched
-    QVERIFY(w->module()->settings().drums[5].samplePath.isEmpty());
-    // the tree's right click menu does not offer a DR-6S (it has no single sample)
+    QCOMPARE(w->tool()->settings().drums[2].samplePath, b_);
+    QVERIFY(w->tool()->settings().drums[0].samplePath.isEmpty());          // the other voices are untouched
+    QVERIFY(w->tool()->settings().drums[5].samplePath.isEmpty());
+    // the tree's right click menu offers the DR-6S as a submenu with its six voices
     panel_->setSampleFolder(dir_->path());
     QTest::qWait(300);
     QMenu* menu = panel_->sendToMenu(panel_->treeModel()->indexForPath(a_), panel_);
     QVERIFY(menu);
+    QMenu* sub = nullptr;
     for (QAction* act : menu->actions())
-        QVERIFY(!act->text().contains("DR-6S"));
+        if (act->menu() && act->text().contains("DR-6S"))
+            sub = act->menu();
+    QVERIFY(sub);
+    QCOMPARE(sub->actions().size(), 6);
+    QCOMPARE(sub->actions()[3]->text(), QString("CL"));
+    sub->actions()[3]->trigger();                    // send to CL
+    QCOMPARE(w->tool()->settings().drums[3].samplePath, a_);
+    QCOMPARE(ed->selectedVoice(), 3);
+    QVERIFY(w->tool()->settings().drums[0].samplePath.isEmpty());
     delete menu;
 }
 
@@ -415,20 +424,20 @@ void TestDrumUi::wheelOverTheEditorIsTheVoiceVolume()
     w->show();
     auto* ed = w->drumEditor();
     click(ed->selector()->button(4));                // HH
-    QCOMPARE(w->module()->settings().drums[4].volume, 127);
+    QCOMPARE(w->tool()->settings().drums[4].volume, 127);
     wheel(ed->stepChooser()->button(0), -3);         // over a step button
-    QCOMPARE(w->module()->settings().drums[4].volume, 124);
+    QCOMPARE(w->tool()->settings().drums[4].volume, 124);
     wheel(ed->offsetSpin(), -1);                     // over the offset spin box: volume, not the offset
-    QCOMPARE(w->module()->settings().drums[4].volume, 123);
-    QCOMPARE(w->module()->settings().drums[4].offsetMs, 0.0);
+    QCOMPARE(w->tool()->settings().drums[4].volume, 123);
+    QCOMPARE(w->tool()->settings().drums[4].offsetMs, 0.0);
     wheel(ed->sampleChooser(), -1, Qt::ShiftModifier);
-    QCOMPARE(w->module()->settings().drums[4].volume, 113);
+    QCOMPARE(w->tool()->settings().drums[4].volume, 113);
     wheel(ed, +60);                                  // stops at 127
-    QCOMPARE(w->module()->settings().drums[4].volume, 127);
+    QCOMPARE(w->tool()->settings().drums[4].volume, 127);
     wheel(ed, -500);
-    QCOMPARE(w->module()->settings().drums[4].volume, 0);
-    QCOMPARE(w->module()->settings().drums[0].volume, 127);                  // the other voices and ...
-    QCOMPARE(w->module()->settings().volume, 127);                           // ... the module volume are not touched
+    QCOMPARE(w->tool()->settings().drums[4].volume, 0);
+    QCOMPARE(w->tool()->settings().drums[0].volume, 127);                  // the other voices and ...
+    QCOMPARE(w->tool()->settings().volume, 127);                           // ... the tool volume are not touched
     QCOMPARE(ed->volumeSlider()->value(), 0);
 }
 
@@ -442,30 +451,30 @@ void TestDrumUi::smallWheelDeltasInTheEditor()
     };
     for (int i = 0; i < 8; ++i)
         small(w->drumEditor()->stepChooser()->button(0), -15);
-    QCOMPARE(w->module()->settings().drums[0].volume, 126);
-    QCOMPARE(w->module()->settings().volume, 127);
+    QCOMPARE(w->tool()->settings().drums[0].volume, 126);
+    QCOMPARE(w->tool()->settings().volume, 127);
 }
 
-void TestDrumUi::wheelElsewhereIsTheModuleVolume()
+void TestDrumUi::wheelElsewhereIsTheToolVolume()
 {
     auto* w = newDrums();
     w->show();
     wheel(w->nameEdit(), -5);                        // the header
-    QCOMPARE(w->module()->settings().volume, 122);
-    QCOMPARE(w->module()->settings().drums[0].volume, 127);
+    QCOMPARE(w->tool()->settings().volume, 122);
+    QCOMPARE(w->tool()->settings().drums[0].volume, 127);
     wheel(w, -2);                                    // the frame itself
-    QCOMPARE(w->module()->settings().volume, 120);
-    wheel(w->drumEditor()->swing()->slider(), -1);   // the swing slider is dragged, its wheel is the module volume
-    QCOMPARE(w->module()->settings().volume, 119);
-    QCOMPARE(w->module()->settings().swing, 0);
+    QCOMPARE(w->tool()->settings().volume, 120);
+    wheel(w->drumEditor()->swing()->slider(), -1);   // the swing slider is dragged, its wheel is the tool volume
+    QCOMPARE(w->tool()->settings().volume, 119);
+    QCOMPARE(w->tool()->settings().swing, 0);
 }
 
 void TestDrumUi::swingSliderReachesTheSettings()
 {
     auto* w = newDrums();
     w->drumEditor()->swing()->slider()->setValue(80);
-    QCOMPARE(w->module()->settings().swing, 80);
-    // the swing belongs to the module: selecting another voice keeps it
+    QCOMPARE(w->tool()->settings().swing, 80);
+    // the swing belongs to the tool: selecting another voice keeps it
     click(w->drumEditor()->selector()->button(2));
     QCOMPARE(w->drumEditor()->swing()->value(), 80);
 }
@@ -484,14 +493,14 @@ void TestDrumUi::chokeSpinnerValuesAndKeys()
     }
     QCOMPARE(seen, QList<int>({ 1, 2, 4, 8, 16, 16, 16 }));
     QCOMPARE(c->text(), QString("16 /4 beat"));
-    QCOMPARE(w->module()->settings().drums[0].chokeSteps, 16);
+    QCOMPARE(w->tool()->settings().drums[0].chokeSteps, 16);
     seen.clear();
     for (int i = 0; i < 7; ++i) {
         c->stepDown();
         seen << c->value();
     }
     QCOMPARE(seen, QList<int>({ 8, 4, 2, 1, 0, 0, 0 }));
-    QCOMPARE(w->module()->settings().drums[0].chokeSteps, 0);
+    QCOMPARE(w->tool()->settings().drums[0].chokeSteps, 0);
     c->setFocus();
     QTest::keyClick(c, Qt::Key_Up);                  // the keyboard walks the same list
     QTest::keyClick(c, Qt::Key_Up);
@@ -514,7 +523,7 @@ void TestDrumUi::chokeSpinnerSnapsTypedValues()
         QTest::keyClicks(edit, t.first);
         QTest::keyClick(edit, Qt::Key_Return);
         QCOMPARE(c->value(), t.second);
-        QCOMPARE(w->module()->settings().drums[0].chokeSteps, t.second);
+        QCOMPARE(w->tool()->settings().drums[0].chokeSteps, t.second);
     }
 }
 
@@ -528,7 +537,7 @@ void TestDrumUi::chokeIsPerVoice()
     ed->chokeSpin()->setValue(1);
     click(ed->selector()->button(0));
     QCOMPARE(ed->chokeSpin()->value(), 4);
-    const ModuleSettings s = w->module()->settings();
+    const ToolSettings s = w->tool()->settings();
     QCOMPARE(s.drums[0].chokeSteps, 4);
     QCOMPARE(s.drums[5].chokeSteps, 1);
     QCOMPARE(s.drums[1].chokeSteps, 0);
@@ -538,41 +547,41 @@ void TestDrumUi::onOffByButtonAndFunctionKeyHook()
 {
     auto* w = newDrums();
     QCOMPARE(w->keyLabel(), QString("F1"));
-    QVERIFY(!w->module()->settings().enabled);
+    QVERIFY(!w->tool()->settings().enabled);
     w->onButton()->click();
-    QVERIFY(w->module()->settings().enabled);
-    QVERIFY(panel_->toggleModuleAt(0));              // what F1 does
-    QVERIFY(!w->module()->settings().enabled);
+    QVERIFY(w->tool()->settings().enabled);
+    QVERIFY(panel_->toggleToolAt(0));              // what F1 does
+    QVERIFY(!w->tool()->settings().enabled);
 }
 
 void TestDrumUi::oneBarButtonIsThere()
 {
     auto* w = newDrums();
     QVERIFY(w->oneBarButton());
-    QVERIFY(w->module()->supportsOneBar());
-    w->module()->fireOneBar(1.0);
+    QVERIFY(w->tool()->supportsOneBar());
+    w->tool()->fireOneBar(1.0);
     w->refresh(1.5);                                 // armed: blinking (green / grey)
     w->refresh(4.5);                                 // the bar plays
-    QCOMPARE(image(w->oneBarButton()->icon()), image(samplerIcon(SamplerIcon::Red)));
+    QCOMPARE(image(w->oneBarButton()->icon()), image(djtoolzIcon(DjtoolzIcon::Red)));
     w->refresh(9.0);
-    QCOMPARE(image(w->oneBarButton()->icon()), image(samplerIcon(SamplerIcon::Green)));
+    QCOMPARE(image(w->oneBarButton()->icon()), image(djtoolzIcon(DjtoolzIcon::Green)));
 }
 
 void TestDrumUi::drumMachineTakesAWholeRow()
 {
     for (int cols : { 2, 4 }) {
         panel_->setColumns(cols);
-        while (!panel_->moduleWidgets().isEmpty())
-            panel_->removeModule(panel_->moduleWidgets().first()->module()->id());
-        panel_->addModule(SamplerModule::Bombomatic);           // 0
-        panel_->addModule(SamplerModule::DrumMachine);          // 1: wants a row of its own
-        panel_->addModule(SamplerModule::Bombomatic);           // 2
-        panel_->addModule(SamplerModule::StabPlayer);           // 3
-        panel_->addModule(SamplerModule::DrumMachine);          // 4
-        panel_->addModule(SamplerModule::Bombomatic);           // 5
+        while (!panel_->toolWidgets().isEmpty())
+            panel_->removeTool(panel_->toolWidgets().first()->tool()->id());
+        panel_->addTool(DjtoolzTool::Bombomatic);           // 0
+        panel_->addTool(DjtoolzTool::DrumMachine);          // 1: wants a row of its own
+        panel_->addTool(DjtoolzTool::Bombomatic);           // 2
+        panel_->addTool(DjtoolzTool::StabPlayer);           // 3
+        panel_->addTool(DjtoolzTool::DrumMachine);          // 4
+        panel_->addTool(DjtoolzTool::Bombomatic);           // 5
         QCOMPARE(panel_->gridCell(0), QRect(0, 0, 1, 1));
-        QCOMPARE(panel_->gridCell(1), QRect(0, 1, cols, 1));   // the whole row, below the first module
-        QCOMPARE(panel_->gridCell(2), QRect(0, 2, 1, 1));       // the modules after it continue below
+        QCOMPARE(panel_->gridCell(1), QRect(0, 1, cols, 1));   // the whole row, below the first tool
+        QCOMPARE(panel_->gridCell(2), QRect(0, 2, 1, 1));       // the tools after it continue below
         QCOMPARE(panel_->gridCell(3), QRect(1, 2, 1, 1));
         if (cols == 2) {
             QCOMPARE(panel_->gridCell(4), QRect(0, 3, 2, 1));
@@ -582,38 +591,38 @@ void TestDrumUi::drumMachineTakesAWholeRow()
             QCOMPARE(panel_->gridCell(5), QRect(0, 4, 1, 1));
         }
         // the layout agrees with gridCell
-        auto* grid = static_cast<QGridLayout*>(panel_->moduleWidgets()[1]->parentWidget()->layout());
+        auto* grid = static_cast<QGridLayout*>(panel_->toolWidgets()[1]->parentWidget()->layout());
         int r, c, rs, cs;
-        grid->getItemPosition(grid->indexOf(panel_->moduleWidgets()[1]), &r, &c, &rs, &cs);
+        grid->getItemPosition(grid->indexOf(panel_->toolWidgets()[1]), &r, &c, &rs, &cs);
         QCOMPARE(QRect(c, r, cs, rs), QRect(0, 1, cols, 1));
-        grid->getItemPosition(grid->indexOf(panel_->moduleWidgets()[2]), &r, &c, &rs, &cs);
+        grid->getItemPosition(grid->indexOf(panel_->toolWidgets()[2]), &r, &c, &rs, &cs);
         QCOMPARE(QRect(c, r, cs, rs), QRect(0, 2, 1, 1));
     }
 }
 
 void TestDrumUi::dembomatikHasASwingSlider()
 {
-    auto* d = panel_->addModule(SamplerModule::Dembomatik);
+    auto* d = panel_->addTool(DjtoolzTool::Dembomatik);
     QVERIFY(d->swingSlider());
-    auto* b = panel_->addModule(SamplerModule::Bombomatic);
+    auto* b = panel_->addTool(DjtoolzTool::Bombomatic);
     QVERIFY(!b->swingSlider());
-    auto* s = panel_->addModule(SamplerModule::StabPlayer);
+    auto* s = panel_->addTool(DjtoolzTool::StabPlayer);
     QVERIFY(!s->swingSlider());
     d->swingSlider()->slider()->setValue(55);
-    QCOMPARE(d->module()->settings().swing, 55);
+    QCOMPARE(d->tool()->settings().swing, 55);
     QVERIFY(panel_->savePresetAs("dem"));
-    panel_->removeModule(d->module()->id());
+    panel_->removeTool(d->tool()->id());
     QVERIFY(panel_->loadPresetByName("dem"));
-    SamplerModuleWidget* back = nullptr;
-    for (auto* w : panel_->moduleWidgets())
-        if (w->module()->type() == SamplerModule::Dembomatik)
+    DjtoolzToolWidget* back = nullptr;
+    for (auto* w : panel_->toolWidgets())
+        if (w->tool()->type() == DjtoolzTool::Dembomatik)
             back = w;
     QVERIFY(back);
     QCOMPARE(back->swingSlider()->value(), 55);
-    // the wheel over it is the module volume, not the swing
+    // the wheel over it is the tool volume, not the swing
     wheel(back->swingSlider()->slider(), -2);
-    QCOMPARE(back->module()->settings().swing, 55);
-    QCOMPARE(back->module()->settings().volume, 125);
+    QCOMPARE(back->tool()->settings().swing, 55);
+    QCOMPARE(back->tool()->settings().volume, 125);
 }
 
 void TestDrumUi::voiceMuteDimsAndAltClickToggles()
@@ -635,13 +644,13 @@ void TestDrumUi::voiceMuteDimsAndAltClickToggles()
     QCOMPARE(toggled[0][1].toBool(), true);
     QCOMPARE(selected.size(), 0);                                // the selection did not move
     QCOMPARE(sel->selected(), 0);
-    QVERIFY(w->module()->settings().drums[2].muted);
-    QVERIFY(!w->module()->settings().drums[1].muted);
+    QVERIFY(w->tool()->settings().drums[2].muted);
+    QVERIFY(!w->tool()->settings().drums[1].muted);
     click(sel->button(2), Qt::AltModifier);                      // again: unmuted
     QVERIFY(!sel->muted(2));
     QVERIFY(!sel->button(2)->graphicsEffect());
     QCOMPARE(sel->button(2)->toolTip(), tip);
-    QVERIFY(!w->module()->settings().drums[2].muted);
+    QVERIFY(!w->tool()->settings().drums[2].muted);
     QTest::mouseClick(sel->button(3), Qt::MiddleButton, Qt::NoModifier, QPoint(5, 5));   // middle click
     QVERIFY(sel->muted(3));
     QCOMPARE(sel->selected(), 0);
@@ -651,14 +660,14 @@ void TestDrumUi::voiceMuteDimsAndAltClickToggles()
     ed->toggleVoiceMute(3);
     QVERIFY(!sel->muted(3));
     ed->setVoiceMuted(5, true);                                  // any voice, also a hidden one
-    QVERIFY(w->module()->settings().drums[5].muted);
+    QVERIFY(w->tool()->settings().drums[5].muted);
     QVERIFY(sel->muted(5));
     // a preset keeps the mutes
     QVERIFY(panel_->savePresetAs("muted"));
-    panel_->removeModule(w->module()->id());
+    panel_->removeTool(w->tool()->id());
     QVERIFY(panel_->loadPresetByName("muted"));
-    auto* back = panel_->moduleWidgets()[0];
-    QVERIFY(back->module()->settings().drums[5].muted);
+    auto* back = panel_->toolWidgets()[0];
+    QVERIFY(back->tool()->settings().drums[5].muted);
     QVERIFY(back->drumEditor()->selector()->muted(5));
     QVERIFY(!back->drumEditor()->selector()->muted(2));
 }
@@ -666,8 +675,8 @@ void TestDrumUi::voiceMuteDimsAndAltClickToggles()
 void TestDrumUi::presetRoundTripKeepsEverything()
 {
     auto* w = newDrums();
-    auto m = w->module();
-    ModuleSettings s = m->settings();
+    auto m = w->tool();
+    ToolSettings s = m->settings();
     s.swing = 99;
     s.volume = 77;
     for (int v = 0; v < kDrumVoices; ++v) {
@@ -679,15 +688,15 @@ void TestDrumUi::presetRoundTripKeepsEverything()
             s.drums[v].steps[i] = quint8((i * (v + 1)) % 3);
     }
     m->setSettings(s);
-    const ModuleSettings before = m->settings();
+    const ToolSettings before = m->settings();
     QVERIFY(panel_->savePresetAs("kit one"));
-    panel_->removeModule(m->id());
-    QCOMPARE(panel_->moduleWidgets().size(), 0);
+    panel_->removeTool(m->id());
+    QCOMPARE(panel_->toolWidgets().size(), 0);
     QVERIFY(panel_->loadPresetByName("kit one"));
-    QCOMPARE(panel_->moduleWidgets().size(), 1);
-    auto* back = panel_->moduleWidgets()[0];
-    QCOMPARE(back->module()->type(), SamplerModule::DrumMachine);
-    const ModuleSettings after = back->module()->settings();
+    QCOMPARE(panel_->toolWidgets().size(), 1);
+    auto* back = panel_->toolWidgets()[0];
+    QCOMPARE(back->tool()->type(), DjtoolzTool::DrumMachine);
+    const ToolSettings after = back->tool()->settings();
     QCOMPARE(after.swing, 99);
     QCOMPARE(after.volume, 77);
     for (int v = 0; v < kDrumVoices; ++v)

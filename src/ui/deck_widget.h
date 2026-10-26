@@ -52,6 +52,8 @@ public:
 signals:
     void deckClicked(int playerId);
     void playPauseClicked(int playerId, bool play);
+    void restartClicked(int playerId, bool quantize);
+    void beatJumpClicked(int playerId, int beats);
     void syncClicked(int playerId);
     void setBpmClicked(int playerId, double bpm);
     void becomeMasterClicked(int playerId);

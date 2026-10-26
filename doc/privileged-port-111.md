@@ -32,7 +32,7 @@ if you set it lower). Use 111, not 0, and not on a shared or internet-facing mac
 
 - Use the **real file**, not a symlink (`readlink -f $(which vdj-ui)`); `setcap` on a symlink fails.
 - The capability is stored on the file and **is lost whenever the file is replaced**: every rebuild with `make`, every package upgrade. For a development tree redo it after each
-  build; for a Debian package put it in `postinst` (`setcap cap_net_bind_service=+ep /usr/bin/vdj-ui`, `make-deb.sh` builds the package).
+  build; the Debian package (`make-deb.sh`) does it in its `postinst` (`data/debian/postinst`), so after installing the .deb nothing is left to do.
 - A binary with file capabilities ignores `LD_LIBRARY_PATH` and similar variables (the dynamic loader runs in secure-exec mode); programs that rely on them will behave differently.
 - Remove it again: `sudo setcap -r /full/path/to/vdj-ui`.
 

@@ -3,7 +3,7 @@
 
 namespace vdj {
 
-// Swing for modules that play on quarter beats (16 steps to a bar): every second step - the 2nd and 4th sixteenth of each beat,
+// Swing for tools that play on quarter beats (16 steps to a bar): every second step - the 2nd and 4th sixteenth of each beat,
 // the odd 0-based indices - is delayed. The amount is 0..127: 0 = on the grid, 127 = a quarter of a beat = one step, so a delayed
 // note lands where the next step is. The same in every beat, not per bar.
 constexpr double kSwingMaxDelayBeats = 0.25;

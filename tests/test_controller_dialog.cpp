@@ -8,11 +8,11 @@
 #include <memory>
 #include "midi/alsa_clock.h"
 #include "midi/midi_map_input.h"
-#include "midi/sampler_midi_control.h"
+#include "midi/djtoolz_midi_control.h"
 #include "ui/controller_dialog.h"
-#include "ui/sampler_controller.h"
-#include "ui/sampler_module_widget.h"
-#include "ui/sampler_panel.h"
+#include "ui/djtoolz_controller.h"
+#include "ui/djtoolz_tool_widget.h"
+#include "ui/djtoolz_panel.h"
 
 using namespace vdj;
 
@@ -20,7 +20,7 @@ class TestControllerDialog : public QObject {
     Q_OBJECT
 
     QTemporaryDir* dir_ = nullptr;
-    SamplerMidiControl* ctl_ = nullptr;
+    DjtoolzMidiControl* ctl_ = nullptr;
     QString path_;
 
     static QByteArray slurp(const QString& p) { QFile f(p); f.open(QIODevice::ReadOnly); return f.readAll(); }
@@ -34,7 +34,7 @@ private slots:
         f.open(QIODevice::WriteOnly);
         f.write("# my deck map\nstart 0 80 127\nstrip1_mute 0 1 127\n");
         f.close();
-        ctl_ = new SamplerMidiControl;
+        ctl_ = new DjtoolzMidiControl;
         QVERIFY(ctl_->loadFromFile(path_));
     }
     void cleanup()
@@ -46,6 +46,7 @@ private slots:
     void showsTheFile()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         QCOMPARE(d.cellText(0, 1), QString("any / CC 1"));
         QCOMPARE(d.cellText(0, 2), QString("-"));
         QCOMPARE(d.table()->item(0, 0)->text(), QString("any / CC 1"));
@@ -56,11 +57,17 @@ private slots:
     void learnAButtonKeepsTheValue()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.startLearn(1, 3);                                        // solo, strip 3
         QVERIFY(d.learning());
         QVERIFY(ctl_->learning());
         ctl_->onControlEvent(4, 35, 127, "x");
-        QVERIFY(!d.learning());
+        QVERIFY(d.learning());                                     // moved on to rec, strip 3
+        QCOMPARE(d.table()->currentRow(), 2);
+        QCOMPARE(d.table()->currentColumn(), 2);
+        for (int i = 0; i < 4; ++i)
+            d.skipButton()->click();                               // rec, select, knob, fader skipped
+        QVERIFY(!d.learning());                                    // the last row of a strip column: done
         QVERIFY(!ctl_->learning());
         QCOMPARE(d.cellText(1, 3), QString("any / CC 35"));        // any channel is the default
         QVERIFY(d.saveFile());
@@ -73,6 +80,7 @@ private slots:
     void learnAFaderWritesAny()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.startLearn(5, 2);
         ctl_->onControlEvent(2, 9, 77, "x");
         QVERIFY(d.saveFile());
@@ -85,6 +93,7 @@ private slots:
     void anyChannelOffWritesTheChannel()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.anyChannelBox()->setChecked(false);
         d.startLearn(0, 2);
         ctl_->onControlEvent(5, 50, 127, "x");
@@ -97,6 +106,7 @@ private slots:
     void learnANote()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.startLearn(0, 4);
         ctl_->onNoteEvent(1, 40, 100, true, "x");
         QCOMPARE(d.cellText(0, 4), QString("any / N 40"));
@@ -108,21 +118,53 @@ private slots:
         QCOMPARE(ctl_->map().decodeNote(1, 40, 90, true).strip, 4);
     }
 
+    void learningWalksDownTheColumnAndSkips()
+    {
+        ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
+        d.startLearn(6, 1);                                        // track back
+        ctl_->onControlEvent(1, 60, 127, "x");
+        QCOMPARE(d.table()->currentRow(), 7);                      // track forward
+        d.skipButton()->click();
+        QCOMPARE(d.table()->currentRow(), 8);                      // mode toggle
+        QCOMPARE(d.cellText(7, 1), QString("-"));
+        ctl_->onControlEvent(1, 62, 127, "x");
+        QVERIFY(!d.learning());                                    // last cell
+        QCOMPARE(d.cellText(8, 1), QString("any / CC 62"));
+        QVERIFY(!d.skipButton()->isEnabled());
+    }
+
+    void pressAndReleaseLearnOnlyOneCell()
+    {
+        ControllerDialog d(ctl_);                                  // the default pause
+        d.startLearn(0, 1);
+        ctl_->onNoteEvent(1, 40, 100, true, "x");
+        QVERIFY(!d.learning());                                    // waiting
+        ctl_->onNoteEvent(1, 40, 0, false, "x");                   // the release is not learned
+        QCOMPARE(d.cellText(1, 1), QString("-"));
+        QTRY_VERIFY_WITH_TIMEOUT(d.learning(), 1500);
+        QCOMPARE(d.table()->currentRow(), 1);
+        QCOMPARE(d.cellText(1, 1), QString("-"));
+    }
+
     void aKnobRejectsANote()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.startLearn(4, 1);
         ctl_->onNoteEvent(1, 40, 100, true, "x");
         QVERIFY(d.learning());                                     // still waiting
         QCOMPARE(d.cellText(4, 1), QString("-"));
         ctl_->onControlEvent(1, 16, 5, "x");
-        QVERIFY(!d.learning());
+        QVERIFY(d.learning());                                     // on to the fader
+        QCOMPARE(d.table()->currentRow(), 5);
         QCOMPARE(d.cellText(4, 1), QString("any / CC 16"));
     }
 
     void learnStripOneFillsTheRow()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.fillBox()->setChecked(true);
         d.startLearn(5, 1);
         ctl_->onControlEvent(1, 10, 5, "x");
@@ -142,6 +184,7 @@ private slots:
     void clearCellRemovesTheLine()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.table()->setCurrentCell(0, 0);
         d.clearButton()->click();
         QCOMPARE(d.cellText(0, 1), QString("-"));
@@ -153,6 +196,7 @@ private slots:
     void trackAndModeRows()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.startLearn(6, 1);
         ctl_->onControlEvent(1, 58, 127, "x");
         d.startLearn(7, 1);
@@ -170,6 +214,7 @@ private slots:
     void saveKeepsTheDeckLinesAndComments()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.startLearn(0, 2);
         ctl_->onControlEvent(1, 50, 127, "x");
         QVERIFY(d.saveFile());
@@ -182,6 +227,7 @@ private slots:
     void checkBoxesWriteTheDirectives()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.pickupBox()->setChecked(false);
         d.recForwardBox()->setChecked(false);
         d.sourceEdit()->setText("Studio");
@@ -200,6 +246,7 @@ private slots:
     void resetLoadsTheExampleButSavesOnlyOnSave()
     {
         ControllerDialog d(ctl_);
+        d.setAdvanceDelayMs(0);
         d.resetToExample();
         QCOMPARE(d.cellText(5, 1), QString("any / CC 0"));         // fader 1
         QCOMPARE(d.cellText(0, 8), QString("any / CC 55"));        // mute 8
@@ -213,8 +260,8 @@ private slots:
 
     void exampleIsInstalledOnceAndNeverOverwritten()
     {
-        const QString p = dir_->filePath("sub/sampler-control.adjmm");
-        QVERIFY(SamplerMidiControl::installExample(p));
+        const QString p = dir_->filePath("sub/djtoolz-control.adjmm");
+        QVERIFY(DjtoolzMidiControl::installExample(p));
         QVERIFY(QFile::exists(p));
         QVERIFY(slurp(p).contains("strip1_fader"));
         QVERIFY(QFileInfo(p).isWritable());
@@ -222,7 +269,7 @@ private slots:
         f.open(QIODevice::WriteOnly | QIODevice::Truncate);
         f.write("mine\n");
         f.close();
-        QVERIFY(SamplerMidiControl::installExample(p));
+        QVERIFY(DjtoolzMidiControl::installExample(p));
         QCOMPARE(slurp(p), QByteArray("mine\n"));
     }
 
@@ -230,26 +277,27 @@ private slots:
     {
         {
             ControllerDialog d(ctl_);
+            d.setAdvanceDelayMs(0);
             d.startLearn(0, 1);
             QVERIFY(ctl_->learning());
         }
         QVERIFY(!ctl_->learning());
     }
 
-    void wiringDeliversPortEventsToTheSampler()
+    void wiringDeliversPortEventsToTheDjtoolz()
     {
         AlsaClock clock;
         QTemporaryDir sd;
-        SamplerPanel panel(&clock, sd.path());
+        DjtoolzPanel panel(&clock, sd.path());
         panel.setAudioEnabled(false);
-        auto* w = panel.addModule(SamplerModule::StabPlayer);
+        auto* w = panel.addTool(DjtoolzTool::StabPlayer);
         MidiMapInput in;                                           // not started: the signals are emitted by hand
-        wireSamplerControl(&in, &panel, ctl_);
-        QVERIFY(!w->module()->enabled());
+        wireDjtoolzControl(&in, &panel, ctl_);
+        QVERIFY(!w->tool()->enabled());
         emit in.controlEvent(1, 1, 127, "nanoKONTROL Studio");     // strip1_mute 0 1 127 in the temp file
-        QVERIFY(w->module()->enabled());
+        QVERIFY(w->tool()->enabled());
         emit in.controlEvent(1, 1, 0, "nanoKONTROL Studio");       // release: nothing
-        QVERIFY(w->module()->enabled());
+        QVERIFY(w->tool()->enabled());
     }
 };
 

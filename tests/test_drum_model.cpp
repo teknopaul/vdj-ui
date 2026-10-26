@@ -1,6 +1,6 @@
 #include <QtTest/QtTest>
 #include "audio/drum_pattern.h"
-#include "audio/sampler_module.h"
+#include "audio/djtoolz_tool.h"
 #include "audio/swing.h"
 
 using namespace vdj;
@@ -160,9 +160,9 @@ void TestDrumModel::chokeNextWalksTheList()
 
 void TestDrumModel::settingsClamping()
 {
-    auto m = SamplerModule::create(SamplerModule::DrumMachine);
+    auto m = DjtoolzTool::create(DjtoolzTool::DrumMachine);
     QVERIFY(m);
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.swing = 900;
     s.drums[0].volume = 500;
     s.drums[1].volume = -4;
@@ -172,12 +172,12 @@ void TestDrumModel::settingsClamping()
     s.drums[5].chokeSteps = 77;
     s.drums[0].steps[3] = 9;
     m->setSettings(s);
-    const ModuleSettings c = m->settings();
+    const ToolSettings c = m->settings();
     QCOMPARE(c.swing, 127);
     QCOMPARE(c.drums[0].volume, 127);
     QCOMPARE(c.drums[1].volume, 0);
-    QCOMPARE(c.drums[2].offsetMs, SamplerModule::kMaxOffsetMs);
-    QCOMPARE(c.drums[3].offsetMs, -SamplerModule::kMaxOffsetMs);
+    QCOMPARE(c.drums[2].offsetMs, DjtoolzTool::kMaxOffsetMs);
+    QCOMPARE(c.drums[3].offsetMs, -DjtoolzTool::kMaxOffsetMs);
     QCOMPARE(c.drums[4].chokeSteps, 2);
     QCOMPARE(c.drums[5].chokeSteps, 16);
     QCOMPARE(int(c.drums[0].steps[3]), int(StepHalf));
@@ -204,12 +204,12 @@ void TestDrumModel::voiceMuteVariant()
     DrumVoice fromOld;
     drumVoiceFromVariant(old, &fromOld);                        // a file without the key
     QVERIFY(!fromOld.muted);
-    // through a whole module
-    auto mod = SamplerModule::create(SamplerModule::DrumMachine);
-    ModuleSettings s = mod->settings();
+    // through a whole tool
+    auto mod = DjtoolzTool::create(DjtoolzTool::DrumMachine);
+    ToolSettings s = mod->settings();
     s.drums[2].muted = true;
     mod->setSettings(s);
-    auto copy = SamplerModule::fromVariant(mod->toVariant());
+    auto copy = DjtoolzTool::fromVariant(mod->toVariant());
     QVERIFY(copy);
     QVERIFY(copy->settings().drums[2].muted);
     QVERIFY(!copy->settings().drums[1].muted);
@@ -217,9 +217,9 @@ void TestDrumModel::voiceMuteVariant()
 
 void TestDrumModel::drumMachineVariantRoundTrip()
 {
-    auto m = SamplerModule::create(SamplerModule::DrumMachine);
+    auto m = DjtoolzTool::create(DjtoolzTool::DrumMachine);
     QCOMPARE(m->typeName(), QString("DR-6S"));
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.name = "my kit";
     s.swing = 70;
     for (int v = 0; v < kDrumVoices; ++v) {
@@ -235,10 +235,10 @@ void TestDrumModel::drumMachineVariantRoundTrip()
     QCOMPARE(vm.value("type").toString(), QString("drums"));
     QCOMPARE(vm.value("voices").toList().size(), 6);
     QCOMPARE(vm.value("swing").toInt(), 70);
-    auto back = SamplerModule::fromVariant(vm);
+    auto back = DjtoolzTool::fromVariant(vm);
     QVERIFY(back);
-    QCOMPARE(back->type(), SamplerModule::DrumMachine);
-    const ModuleSettings b = back->settings();
+    QCOMPARE(back->type(), DjtoolzTool::DrumMachine);
+    const ToolSettings b = back->settings();
     QCOMPARE(b.swing, 70);
     QCOMPARE(b.name, QString("my kit"));
     for (int v = 0; v < kDrumVoices; ++v)
@@ -252,9 +252,9 @@ void TestDrumModel::drumMachineVariantEdgeCases()
     QVariantList voices;
     voices << QVariantMap{ { "sample", "/a.wav" }, { "volume", 50 }, { "pattern", "1000100010001000" } }
            << QVariantMap{ { "pattern", "nonsense" }, { "choke", 4 } };
-    auto m = SamplerModule::fromVariant(QVariantMap{ { "type", "drums" }, { "voices", voices } });
+    auto m = DjtoolzTool::fromVariant(QVariantMap{ { "type", "drums" }, { "voices", voices } });
     QVERIFY(m);
-    const ModuleSettings s = m->settings();
+    const ToolSettings s = m->settings();
     QCOMPARE(s.drums[0].samplePath, QString("/a.wav"));
     QCOMPARE(s.drums[0].volume, 50);
     QCOMPARE(int(s.drums[0].steps[4]), 1);
@@ -266,33 +266,33 @@ void TestDrumModel::drumMachineVariantEdgeCases()
     QVariantList many;
     for (int i = 0; i < 9; ++i)
         many << QVariantMap{ { "sample", QString("/%1.wav").arg(i) } };
-    auto big = SamplerModule::fromVariant(QVariantMap{ { "type", "drums" }, { "voices", many } });
+    auto big = DjtoolzTool::fromVariant(QVariantMap{ { "type", "drums" }, { "voices", many } });
     QCOMPARE(big->settings().drums[5].samplePath, QString("/5.wav"));        // the first six are used
     QCOMPARE(big->toVariant().value("voices").toList().size(), 6);
 }
 
 void TestDrumModel::swingIsSavedForDembomatikAndDrumsOnly()
 {
-    auto d = SamplerModule::create(SamplerModule::Dembomatik);
+    auto d = DjtoolzTool::create(DjtoolzTool::Dembomatik);
     QVERIFY(d->supportsSwing());
     QVERIFY(!d->hasDrumVoices());
     QVERIFY(d->toVariant().contains("swing"));
     QVERIFY(!d->toVariant().contains("voices"));
     QCOMPARE(d->toVariant().value("swing").toInt(), 0);
-    ModuleSettings s = d->settings();
+    ToolSettings s = d->settings();
     s.swing = 99;
     d->setSettings(s);
-    QCOMPARE(SamplerModule::fromVariant(d->toVariant())->settings().swing, 99);
+    QCOMPARE(DjtoolzTool::fromVariant(d->toVariant())->settings().swing, 99);
     // an old Dembomatik preset without the key
-    auto old = SamplerModule::fromVariant(QVariantMap{ { "type", "dembow" }, { "name", "old" } });
+    auto old = DjtoolzTool::fromVariant(QVariantMap{ { "type", "dembow" }, { "name", "old" } });
     QCOMPARE(old->settings().swing, 0);
-    QVERIFY(SamplerModule::create(SamplerModule::DrumMachine)->supportsSwing());
+    QVERIFY(DjtoolzTool::create(DjtoolzTool::DrumMachine)->supportsSwing());
 }
 
 void TestDrumModel::otherTypesStayByteIdentical()
 {
-    for (auto t : { SamplerModule::Bombomatic, SamplerModule::StabPlayer, SamplerModule::AcidLoop, SamplerModule::OneShot, SamplerModule::MidiMatic }) {
-        auto m = SamplerModule::create(t);
+    for (auto t : { DjtoolzTool::Bombomatic, DjtoolzTool::StabPlayer, DjtoolzTool::AcidLoop, DjtoolzTool::OneShot, DjtoolzTool::MidiMatic }) {
+        auto m = DjtoolzTool::create(t);
         QVERIFY(m);
         const QVariantMap vm = m->toVariant();
         QVERIFY2(!vm.contains("swing") && !vm.contains("voices"), qPrintable(m->typeName()));
@@ -300,7 +300,7 @@ void TestDrumModel::otherTypesStayByteIdentical()
         QVariantMap in = vm;
         in["swing"] = 50;
         in["voices"] = QVariantList{ QVariantMap{ { "sample", "/x.wav" } } };
-        auto back = SamplerModule::fromVariant(in);
+        auto back = DjtoolzTool::fromVariant(in);
         QCOMPARE(back->settings().swing, 0);
         QCOMPARE(back->settings().drums[0].samplePath, QString());
     }

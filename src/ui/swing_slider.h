@@ -20,7 +20,7 @@ public:
     void setValue(int swing);                        // does not emit
     QSlider* slider() const { return slider_; }
 
-    // Is this object, or one of its parents, a SwingSlider? (the module widget leaves the wheel alone over it)
+    // Is this object, or one of its parents, a SwingSlider? (the tool widget leaves the wheel alone over it)
     static bool isInside(const QObject* object);
 
 signals:

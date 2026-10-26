@@ -1,8 +1,8 @@
 #include <QtTest/QtTest>
 #include <QTemporaryDir>
 #include <vector>
-#include "audio/sampler_module.h"
-#include "audio/sampler_scheduler.h"
+#include "audio/djtoolz_tool.h"
+#include "audio/djtoolz_scheduler.h"
 
 using namespace vdj;
 
@@ -23,12 +23,12 @@ private slots:
     void swing64AndSwingZero();
     void chokeFramesFollowTheBpm();
     void eachVoiceHasItsOwnChoke();
-    void disabledModuleIsSilent();
+    void disabledToolIsSilent();
     void oneBarPlaysTheWholePatternOnce();
     void undecodedSampleIsSkippedThenPlays();
     void patternRepeatsWithoutDrift();
     void sequencerStopCancelsTheOneBar();
-    void idleModulePreloadsItsSamples();
+    void idleToolPreloadsItsSamples();
     void dembowSwing127MovesStepsThreeAndThirteen();
     void dembowSwing64AndOldVariant();
     void dembowOneBarWithSwing();
@@ -56,20 +56,20 @@ private:
         return path;
     }
     // a drum machine, enabled, with the given voices set up
-    std::shared_ptr<SamplerModule> drums(bool enabled = true)
+    std::shared_ptr<DjtoolzTool> drums(bool enabled = true)
     {
-        auto m = SamplerModule::create(SamplerModule::DrumMachine);
-        ModuleSettings s = m->settings();
+        auto m = DjtoolzTool::create(DjtoolzTool::DrumMachine);
+        ToolSettings s = m->settings();
         s.enabled = enabled;
         m->setSettings(s);
         return m;
     }
-    static void setSteps(ModuleSettings& s, int voice, std::initializer_list<int> on, quint8 level = StepOn)
+    static void setSteps(ToolSettings& s, int voice, std::initializer_list<int> on, quint8 level = StepOn)
     {
         for (int i : on)
             s.drums[voice].steps[i] = level;
     }
-    void run(SamplerScheduler& sch, int fromMs, int toMs)
+    void run(DjtoolzScheduler& sch, int fromMs, int toMs)
     {
         for (int t = fromMs; t <= toMs; t += 5)
             sch.tick(qint64(t) * 1000000);
@@ -78,7 +78,7 @@ private:
 };
 
 #define MAKE_SCHED \
-    SamplerScheduler sch(&beats_, &cache_, [this](const Trigger& t) { got_.push_back(t); })
+    DjtoolzScheduler sch(&beats_, &cache_, [this](const Trigger& t) { got_.push_back(t); })
 
 void TestDrumMachine::init()
 {
@@ -98,11 +98,11 @@ void TestDrumMachine::kickOnTheBeats()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     setSteps(s, 0, { 0, 4, 8, 12 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 2000);
     QVERIFY(got_.size() >= 4);
     for (int i = 0; i < 4; ++i) {
@@ -118,7 +118,7 @@ void TestDrumMachine::twoVoicesOnTheSameStep()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     s.drums[1].samplePath = sd_;
     s.drums[4].samplePath = hh_;
@@ -126,7 +126,7 @@ void TestDrumMachine::twoVoicesOnTheSameStep()
     setSteps(s, 1, { 0, 4 });
     setSteps(s, 4, { 2 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 400);
     int bd = 0, sd = 0, hh = 0;
     for (const Trigger& t : got_) {
@@ -144,12 +144,12 @@ void TestDrumMachine::halfStepIsHalfGain()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     setSteps(s, 0, { 0 }, StepOn);
     setSteps(s, 0, { 4 }, StepHalf);
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 700);
     QVERIFY(got_.size() >= 2);
     QCOMPARE(got_[0].gain, 1.0f);
@@ -160,13 +160,13 @@ void TestDrumMachine::volumesMultiply()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
-    s.volume = 64;                                   // the module (master)
+    ToolSettings s = m->settings();
+    s.volume = 64;                                   // the tool (master)
     s.drums[0].samplePath = bd_;
     s.drums[0].volume = 100;
     setSteps(s, 0, { 0 }, StepHalf);
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 200);
     QVERIFY(!got_.empty());
     QVERIFY(qAbs(got_[0].gain - (64.0f / 127.0f) * (100.0f / 127.0f) * 0.5f) < 1e-6);
@@ -176,7 +176,7 @@ void TestDrumMachine::silentVoicesPlayNothing()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     s.drums[0].volume = 0;                           // voice volume 0
     setSteps(s, 0, { 0, 4 });
@@ -184,13 +184,13 @@ void TestDrumMachine::silentVoicesPlayNothing()
     s.drums[2].samplePath = sd_;
     setSteps(s, 2, { 0, 4 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 700);
     for (const Trigger& t : got_)
         QCOMPARE(t.sample->path, sd_);               // only the audible voice
     QVERIFY(!got_.empty());
     got_.clear();
-    s.volume = 0;                                    // the module volume 0 silences everything
+    s.volume = 0;                                    // the tool volume 0 silences everything
     m->setSettings(s);
     run(sch, 705, 1700);
     QVERIFY(got_.empty());
@@ -200,14 +200,14 @@ void TestDrumMachine::mutedVoicePlaysNothing()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     s.drums[2].samplePath = sd_;
     setSteps(s, 0, { 0, 4, 8, 12 });
     setSteps(s, 2, { 0, 4, 8, 12 });
     s.drums[0].muted = true;
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 700);
     QVERIFY(!got_.empty());
     for (const Trigger& t : got_)
@@ -226,16 +226,16 @@ void TestDrumMachine::perVoiceOffset()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     s.drums[0].offsetMs = -10;
     s.drums[1].samplePath = sd_;
     s.drums[1].offsetMs = 15;
-    s.offsetMs = 40;                                 // the module offset is not used by the DR-6S
+    s.offsetMs = 40;                                 // the tool offset is not used by the DR-6S
     setSteps(s, 0, { 4 });
     setSteps(s, 1, { 4 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 700);
     QCOMPARE(int(got_.size()), 2);
     for (const Trigger& t : got_)
@@ -246,12 +246,12 @@ void TestDrumMachine::swing127MovesTheOddSteps()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.swing = 127;
     s.drums[4].samplePath = hh_;
     setSteps(s, 4, { 0, 1, 2, 3, 5 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 1600);
     std::vector<qint64> t;
     for (const Trigger& g : got_)
@@ -271,12 +271,12 @@ void TestDrumMachine::swing64AndSwingZero()
         got_.clear();
         MAKE_SCHED;
         auto m = drums();
-        ModuleSettings s = m->settings();
+        ToolSettings s = m->settings();
         s.swing = swing;
         s.drums[4].samplePath = hh_;
         setSteps(s, 4, { 1 });
         m->setSettings(s);
-        sch.addModule(m);
+        sch.addTool(m);
         run(sch, 0, 600);
         QCOMPARE(int(got_.size()), 1);
         const double beat = 0.25 + 0.25 * swing / 127.0;
@@ -291,7 +291,7 @@ void TestDrumMachine::chokeFramesFollowTheBpm()
         beats_.tempo = bpm;
         MAKE_SCHED;
         auto m = drums();
-        ModuleSettings s = m->settings();
+        ToolSettings s = m->settings();
         s.drums[0].samplePath = bd_;
         s.drums[0].chokeSteps = 4;
         s.drums[1].samplePath = sd_;
@@ -301,7 +301,7 @@ void TestDrumMachine::chokeFramesFollowTheBpm()
         setSteps(s, 1, { 0 });
         setSteps(s, 2, { 0 });
         m->setSettings(s);
-        sch.addModule(m);
+        sch.addTool(m);
         run(sch, 0, 100);
         QCOMPARE(int(got_.size()), 3);
         for (const Trigger& t : got_) {
@@ -321,27 +321,27 @@ void TestDrumMachine::eachVoiceHasItsOwnChoke()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     s.drums[0].chokeSteps = 2;
     setSteps(s, 0, { 0, 4, 8, 12 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 2000);
     QVERIFY(got_.size() >= 4);
     for (const Trigger& t : got_)
         QCOMPARE(t.cutAfterFrames, qint64(11025));   // every hit carries it
 }
 
-void TestDrumMachine::disabledModuleIsSilent()
+void TestDrumMachine::disabledToolIsSilent()
 {
     MAKE_SCHED;
     auto m = drums(false);
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     setSteps(s, 0, { 0, 4, 8, 12 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 3000);
     QVERIFY(got_.empty());
 }
@@ -350,13 +350,13 @@ void TestDrumMachine::oneBarPlaysTheWholePatternOnce()
 {
     MAKE_SCHED;
     auto m = drums(false);
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     s.drums[1].samplePath = sd_;
     setSteps(s, 0, { 0, 8 });
     setSteps(s, 1, { 4, 12 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 1200);
     QVERIFY(m->supportsOneBar());
     m->fireOneBar(beats_.beatsAtSteadyNs(ms(1200)));  // beat 2.4: the bar line at beat 4 = 2.0 s
@@ -378,11 +378,11 @@ void TestDrumMachine::undecodedSampleIsSkippedThenPlays()
     MAKE_SCHED;
     const QString late = writeWav("late.wav", 500);
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = late;
     setSteps(s, 0, { 0, 4, 8, 12 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     sch.tick(0);
     QVERIFY(got_.empty());                           // not decoded yet: the hit is skipped, the decode is started
     QVERIFY(sch.waitIdle(2000));
@@ -396,11 +396,11 @@ void TestDrumMachine::patternRepeatsWithoutDrift()
 {
     MAKE_SCHED;
     auto m = drums();
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     setSteps(s, 0, { 0, 6, 10 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 8100);                               // four bars at 120 BPM
     std::vector<qint64> t;
     for (const Trigger& g : got_)
@@ -418,11 +418,11 @@ void TestDrumMachine::sequencerStopCancelsTheOneBar()
 {
     MAKE_SCHED;
     auto m = drums(false);
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = bd_;
     setSteps(s, 0, { 0, 4, 8, 12 });
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 100);
     m->fireOneBar(0.2);
     beats_.isRunning = false;
@@ -433,16 +433,16 @@ void TestDrumMachine::sequencerStopCancelsTheOneBar()
     QVERIFY(got_.empty());
 }
 
-void TestDrumMachine::idleModulePreloadsItsSamples()
+void TestDrumMachine::idleToolPreloadsItsSamples()
 {
     MAKE_SCHED;
     const QString a = writeWav("pre_a.wav", 300), b = writeWav("pre_b.wav", 300);
     auto m = drums(false);                           // switched off: nothing plays, but the samples are read ahead
-    ModuleSettings s = m->settings();
+    ToolSettings s = m->settings();
     s.drums[0].samplePath = a;
     s.drums[3].samplePath = b;
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     QVERIFY(!cache_.peek(a));
     sch.tick(0);
     QVERIFY(sch.waitIdle(2000));
@@ -454,13 +454,13 @@ void TestDrumMachine::idleModulePreloadsItsSamples()
 void TestDrumMachine::dembowSwing127MovesStepsThreeAndThirteen()
 {
     MAKE_SCHED;
-    auto m = SamplerModule::create(SamplerModule::Dembomatik);
-    ModuleSettings s = m->settings();
+    auto m = DjtoolzTool::create(DjtoolzTool::Dembomatik);
+    ToolSettings s = m->settings();
     s.samplePath = bd_;
     s.enabled = true;
     s.swing = 127;
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 2000);                               // the first bar
     std::vector<qint64> t;
     for (const Trigger& g : got_)
@@ -478,13 +478,13 @@ void TestDrumMachine::dembowSwing127MovesStepsThreeAndThirteen()
 void TestDrumMachine::dembowSwing64AndOldVariant()
 {
     MAKE_SCHED;
-    auto m = SamplerModule::create(SamplerModule::Dembomatik);
-    ModuleSettings s = m->settings();
+    auto m = DjtoolzTool::create(DjtoolzTool::Dembomatik);
+    ToolSettings s = m->settings();
     s.samplePath = bd_;
     s.enabled = true;
     s.swing = 64;
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 700);
     std::vector<qint64> t;
     for (const Trigger& g : got_)
@@ -493,19 +493,19 @@ void TestDrumMachine::dembowSwing64AndOldVariant()
     QVERIFY(t.size() >= 2);
     QVERIFY(qAbs(double(t[1]) - (0.75 + 0.25 * 64 / 127.0) * 500e6) < 2.0);     // step 3
     // the swing survives the variant, and a variant without it is 0
-    QCOMPARE(SamplerModule::fromVariant(m->toVariant())->settings().swing, 64);
-    QCOMPARE(SamplerModule::fromVariant(QVariantMap{ { "type", "dembow" } })->settings().swing, 0);
+    QCOMPARE(DjtoolzTool::fromVariant(m->toVariant())->settings().swing, 64);
+    QCOMPARE(DjtoolzTool::fromVariant(QVariantMap{ { "type", "dembow" } })->settings().swing, 0);
 }
 
 void TestDrumMachine::dembowOneBarWithSwing()
 {
     MAKE_SCHED;
-    auto m = SamplerModule::create(SamplerModule::Dembomatik);
-    ModuleSettings s = m->settings();
+    auto m = DjtoolzTool::create(DjtoolzTool::Dembomatik);
+    ToolSettings s = m->settings();
     s.samplePath = bd_;
     s.swing = 127;
     m->setSettings(s);
-    sch.addModule(m);
+    sch.addTool(m);
     run(sch, 0, 1200);
     m->fireOneBar(beats_.beatsAtSteadyNs(ms(1200)));   // the bar at beat 4 = 2.0 s
     run(sch, 1205, 6000);
