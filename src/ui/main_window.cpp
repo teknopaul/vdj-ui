@@ -57,6 +57,8 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QPixmap>
+#include <QPainter>
+#include <QFont>
 #include <QPushButton>
 #include <QApplication>
 #include <QCoreApplication>
@@ -468,27 +470,81 @@ void MainWindow::openRekordboxFolder()
         : QStringLiteral("Loaded %1 (no PIONEER/rekordbox/export.pdb found; showing Contents only)").arg(dir), 6000);
 }
 
+// Menu icons are all 22x22 so the icon column lines up whatever the source is
+static QIcon glyphIcon(const QString& glyph)
+{
+    QIcon icon;
+    for (int scale : {1, 2}) {
+        QPixmap pm(22 * scale, 22 * scale);
+        pm.setDevicePixelRatio(scale);
+        pm.fill(Qt::transparent);
+        QPainter p(&pm);
+        p.setRenderHint(QPainter::TextAntialiasing);
+        QFont f = QApplication::font();
+        f.setPixelSize(17);
+        p.setFont(f);
+        p.setPen(QColor(0xe0, 0xe0, 0xe0));
+        p.drawText(QRect(0, 0, 22, 22), Qt::AlignCenter, glyph);
+        icon.addPixmap(pm);
+    }
+    return icon;
+}
+
+// A freedesktop themed icon scaled into the same 22x22 cell, falling back to a glyph when the theme lacks it
+static QIcon themedIcon(const QString& name, const QString& fallbackGlyph)
+{
+    const QIcon themed = QIcon::fromTheme(name);
+    if (themed.isNull())
+        return glyphIcon(fallbackGlyph);
+    QIcon icon;
+    for (int scale : {1, 2}) {
+        QPixmap pm(22 * scale, 22 * scale);
+        pm.setDevicePixelRatio(scale);
+        pm.fill(Qt::transparent);
+        QPainter p(&pm);
+        themed.paint(&p, QRect(0, 0, 22, 22));
+        icon.addPixmap(pm);
+    }
+    return icon;
+}
+
+static QIcon imageIcon(const QString& resource)
+{
+    QIcon icon;
+    icon.addFile(resource, QSize(22, 22));
+    return icon;
+}
+
 void MainWindow::setupMenus()
 {
+    qApp->setAttribute(Qt::AA_DontShowIconsInMenus, false);
+    if (!QIcon::hasThemeIcon(QStringLiteral("drive-harddisk")))
+        QIcon::setThemeName(QStringLiteral("Yaru"));
+
     QMenu* file = menuBar()->addMenu("&File");
     QAction* openDb = file->addAction("&Open Rekordbox Folder...");
+    openDb->setIcon(glyphIcon(QStringLiteral("📂")));
     openDb->setShortcut(QKeySequence::Open);
     connect(openDb, &QAction::triggered, this, &MainWindow::openRekordboxFolder);
     QAction* pendrivesAction = file->addAction("Virtual &Pendrives...");
+    pendrivesAction->setIcon(themedIcon(QStringLiteral("drive-harddisk"), QStringLiteral("💾")));
     pendrivesAction->setToolTip("Named folders and the pendrives plugged into this PC: open one in the browser or export it to the decks");
     connect(pendrivesAction, &QAction::triggered, this, &MainWindow::showVirtualPendrives);
     QAction* cloneAction = file->addAction("&Clone Pendrive...");
+    cloneAction->setIcon(themedIcon(QStringLiteral("media-removable"), QStringLiteral("⎘")));
     connect(cloneAction, &QAction::triggered, this, [this]() {
         PendriveCloneDialog dlg(this);
         dlg.exec();
     });
     file->addSeparator();
     QAction* quit = file->addAction("&Quit");
+    quit->setIcon(glyphIcon(QStringLiteral("⏻")));
     quit->setShortcut(QKeySequence::Quit);
     connect(quit, &QAction::triggered, this, &QMainWindow::close);
 
     QMenu* view = menuBar()->addMenu("&View");
     QAction* fullscr = view->addAction("Full&screen");
+    fullscr->setIcon(glyphIcon(QStringLiteral("⛶")));
     fullscr->setShortcut(Qt::CTRL | Qt::Key_F11);   // F1..F12 switch the DJ Tools tools
     connect(fullscr, &QAction::triggered, this, [this]() {
         if (isFullScreen()) showNormal();
@@ -501,6 +557,7 @@ void MainWindow::setupMenus()
     connect(hudAction_, &QAction::toggled, this, &MainWindow::showHud);
 
     QAction* browserAction = view->addAction("Rekordbox &Folder View");
+    browserAction->setIcon(glyphIcon(QStringLiteral("☰")));
     browserAction->setCheckable(true);
     browserAction->setChecked(config_->loadValue(QStringLiteral("ui"), QStringLiteral("rekordbox_view")) != QLatin1String("0"));
     connect(browserAction, &QAction::toggled, this, [this](bool on) {
@@ -509,6 +566,7 @@ void MainWindow::setupMenus()
     });
 
     QAction* playerAction = view->addAction("Local Track &Player");
+    playerAction->setIcon(glyphIcon(QStringLiteral("▶")));
     playerAction->setCheckable(true);
     playerAction->setChecked(config_->loadValue(QStringLiteral("ui"), QStringLiteral("local_player")) != QLatin1String("0"));
     connect(playerAction, &QAction::toggled, this, [this](bool on) {
@@ -520,6 +578,7 @@ void MainWindow::setupMenus()
     });
 
     QAction* djtoolzAction = view->addAction("DJ &Tools");
+    djtoolzAction->setIcon(glyphIcon(QStringLiteral("🎛")));
     djtoolzAction->setCheckable(true);
     djtoolzAction->setToolTip("The live DJ Tools (bombomatic, stabs, acid loops, one shots, MIDI notes) in time with the VDJ sequencer. "
                               "Hiding the panel does not stop it.");
@@ -531,9 +590,11 @@ void MainWindow::setupMenus()
     });
 
     recordAction_ = view->addAction("&Recording Panel");
+    recordAction_->setIcon(glyphIcon(QStringLiteral("🔴")));
     recordAction_->setCheckable(true);
 
     QAction* debugAction = view->addAction("&Debug Panel");
+    debugAction->setIcon(glyphIcon(QStringLiteral("🐞")));
     debugAction->setShortcut(Qt::CTRL | Qt::Key_D);
     debugAction->setCheckable(true);
     connect(debugAction, &QAction::toggled, this, &MainWindow::setDebugMode);
@@ -553,7 +614,9 @@ void MainWindow::setupMenus()
 
     QMenu* network = menuBar()->addMenu("&Network");
     connectAction_ = network->addAction("&Connect");
+    connectAction_->setIcon(imageIcon(QStringLiteral(":/img/connect-22.png")));
     QAction* disconnectAction = network->addAction("&Disconnect");
+    disconnectAction->setIcon(glyphIcon(QStringLiteral("⚡")));
     connect(connectAction_, &QAction::triggered, this, &MainWindow::connectToNetwork);
     connect(disconnectAction, &QAction::triggered, this, &MainWindow::disconnectFromNetwork);
 
@@ -577,9 +640,11 @@ void MainWindow::setupMenus()
     exportMenu_->setToolTip("Choose which pendrive the decks see; picking another one while exporting swaps it like a deck does (refused while a deck uses it)");
     connect(exportMenu_, &QMenu::aboutToShow, this, &MainWindow::rebuildExportMenu);
     QAction* ejectAction = network->addAction("E&ject Exported Pendrive (USB STOP)");
+    ejectAction->setIcon(glyphIcon(QStringLiteral("⏏")));
     connect(ejectAction, &QAction::triggered, this, &MainWindow::ejectPendrive);
     network->addSeparator();
     rbAction_ = network->addAction("&Rekordbox PC Mode...");
+    rbAction_->setIcon(glyphIcon(QStringLiteral("📦")));
     rbAction_->setCheckable(true);
     rbAction_->setToolTip("Pretend to be a rekordbox PC and serve a local export to the decks (experimental)");
     connect(rbAction_, &QAction::toggled, this, [this](bool on) { rekordboxDock()->setVisible(on); });
@@ -587,21 +652,23 @@ void MainWindow::setupMenus()
     network->addSeparator();
     // The players serve NFS v2 over UDP, which the kernel cannot mount: files are read with libcdj's own client
     deckFilesMenu_ = network->addMenu("&Browse Deck Files");
+    deckFilesMenu_->setIcon(glyphIcon(QStringLiteral("📂")));
     connect(deckFilesMenu_, &QMenu::aboutToShow, this, &MainWindow::populateDeckFilesMenu);
     network->addSeparator();
     autoIpMenuAction_ = network->addAction("&AutoIP...");
+    autoIpMenuAction_->setIcon(glyphIcon(QStringLiteral("🔗")));
     autoIpMenuAction_->setCheckable(true);
     autoIpMenuAction_->setToolTip("Claim a link-local address on the interface connected to the decks");
     connect(autoIpMenuAction_, &QAction::triggered, this, &MainWindow::setAutoIp);
 
-    QMenu* configMenu = menuBar()->addMenu("&Config");
-    QAction* forgetNicAction = configMenu->addAction("&Forget Saved Network Interface");
+    network->addSeparator();
+    QAction* forgetNicAction = network->addAction("&Forget Saved Network Interface");
     forgetNicAction->setToolTip("The network interface for the decks is asked once and then reused; forget it after the NIC changes");
     connect(forgetNicAction, &QAction::triggered, this, &MainWindow::forgetInterface);
-    QAction* fontAction = configMenu->addAction("Application &Font...");
-    fontAction->setToolTip("The font for the whole app");
-    connect(fontAction, &QAction::triggered, this, &MainWindow::chooseAppFont);
+
+    QMenu* configMenu = menuBar()->addMenu("&Config");
     QMenu* quantizeMenu = configMenu->addMenu("&Quantize");
+    quantizeMenu->setIcon(glyphIcon(QStringLiteral("🟥")));
     quantizeMenu->setToolTip("How close to the beat quantized jumps and starts land: the grid step for every quantize button");
     auto* quantizeGroup = new QActionGroup(this);
     for (auto r : {QuantizeSettings::Beat, QuantizeSettings::Half, QuantizeSettings::Quarter}) {
@@ -611,18 +678,8 @@ void MainWindow::setupMenus()
         quantizeGroup->addAction(a);
         connect(a, &QAction::triggered, this, [this, r]() { quantize_->setResolution(r); });
     }
-    configMenu->addSeparator();
-    QAction* usbAction = configMenu->addAction("&USB / MIDI...");
     QAction* instAction = configMenu->addAction("&Instruments...");
-    QAction* monitorAction = configMenu->addAction("MIDI M&onitor...");
-    monitorAction->setToolTip("Shows the MIDI events the controller sends and what the map turns them into");
-    connect(monitorAction, &QAction::triggered, this, [this]() {
-        if (!midiMonitor_) midiMonitor_ = new MidiMonitorDialog(midiIn_, this);
-        midiMonitor_->show();
-        midiMonitor_->raise();
-        midiMonitor_->activateWindow();
-    });
-    QAction* joyAction = configMenu->addAction("&Joystick...");
+    instAction->setIcon(glyphIcon(QStringLiteral("🎹")));
     connect(instAction, &QAction::triggered, this, [this]() {
         if (!instruments_) return;
         InstrumentConfigDialog dlg(instruments_, config_, this);
@@ -631,17 +688,36 @@ void MainWindow::setupMenus()
         djtoolzPanel_->drumKits()->setImportFolders(InstrumentManager::drumKitFolders(config_));
         djtoolzPanel_->drumKitsChanged();
     });
+    QAction* usbAction = configMenu->addAction("&USB / MIDI...");
+    usbAction->setIcon(glyphIcon(QStringLiteral("➿")));
     connect(usbAction, &QAction::triggered, this, [this]() {
         UsbConfigDialog dlg(config_, this);
         dlg.exec();
     });
+    QAction* joyAction = configMenu->addAction("&Joystick...");
+    joyAction->setIcon(glyphIcon(QStringLiteral("🕹")));
     connect(joyAction, &QAction::triggered, this, [this]() {
         JoystickConfigDialog dlg(config_, this);
         dlg.exec();
     });
+    QAction* monitorAction = configMenu->addAction("MIDI M&onitor...");
+    monitorAction->setIcon(glyphIcon(QStringLiteral("📈")));
+    monitorAction->setToolTip("Shows the MIDI events the controller sends and what the map turns them into");
+    connect(monitorAction, &QAction::triggered, this, [this]() {
+        if (!midiMonitor_) midiMonitor_ = new MidiMonitorDialog(midiIn_, this);
+        midiMonitor_->show();
+        midiMonitor_->raise();
+        midiMonitor_->activateWindow();
+    });
+    configMenu->addSeparator();
+    QAction* fontAction = configMenu->addAction("&Font...");
+    fontAction->setIcon(glyphIcon(QStringLiteral("𝐀")));
+    fontAction->setToolTip("The font for the whole app");
+    connect(fontAction, &QAction::triggered, this, &MainWindow::chooseAppFont);
 
     QMenu* help = menuBar()->addMenu("&Help");
     QAction* aboutAction = help->addAction("&About");
+    aboutAction->setIcon(imageIcon(QStringLiteral(":/img/vdj-22x22.png")));
     connect(aboutAction, &QAction::triggered, this, [this]() {
         QMessageBox box(this);
         box.setWindowTitle(QStringLiteral("About VDJ UI"));
