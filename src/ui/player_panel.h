@@ -27,6 +27,12 @@ public:
 
     // Load info.audioPath for playing and show its waveform / cues. Returns false (and shows why) on failure.
     bool loadTrack(const TrackInfo& info);
+    // Load a track of the trakcrate master: the audio file of that folder, with its beat grid, cuemarks and waveform from the master's own files
+    // (trakcrate_analysis.h). Nothing is written. False (and a status message) when the folder has no playable audio.
+    bool loadTrakcrateTrack(const QString& trackDir);
+    // The master's analysis again (its beat grid or cuemarks were edited) without stopping the deck. No-op unless this track is loaded.
+    void reloadTrakcrateAnalysis(const QString& trackDir);
+    QString trakcrateDir() const { return trakcrateDir_; }       // empty unless the loaded track came from the master
 
     AudioPlayer* player() const { return player_; }
     WaveformWidget* waveform() const { return waveform_; }
@@ -62,9 +68,11 @@ public:
 
 signals:
     void status(const QString& message);
+    void trakcrateTrackLoaded(const QString& trackDir);   // a master track was loaded (folder), or empty when a track from elsewhere replaced it
     void beatChanged(int beatNumber);            // the play position entered a new beat of the grid
 
 private:
+    bool loadImpl(const TrackInfo& info, const TrackAnalysis* given);
     void updateBpmLabel();
     void updateButtons();
     void rebuildCueButtons();
@@ -90,6 +98,7 @@ private:
     QLabel* bpm_;
     QHBoxLayout* cueLayout_;
     QList<QPushButton*> cueButtons_;
+    QString trakcrateDir_;
     TrackAnalysis analysis_;
     double originalBpm_ = 0.0;
     double targetBpm_ = 0.0;

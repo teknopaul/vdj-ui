@@ -23,3 +23,5 @@ A real DJ always takes two of more copies to a gig in cases on pendrive breaks.
 Support updates to existing pendrives using `rsync`
 Support removing  orphaned tracks from Contents (with a warning before doing so)
 Support and UNKNON_BYTES.txt file in the master directory for listing the bytes we are goign to have to make up be cause we dont know the protoocl yet,  this means otther users can contribute to these values.
+
+> The official specification of this format is `TRAKCRATE-FORMAT.md` in the project root. This file keeps the original design notes.

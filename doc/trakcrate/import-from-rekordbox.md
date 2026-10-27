@@ -76,3 +76,45 @@ An imported drive is a corpus of rows, ANLZ files and settings made by the real 
 - rekordbox versions differ in PDB details; record the version in `source.txt` and store it with unknown bytes.
 - Where track ids must stay stable on re-export to the same set of players (they cache by id?). Test on a deck: reimport, re-export with new ids, does the cue memory or history on the player break?
 - Windows/Mac drives are exFAT/FAT32 or HFS+; Linux read support of HFS+ is limited (mount read-only).
+
+## Implemented: the "Import drive..." button
+
+`src/trakcrate/rb_import.{h,cpp}` (`importRekordboxDrive`), dialog `src/ui/trakcrate_rbimport_dialog.*`, button in the trakcrate pane. Nothing watches for drives or prompts when
+one is plugged in: the dialog only lists mounted drives (`/media/$USER`, `/run/media/$USER`, `/mnt`) when you open it.
+
+What it takes from the drive (read only):
+
+| Item | Where it goes | source.txt origin |
+|---|---|---|
+| title, artist, album, genre, label, key, year, track number, rating, colour, comment, remixer, mix name, dates, BPM tag, drive track id | `meta.txt` | `meta=rekordbox` |
+| beat grid (first tempo and first beat, microsecond precision from PQT2) | `beatgrid.txt` | `beatgrid=rekordbox` |
+| memory points, hot cues, loops | `cuemarks.txt` (hot cues 1-3 stay A-C, the rest are plain marks; loops get a `loop_end_ms=` column) | `cues=rekordbox` |
+| PWAV, PWV2, PWV3, PWV5 waveforms | `waveform.bin` (PWV4 is still approximated at export) | `waveform=rekordbox` |
+| `PIONEER/Artwork/.../a<id>.jpg` (80x80), else the picture inside the audio | `artwork.jpg` | `artwork=rekordbox` |
+| the original `ANLZ0000.DAT/.EXT/.2EX` | `anlz/` byte for byte | n/a |
+| playlists | `pendrives/<Folder - Playlist>/` in the drive's order; an existing playlist is left alone | n/a |
+| `DEVSETTING.DAT`, `MYSETTING.DAT` (option, CRC checked) | `user-settings/`, used by later exports | n/a |
+| `RBFLTR.DAT`, `exportExt.pdb`, `djprofile.nxs` (separate options, off) | `user-settings/` | n/a |
+
+Master folders come from the path under `Contents/` (`Contents/Intapol/UK Dembow/x.mp3` becomes `Intapol - UK Dembow`). Audio already in the library (same SHA-256) is not stored again.
+Tracks whose audio file is missing on the drive are skipped and listed in the report (the doc above suggested importing their metadata anyway; skipped is simpler and nothing can be exported without audio).
+Analysis (`Analyse`) leaves `rekordbox` fields alone unless forced.
+
+Checked on a real 2265 track drive (first 40 tracks): all had grids, waveforms and ANLZ files, 35 artwork, 13 cue lists.
+
+Known gaps (not done yet):
+- A variable tempo grid is stored as its first tempo only (a warning is listed); the exporter does not yet re-emit the kept `anlz/` files verbatim, it rebuilds ANLZ from `beatgrid.txt`, `cuemarks.txt` and `waveform.bin`.
+- Hot cues D-H are kept as marks but not exported as hot cues (the exporter handles A-C).
+- PSSI phrases, `.2EX` contents and history tables are kept raw at best (`anlz/`), not decoded.
+
+### Folders: playlists become folders (default)
+
+Importing by the drive's own `Contents/Artist/Album` folders gives hundreds of folders the DJ never made. Now the **playlists** are the folders:
+
+- The dialog lists every playlist of the drive with its track count and two ticks: **Import as folder** and **Import as playlist**, both on by default.
+- A track in several playlists is stored once, in the first playlist (natural name order) that is ticked as a folder. The database does not say which playlist is the DJ's master one, so
+  untick "folder" for playlists that only repeat tracks of others; they still become trakcrate playlists with all their tracks (untick "playlist" to leave one out).
+- A track in no folder playlist goes into one folder named `rekordbox`, or, with "use their folders on the drive", into the folder of its location under `Contents/` (the old behaviour).
+- A drive **without playlists** (some DJs work that way) is imported into folders named after its folders on the drive, with no playlists.
+- API: `RbImportOptions::playlistFolders`, `folderOff`, `playlistOff`, `looseByPath`; `listRekordboxPlaylists(root)` gives the ids and names for the dialog.
+- A repeated import skips tracks it already has (same drive path and size), wherever they were filed. To redo an import with different folder choices, remove the earlier import's folders (or use a new library) first.

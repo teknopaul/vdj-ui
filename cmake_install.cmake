@@ -49,6 +49,11 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
+  include("/home/teknopaul/bzr_workspace/vdj-ui/plugins/xone-ladspa/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
   include("/home/teknopaul/bzr_workspace/vdj-ui/tests/cmake_install.cmake")
 endif()
 

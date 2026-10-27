@@ -9,9 +9,13 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("vdj-ui");
-    app.setApplicationVersion("0.1.0");
+    app.setApplicationVersion(QStringLiteral(VDJ_UI_VERSION));
 
     const QStringList args = app.arguments();
+    if (args.contains(QStringLiteral("--version")) || args.contains(QStringLiteral("-V"))) {
+        std::printf("vdj-ui %s\n", VDJ_UI_VERSION);
+        return 0;
+    }
     const bool debug = args.contains(QStringLiteral("--debug"));
 
     vdj::RbModeOptions rb;

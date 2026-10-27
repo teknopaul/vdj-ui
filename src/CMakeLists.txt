@@ -114,6 +114,20 @@ add_library(vdj-cdj STATIC
     ui/pendrive_toolbar.cpp
     ui/recording_panel.cpp
     ui/rekordbox_mode_panel.cpp
+    ui/trakcrate_job.cpp
+    ui/trakcrate_track_model.cpp
+    ui/trakcrate_import_dialog.cpp
+    ui/trakcrate_bpm_dialog.cpp
+    ui/trakcrate_pendrive_dialog.cpp
+    ui/trakcrate_analysis.cpp
+    ui/star_rating_widget.cpp
+    ui/trakcrate_track_editor.cpp
+    ui/artwork_view.cpp
+    ui/artwork_launcher.cpp
+    ui/trakcrate_rbimport_dialog.cpp
+    ui/trakcrate_panel.cpp
+    ui/trakcrate_export_dialog.cpp
+    ui/trakcrate_artwork.cpp
     ui/instrument_config_dialog.cpp
     ui/midi_monitor_dialog.cpp
     ui/controller_dialog.cpp
@@ -173,6 +187,52 @@ else()
 endif()
 target_link_libraries(vdj-cdj PUBLIC vdj-dbserver)
 # end rekordbox mode
+
+# trakcrate: the master database and rekordbox pendrive export (doc/trakcrate/). Plain C++17, no Qt, so it can move to the command line tools.
+add_library(vdj-trakcrate STATIC
+    trakcrate/fsutil.cpp
+    trakcrate/natsort.cpp
+    trakcrate/sha256.cpp
+    trakcrate/track.cpp
+    trakcrate/library.cpp
+    trakcrate/audio_probe.cpp
+    trakcrate/importer.cpp
+    trakcrate/audio_decode.cpp
+    trakcrate/analysis_beats.cpp
+    trakcrate/analysis_wave.cpp
+    trakcrate/cuemark_render.cpp
+    trakcrate/cuemark_edit.cpp
+    trakcrate/grid_edit.cpp
+    trakcrate/artwork_edit.cpp
+    trakcrate/bpm_detect.cpp
+    trakcrate/analysis.cpp
+    trakcrate/pdb_writer.cpp
+    trakcrate/pdb_build.cpp
+    trakcrate/anlz_writer.cpp
+    trakcrate/settings_files.cpp
+    trakcrate/settings_defaults.cpp
+    trakcrate/artwork_paths.cpp
+    trakcrate/exporter.cpp
+    trakcrate/rb_import.cpp
+    trakcrate/usb_speed.cpp
+)
+set_target_properties(vdj-trakcrate PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(vdj-trakcrate PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+pkg_check_modules(TC_FFMPEG REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswresample)
+pkg_check_modules(TC_AUBIO IMPORTED_TARGET aubio)       # libaubio-dev: BPM detection for the "Detect BPM" action
+if(TC_AUBIO_FOUND)
+    target_link_libraries(vdj-trakcrate PUBLIC PkgConfig::TC_AUBIO)
+    target_compile_definitions(vdj-trakcrate PUBLIC TC_HAVE_AUBIO=1)
+else()
+    message(WARNING "libaubio not found: trakcrate BPM detection disabled (apt install libaubio-dev)")
+endif()
+target_link_libraries(vdj-trakcrate PUBLIC PkgConfig::TC_FFMPEG cdj_imported)     # cdj: the pdb readers verifyPdb checks against
+target_link_libraries(vdj-cdj PUBLIC vdj-trakcrate)
+
+# vdj-usb-watch: prints CONNECT / DISCONNECT lines with the USB version of plugged devices (see ai-output/usb-detection.md)
+add_executable(vdj-usb-watch tools/usb_watch.cpp)
+target_link_libraries(vdj-usb-watch PRIVATE vdj-trakcrate)
+# end trakcrate
 
 find_library(ASOUND_LIBRARY asound PATHS /usr/lib /lib /usr/lib/x86_64-linux-gnu REQUIRED)
 if(ASOUND_LIBRARY)

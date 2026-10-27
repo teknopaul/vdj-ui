@@ -48,6 +48,9 @@ class PendriveRegistry;       // src/export/pendrive_registry.h
 class PendriveToolBar;         // src/ui/pendrive_toolbar.h
 class VirtualPendrivesDialog;  // src/ui/virtual_pendrives_dialog.h
 class RekordboxModePanel;      // rekordbox PC mode (src/ui/rekordbox_mode_panel.h)
+class TrakcratePanel;
+class TrakcrateTrackEditor;
+class TrakcrateTrackEditor;           // trakcrate library pane (src/ui/trakcrate_panel.h)
 struct RbModeOptions;
 
 class MainWindow : public QMainWindow {
@@ -185,6 +188,13 @@ private:
     RekordboxModePanel* rbPanel_ = nullptr;
     QDockWidget* rbDock_ = nullptr;
     QAction* rbAction_ = nullptr;
+    // trakcrate library pane: the dock is created on first use
+    QDockWidget* trakcrateDock();
+    TrakcratePanel* tcPanel_ = nullptr;
+    QDockWidget* tcDock_ = nullptr;
+    TrakcrateTrackEditor* tcEditor_ = nullptr;
+    QDockWidget* tcEditorDock_ = nullptr;
+    QAction* tcAction_ = nullptr;
     QAction* linkExportAction_ = nullptr;
     QMenu* exportMenu_ = nullptr;
     PendriveToolBar* pendriveBar_ = nullptr;

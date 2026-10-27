@@ -89,3 +89,17 @@ The player-side concern is the one in the prompt: rekordbox does many small writ
 - Licensing and compatibility: the format is reverse engineered; no vendor spec. Cite the Deep Symmetry docs in code comments rather than copying.
 - Where should this live: a new libcdj module (`src/pdbw/`) with a vdj-ui front end (menu: "Export folder to rekordbox pendrive") and a CLI tool for testing. The prompt does not say; core library changes need agreeing first (earlier instruction in `exporting-an-editable-pendrive.prompt.md`).
 - Need from the user: confirm a spare pendrive can be formatted for destructive tests (exFAT/FAT32 vs. HFS+ is per-player), and which player models to target.
+
+## Implemented (Phase 8): the staged export
+
+`src/trakcrate/exporter.cpp`, driven from the trakcrate pane (**Export...** button, `src/ui/trakcrate_export_dialog.cpp`). The destination must be an empty folder.
+
+1. The playlists are gathered (a track in several playlists goes on the drive once); every track needs its audio, and its analysis unless "allow tracks that are not analysed" is set.
+2. In a staging directory (`/dev/shm`, else `$XDG_RUNTIME_DIR`, else the system temp) the database, the ANLZ files, artwork and settings are built, then **checked there**: the database is read back with libcdj and compared with the plan, every ANLZ file must parse and name the right audio, the settings files must pass their CRC.
+3. Everything is copied to the destination in one sequential pass, each file written once with 1 MiB writes, `fsync` per file and one `syncfs`: first the audio, then the other metadata, then `SHA256SUMS` and `trakcrate-manifest.txt`, and **`export.pdb` last**, so an interrupted export leaves no database. On failure or cancel everything written is removed again.
+4. The destination is read back and every file compared by SHA-256.
+5. The staging directory is always removed. Audio is streamed, never staged in memory.
+
+Compatibility switches (the dialog's *Advanced* box, and `ExportOptions`): settings files, artwork, the PVBR / PWV4 / PWV5 tags, the checksum files, and copying `exportExt.pdb`, `RBFLTR.DAT`, `USBMNG.DAT` or `djprofile.nxs` from a real drive. They exist to find out, on the decks, which pieces a player needs (`UNKNOWN_BYTES.md` lists what is guessed). The manifest records the variant that was written. "Register as a virtual pendrive" adds the folder to the virtual pendrives, so the existing NFS export can serve it to the decks without a stick.
+
+"Single write" means: no repeated or random writes, each file once, sequential, the database last; it is not literally one `write(2)`.

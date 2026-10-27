@@ -250,3 +250,76 @@ target_link_libraries(vdj-ui-fx-test PRIVATE ${QT_TEST} vdj-cdj)
 add_dependencies(vdj-ui-fx-test xone-ladspa)
 add_test(NAME vdj-ui-fx-test COMMAND vdj-ui-fx-test)
 set_tests_properties(vdj-ui-fx-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+# trakcrate master database (plain C++, no Qt types; QtTest only as the runner)
+add_executable(vdj-ui-trakcrate-library-test test_trakcrate_library.cpp)
+target_link_libraries(vdj-ui-trakcrate-library-test PRIVATE ${QT_TEST} vdj-trakcrate)
+add_test(NAME vdj-ui-trakcrate-library-test COMMAND vdj-ui-trakcrate-library-test)
+
+add_executable(vdj-ui-trakcrate-import-test test_trakcrate_import.cpp)
+target_compile_definitions(vdj-ui-trakcrate-import-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
+target_link_libraries(vdj-ui-trakcrate-import-test PRIVATE ${QT_TEST} vdj-trakcrate)
+add_test(NAME vdj-ui-trakcrate-import-test COMMAND vdj-ui-trakcrate-import-test)
+
+add_executable(vdj-ui-trakcrate-panel-test test_trakcrate_panel.cpp)
+target_link_libraries(vdj-ui-trakcrate-panel-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-panel-test COMMAND vdj-ui-trakcrate-panel-test)
+set_tests_properties(vdj-ui-trakcrate-panel-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-analysis-test test_trakcrate_analysis.cpp)
+target_link_libraries(vdj-ui-trakcrate-analysis-test PRIVATE ${QT_TEST} vdj-trakcrate)
+add_test(NAME vdj-ui-trakcrate-analysis-test COMMAND vdj-ui-trakcrate-analysis-test)
+
+add_executable(vdj-ui-trakcrate-pdb-roundtrip-test test_trakcrate_pdb_roundtrip.cpp)
+target_compile_definitions(vdj-ui-trakcrate-pdb-roundtrip-test PRIVATE
+    TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate"
+    TRAKCRATE_REFERENCES="${CMAKE_SOURCE_DIR}/references/libcdj")
+target_link_libraries(vdj-ui-trakcrate-pdb-roundtrip-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-pdb-roundtrip-test COMMAND vdj-ui-trakcrate-pdb-roundtrip-test)
+
+add_executable(vdj-ui-trakcrate-pdb-build-test test_trakcrate_pdb_build.cpp)
+target_compile_definitions(vdj-ui-trakcrate-pdb-build-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
+target_link_libraries(vdj-ui-trakcrate-pdb-build-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-pdb-build-test COMMAND vdj-ui-trakcrate-pdb-build-test)
+
+add_executable(vdj-ui-trakcrate-anlz-roundtrip-test test_trakcrate_anlz_roundtrip.cpp)
+target_compile_definitions(vdj-ui-trakcrate-anlz-roundtrip-test PRIVATE
+    TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+    TRAKCRATE_REFERENCES="${CMAKE_SOURCE_DIR}/references/libcdj")
+target_link_libraries(vdj-ui-trakcrate-anlz-roundtrip-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-anlz-roundtrip-test COMMAND vdj-ui-trakcrate-anlz-roundtrip-test)
+
+add_executable(vdj-ui-trakcrate-artwork-test test_trakcrate_artwork.cpp)
+target_link_libraries(vdj-ui-trakcrate-artwork-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-artwork-test COMMAND vdj-ui-trakcrate-artwork-test)
+set_tests_properties(vdj-ui-trakcrate-artwork-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-editor-test test_trakcrate_editor.cpp)
+target_link_libraries(vdj-ui-trakcrate-editor-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-editor-test COMMAND vdj-ui-trakcrate-editor-test)
+set_tests_properties(vdj-ui-trakcrate-editor-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-nudge-test test_trakcrate_nudge.cpp)
+target_link_libraries(vdj-ui-trakcrate-nudge-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-nudge-test COMMAND vdj-ui-trakcrate-nudge-test)
+set_tests_properties(vdj-ui-trakcrate-nudge-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-artwork-edit-test test_trakcrate_artwork_edit.cpp)
+target_link_libraries(vdj-ui-trakcrate-artwork-edit-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-artwork-edit-test COMMAND vdj-ui-trakcrate-artwork-edit-test)
+set_tests_properties(vdj-ui-trakcrate-artwork-edit-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-rbimport-test test_trakcrate_rbimport.cpp)
+target_compile_definitions(vdj-ui-trakcrate-rbimport-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
+target_link_libraries(vdj-ui-trakcrate-rbimport-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-rbimport-test COMMAND vdj-ui-trakcrate-rbimport-test)
+
+add_executable(vdj-ui-trakcrate-cuemarks-test test_trakcrate_cuemarks.cpp)
+target_compile_definitions(vdj-ui-trakcrate-cuemarks-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
+target_link_libraries(vdj-ui-trakcrate-cuemarks-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-cuemarks-test COMMAND vdj-ui-trakcrate-cuemarks-test)
+
+add_executable(vdj-ui-trakcrate-export-test test_trakcrate_export.cpp)
+target_compile_definitions(vdj-ui-trakcrate-export-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
+target_link_libraries(vdj-ui-trakcrate-export-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-export-test COMMAND vdj-ui-trakcrate-export-test)

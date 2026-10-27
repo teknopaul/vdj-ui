@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file alias="trakcrate/template-export.pdb">data/trakcrate/template-export.pdb</file>
         <file alias="img/button-red.png">img/button-red-24.png</file>
         <file alias="img/button-yellow.png">img/button-yellow-24.png</file>
         <file alias="img/button-grey.png">img/button-grey-24.png</file>
@@ -19,6 +20,11 @@
         <file alias="img/drum-OH-off.png">img/button-OH-off-24.png</file>
         <file alias="img/connect-22.png">img/connect-22.png</file>
         <file alias="img/vdj-22x22.png">img/vdj-22x22.png</file>
+        <file alias="img/trakcrate-128x128.png">img/trakcrate-128x128.png</file>
+        <file alias="img/trakcrate-22x22.png">img/trakcrate-22x22.png</file>
+        <file alias="img/pendrive-22x22.png">img/pendrive-22x22.png</file>
+        <file alias="img/playlist-22x22.png">img/playlist-22x22.png</file>
+        <file alias="img/vdj-64x64.png">img/vdj-64x64.png</file>
         <file alias="doc/nanokontrol-studio-djtoolz.adjmm">doc/nanokontrol-studio-djtoolz.adjmm</file>
     </qresource>
 </RCC>

@@ -102,3 +102,17 @@ On the waveform (details view and the popup `WaveformWindow`):
 - Whether comment is single line only (the decks show one line).
 - Keyboard shortcuts conflicting with the deck controls and MIDI mapping (`keyboard_shortcuts`); the editor should use shortcuts only when it has focus.
 - Rating scale mapping to the rekordbox field and to ID3 POPM if we ever write tags back to the audio (not planned: the master audio file is not modified).
+
+## Implemented (phases 11 and 12)
+
+- **Cuemarks:** `Edit cuemarks` in the track editor. Double click adds (snapped to a beat or bar, Alt = free), drag moves, right click offers Delete and Make hot cue A/B/C, `M` adds at the play position, Delete removes the selected mark, double click a row in the list to name it. Writes `cuemarks.txt` through the undo stack. Code: `src/trakcrate/cuemark_edit.*`, `src/ui/waveform_widget.*`.
+- **Export:** `src/trakcrate/cuemark_render.*` draws the white spike into PWAV/PWV2/PWV3/PWV5 of the exported copy only (PWV4 is left alone; hot cue marks are real cues and get no spike). `ExportOptions::cuemarks` has the width, the green option and an off switch; there is no GUI control for them yet.
+- **Beat grid:** `Edit grid` mode: drag the waveform, Left/Right (1 ms, Shift 10 ms, Ctrl 0.1 ms), `B` or right click "Set beat 1 here", buttons -10/-1/-0.1/+0.1/+1/+10, a readout of the offset, Revert. Consecutive nudges merge into one undo step. A grid with origin `rekordbox` asks once per session. Cuemark and vocal beat columns are recomputed from their ms. A deck that has the track loaded reloads the new grid at once (`PlayerPanel::reloadTrakcrateAnalysis`). Code: `src/trakcrate/grid_edit.*`.
+- Not done: tempo (BPM) nudging, tap tempo, snap to an audio onset, a click track for checking by ear, the preview of the exported look.
+
+## Implemented (phase 13)
+
+- **Artwork:** the editor shows `ArtworkView` (`src/ui/artwork_view.*`): click to enlarge, Replace... (picker or drop a file), Remove, Re-extract (from the audio tag), Restore (the one level backup in `.trakcrate-history/`), Open in editor (menu of the editors found in the `.desktop` files for `image/jpeg`, plus a custom command with `%f`, run without a shell; the last choice is remembered under `trakcrate/artwork_editor`).
+- A change made by an external editor (in place or by renaming a temporary file over it) is noticed by a file watch plus a 1.5 s poll; the picture reloads and the artwork group is marked `edited`.
+- Qt-free operations are in `src/trakcrate/artwork_edit.*`; `.desktop` parsing and command building are in `src/ui/artwork_launcher.*`.
+- Not tried: a real editor, and flatpak/snap editors (the library must be reachable by the sandbox).

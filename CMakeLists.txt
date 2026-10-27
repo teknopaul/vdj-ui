@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
-project(vdj-ui VERSION 0.1.0 LANGUAGES C CXX)
+# The single source of the version number is ./version (VERSION=x.y.z, also sourced by shell scripts like make-deb.sh).
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" VDJ_VERSION_LINE REGEX "^VERSION=")
+string(REGEX REPLACE "^VERSION=" "" VDJ_VERSION "${VDJ_VERSION_LINE}")
+if(NOT VDJ_VERSION MATCHES "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$")
+    message(FATAL_ERROR "./version must contain VERSION=<major>.<minor>[.<patch>], found '${VDJ_VERSION_LINE}'")
+endif()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version")
+project(vdj-ui VERSION ${VDJ_VERSION} LANGUAGES C CXX)
+add_compile_definitions(VDJ_UI_VERSION="${VDJ_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,7 +32,8 @@ add_subdirectory(tests)
 # ---------------------------------------------------------------------------
 install(DIRECTORY data/devices DESTINATION share/vdj-ui FILES_MATCHING PATTERN "*.device")
 install(FILES data/default.adjmm data/xdj700.adjmm DESTINATION share/vdj-ui)
-install(FILES doc/vdj-ui.1 DESTINATION share/man/man1)
+configure_file(doc/vdj-ui.1.in ${CMAKE_CURRENT_BINARY_DIR}/vdj-ui.1 @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/vdj-ui.1 DESTINATION share/man/man1)
 
 # Logo: the About box loads share/vdj-ui/vdj-64x64.png; the hicolor icons (named after data/vdj-ui.desktop's Icon=)
 # are for the desktop menu and window icon.

@@ -4,6 +4,8 @@
 #include "audio/audio_player.h"
 #include "audio/quantize_settings.h"
 #include "quantize_button.h"
+#include "trakcrate_analysis.h"
+#include "trakcrate/track.h"
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -156,6 +158,41 @@ void PlayerPanel::refreshDevices()
 
 bool PlayerPanel::loadTrack(const TrackInfo& info)
 {
+    const bool ok = loadImpl(info, nullptr);
+    if (!trakcrateDir_.isEmpty()) { trakcrateDir_.clear(); emit trakcrateTrackLoaded(QString()); }
+    return ok;
+}
+
+bool PlayerPanel::loadTrakcrateTrack(const QString& trackDir)
+{
+    trakcrate::Track t;
+    if (!trakcrate::loadTrack(trackDir.toStdString(), &t)) { emit status(QStringLiteral("Cannot read the track folder %1").arg(trackDir)); return false; }
+    TrackInfo info;
+    info.title = QString::fromStdString(t.title());
+    if (info.title.isEmpty()) info.title = QString::fromStdString(t.dir.filename().string());
+    info.audioPath = QString::fromStdString(trakcrate::audioFileOf(t.dir).string());
+    const TrackAnalysis a = trakcrateTrackAnalysis(trackDir);
+    const std::string bpmTag = t.meta.get("bpm_tag");
+    if (!bpmTag.empty()) info.fields.append({QStringLiteral("BPM"), QString::fromStdString(bpmTag)});
+    const bool ok = loadImpl(info, &a);
+    trakcrateDir_ = ok ? trackDir : QString();
+    emit trakcrateTrackLoaded(trakcrateDir_);
+    return ok;
+}
+
+void PlayerPanel::reloadTrakcrateAnalysis(const QString& trackDir)
+{
+    if (trackDir.isEmpty() || trackDir != trakcrateDir_) return;
+    analysis_ = trakcrateTrackAnalysis(trackDir);
+    waveform_->setAnalysis(analysis_);
+    setBeatGrid();                                        // the beat clock follows the new grid at once
+    originalBpm_ = analysis_.avgBpm > 0 ? analysis_.avgBpm : originalBpm_;
+    rebuildCueButtons();
+    updateBpmLabel();
+}
+
+bool PlayerPanel::loadImpl(const TrackInfo& info, const TrackAnalysis* given)
+{
     player_->unload();
     analysis_ = TrackAnalysis();
     setBeatGrid();
@@ -171,7 +208,7 @@ bool PlayerPanel::loadTrack(const TrackInfo& info)
             return false;
         }
     }
-    analysis_ = info.analyzePath.isEmpty() ? TrackAnalysis() : loadTrackAnalysis(info.root, info.analyzePath);
+    analysis_ = given ? *given : (info.analyzePath.isEmpty() ? TrackAnalysis() : loadTrackAnalysis(info.root, info.analyzePath));
     waveform_->setAnalysis(analysis_);
     title_->setText(info.title);
 

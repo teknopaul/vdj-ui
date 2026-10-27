@@ -248,6 +248,20 @@ vdj-dbserver/fast:
 .PHONY : vdj-dbserver/fast
 
 # Convenience name for target.
+src/CMakeFiles/vdj-trakcrate.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-trakcrate.dir/rule
+.PHONY : src/CMakeFiles/vdj-trakcrate.dir/rule
+
+# Convenience name for target.
+vdj-trakcrate: src/CMakeFiles/vdj-trakcrate.dir/rule
+.PHONY : vdj-trakcrate
+
+# fast build rule for target.
+vdj-trakcrate/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/build
+.PHONY : vdj-trakcrate/fast
+
+# Convenience name for target.
 src/CMakeFiles/vdj-ui.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-ui.dir/rule
 .PHONY : src/CMakeFiles/vdj-ui.dir/rule
@@ -372,6 +386,34 @@ vdj-dbserver_autogen: src/CMakeFiles/vdj-dbserver_autogen.dir/rule
 vdj-dbserver_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-dbserver_autogen.dir/build.make src/CMakeFiles/vdj-dbserver_autogen.dir/build
 .PHONY : vdj-dbserver_autogen/fast
+
+# Convenience name for target.
+src/CMakeFiles/vdj-trakcrate_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-trakcrate_autogen_timestamp_deps.dir/rule
+.PHONY : src/CMakeFiles/vdj-trakcrate_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-trakcrate_autogen_timestamp_deps: src/CMakeFiles/vdj-trakcrate_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-trakcrate_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-trakcrate_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate_autogen_timestamp_deps.dir/build.make src/CMakeFiles/vdj-trakcrate_autogen_timestamp_deps.dir/build
+.PHONY : vdj-trakcrate_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+src/CMakeFiles/vdj-trakcrate_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/vdj-trakcrate_autogen.dir/rule
+.PHONY : src/CMakeFiles/vdj-trakcrate_autogen.dir/rule
+
+# Convenience name for target.
+vdj-trakcrate_autogen: src/CMakeFiles/vdj-trakcrate_autogen.dir/rule
+.PHONY : vdj-trakcrate_autogen
+
+# fast build rule for target.
+vdj-trakcrate_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate_autogen.dir/build.make src/CMakeFiles/vdj-trakcrate_autogen.dir/build
+.PHONY : vdj-trakcrate_autogen/fast
 
 # Convenience name for target.
 src/CMakeFiles/vdj-ui_autogen_timestamp_deps.dir/rule:
@@ -761,6 +803,30 @@ audio/audio_recorder.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/audio_recorder.cpp.s
 .PHONY : audio/audio_recorder.cpp.s
 
+audio/beat_clock.o: audio/beat_clock.cpp.o
+.PHONY : audio/beat_clock.o
+
+# target to build an object file
+audio/beat_clock.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/beat_clock.cpp.o
+.PHONY : audio/beat_clock.cpp.o
+
+audio/beat_clock.i: audio/beat_clock.cpp.i
+.PHONY : audio/beat_clock.i
+
+# target to preprocess a source file
+audio/beat_clock.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/beat_clock.cpp.i
+.PHONY : audio/beat_clock.cpp.i
+
+audio/beat_clock.s: audio/beat_clock.cpp.s
+.PHONY : audio/beat_clock.s
+
+# target to generate assembly for a file
+audio/beat_clock.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/beat_clock.cpp.s
+.PHONY : audio/beat_clock.cpp.s
+
 audio/beat_source.o: audio/beat_source.cpp.o
 .PHONY : audio/beat_source.o
 
@@ -784,6 +850,126 @@ audio/beat_source.s: audio/beat_source.cpp.s
 audio/beat_source.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/beat_source.cpp.s
 .PHONY : audio/beat_source.cpp.s
+
+audio/deck_phase.o: audio/deck_phase.cpp.o
+.PHONY : audio/deck_phase.o
+
+# target to build an object file
+audio/deck_phase.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/deck_phase.cpp.o
+.PHONY : audio/deck_phase.cpp.o
+
+audio/deck_phase.i: audio/deck_phase.cpp.i
+.PHONY : audio/deck_phase.i
+
+# target to preprocess a source file
+audio/deck_phase.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/deck_phase.cpp.i
+.PHONY : audio/deck_phase.cpp.i
+
+audio/deck_phase.s: audio/deck_phase.cpp.s
+.PHONY : audio/deck_phase.s
+
+# target to generate assembly for a file
+audio/deck_phase.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/deck_phase.cpp.s
+.PHONY : audio/deck_phase.cpp.s
+
+audio/djtoolz_engine.o: audio/djtoolz_engine.cpp.o
+.PHONY : audio/djtoolz_engine.o
+
+# target to build an object file
+audio/djtoolz_engine.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_engine.cpp.o
+.PHONY : audio/djtoolz_engine.cpp.o
+
+audio/djtoolz_engine.i: audio/djtoolz_engine.cpp.i
+.PHONY : audio/djtoolz_engine.i
+
+# target to preprocess a source file
+audio/djtoolz_engine.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_engine.cpp.i
+.PHONY : audio/djtoolz_engine.cpp.i
+
+audio/djtoolz_engine.s: audio/djtoolz_engine.cpp.s
+.PHONY : audio/djtoolz_engine.s
+
+# target to generate assembly for a file
+audio/djtoolz_engine.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_engine.cpp.s
+.PHONY : audio/djtoolz_engine.cpp.s
+
+audio/djtoolz_presets.o: audio/djtoolz_presets.cpp.o
+.PHONY : audio/djtoolz_presets.o
+
+# target to build an object file
+audio/djtoolz_presets.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_presets.cpp.o
+.PHONY : audio/djtoolz_presets.cpp.o
+
+audio/djtoolz_presets.i: audio/djtoolz_presets.cpp.i
+.PHONY : audio/djtoolz_presets.i
+
+# target to preprocess a source file
+audio/djtoolz_presets.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_presets.cpp.i
+.PHONY : audio/djtoolz_presets.cpp.i
+
+audio/djtoolz_presets.s: audio/djtoolz_presets.cpp.s
+.PHONY : audio/djtoolz_presets.s
+
+# target to generate assembly for a file
+audio/djtoolz_presets.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_presets.cpp.s
+.PHONY : audio/djtoolz_presets.cpp.s
+
+audio/djtoolz_scheduler.o: audio/djtoolz_scheduler.cpp.o
+.PHONY : audio/djtoolz_scheduler.o
+
+# target to build an object file
+audio/djtoolz_scheduler.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_scheduler.cpp.o
+.PHONY : audio/djtoolz_scheduler.cpp.o
+
+audio/djtoolz_scheduler.i: audio/djtoolz_scheduler.cpp.i
+.PHONY : audio/djtoolz_scheduler.i
+
+# target to preprocess a source file
+audio/djtoolz_scheduler.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_scheduler.cpp.i
+.PHONY : audio/djtoolz_scheduler.cpp.i
+
+audio/djtoolz_scheduler.s: audio/djtoolz_scheduler.cpp.s
+.PHONY : audio/djtoolz_scheduler.s
+
+# target to generate assembly for a file
+audio/djtoolz_scheduler.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_scheduler.cpp.s
+.PHONY : audio/djtoolz_scheduler.cpp.s
+
+audio/djtoolz_tool.o: audio/djtoolz_tool.cpp.o
+.PHONY : audio/djtoolz_tool.o
+
+# target to build an object file
+audio/djtoolz_tool.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_tool.cpp.o
+.PHONY : audio/djtoolz_tool.cpp.o
+
+audio/djtoolz_tool.i: audio/djtoolz_tool.cpp.i
+.PHONY : audio/djtoolz_tool.i
+
+# target to preprocess a source file
+audio/djtoolz_tool.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_tool.cpp.i
+.PHONY : audio/djtoolz_tool.cpp.i
+
+audio/djtoolz_tool.s: audio/djtoolz_tool.cpp.s
+.PHONY : audio/djtoolz_tool.s
+
+# target to generate assembly for a file
+audio/djtoolz_tool.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/djtoolz_tool.cpp.s
+.PHONY : audio/djtoolz_tool.cpp.s
 
 audio/drum_kits.o: audio/drum_kits.cpp.o
 .PHONY : audio/drum_kits.o
@@ -833,6 +1019,78 @@ audio/drum_pattern.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/drum_pattern.cpp.s
 .PHONY : audio/drum_pattern.cpp.s
 
+audio/fx_rack.o: audio/fx_rack.cpp.o
+.PHONY : audio/fx_rack.o
+
+# target to build an object file
+audio/fx_rack.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/fx_rack.cpp.o
+.PHONY : audio/fx_rack.cpp.o
+
+audio/fx_rack.i: audio/fx_rack.cpp.i
+.PHONY : audio/fx_rack.i
+
+# target to preprocess a source file
+audio/fx_rack.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/fx_rack.cpp.i
+.PHONY : audio/fx_rack.cpp.i
+
+audio/fx_rack.s: audio/fx_rack.cpp.s
+.PHONY : audio/fx_rack.s
+
+# target to generate assembly for a file
+audio/fx_rack.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/fx_rack.cpp.s
+.PHONY : audio/fx_rack.cpp.s
+
+audio/ladspa_host.o: audio/ladspa_host.cpp.o
+.PHONY : audio/ladspa_host.o
+
+# target to build an object file
+audio/ladspa_host.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/ladspa_host.cpp.o
+.PHONY : audio/ladspa_host.cpp.o
+
+audio/ladspa_host.i: audio/ladspa_host.cpp.i
+.PHONY : audio/ladspa_host.i
+
+# target to preprocess a source file
+audio/ladspa_host.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/ladspa_host.cpp.i
+.PHONY : audio/ladspa_host.cpp.i
+
+audio/ladspa_host.s: audio/ladspa_host.cpp.s
+.PHONY : audio/ladspa_host.s
+
+# target to generate assembly for a file
+audio/ladspa_host.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/ladspa_host.cpp.s
+.PHONY : audio/ladspa_host.cpp.s
+
+audio/quantize_settings.o: audio/quantize_settings.cpp.o
+.PHONY : audio/quantize_settings.o
+
+# target to build an object file
+audio/quantize_settings.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/quantize_settings.cpp.o
+.PHONY : audio/quantize_settings.cpp.o
+
+audio/quantize_settings.i: audio/quantize_settings.cpp.i
+.PHONY : audio/quantize_settings.i
+
+# target to preprocess a source file
+audio/quantize_settings.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/quantize_settings.cpp.i
+.PHONY : audio/quantize_settings.cpp.i
+
+audio/quantize_settings.s: audio/quantize_settings.cpp.s
+.PHONY : audio/quantize_settings.s
+
+# target to generate assembly for a file
+audio/quantize_settings.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/quantize_settings.cpp.s
+.PHONY : audio/quantize_settings.cpp.s
+
 audio/sample_cache.o: audio/sample_cache.cpp.o
 .PHONY : audio/sample_cache.o
 
@@ -880,102 +1138,6 @@ audio/sample_stretch.s: audio/sample_stretch.cpp.s
 audio/sample_stretch.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sample_stretch.cpp.s
 .PHONY : audio/sample_stretch.cpp.s
-
-audio/sampler_engine.o: audio/sampler_engine.cpp.o
-.PHONY : audio/sampler_engine.o
-
-# target to build an object file
-audio/sampler_engine.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_engine.cpp.o
-.PHONY : audio/sampler_engine.cpp.o
-
-audio/sampler_engine.i: audio/sampler_engine.cpp.i
-.PHONY : audio/sampler_engine.i
-
-# target to preprocess a source file
-audio/sampler_engine.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_engine.cpp.i
-.PHONY : audio/sampler_engine.cpp.i
-
-audio/sampler_engine.s: audio/sampler_engine.cpp.s
-.PHONY : audio/sampler_engine.s
-
-# target to generate assembly for a file
-audio/sampler_engine.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_engine.cpp.s
-.PHONY : audio/sampler_engine.cpp.s
-
-audio/sampler_module.o: audio/sampler_module.cpp.o
-.PHONY : audio/sampler_module.o
-
-# target to build an object file
-audio/sampler_module.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_module.cpp.o
-.PHONY : audio/sampler_module.cpp.o
-
-audio/sampler_module.i: audio/sampler_module.cpp.i
-.PHONY : audio/sampler_module.i
-
-# target to preprocess a source file
-audio/sampler_module.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_module.cpp.i
-.PHONY : audio/sampler_module.cpp.i
-
-audio/sampler_module.s: audio/sampler_module.cpp.s
-.PHONY : audio/sampler_module.s
-
-# target to generate assembly for a file
-audio/sampler_module.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_module.cpp.s
-.PHONY : audio/sampler_module.cpp.s
-
-audio/sampler_presets.o: audio/sampler_presets.cpp.o
-.PHONY : audio/sampler_presets.o
-
-# target to build an object file
-audio/sampler_presets.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_presets.cpp.o
-.PHONY : audio/sampler_presets.cpp.o
-
-audio/sampler_presets.i: audio/sampler_presets.cpp.i
-.PHONY : audio/sampler_presets.i
-
-# target to preprocess a source file
-audio/sampler_presets.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_presets.cpp.i
-.PHONY : audio/sampler_presets.cpp.i
-
-audio/sampler_presets.s: audio/sampler_presets.cpp.s
-.PHONY : audio/sampler_presets.s
-
-# target to generate assembly for a file
-audio/sampler_presets.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_presets.cpp.s
-.PHONY : audio/sampler_presets.cpp.s
-
-audio/sampler_scheduler.o: audio/sampler_scheduler.cpp.o
-.PHONY : audio/sampler_scheduler.o
-
-# target to build an object file
-audio/sampler_scheduler.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_scheduler.cpp.o
-.PHONY : audio/sampler_scheduler.cpp.o
-
-audio/sampler_scheduler.i: audio/sampler_scheduler.cpp.i
-.PHONY : audio/sampler_scheduler.i
-
-# target to preprocess a source file
-audio/sampler_scheduler.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_scheduler.cpp.i
-.PHONY : audio/sampler_scheduler.cpp.i
-
-audio/sampler_scheduler.s: audio/sampler_scheduler.cpp.s
-.PHONY : audio/sampler_scheduler.s
-
-# target to generate assembly for a file
-audio/sampler_scheduler.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sampler_scheduler.cpp.s
-.PHONY : audio/sampler_scheduler.cpp.s
 
 audio/swing.o: audio/swing.cpp.o
 .PHONY : audio/swing.o
@@ -1529,6 +1691,54 @@ midi/diff_lock.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/diff_lock.cpp.s
 .PHONY : midi/diff_lock.cpp.s
 
+midi/djtoolz_ctl_map.o: midi/djtoolz_ctl_map.cpp.o
+.PHONY : midi/djtoolz_ctl_map.o
+
+# target to build an object file
+midi/djtoolz_ctl_map.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/djtoolz_ctl_map.cpp.o
+.PHONY : midi/djtoolz_ctl_map.cpp.o
+
+midi/djtoolz_ctl_map.i: midi/djtoolz_ctl_map.cpp.i
+.PHONY : midi/djtoolz_ctl_map.i
+
+# target to preprocess a source file
+midi/djtoolz_ctl_map.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/djtoolz_ctl_map.cpp.i
+.PHONY : midi/djtoolz_ctl_map.cpp.i
+
+midi/djtoolz_ctl_map.s: midi/djtoolz_ctl_map.cpp.s
+.PHONY : midi/djtoolz_ctl_map.s
+
+# target to generate assembly for a file
+midi/djtoolz_ctl_map.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/djtoolz_ctl_map.cpp.s
+.PHONY : midi/djtoolz_ctl_map.cpp.s
+
+midi/djtoolz_midi_control.o: midi/djtoolz_midi_control.cpp.o
+.PHONY : midi/djtoolz_midi_control.o
+
+# target to build an object file
+midi/djtoolz_midi_control.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/djtoolz_midi_control.cpp.o
+.PHONY : midi/djtoolz_midi_control.cpp.o
+
+midi/djtoolz_midi_control.i: midi/djtoolz_midi_control.cpp.i
+.PHONY : midi/djtoolz_midi_control.i
+
+# target to preprocess a source file
+midi/djtoolz_midi_control.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/djtoolz_midi_control.cpp.i
+.PHONY : midi/djtoolz_midi_control.cpp.i
+
+midi/djtoolz_midi_control.s: midi/djtoolz_midi_control.cpp.s
+.PHONY : midi/djtoolz_midi_control.s
+
+# target to generate assembly for a file
+midi/djtoolz_midi_control.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/djtoolz_midi_control.cpp.s
+.PHONY : midi/djtoolz_midi_control.cpp.s
+
 midi/instrument_manager.o: midi/instrument_manager.cpp.o
 .PHONY : midi/instrument_manager.o
 
@@ -1552,6 +1762,54 @@ midi/instrument_manager.s: midi/instrument_manager.cpp.s
 midi/instrument_manager.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/instrument_manager.cpp.s
 .PHONY : midi/instrument_manager.cpp.s
+
+midi/joystick_map.o: midi/joystick_map.cpp.o
+.PHONY : midi/joystick_map.o
+
+# target to build an object file
+midi/joystick_map.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/joystick_map.cpp.o
+.PHONY : midi/joystick_map.cpp.o
+
+midi/joystick_map.i: midi/joystick_map.cpp.i
+.PHONY : midi/joystick_map.i
+
+# target to preprocess a source file
+midi/joystick_map.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/joystick_map.cpp.i
+.PHONY : midi/joystick_map.cpp.i
+
+midi/joystick_map.s: midi/joystick_map.cpp.s
+.PHONY : midi/joystick_map.s
+
+# target to generate assembly for a file
+midi/joystick_map.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/joystick_map.cpp.s
+.PHONY : midi/joystick_map.cpp.s
+
+midi/joystick_seq_bridge.o: midi/joystick_seq_bridge.cpp.o
+.PHONY : midi/joystick_seq_bridge.o
+
+# target to build an object file
+midi/joystick_seq_bridge.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/joystick_seq_bridge.cpp.o
+.PHONY : midi/joystick_seq_bridge.cpp.o
+
+midi/joystick_seq_bridge.i: midi/joystick_seq_bridge.cpp.i
+.PHONY : midi/joystick_seq_bridge.i
+
+# target to preprocess a source file
+midi/joystick_seq_bridge.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/joystick_seq_bridge.cpp.i
+.PHONY : midi/joystick_seq_bridge.cpp.i
+
+midi/joystick_seq_bridge.s: midi/joystick_seq_bridge.cpp.s
+.PHONY : midi/joystick_seq_bridge.s
+
+# target to generate assembly for a file
+midi/joystick_seq_bridge.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/joystick_seq_bridge.cpp.s
+.PHONY : midi/joystick_seq_bridge.cpp.s
 
 midi/midi_map_input.o: midi/midi_map_input.cpp.o
 .PHONY : midi/midi_map_input.o
@@ -1625,53 +1883,29 @@ midi/midi_router.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/midi_router.cpp.s
 .PHONY : midi/midi_router.cpp.s
 
-midi/sampler_ctl_map.o: midi/sampler_ctl_map.cpp.o
-.PHONY : midi/sampler_ctl_map.o
+midi/seq_bar.o: midi/seq_bar.cpp.o
+.PHONY : midi/seq_bar.o
 
 # target to build an object file
-midi/sampler_ctl_map.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_ctl_map.cpp.o
-.PHONY : midi/sampler_ctl_map.cpp.o
+midi/seq_bar.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_bar.cpp.o
+.PHONY : midi/seq_bar.cpp.o
 
-midi/sampler_ctl_map.i: midi/sampler_ctl_map.cpp.i
-.PHONY : midi/sampler_ctl_map.i
-
-# target to preprocess a source file
-midi/sampler_ctl_map.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_ctl_map.cpp.i
-.PHONY : midi/sampler_ctl_map.cpp.i
-
-midi/sampler_ctl_map.s: midi/sampler_ctl_map.cpp.s
-.PHONY : midi/sampler_ctl_map.s
-
-# target to generate assembly for a file
-midi/sampler_ctl_map.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_ctl_map.cpp.s
-.PHONY : midi/sampler_ctl_map.cpp.s
-
-midi/sampler_midi_control.o: midi/sampler_midi_control.cpp.o
-.PHONY : midi/sampler_midi_control.o
-
-# target to build an object file
-midi/sampler_midi_control.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_midi_control.cpp.o
-.PHONY : midi/sampler_midi_control.cpp.o
-
-midi/sampler_midi_control.i: midi/sampler_midi_control.cpp.i
-.PHONY : midi/sampler_midi_control.i
+midi/seq_bar.i: midi/seq_bar.cpp.i
+.PHONY : midi/seq_bar.i
 
 # target to preprocess a source file
-midi/sampler_midi_control.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_midi_control.cpp.i
-.PHONY : midi/sampler_midi_control.cpp.i
+midi/seq_bar.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_bar.cpp.i
+.PHONY : midi/seq_bar.cpp.i
 
-midi/sampler_midi_control.s: midi/sampler_midi_control.cpp.s
-.PHONY : midi/sampler_midi_control.s
+midi/seq_bar.s: midi/seq_bar.cpp.s
+.PHONY : midi/seq_bar.s
 
 # target to generate assembly for a file
-midi/sampler_midi_control.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sampler_midi_control.cpp.s
-.PHONY : midi/sampler_midi_control.cpp.s
+midi/seq_bar.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_bar.cpp.s
+.PHONY : midi/seq_bar.cpp.s
 
 network/auto_ip_manager.o: network/auto_ip_manager.cpp.o
 .PHONY : network/auto_ip_manager.o
@@ -1888,6 +2122,462 @@ nfs/xdj_nfs.s: nfs/xdj_nfs.cpp.s
 nfs/xdj_nfs.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/xdj-nfs.dir/build.make src/CMakeFiles/xdj-nfs.dir/nfs/xdj_nfs.cpp.s
 .PHONY : nfs/xdj_nfs.cpp.s
+
+trakcrate/analysis.o: trakcrate/analysis.cpp.o
+.PHONY : trakcrate/analysis.o
+
+# target to build an object file
+trakcrate/analysis.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis.cpp.o
+.PHONY : trakcrate/analysis.cpp.o
+
+trakcrate/analysis.i: trakcrate/analysis.cpp.i
+.PHONY : trakcrate/analysis.i
+
+# target to preprocess a source file
+trakcrate/analysis.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis.cpp.i
+.PHONY : trakcrate/analysis.cpp.i
+
+trakcrate/analysis.s: trakcrate/analysis.cpp.s
+.PHONY : trakcrate/analysis.s
+
+# target to generate assembly for a file
+trakcrate/analysis.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis.cpp.s
+.PHONY : trakcrate/analysis.cpp.s
+
+trakcrate/analysis_beats.o: trakcrate/analysis_beats.cpp.o
+.PHONY : trakcrate/analysis_beats.o
+
+# target to build an object file
+trakcrate/analysis_beats.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis_beats.cpp.o
+.PHONY : trakcrate/analysis_beats.cpp.o
+
+trakcrate/analysis_beats.i: trakcrate/analysis_beats.cpp.i
+.PHONY : trakcrate/analysis_beats.i
+
+# target to preprocess a source file
+trakcrate/analysis_beats.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis_beats.cpp.i
+.PHONY : trakcrate/analysis_beats.cpp.i
+
+trakcrate/analysis_beats.s: trakcrate/analysis_beats.cpp.s
+.PHONY : trakcrate/analysis_beats.s
+
+# target to generate assembly for a file
+trakcrate/analysis_beats.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis_beats.cpp.s
+.PHONY : trakcrate/analysis_beats.cpp.s
+
+trakcrate/analysis_wave.o: trakcrate/analysis_wave.cpp.o
+.PHONY : trakcrate/analysis_wave.o
+
+# target to build an object file
+trakcrate/analysis_wave.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis_wave.cpp.o
+.PHONY : trakcrate/analysis_wave.cpp.o
+
+trakcrate/analysis_wave.i: trakcrate/analysis_wave.cpp.i
+.PHONY : trakcrate/analysis_wave.i
+
+# target to preprocess a source file
+trakcrate/analysis_wave.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis_wave.cpp.i
+.PHONY : trakcrate/analysis_wave.cpp.i
+
+trakcrate/analysis_wave.s: trakcrate/analysis_wave.cpp.s
+.PHONY : trakcrate/analysis_wave.s
+
+# target to generate assembly for a file
+trakcrate/analysis_wave.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/analysis_wave.cpp.s
+.PHONY : trakcrate/analysis_wave.cpp.s
+
+trakcrate/anlz_writer.o: trakcrate/anlz_writer.cpp.o
+.PHONY : trakcrate/anlz_writer.o
+
+# target to build an object file
+trakcrate/anlz_writer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/anlz_writer.cpp.o
+.PHONY : trakcrate/anlz_writer.cpp.o
+
+trakcrate/anlz_writer.i: trakcrate/anlz_writer.cpp.i
+.PHONY : trakcrate/anlz_writer.i
+
+# target to preprocess a source file
+trakcrate/anlz_writer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/anlz_writer.cpp.i
+.PHONY : trakcrate/anlz_writer.cpp.i
+
+trakcrate/anlz_writer.s: trakcrate/anlz_writer.cpp.s
+.PHONY : trakcrate/anlz_writer.s
+
+# target to generate assembly for a file
+trakcrate/anlz_writer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/anlz_writer.cpp.s
+.PHONY : trakcrate/anlz_writer.cpp.s
+
+trakcrate/artwork_paths.o: trakcrate/artwork_paths.cpp.o
+.PHONY : trakcrate/artwork_paths.o
+
+# target to build an object file
+trakcrate/artwork_paths.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/artwork_paths.cpp.o
+.PHONY : trakcrate/artwork_paths.cpp.o
+
+trakcrate/artwork_paths.i: trakcrate/artwork_paths.cpp.i
+.PHONY : trakcrate/artwork_paths.i
+
+# target to preprocess a source file
+trakcrate/artwork_paths.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/artwork_paths.cpp.i
+.PHONY : trakcrate/artwork_paths.cpp.i
+
+trakcrate/artwork_paths.s: trakcrate/artwork_paths.cpp.s
+.PHONY : trakcrate/artwork_paths.s
+
+# target to generate assembly for a file
+trakcrate/artwork_paths.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/artwork_paths.cpp.s
+.PHONY : trakcrate/artwork_paths.cpp.s
+
+trakcrate/audio_decode.o: trakcrate/audio_decode.cpp.o
+.PHONY : trakcrate/audio_decode.o
+
+# target to build an object file
+trakcrate/audio_decode.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/audio_decode.cpp.o
+.PHONY : trakcrate/audio_decode.cpp.o
+
+trakcrate/audio_decode.i: trakcrate/audio_decode.cpp.i
+.PHONY : trakcrate/audio_decode.i
+
+# target to preprocess a source file
+trakcrate/audio_decode.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/audio_decode.cpp.i
+.PHONY : trakcrate/audio_decode.cpp.i
+
+trakcrate/audio_decode.s: trakcrate/audio_decode.cpp.s
+.PHONY : trakcrate/audio_decode.s
+
+# target to generate assembly for a file
+trakcrate/audio_decode.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/audio_decode.cpp.s
+.PHONY : trakcrate/audio_decode.cpp.s
+
+trakcrate/audio_probe.o: trakcrate/audio_probe.cpp.o
+.PHONY : trakcrate/audio_probe.o
+
+# target to build an object file
+trakcrate/audio_probe.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/audio_probe.cpp.o
+.PHONY : trakcrate/audio_probe.cpp.o
+
+trakcrate/audio_probe.i: trakcrate/audio_probe.cpp.i
+.PHONY : trakcrate/audio_probe.i
+
+# target to preprocess a source file
+trakcrate/audio_probe.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/audio_probe.cpp.i
+.PHONY : trakcrate/audio_probe.cpp.i
+
+trakcrate/audio_probe.s: trakcrate/audio_probe.cpp.s
+.PHONY : trakcrate/audio_probe.s
+
+# target to generate assembly for a file
+trakcrate/audio_probe.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/audio_probe.cpp.s
+.PHONY : trakcrate/audio_probe.cpp.s
+
+trakcrate/bpm_detect.o: trakcrate/bpm_detect.cpp.o
+.PHONY : trakcrate/bpm_detect.o
+
+# target to build an object file
+trakcrate/bpm_detect.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/bpm_detect.cpp.o
+.PHONY : trakcrate/bpm_detect.cpp.o
+
+trakcrate/bpm_detect.i: trakcrate/bpm_detect.cpp.i
+.PHONY : trakcrate/bpm_detect.i
+
+# target to preprocess a source file
+trakcrate/bpm_detect.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/bpm_detect.cpp.i
+.PHONY : trakcrate/bpm_detect.cpp.i
+
+trakcrate/bpm_detect.s: trakcrate/bpm_detect.cpp.s
+.PHONY : trakcrate/bpm_detect.s
+
+# target to generate assembly for a file
+trakcrate/bpm_detect.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/bpm_detect.cpp.s
+.PHONY : trakcrate/bpm_detect.cpp.s
+
+trakcrate/exporter.o: trakcrate/exporter.cpp.o
+.PHONY : trakcrate/exporter.o
+
+# target to build an object file
+trakcrate/exporter.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/exporter.cpp.o
+.PHONY : trakcrate/exporter.cpp.o
+
+trakcrate/exporter.i: trakcrate/exporter.cpp.i
+.PHONY : trakcrate/exporter.i
+
+# target to preprocess a source file
+trakcrate/exporter.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/exporter.cpp.i
+.PHONY : trakcrate/exporter.cpp.i
+
+trakcrate/exporter.s: trakcrate/exporter.cpp.s
+.PHONY : trakcrate/exporter.s
+
+# target to generate assembly for a file
+trakcrate/exporter.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/exporter.cpp.s
+.PHONY : trakcrate/exporter.cpp.s
+
+trakcrate/fsutil.o: trakcrate/fsutil.cpp.o
+.PHONY : trakcrate/fsutil.o
+
+# target to build an object file
+trakcrate/fsutil.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/fsutil.cpp.o
+.PHONY : trakcrate/fsutil.cpp.o
+
+trakcrate/fsutil.i: trakcrate/fsutil.cpp.i
+.PHONY : trakcrate/fsutil.i
+
+# target to preprocess a source file
+trakcrate/fsutil.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/fsutil.cpp.i
+.PHONY : trakcrate/fsutil.cpp.i
+
+trakcrate/fsutil.s: trakcrate/fsutil.cpp.s
+.PHONY : trakcrate/fsutil.s
+
+# target to generate assembly for a file
+trakcrate/fsutil.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/fsutil.cpp.s
+.PHONY : trakcrate/fsutil.cpp.s
+
+trakcrate/importer.o: trakcrate/importer.cpp.o
+.PHONY : trakcrate/importer.o
+
+# target to build an object file
+trakcrate/importer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/importer.cpp.o
+.PHONY : trakcrate/importer.cpp.o
+
+trakcrate/importer.i: trakcrate/importer.cpp.i
+.PHONY : trakcrate/importer.i
+
+# target to preprocess a source file
+trakcrate/importer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/importer.cpp.i
+.PHONY : trakcrate/importer.cpp.i
+
+trakcrate/importer.s: trakcrate/importer.cpp.s
+.PHONY : trakcrate/importer.s
+
+# target to generate assembly for a file
+trakcrate/importer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/importer.cpp.s
+.PHONY : trakcrate/importer.cpp.s
+
+trakcrate/library.o: trakcrate/library.cpp.o
+.PHONY : trakcrate/library.o
+
+# target to build an object file
+trakcrate/library.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/library.cpp.o
+.PHONY : trakcrate/library.cpp.o
+
+trakcrate/library.i: trakcrate/library.cpp.i
+.PHONY : trakcrate/library.i
+
+# target to preprocess a source file
+trakcrate/library.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/library.cpp.i
+.PHONY : trakcrate/library.cpp.i
+
+trakcrate/library.s: trakcrate/library.cpp.s
+.PHONY : trakcrate/library.s
+
+# target to generate assembly for a file
+trakcrate/library.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/library.cpp.s
+.PHONY : trakcrate/library.cpp.s
+
+trakcrate/natsort.o: trakcrate/natsort.cpp.o
+.PHONY : trakcrate/natsort.o
+
+# target to build an object file
+trakcrate/natsort.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/natsort.cpp.o
+.PHONY : trakcrate/natsort.cpp.o
+
+trakcrate/natsort.i: trakcrate/natsort.cpp.i
+.PHONY : trakcrate/natsort.i
+
+# target to preprocess a source file
+trakcrate/natsort.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/natsort.cpp.i
+.PHONY : trakcrate/natsort.cpp.i
+
+trakcrate/natsort.s: trakcrate/natsort.cpp.s
+.PHONY : trakcrate/natsort.s
+
+# target to generate assembly for a file
+trakcrate/natsort.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/natsort.cpp.s
+.PHONY : trakcrate/natsort.cpp.s
+
+trakcrate/pdb_build.o: trakcrate/pdb_build.cpp.o
+.PHONY : trakcrate/pdb_build.o
+
+# target to build an object file
+trakcrate/pdb_build.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_build.cpp.o
+.PHONY : trakcrate/pdb_build.cpp.o
+
+trakcrate/pdb_build.i: trakcrate/pdb_build.cpp.i
+.PHONY : trakcrate/pdb_build.i
+
+# target to preprocess a source file
+trakcrate/pdb_build.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_build.cpp.i
+.PHONY : trakcrate/pdb_build.cpp.i
+
+trakcrate/pdb_build.s: trakcrate/pdb_build.cpp.s
+.PHONY : trakcrate/pdb_build.s
+
+# target to generate assembly for a file
+trakcrate/pdb_build.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_build.cpp.s
+.PHONY : trakcrate/pdb_build.cpp.s
+
+trakcrate/pdb_writer.o: trakcrate/pdb_writer.cpp.o
+.PHONY : trakcrate/pdb_writer.o
+
+# target to build an object file
+trakcrate/pdb_writer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_writer.cpp.o
+.PHONY : trakcrate/pdb_writer.cpp.o
+
+trakcrate/pdb_writer.i: trakcrate/pdb_writer.cpp.i
+.PHONY : trakcrate/pdb_writer.i
+
+# target to preprocess a source file
+trakcrate/pdb_writer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_writer.cpp.i
+.PHONY : trakcrate/pdb_writer.cpp.i
+
+trakcrate/pdb_writer.s: trakcrate/pdb_writer.cpp.s
+.PHONY : trakcrate/pdb_writer.s
+
+# target to generate assembly for a file
+trakcrate/pdb_writer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_writer.cpp.s
+.PHONY : trakcrate/pdb_writer.cpp.s
+
+trakcrate/settings_defaults.o: trakcrate/settings_defaults.cpp.o
+.PHONY : trakcrate/settings_defaults.o
+
+# target to build an object file
+trakcrate/settings_defaults.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_defaults.cpp.o
+.PHONY : trakcrate/settings_defaults.cpp.o
+
+trakcrate/settings_defaults.i: trakcrate/settings_defaults.cpp.i
+.PHONY : trakcrate/settings_defaults.i
+
+# target to preprocess a source file
+trakcrate/settings_defaults.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_defaults.cpp.i
+.PHONY : trakcrate/settings_defaults.cpp.i
+
+trakcrate/settings_defaults.s: trakcrate/settings_defaults.cpp.s
+.PHONY : trakcrate/settings_defaults.s
+
+# target to generate assembly for a file
+trakcrate/settings_defaults.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_defaults.cpp.s
+.PHONY : trakcrate/settings_defaults.cpp.s
+
+trakcrate/settings_files.o: trakcrate/settings_files.cpp.o
+.PHONY : trakcrate/settings_files.o
+
+# target to build an object file
+trakcrate/settings_files.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_files.cpp.o
+.PHONY : trakcrate/settings_files.cpp.o
+
+trakcrate/settings_files.i: trakcrate/settings_files.cpp.i
+.PHONY : trakcrate/settings_files.i
+
+# target to preprocess a source file
+trakcrate/settings_files.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_files.cpp.i
+.PHONY : trakcrate/settings_files.cpp.i
+
+trakcrate/settings_files.s: trakcrate/settings_files.cpp.s
+.PHONY : trakcrate/settings_files.s
+
+# target to generate assembly for a file
+trakcrate/settings_files.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_files.cpp.s
+.PHONY : trakcrate/settings_files.cpp.s
+
+trakcrate/sha256.o: trakcrate/sha256.cpp.o
+.PHONY : trakcrate/sha256.o
+
+# target to build an object file
+trakcrate/sha256.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/sha256.cpp.o
+.PHONY : trakcrate/sha256.cpp.o
+
+trakcrate/sha256.i: trakcrate/sha256.cpp.i
+.PHONY : trakcrate/sha256.i
+
+# target to preprocess a source file
+trakcrate/sha256.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/sha256.cpp.i
+.PHONY : trakcrate/sha256.cpp.i
+
+trakcrate/sha256.s: trakcrate/sha256.cpp.s
+.PHONY : trakcrate/sha256.s
+
+# target to generate assembly for a file
+trakcrate/sha256.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/sha256.cpp.s
+.PHONY : trakcrate/sha256.cpp.s
+
+trakcrate/track.o: trakcrate/track.cpp.o
+.PHONY : trakcrate/track.o
+
+# target to build an object file
+trakcrate/track.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/track.cpp.o
+.PHONY : trakcrate/track.cpp.o
+
+trakcrate/track.i: trakcrate/track.cpp.i
+.PHONY : trakcrate/track.i
+
+# target to preprocess a source file
+trakcrate/track.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/track.cpp.i
+.PHONY : trakcrate/track.cpp.i
+
+trakcrate/track.s: trakcrate/track.cpp.s
+.PHONY : trakcrate/track.s
+
+# target to generate assembly for a file
+trakcrate/track.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/track.cpp.s
+.PHONY : trakcrate/track.cpp.s
 
 ui/autoip_status_widget.o: ui/autoip_status_widget.cpp.o
 .PHONY : ui/autoip_status_widget.o
@@ -2177,6 +2867,102 @@ ui/diff_lock_bar.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/diff_lock_bar.cpp.s
 .PHONY : ui/diff_lock_bar.cpp.s
 
+ui/djtoolz_controller.o: ui/djtoolz_controller.cpp.o
+.PHONY : ui/djtoolz_controller.o
+
+# target to build an object file
+ui/djtoolz_controller.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_controller.cpp.o
+.PHONY : ui/djtoolz_controller.cpp.o
+
+ui/djtoolz_controller.i: ui/djtoolz_controller.cpp.i
+.PHONY : ui/djtoolz_controller.i
+
+# target to preprocess a source file
+ui/djtoolz_controller.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_controller.cpp.i
+.PHONY : ui/djtoolz_controller.cpp.i
+
+ui/djtoolz_controller.s: ui/djtoolz_controller.cpp.s
+.PHONY : ui/djtoolz_controller.s
+
+# target to generate assembly for a file
+ui/djtoolz_controller.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_controller.cpp.s
+.PHONY : ui/djtoolz_controller.cpp.s
+
+ui/djtoolz_icons.o: ui/djtoolz_icons.cpp.o
+.PHONY : ui/djtoolz_icons.o
+
+# target to build an object file
+ui/djtoolz_icons.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_icons.cpp.o
+.PHONY : ui/djtoolz_icons.cpp.o
+
+ui/djtoolz_icons.i: ui/djtoolz_icons.cpp.i
+.PHONY : ui/djtoolz_icons.i
+
+# target to preprocess a source file
+ui/djtoolz_icons.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_icons.cpp.i
+.PHONY : ui/djtoolz_icons.cpp.i
+
+ui/djtoolz_icons.s: ui/djtoolz_icons.cpp.s
+.PHONY : ui/djtoolz_icons.s
+
+# target to generate assembly for a file
+ui/djtoolz_icons.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_icons.cpp.s
+.PHONY : ui/djtoolz_icons.cpp.s
+
+ui/djtoolz_panel.o: ui/djtoolz_panel.cpp.o
+.PHONY : ui/djtoolz_panel.o
+
+# target to build an object file
+ui/djtoolz_panel.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_panel.cpp.o
+.PHONY : ui/djtoolz_panel.cpp.o
+
+ui/djtoolz_panel.i: ui/djtoolz_panel.cpp.i
+.PHONY : ui/djtoolz_panel.i
+
+# target to preprocess a source file
+ui/djtoolz_panel.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_panel.cpp.i
+.PHONY : ui/djtoolz_panel.cpp.i
+
+ui/djtoolz_panel.s: ui/djtoolz_panel.cpp.s
+.PHONY : ui/djtoolz_panel.s
+
+# target to generate assembly for a file
+ui/djtoolz_panel.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_panel.cpp.s
+.PHONY : ui/djtoolz_panel.cpp.s
+
+ui/djtoolz_tool_widget.o: ui/djtoolz_tool_widget.cpp.o
+.PHONY : ui/djtoolz_tool_widget.o
+
+# target to build an object file
+ui/djtoolz_tool_widget.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_tool_widget.cpp.o
+.PHONY : ui/djtoolz_tool_widget.cpp.o
+
+ui/djtoolz_tool_widget.i: ui/djtoolz_tool_widget.cpp.i
+.PHONY : ui/djtoolz_tool_widget.i
+
+# target to preprocess a source file
+ui/djtoolz_tool_widget.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_tool_widget.cpp.i
+.PHONY : ui/djtoolz_tool_widget.cpp.i
+
+ui/djtoolz_tool_widget.s: ui/djtoolz_tool_widget.cpp.s
+.PHONY : ui/djtoolz_tool_widget.s
+
+# target to generate assembly for a file
+ui/djtoolz_tool_widget.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/djtoolz_tool_widget.cpp.s
+.PHONY : ui/djtoolz_tool_widget.cpp.s
+
 ui/drum_editor.o: ui/drum_editor.cpp.o
 .PHONY : ui/drum_editor.o
 
@@ -2369,30 +3155,6 @@ ui/midi_monitor_dialog.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/midi_monitor_dialog.cpp.s
 .PHONY : ui/midi_monitor_dialog.cpp.s
 
-ui/now_playing.o: ui/now_playing.cpp.o
-.PHONY : ui/now_playing.o
-
-# target to build an object file
-ui/now_playing.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/now_playing.cpp.o
-.PHONY : ui/now_playing.cpp.o
-
-ui/now_playing.i: ui/now_playing.cpp.i
-.PHONY : ui/now_playing.i
-
-# target to preprocess a source file
-ui/now_playing.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/now_playing.cpp.i
-.PHONY : ui/now_playing.cpp.i
-
-ui/now_playing.s: ui/now_playing.cpp.s
-.PHONY : ui/now_playing.s
-
-# target to generate assembly for a file
-ui/now_playing.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/now_playing.cpp.s
-.PHONY : ui/now_playing.cpp.s
-
 ui/pendrive_clone_dialog.o: ui/pendrive_clone_dialog.cpp.o
 .PHONY : ui/pendrive_clone_dialog.o
 
@@ -2489,6 +3251,30 @@ ui/player_panel.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/player_panel.cpp.s
 .PHONY : ui/player_panel.cpp.s
 
+ui/quantize_button.o: ui/quantize_button.cpp.o
+.PHONY : ui/quantize_button.o
+
+# target to build an object file
+ui/quantize_button.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/quantize_button.cpp.o
+.PHONY : ui/quantize_button.cpp.o
+
+ui/quantize_button.i: ui/quantize_button.cpp.i
+.PHONY : ui/quantize_button.i
+
+# target to preprocess a source file
+ui/quantize_button.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/quantize_button.cpp.i
+.PHONY : ui/quantize_button.cpp.i
+
+ui/quantize_button.s: ui/quantize_button.cpp.s
+.PHONY : ui/quantize_button.s
+
+# target to generate assembly for a file
+ui/quantize_button.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/quantize_button.cpp.s
+.PHONY : ui/quantize_button.cpp.s
+
 ui/recording_panel.o: ui/recording_panel.cpp.o
 .PHONY : ui/recording_panel.o
 
@@ -2584,102 +3370,6 @@ ui/sample_tree_model.s: ui/sample_tree_model.cpp.s
 ui/sample_tree_model.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sample_tree_model.cpp.s
 .PHONY : ui/sample_tree_model.cpp.s
-
-ui/sampler_controller.o: ui/sampler_controller.cpp.o
-.PHONY : ui/sampler_controller.o
-
-# target to build an object file
-ui/sampler_controller.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_controller.cpp.o
-.PHONY : ui/sampler_controller.cpp.o
-
-ui/sampler_controller.i: ui/sampler_controller.cpp.i
-.PHONY : ui/sampler_controller.i
-
-# target to preprocess a source file
-ui/sampler_controller.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_controller.cpp.i
-.PHONY : ui/sampler_controller.cpp.i
-
-ui/sampler_controller.s: ui/sampler_controller.cpp.s
-.PHONY : ui/sampler_controller.s
-
-# target to generate assembly for a file
-ui/sampler_controller.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_controller.cpp.s
-.PHONY : ui/sampler_controller.cpp.s
-
-ui/sampler_icons.o: ui/sampler_icons.cpp.o
-.PHONY : ui/sampler_icons.o
-
-# target to build an object file
-ui/sampler_icons.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_icons.cpp.o
-.PHONY : ui/sampler_icons.cpp.o
-
-ui/sampler_icons.i: ui/sampler_icons.cpp.i
-.PHONY : ui/sampler_icons.i
-
-# target to preprocess a source file
-ui/sampler_icons.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_icons.cpp.i
-.PHONY : ui/sampler_icons.cpp.i
-
-ui/sampler_icons.s: ui/sampler_icons.cpp.s
-.PHONY : ui/sampler_icons.s
-
-# target to generate assembly for a file
-ui/sampler_icons.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_icons.cpp.s
-.PHONY : ui/sampler_icons.cpp.s
-
-ui/sampler_module_widget.o: ui/sampler_module_widget.cpp.o
-.PHONY : ui/sampler_module_widget.o
-
-# target to build an object file
-ui/sampler_module_widget.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_module_widget.cpp.o
-.PHONY : ui/sampler_module_widget.cpp.o
-
-ui/sampler_module_widget.i: ui/sampler_module_widget.cpp.i
-.PHONY : ui/sampler_module_widget.i
-
-# target to preprocess a source file
-ui/sampler_module_widget.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_module_widget.cpp.i
-.PHONY : ui/sampler_module_widget.cpp.i
-
-ui/sampler_module_widget.s: ui/sampler_module_widget.cpp.s
-.PHONY : ui/sampler_module_widget.s
-
-# target to generate assembly for a file
-ui/sampler_module_widget.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_module_widget.cpp.s
-.PHONY : ui/sampler_module_widget.cpp.s
-
-ui/sampler_panel.o: ui/sampler_panel.cpp.o
-.PHONY : ui/sampler_panel.o
-
-# target to build an object file
-ui/sampler_panel.cpp.o:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_panel.cpp.o
-.PHONY : ui/sampler_panel.cpp.o
-
-ui/sampler_panel.i: ui/sampler_panel.cpp.i
-.PHONY : ui/sampler_panel.i
-
-# target to preprocess a source file
-ui/sampler_panel.cpp.i:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_panel.cpp.i
-.PHONY : ui/sampler_panel.cpp.i
-
-ui/sampler_panel.s: ui/sampler_panel.cpp.s
-.PHONY : ui/sampler_panel.s
-
-# target to generate assembly for a file
-ui/sampler_panel.cpp.s:
-	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/sampler_panel.cpp.s
-.PHONY : ui/sampler_panel.cpp.s
 
 ui/step_chooser.o: ui/step_chooser.cpp.o
 .PHONY : ui/step_chooser.o
@@ -2800,6 +3490,174 @@ ui/track_details.s: ui/track_details.cpp.s
 ui/track_details.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/track_details.cpp.s
 .PHONY : ui/track_details.cpp.s
+
+ui/trakcrate_artwork.o: ui/trakcrate_artwork.cpp.o
+.PHONY : ui/trakcrate_artwork.o
+
+# target to build an object file
+ui/trakcrate_artwork.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_artwork.cpp.o
+.PHONY : ui/trakcrate_artwork.cpp.o
+
+ui/trakcrate_artwork.i: ui/trakcrate_artwork.cpp.i
+.PHONY : ui/trakcrate_artwork.i
+
+# target to preprocess a source file
+ui/trakcrate_artwork.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_artwork.cpp.i
+.PHONY : ui/trakcrate_artwork.cpp.i
+
+ui/trakcrate_artwork.s: ui/trakcrate_artwork.cpp.s
+.PHONY : ui/trakcrate_artwork.s
+
+# target to generate assembly for a file
+ui/trakcrate_artwork.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_artwork.cpp.s
+.PHONY : ui/trakcrate_artwork.cpp.s
+
+ui/trakcrate_bpm_dialog.o: ui/trakcrate_bpm_dialog.cpp.o
+.PHONY : ui/trakcrate_bpm_dialog.o
+
+# target to build an object file
+ui/trakcrate_bpm_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_bpm_dialog.cpp.o
+.PHONY : ui/trakcrate_bpm_dialog.cpp.o
+
+ui/trakcrate_bpm_dialog.i: ui/trakcrate_bpm_dialog.cpp.i
+.PHONY : ui/trakcrate_bpm_dialog.i
+
+# target to preprocess a source file
+ui/trakcrate_bpm_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_bpm_dialog.cpp.i
+.PHONY : ui/trakcrate_bpm_dialog.cpp.i
+
+ui/trakcrate_bpm_dialog.s: ui/trakcrate_bpm_dialog.cpp.s
+.PHONY : ui/trakcrate_bpm_dialog.s
+
+# target to generate assembly for a file
+ui/trakcrate_bpm_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_bpm_dialog.cpp.s
+.PHONY : ui/trakcrate_bpm_dialog.cpp.s
+
+ui/trakcrate_export_dialog.o: ui/trakcrate_export_dialog.cpp.o
+.PHONY : ui/trakcrate_export_dialog.o
+
+# target to build an object file
+ui/trakcrate_export_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_export_dialog.cpp.o
+.PHONY : ui/trakcrate_export_dialog.cpp.o
+
+ui/trakcrate_export_dialog.i: ui/trakcrate_export_dialog.cpp.i
+.PHONY : ui/trakcrate_export_dialog.i
+
+# target to preprocess a source file
+ui/trakcrate_export_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_export_dialog.cpp.i
+.PHONY : ui/trakcrate_export_dialog.cpp.i
+
+ui/trakcrate_export_dialog.s: ui/trakcrate_export_dialog.cpp.s
+.PHONY : ui/trakcrate_export_dialog.s
+
+# target to generate assembly for a file
+ui/trakcrate_export_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_export_dialog.cpp.s
+.PHONY : ui/trakcrate_export_dialog.cpp.s
+
+ui/trakcrate_import_dialog.o: ui/trakcrate_import_dialog.cpp.o
+.PHONY : ui/trakcrate_import_dialog.o
+
+# target to build an object file
+ui/trakcrate_import_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_import_dialog.cpp.o
+.PHONY : ui/trakcrate_import_dialog.cpp.o
+
+ui/trakcrate_import_dialog.i: ui/trakcrate_import_dialog.cpp.i
+.PHONY : ui/trakcrate_import_dialog.i
+
+# target to preprocess a source file
+ui/trakcrate_import_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_import_dialog.cpp.i
+.PHONY : ui/trakcrate_import_dialog.cpp.i
+
+ui/trakcrate_import_dialog.s: ui/trakcrate_import_dialog.cpp.s
+.PHONY : ui/trakcrate_import_dialog.s
+
+# target to generate assembly for a file
+ui/trakcrate_import_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_import_dialog.cpp.s
+.PHONY : ui/trakcrate_import_dialog.cpp.s
+
+ui/trakcrate_job.o: ui/trakcrate_job.cpp.o
+.PHONY : ui/trakcrate_job.o
+
+# target to build an object file
+ui/trakcrate_job.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_job.cpp.o
+.PHONY : ui/trakcrate_job.cpp.o
+
+ui/trakcrate_job.i: ui/trakcrate_job.cpp.i
+.PHONY : ui/trakcrate_job.i
+
+# target to preprocess a source file
+ui/trakcrate_job.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_job.cpp.i
+.PHONY : ui/trakcrate_job.cpp.i
+
+ui/trakcrate_job.s: ui/trakcrate_job.cpp.s
+.PHONY : ui/trakcrate_job.s
+
+# target to generate assembly for a file
+ui/trakcrate_job.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_job.cpp.s
+.PHONY : ui/trakcrate_job.cpp.s
+
+ui/trakcrate_panel.o: ui/trakcrate_panel.cpp.o
+.PHONY : ui/trakcrate_panel.o
+
+# target to build an object file
+ui/trakcrate_panel.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_panel.cpp.o
+.PHONY : ui/trakcrate_panel.cpp.o
+
+ui/trakcrate_panel.i: ui/trakcrate_panel.cpp.i
+.PHONY : ui/trakcrate_panel.i
+
+# target to preprocess a source file
+ui/trakcrate_panel.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_panel.cpp.i
+.PHONY : ui/trakcrate_panel.cpp.i
+
+ui/trakcrate_panel.s: ui/trakcrate_panel.cpp.s
+.PHONY : ui/trakcrate_panel.s
+
+# target to generate assembly for a file
+ui/trakcrate_panel.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_panel.cpp.s
+.PHONY : ui/trakcrate_panel.cpp.s
+
+ui/trakcrate_track_model.o: ui/trakcrate_track_model.cpp.o
+.PHONY : ui/trakcrate_track_model.o
+
+# target to build an object file
+ui/trakcrate_track_model.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_track_model.cpp.o
+.PHONY : ui/trakcrate_track_model.cpp.o
+
+ui/trakcrate_track_model.i: ui/trakcrate_track_model.cpp.i
+.PHONY : ui/trakcrate_track_model.i
+
+# target to preprocess a source file
+ui/trakcrate_track_model.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_track_model.cpp.i
+.PHONY : ui/trakcrate_track_model.cpp.i
+
+ui/trakcrate_track_model.s: ui/trakcrate_track_model.cpp.s
+.PHONY : ui/trakcrate_track_model.s
+
+# target to generate assembly for a file
+ui/trakcrate_track_model.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_track_model.cpp.s
+.PHONY : ui/trakcrate_track_model.cpp.s
 
 ui/usb_config_dialog.o: ui/usb_config_dialog.cpp.o
 .PHONY : ui/usb_config_dialog.o
@@ -3017,6 +3875,30 @@ vdj-nfsd_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-nfsd.dir/build.make src/CMakeFiles/vdj-nfsd.dir/vdj-nfsd_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-nfsd_autogen/mocs_compilation.cpp.s
 
+vdj-trakcrate_autogen/mocs_compilation.o: vdj-trakcrate_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-trakcrate_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-trakcrate_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/vdj-trakcrate_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-trakcrate_autogen/mocs_compilation.cpp.o
+
+vdj-trakcrate_autogen/mocs_compilation.i: vdj-trakcrate_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-trakcrate_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-trakcrate_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/vdj-trakcrate_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-trakcrate_autogen/mocs_compilation.cpp.i
+
+vdj-trakcrate_autogen/mocs_compilation.s: vdj-trakcrate_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-trakcrate_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-trakcrate_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/vdj-trakcrate_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-trakcrate_autogen/mocs_compilation.cpp.s
+
 vdj-ui_autogen/mocs_compilation.o: vdj-ui_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui_autogen/mocs_compilation.o
 
@@ -3134,6 +4016,8 @@ help:
 	@echo "... vdj-dbserver_autogen_timestamp_deps"
 	@echo "... vdj-nfsd_autogen"
 	@echo "... vdj-nfsd_autogen_timestamp_deps"
+	@echo "... vdj-trakcrate_autogen"
+	@echo "... vdj-trakcrate_autogen_timestamp_deps"
 	@echo "... vdj-ui_autogen"
 	@echo "... vdj-ui_autogen_timestamp_deps"
 	@echo "... xdj-nfs_autogen"
@@ -3141,6 +4025,7 @@ help:
 	@echo "... vdj-cdj"
 	@echo "... vdj-dbserver"
 	@echo "... vdj-nfsd"
+	@echo "... vdj-trakcrate"
 	@echo "... vdj-ui"
 	@echo "... xdj-nfs"
 	@echo "... __/references/libcdj/src/nfs/mount_client.o"
@@ -3188,33 +4073,48 @@ help:
 	@echo "... audio/audio_recorder.o"
 	@echo "... audio/audio_recorder.i"
 	@echo "... audio/audio_recorder.s"
+	@echo "... audio/beat_clock.o"
+	@echo "... audio/beat_clock.i"
+	@echo "... audio/beat_clock.s"
 	@echo "... audio/beat_source.o"
 	@echo "... audio/beat_source.i"
 	@echo "... audio/beat_source.s"
+	@echo "... audio/deck_phase.o"
+	@echo "... audio/deck_phase.i"
+	@echo "... audio/deck_phase.s"
+	@echo "... audio/djtoolz_engine.o"
+	@echo "... audio/djtoolz_engine.i"
+	@echo "... audio/djtoolz_engine.s"
+	@echo "... audio/djtoolz_presets.o"
+	@echo "... audio/djtoolz_presets.i"
+	@echo "... audio/djtoolz_presets.s"
+	@echo "... audio/djtoolz_scheduler.o"
+	@echo "... audio/djtoolz_scheduler.i"
+	@echo "... audio/djtoolz_scheduler.s"
+	@echo "... audio/djtoolz_tool.o"
+	@echo "... audio/djtoolz_tool.i"
+	@echo "... audio/djtoolz_tool.s"
 	@echo "... audio/drum_kits.o"
 	@echo "... audio/drum_kits.i"
 	@echo "... audio/drum_kits.s"
 	@echo "... audio/drum_pattern.o"
 	@echo "... audio/drum_pattern.i"
 	@echo "... audio/drum_pattern.s"
+	@echo "... audio/fx_rack.o"
+	@echo "... audio/fx_rack.i"
+	@echo "... audio/fx_rack.s"
+	@echo "... audio/ladspa_host.o"
+	@echo "... audio/ladspa_host.i"
+	@echo "... audio/ladspa_host.s"
+	@echo "... audio/quantize_settings.o"
+	@echo "... audio/quantize_settings.i"
+	@echo "... audio/quantize_settings.s"
 	@echo "... audio/sample_cache.o"
 	@echo "... audio/sample_cache.i"
 	@echo "... audio/sample_cache.s"
 	@echo "... audio/sample_stretch.o"
 	@echo "... audio/sample_stretch.i"
 	@echo "... audio/sample_stretch.s"
-	@echo "... audio/sampler_engine.o"
-	@echo "... audio/sampler_engine.i"
-	@echo "... audio/sampler_engine.s"
-	@echo "... audio/sampler_module.o"
-	@echo "... audio/sampler_module.i"
-	@echo "... audio/sampler_module.s"
-	@echo "... audio/sampler_presets.o"
-	@echo "... audio/sampler_presets.i"
-	@echo "... audio/sampler_presets.s"
-	@echo "... audio/sampler_scheduler.o"
-	@echo "... audio/sampler_scheduler.i"
-	@echo "... audio/sampler_scheduler.s"
 	@echo "... audio/swing.o"
 	@echo "... audio/swing.i"
 	@echo "... audio/swing.s"
@@ -3284,9 +4184,21 @@ help:
 	@echo "... midi/diff_lock.o"
 	@echo "... midi/diff_lock.i"
 	@echo "... midi/diff_lock.s"
+	@echo "... midi/djtoolz_ctl_map.o"
+	@echo "... midi/djtoolz_ctl_map.i"
+	@echo "... midi/djtoolz_ctl_map.s"
+	@echo "... midi/djtoolz_midi_control.o"
+	@echo "... midi/djtoolz_midi_control.i"
+	@echo "... midi/djtoolz_midi_control.s"
 	@echo "... midi/instrument_manager.o"
 	@echo "... midi/instrument_manager.i"
 	@echo "... midi/instrument_manager.s"
+	@echo "... midi/joystick_map.o"
+	@echo "... midi/joystick_map.i"
+	@echo "... midi/joystick_map.s"
+	@echo "... midi/joystick_seq_bridge.o"
+	@echo "... midi/joystick_seq_bridge.i"
+	@echo "... midi/joystick_seq_bridge.s"
 	@echo "... midi/midi_map_input.o"
 	@echo "... midi/midi_map_input.i"
 	@echo "... midi/midi_map_input.s"
@@ -3296,12 +4208,9 @@ help:
 	@echo "... midi/midi_router.o"
 	@echo "... midi/midi_router.i"
 	@echo "... midi/midi_router.s"
-	@echo "... midi/sampler_ctl_map.o"
-	@echo "... midi/sampler_ctl_map.i"
-	@echo "... midi/sampler_ctl_map.s"
-	@echo "... midi/sampler_midi_control.o"
-	@echo "... midi/sampler_midi_control.i"
-	@echo "... midi/sampler_midi_control.s"
+	@echo "... midi/seq_bar.o"
+	@echo "... midi/seq_bar.i"
+	@echo "... midi/seq_bar.s"
 	@echo "... network/auto_ip_manager.o"
 	@echo "... network/auto_ip_manager.i"
 	@echo "... network/auto_ip_manager.s"
@@ -3329,6 +4238,63 @@ help:
 	@echo "... nfs/xdj_nfs.o"
 	@echo "... nfs/xdj_nfs.i"
 	@echo "... nfs/xdj_nfs.s"
+	@echo "... trakcrate/analysis.o"
+	@echo "... trakcrate/analysis.i"
+	@echo "... trakcrate/analysis.s"
+	@echo "... trakcrate/analysis_beats.o"
+	@echo "... trakcrate/analysis_beats.i"
+	@echo "... trakcrate/analysis_beats.s"
+	@echo "... trakcrate/analysis_wave.o"
+	@echo "... trakcrate/analysis_wave.i"
+	@echo "... trakcrate/analysis_wave.s"
+	@echo "... trakcrate/anlz_writer.o"
+	@echo "... trakcrate/anlz_writer.i"
+	@echo "... trakcrate/anlz_writer.s"
+	@echo "... trakcrate/artwork_paths.o"
+	@echo "... trakcrate/artwork_paths.i"
+	@echo "... trakcrate/artwork_paths.s"
+	@echo "... trakcrate/audio_decode.o"
+	@echo "... trakcrate/audio_decode.i"
+	@echo "... trakcrate/audio_decode.s"
+	@echo "... trakcrate/audio_probe.o"
+	@echo "... trakcrate/audio_probe.i"
+	@echo "... trakcrate/audio_probe.s"
+	@echo "... trakcrate/bpm_detect.o"
+	@echo "... trakcrate/bpm_detect.i"
+	@echo "... trakcrate/bpm_detect.s"
+	@echo "... trakcrate/exporter.o"
+	@echo "... trakcrate/exporter.i"
+	@echo "... trakcrate/exporter.s"
+	@echo "... trakcrate/fsutil.o"
+	@echo "... trakcrate/fsutil.i"
+	@echo "... trakcrate/fsutil.s"
+	@echo "... trakcrate/importer.o"
+	@echo "... trakcrate/importer.i"
+	@echo "... trakcrate/importer.s"
+	@echo "... trakcrate/library.o"
+	@echo "... trakcrate/library.i"
+	@echo "... trakcrate/library.s"
+	@echo "... trakcrate/natsort.o"
+	@echo "... trakcrate/natsort.i"
+	@echo "... trakcrate/natsort.s"
+	@echo "... trakcrate/pdb_build.o"
+	@echo "... trakcrate/pdb_build.i"
+	@echo "... trakcrate/pdb_build.s"
+	@echo "... trakcrate/pdb_writer.o"
+	@echo "... trakcrate/pdb_writer.i"
+	@echo "... trakcrate/pdb_writer.s"
+	@echo "... trakcrate/settings_defaults.o"
+	@echo "... trakcrate/settings_defaults.i"
+	@echo "... trakcrate/settings_defaults.s"
+	@echo "... trakcrate/settings_files.o"
+	@echo "... trakcrate/settings_files.i"
+	@echo "... trakcrate/settings_files.s"
+	@echo "... trakcrate/sha256.o"
+	@echo "... trakcrate/sha256.i"
+	@echo "... trakcrate/sha256.s"
+	@echo "... trakcrate/track.o"
+	@echo "... trakcrate/track.i"
+	@echo "... trakcrate/track.s"
 	@echo "... ui/autoip_status_widget.o"
 	@echo "... ui/autoip_status_widget.i"
 	@echo "... ui/autoip_status_widget.s"
@@ -3365,6 +4331,18 @@ help:
 	@echo "... ui/diff_lock_bar.o"
 	@echo "... ui/diff_lock_bar.i"
 	@echo "... ui/diff_lock_bar.s"
+	@echo "... ui/djtoolz_controller.o"
+	@echo "... ui/djtoolz_controller.i"
+	@echo "... ui/djtoolz_controller.s"
+	@echo "... ui/djtoolz_icons.o"
+	@echo "... ui/djtoolz_icons.i"
+	@echo "... ui/djtoolz_icons.s"
+	@echo "... ui/djtoolz_panel.o"
+	@echo "... ui/djtoolz_panel.i"
+	@echo "... ui/djtoolz_panel.s"
+	@echo "... ui/djtoolz_tool_widget.o"
+	@echo "... ui/djtoolz_tool_widget.i"
+	@echo "... ui/djtoolz_tool_widget.s"
 	@echo "... ui/drum_editor.o"
 	@echo "... ui/drum_editor.i"
 	@echo "... ui/drum_editor.s"
@@ -3389,9 +4367,6 @@ help:
 	@echo "... ui/midi_monitor_dialog.o"
 	@echo "... ui/midi_monitor_dialog.i"
 	@echo "... ui/midi_monitor_dialog.s"
-	@echo "... ui/now_playing.o"
-	@echo "... ui/now_playing.i"
-	@echo "... ui/now_playing.s"
 	@echo "... ui/pendrive_clone_dialog.o"
 	@echo "... ui/pendrive_clone_dialog.i"
 	@echo "... ui/pendrive_clone_dialog.s"
@@ -3404,6 +4379,9 @@ help:
 	@echo "... ui/player_panel.o"
 	@echo "... ui/player_panel.i"
 	@echo "... ui/player_panel.s"
+	@echo "... ui/quantize_button.o"
+	@echo "... ui/quantize_button.i"
+	@echo "... ui/quantize_button.s"
 	@echo "... ui/recording_panel.o"
 	@echo "... ui/recording_panel.i"
 	@echo "... ui/recording_panel.s"
@@ -3416,18 +4394,6 @@ help:
 	@echo "... ui/sample_tree_model.o"
 	@echo "... ui/sample_tree_model.i"
 	@echo "... ui/sample_tree_model.s"
-	@echo "... ui/sampler_controller.o"
-	@echo "... ui/sampler_controller.i"
-	@echo "... ui/sampler_controller.s"
-	@echo "... ui/sampler_icons.o"
-	@echo "... ui/sampler_icons.i"
-	@echo "... ui/sampler_icons.s"
-	@echo "... ui/sampler_module_widget.o"
-	@echo "... ui/sampler_module_widget.i"
-	@echo "... ui/sampler_module_widget.s"
-	@echo "... ui/sampler_panel.o"
-	@echo "... ui/sampler_panel.i"
-	@echo "... ui/sampler_panel.s"
 	@echo "... ui/step_chooser.o"
 	@echo "... ui/step_chooser.i"
 	@echo "... ui/step_chooser.s"
@@ -3443,6 +4409,27 @@ help:
 	@echo "... ui/track_details.o"
 	@echo "... ui/track_details.i"
 	@echo "... ui/track_details.s"
+	@echo "... ui/trakcrate_artwork.o"
+	@echo "... ui/trakcrate_artwork.i"
+	@echo "... ui/trakcrate_artwork.s"
+	@echo "... ui/trakcrate_bpm_dialog.o"
+	@echo "... ui/trakcrate_bpm_dialog.i"
+	@echo "... ui/trakcrate_bpm_dialog.s"
+	@echo "... ui/trakcrate_export_dialog.o"
+	@echo "... ui/trakcrate_export_dialog.i"
+	@echo "... ui/trakcrate_export_dialog.s"
+	@echo "... ui/trakcrate_import_dialog.o"
+	@echo "... ui/trakcrate_import_dialog.i"
+	@echo "... ui/trakcrate_import_dialog.s"
+	@echo "... ui/trakcrate_job.o"
+	@echo "... ui/trakcrate_job.i"
+	@echo "... ui/trakcrate_job.s"
+	@echo "... ui/trakcrate_panel.o"
+	@echo "... ui/trakcrate_panel.i"
+	@echo "... ui/trakcrate_panel.s"
+	@echo "... ui/trakcrate_track_model.o"
+	@echo "... ui/trakcrate_track_model.i"
+	@echo "... ui/trakcrate_track_model.s"
 	@echo "... ui/usb_config_dialog.o"
 	@echo "... ui/usb_config_dialog.i"
 	@echo "... ui/usb_config_dialog.s"
@@ -3470,6 +4457,9 @@ help:
 	@echo "... vdj-nfsd_autogen/mocs_compilation.o"
 	@echo "... vdj-nfsd_autogen/mocs_compilation.i"
 	@echo "... vdj-nfsd_autogen/mocs_compilation.s"
+	@echo "... vdj-trakcrate_autogen/mocs_compilation.o"
+	@echo "... vdj-trakcrate_autogen/mocs_compilation.i"
+	@echo "... vdj-trakcrate_autogen/mocs_compilation.s"
 	@echo "... vdj-ui_autogen/mocs_compilation.o"
 	@echo "... vdj-ui_autogen/mocs_compilation.i"
 	@echo "... vdj-ui_autogen/mocs_compilation.s"

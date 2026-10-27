@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg3165"
+   inkscape:export-filename="trakcrate.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="trakcrate-one.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview3167"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.97624416"
+     inkscape:cx="370.80888"
+     inkscape:cy="513.70346"
+     inkscape:window-width="2494"
+     inkscape:window-height="1531"
+     inkscape:window-x="2560"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs3162">
+    <linearGradient
+       id="linearGradient2947">
+      <stop
+         style="stop-color:#ff5454;stop-opacity:1;"
+         offset="0"
+         id="stop2943" />
+      <stop
+         style="stop-color:#e60000;stop-opacity:1;"
+         offset="1"
+         id="stop2945" />
+    </linearGradient>
+    <filter
+       color-interpolation-filters="sRGB"
+       inkscape:collect="always"
+       id="filter4145"
+       x="-0.048929579"
+       width="1.0978592"
+       y="-0.13623529"
+       height="1.2724706">
+      <feGaussianBlur
+         inkscape:collect="always"
+         stdDeviation="2.9243914"
+         id="feGaussianBlur4147" />
+    </filter>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g4186"
+       transform="matrix(0.86613233,0,0,0.86613233,-7.3087877,-65.440843)"
+       inkscape:export-filename="trakcrate.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96">
+      <path
+         style="opacity:0.25;fill:#000000;stroke:none;filter:url(#filter4145)"
+         d="m 64.942029,419.56874 119.197991,9.09138 24.24366,-50.50763 -83.84265,-1.01015 z"
+         id="path4109"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc"
+         transform="matrix(0.49039819,0,0,0.49039819,-3.1282084,-28.51182)" />
+      <path
+         style="fill:#ffd22a;fill-opacity:1;stroke:#c8b52a;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 27.69682,171.60814 c 0,-16.81364 -7.005687,-72.85916 -7.005687,-72.85916 l 65.025412,-3.12766 0.822301,80.19613 z"
+         id="path2985"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <path
+         style="fill:#d4b200;fill-opacity:1;stroke:#c87f2a;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 85.209003,95.90214 14.404761,-7.42733 1.571126,59.49127 -14.725278,27.93776 z"
+         id="path2989"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <path
+         style="fill:#ffe780;fill-opacity:1;stroke:#c89e2a;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="M 20.700631,98.70246 51.671568,90.52673 99.536066,88.8002 85.143465,95.94671 Z"
+         id="path2991"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:27.6228px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#545454;fill-opacity:1;stroke-width:0.431607"
+         x="12.861195"
+         y="166.196"
+         id="text2707"
+         transform="matrix(1.0099047,0.09164171,0.09591995,0.99889649,0,0)"><tspan
+           sodipodi:role="line"
+           id="tspan2705"
+           x="12.861195"
+           y="166.196"
+           style="fill:#545454;fill-opacity:1;stroke-width:0.431607">trak</tspan></text>
+    </g>
+  </g>
+</svg>

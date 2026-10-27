@@ -81,6 +81,8 @@
 #include <QNetworkInterface>
 #include <QFile>
 #include "ui/rekordbox_mode_panel.h"
+#include "ui/trakcrate_panel.h"
+#include "ui/trakcrate_track_editor.h"
 #include "dbserver/rb_mode_options.h"
 
 namespace vdj {
@@ -589,6 +591,12 @@ void MainWindow::setupMenus()
             djtoolzPanel_->setVisible(on);
     });
 
+    tcAction_ = view->addAction("&trakcrate Library");
+    tcAction_->setIcon(imageIcon(QStringLiteral(":/img/trakcrate-128x128.png")));
+    tcAction_->setCheckable(true);
+    tcAction_->setToolTip("Import audio folders into the trakcrate library and prepare pendrives");
+    connect(tcAction_, &QAction::toggled, this, [this](bool on) { trakcrateDock()->setVisible(on); });
+
     recordAction_ = view->addAction("&Recording Panel");
     recordAction_->setIcon(glyphIcon(QStringLiteral("🔴")));
     recordAction_->setCheckable(true);
@@ -721,24 +729,23 @@ void MainWindow::setupMenus()
     connect(aboutAction, &QAction::triggered, this, [this]() {
         QMessageBox box(this);
         box.setWindowTitle(QStringLiteral("About VDJ UI"));
-        box.setText(QStringLiteral("<h3>VDJ UI %1</h3>"
+        // both logos at 64x64 so the two sections line up
+        box.setTextFormat(Qt::RichText);
+        box.setText(QStringLiteral("<table cellspacing='0' cellpadding='4'><tr>"
+                                   "<td valign='top'><img src=':/img/vdj-64x64.png' width='64' height='64'></td>"
+                                   "<td valign='top'><h3>VDJ UI %1</h3>"
                                    "<p>A Virtual Deck for Pioneer ProLink network: syncing MIDI instruments, beat grids of all decks, "
-                                   "rekordbox track browsing and a local track preview player, virtual pendrive exports.</p>")
+                                   "rekordbox track browsing and a local track preview player, virtual pendrive exports.</p></td></tr>"
+                                   "<tr><td valign='top'><img src=':/img/trakcrate-128x128.png' width='64' height='64'></td>"
+                                   "<td valign='top'><h3>trakcrate</h3>"
+                                   "<p>A master music library kept as plain files and folders that you can edit, and the export of "
+                                   "rekordbox-format pendrives that CDJ and XDJ players accept. Part of VDJ UI; the library format is "
+                                   "specified in TRAKCRATE-FORMAT.md.</p></td></tr>"
+                                   "<tr><td></td><td valign='top'><h3>libcdj</h3>"
+                                   "<p>Pioneer ProLink and rekordbox database/analysis file support comes from "
+                                   "<b>libcdj</b>: <a href='https://github.com/teknopaul/libcdj'>https://github.com/teknopaul/libcdj</a></p>"
+                                   "</td></tr></table>")
                         .arg(QCoreApplication::applicationVersion()));
-        // installed: <prefix>/share/vdj-ui; from a build tree: the source's img/
-        const QString appDir = QCoreApplication::applicationDirPath();
-        const QStringList logos = {
-            appDir + QStringLiteral("/../share/vdj-ui/vdj-64x64.png"),
-            QStringLiteral("/usr/share/vdj-ui/vdj-64x64.png"),
-            appDir + QStringLiteral("/../img/vdj-64x64.png"),
-            appDir + QStringLiteral("/../../img/vdj-64x64.png"),
-        };
-        for (const QString& path : logos) {
-            if (QFile::exists(path)) {
-                box.setIconPixmap(QPixmap(path));
-                break;
-            }
-        }
         box.exec();
     });
 
@@ -1989,6 +1996,54 @@ void MainWindow::setupRecording()
             [this](const QString& p) { statusBar()->showMessage(QStringLiteral("Recording to %1").arg(p), 5000); });
     connect(recorder_, &AudioRecorder::recordingStopped, this,
             [this](const QString& p) { statusBar()->showMessage(QStringLiteral("Recording saved: %1").arg(p), 5000); });
+}
+
+// ---- trakcrate ----
+
+QDockWidget* MainWindow::trakcrateDock()
+{
+    if (tcDock_) return tcDock_;
+    tcPanel_ = new TrakcratePanel(config_);
+    tcDock_ = new QDockWidget(QStringLiteral("trakcrate"), this);
+    tcDock_->setObjectName(QStringLiteral("trakcrateDock"));
+    tcDock_->setWidget(tcPanel_);
+    addDockWidget(Qt::BottomDockWidgetArea, tcDock_);
+    tcDock_->hide();
+    auto retitle = [this](const QString& path) {
+        const QString last = QFileInfo(QDir::cleanPath(path)).fileName();
+        tcDock_->setWindowTitle(last.isEmpty() ? QStringLiteral("trakcrate") : QStringLiteral("trakcrate: %1").arg(last));
+    };
+    if (tcPanel_->hasLibrary()) retitle(QString::fromStdString(tcPanel_->library().root().string()));
+    connect(tcPanel_, &TrakcratePanel::libraryChanged, this, retitle);
+    connect(tcDock_, &QDockWidget::visibilityChanged, tcAction_, &QAction::setChecked);
+    // an export the user asked to serve to the decks: add the folder to the virtual pendrives (the slot is chosen in that dialog)
+    connect(tcPanel_, &TrakcratePanel::registerPendriveRequested, this, [this](const QString& name, const QString& folder) {
+        const QString err = pendrives()->add(name, folder);
+        statusBar()->showMessage(err.isEmpty() ? QStringLiteral("Registered \"%1\" as a virtual pendrive").arg(name) : err, 8000);
+    });
+    // the track editor: shows the master track loaded in the local player
+    tcEditor_ = new TrakcrateTrackEditor;
+    tcEditor_->setConfig(config_);
+    tcEditorDock_ = new QDockWidget(QStringLiteral("trakcrate track"), this);
+    tcEditorDock_->setObjectName(QStringLiteral("trakcrateTrackDock"));
+    tcEditorDock_->setWidget(tcEditor_);
+    addDockWidget(Qt::BottomDockWidgetArea, tcEditorDock_);
+    tcEditorDock_->hide();
+    connect(tcPanel_, &TrakcratePanel::loadRequested, this, [this](const QString& dir) {
+        if (!playerPanel_) return;
+        playerPanel_->setVisible(true);
+        playerPanel_->loadTrakcrateTrack(dir);
+    });
+    connect(playerPanel_, &PlayerPanel::trakcrateTrackLoaded, this, [this](const QString& dir) {
+        tcEditor_->setTrack(dir);                         // empty for a track from a pendrive: the editor goes read-only
+        if (!dir.isEmpty()) tcEditorDock_->show();
+    });
+    connect(tcEditor_, &TrakcrateTrackEditor::trackChanged, tcPanel_, &TrakcratePanel::refresh);
+    connect(tcEditor_, &TrakcrateTrackEditor::gridChanged, this, [this](const QString& dir) {
+        if (playerPanel_) playerPanel_->reloadTrakcrateAnalysis(dir);       // the deck uses the new grid at once
+    });
+    connect(tcEditor_, &TrakcrateTrackEditor::status, this, [this](const QString& msg) { statusBar()->showMessage(msg, 8000); });
+    return tcDock_;
 }
 
 // ---- rekordbox PC mode ----

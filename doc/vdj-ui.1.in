@@ -1,4 +1,4 @@
-.TH VDJ-UI 1 "September 2026" "vdj-ui 0.1.0" "User Commands"
+.TH VDJ-UI 1 "September 2026" "vdj-ui @VDJ_VERSION@" "User Commands"
 .SH NAME
 vdj-ui \- 🎧 Qt GUI for Virtual DJ (renders ProLink beat grids)
 .SH SYNOPSIS

@@ -6,7 +6,7 @@ Cover art is stored outside the PDB as plain JPEG files; the PDB only holds an i
 
 - PDB table 13 (artwork): each row is `id u32` + path string, e.g. `/PIONEER/Artwork/00001/a1.jpg` (read by `pdb_parse_artwork`; fixture has 2087 rows, paths like `/PIONEER/Artwork/00104/a2061.jpg`).
 - The track row carries `artwork_id` (`pdb_track_t.artwork_id`); the album/track "art" shown by the players is looked up through it.
-- Directory rule from the paths: `Artwork/<NNNNN>/a<id>.jpg`, with the directory number = `(id-1) / 20 + 1`? **Not yet confirmed**: in the fixture ids 1-4 are in `00001`, id 2061 is in `00104`, which is consistent with 20 ids per directory (2061 -> 103.05 -> 104). Verify against all 2087 rows before relying on it.
+- Directory rule from the paths: `Artwork/<NNNNN>/a<id>.jpg`, with the directory number = `id / 20 + 1` (**verified on all 2087 rows** of the 2195 track export in Phase 7; ids 0-19 are in 00001, 20-39 in 00002). The earlier guess `(id-1)/20+1` was wrong for ids 20, 40, ...: in the fixture ids 1-4 are in `00001`, id 2061 is in `00104`, which is consistent with 20 ids per directory (2061 -> 103.05 -> 104). Verify against all 2087 rows before relying on it.
 - Players request art through the dbserver (`ReqArt`, `RbLibrary::artwork`), which reads the file at the path from the PDB, so the same files serve both USB and network playback. Our server caps a file at 16 MB and rejects unsafe relative paths.
 - Real exports are known (from the public Deep Symmetry analysis, not checked against our samples) to hold a second, smaller version per id (`a<id>_m.jpg`, about 80x80) next to the full one (about 240x240?). Our fixtures contain no `_m` paths and the 7-track sample has no `Artwork/` directory at all. **Check the big pendrive for the file names and pixel sizes** before deciding what to generate; the sizes matter because XDJ screens are small and big files make browsing slow.
 - Tracks without art have `artwork_id` 0 and no row.
@@ -45,3 +45,11 @@ track-master-copy/<folder>/<track>/
 - Whether the directory numbering rule above holds; whether ids must be dense/ascending.
 - Max size players decode over the network (the 16 MB cap in our server is ours, not theirs).
 - PNG, WebP, or a very large input: accept, but always re-encode on export.
+
+## Checked against a real drive (KINGSTON, 2025 rekordbox export, 2148 images)
+
+- Only `a<id>.jpg` files exist, **all 80x80**. There is **no `_m` file** anywhere, and the `export.pdb` artwork paths never name one.
+- So the real exporter writes one small image per artwork row, not a 240 + 80 pair.
+- The trakcrate exporter (`artwork_paths.h`: `kArtworkSize = 240`, `kArtworkMediumSize = 80`) writes `a<id>.jpg` at 240x240 plus an `a<id>_m.jpg` at 80x80.
+  A user test on real players accepted that drive, so players tolerate it, but it differs from the real output. Candidate change (not made, pending the user): write only `a<id>.jpg` at 80x80.
+- `DEVSETTING.DAT` and `MYSETTING.DAT` on this drive are byte-identical to the 7-track reference drive's, so the embedded defaults match a second independent export.

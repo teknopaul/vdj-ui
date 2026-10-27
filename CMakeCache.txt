@@ -390,8 +390,14 @@ Qt6Widgets_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/Qt6Widgets
 //The directory containing a CMake configuration file for Qt6.
 Qt6_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/Qt6
 
+//Path to a program.
+SETCAP_PROGRAM:FILEPATH=/usr/sbin/setcap
+
 //Path to a library.
 VDJ_LIBRARY:FILEPATH=/usr/lib/libvdj.so
+
+//setcap cap_net_bind_service on vdj-ui after building (uses sudo)
+VDJ_SETCAP:BOOL=ON
 
 //Folder with Contents/ and PIONEER/rekordbox/export.pdb for rekordbox
 // tests
@@ -435,6 +441,21 @@ pkgcfg_lib_AUDIO_swresample:FILEPATH=/usr/lib/x86_64-linux-gnu/libswresample.so
 
 //Path to a library.
 pkgcfg_lib_PKG_XKB_xkbcommon:FILEPATH=/usr/lib/x86_64-linux-gnu/libxkbcommon.so
+
+//Path to a library.
+pkgcfg_lib_TC_AUBIO_aubio:FILEPATH=/usr/lib/x86_64-linux-gnu/libaubio.so
+
+//Path to a library.
+pkgcfg_lib_TC_FFMPEG_avcodec:FILEPATH=/usr/lib/x86_64-linux-gnu/libavcodec.so
+
+//Path to a library.
+pkgcfg_lib_TC_FFMPEG_avformat:FILEPATH=/usr/lib/x86_64-linux-gnu/libavformat.so
+
+//Path to a library.
+pkgcfg_lib_TC_FFMPEG_avutil:FILEPATH=/usr/lib/x86_64-linux-gnu/libavutil.so
+
+//Path to a library.
+pkgcfg_lib_TC_FFMPEG_swresample:FILEPATH=/usr/lib/x86_64-linux-gnu/libswresample.so
 
 //Value Computed by CMake
 vdj-ui_BINARY_DIR:STATIC=/home/teknopaul/bzr_workspace/vdj-ui
@@ -645,7 +666,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=3
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=4
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP
@@ -1549,6 +1570,92 @@ QT_FEATURE_xmlstreamwriter:INTERNAL=ON
 QT_FEATURE_xrender:INTERNAL=OFF
 //Qt feature: zstd (from target Qt6::Core)
 QT_FEATURE_zstd:INTERNAL=ON
+TC_AUBIO_CFLAGS:INTERNAL=-I/usr/include
+TC_AUBIO_CFLAGS_I:INTERNAL=
+TC_AUBIO_CFLAGS_OTHER:INTERNAL=
+TC_AUBIO_FOUND:INTERNAL=1
+TC_AUBIO_INCLUDEDIR:INTERNAL=/usr/include
+TC_AUBIO_INCLUDE_DIRS:INTERNAL=/usr/include
+TC_AUBIO_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-laubio
+TC_AUBIO_LDFLAGS_OTHER:INTERNAL=
+TC_AUBIO_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_AUBIO_LIBRARIES:INTERNAL=aubio
+TC_AUBIO_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_AUBIO_LIBS:INTERNAL=
+TC_AUBIO_LIBS_L:INTERNAL=
+TC_AUBIO_LIBS_OTHER:INTERNAL=
+TC_AUBIO_LIBS_PATHS:INTERNAL=
+TC_AUBIO_MODULE_NAME:INTERNAL=aubio
+TC_AUBIO_PREFIX:INTERNAL=/usr
+TC_AUBIO_STATIC_CFLAGS:INTERNAL=-I/usr/include
+TC_AUBIO_STATIC_CFLAGS_I:INTERNAL=
+TC_AUBIO_STATIC_CFLAGS_OTHER:INTERNAL=
+TC_AUBIO_STATIC_INCLUDE_DIRS:INTERNAL=/usr/include
+TC_AUBIO_STATIC_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-laubio
+TC_AUBIO_STATIC_LDFLAGS_OTHER:INTERNAL=
+TC_AUBIO_STATIC_LIBDIR:INTERNAL=
+TC_AUBIO_STATIC_LIBRARIES:INTERNAL=aubio
+TC_AUBIO_STATIC_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_AUBIO_STATIC_LIBS:INTERNAL=
+TC_AUBIO_STATIC_LIBS_L:INTERNAL=
+TC_AUBIO_STATIC_LIBS_OTHER:INTERNAL=
+TC_AUBIO_STATIC_LIBS_PATHS:INTERNAL=
+TC_AUBIO_VERSION:INTERNAL=0.4.9
+TC_AUBIO_aubio_INCLUDEDIR:INTERNAL=
+TC_AUBIO_aubio_LIBDIR:INTERNAL=
+TC_AUBIO_aubio_PREFIX:INTERNAL=
+TC_AUBIO_aubio_VERSION:INTERNAL=
+TC_FFMPEG_CFLAGS:INTERNAL=-I/usr/include/x86_64-linux-gnu
+TC_FFMPEG_CFLAGS_I:INTERNAL=
+TC_FFMPEG_CFLAGS_OTHER:INTERNAL=
+TC_FFMPEG_FOUND:INTERNAL=1
+TC_FFMPEG_INCLUDEDIR:INTERNAL=
+TC_FFMPEG_INCLUDE_DIRS:INTERNAL=/usr/include/x86_64-linux-gnu
+TC_FFMPEG_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lavformat;-lavcodec;-lavutil;-lswresample
+TC_FFMPEG_LDFLAGS_OTHER:INTERNAL=
+TC_FFMPEG_LIBDIR:INTERNAL=
+TC_FFMPEG_LIBRARIES:INTERNAL=avformat;avcodec;avutil;swresample
+TC_FFMPEG_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_FFMPEG_LIBS:INTERNAL=
+TC_FFMPEG_LIBS_L:INTERNAL=
+TC_FFMPEG_LIBS_OTHER:INTERNAL=
+TC_FFMPEG_LIBS_PATHS:INTERNAL=
+TC_FFMPEG_MODULE_NAME:INTERNAL=
+TC_FFMPEG_PREFIX:INTERNAL=
+TC_FFMPEG_STATIC_CFLAGS:INTERNAL=-I/usr/include/x86_64-linux-gnu
+TC_FFMPEG_STATIC_CFLAGS_I:INTERNAL=
+TC_FFMPEG_STATIC_CFLAGS_OTHER:INTERNAL=
+TC_FFMPEG_STATIC_INCLUDE_DIRS:INTERNAL=/usr/include/x86_64-linux-gnu
+TC_FFMPEG_STATIC_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lavformat;-lm;-latomic;-lxml2;-lbz2;-lgme;-lopenmpt;-lstdc++;-lchromaprint;-lbluray;-lz;-lgnutls;-lrabbitmq;-lrist;-lsrt-gnutls;-lssh;-lzmq;-L/usr/lib/x86_64-linux-gnu;-lvpx;-lm;-lvpx;-lm;-lvpx;-lm;-lvpx;-lm;-lwebpmux;-pthread;-lm;-latomic;-llzma;-ldav1d;-lrsvg-2;-lm;-lgio-2.0;-lgdk_pixbuf-2.0;-lgobject-2.0;-lglib-2.0;-lcairo;-lzvbi;-lpthread;-lm;-lpng;-lz;-lsnappy;-lstdc++;-laom;-lcodec2;-lgsm;-ljxl;-ljxl_threads;-lmp3lame;-lm;-lopenjp2;-lopus;-lrav1e;-lm;-lshine;-lspeex;-lSvtAv1Enc;-ltheoraenc;-ltheoradec;-logg;-ltwolame;-lvorbis;-lvorbisenc;-lwebp;-lx264;-lx265;-lxvidcore;-lz;-lva;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-L/usr/lib/x86_64-linux-gnu;-lm;-lsoxr;-latomic;-L/usr/lib/x86_64-linux-gnu;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11;-lavutil;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11;-lswresample;-lm;-lsoxr;-latomic;-L/usr/lib/x86_64-linux-gnu;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11;-lavutil;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11;-lavcodec;-lvpx;-lm;-lvpx;-lm;-lvpx;-lm;-lvpx;-lm;-lwebpmux;-pthread;-lm;-latomic;-llzma;-ldav1d;-lrsvg-2;-lm;-lgio-2.0;-lgdk_pixbuf-2.0;-lgobject-2.0;-lglib-2.0;-lcairo;-lzvbi;-lpthread;-lm;-lpng;-lz;-lsnappy;-lstdc++;-laom;-lcodec2;-lgsm;-ljxl;-ljxl_threads;-lmp3lame;-lm;-lopenjp2;-lopus;-lrav1e;-lm;-lshine;-lspeex;-lSvtAv1Enc;-ltheoraenc;-ltheoradec;-logg;-ltwolame;-lvorbis;-lvorbisenc;-lwebp;-lx264;-lx265;-lxvidcore;-lz;-lva;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-L/usr/lib/x86_64-linux-gnu;-lm;-lsoxr;-latomic;-L/usr/lib/x86_64-linux-gnu;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11;-lavutil;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11;-lswresample;-lm;-lsoxr;-latomic;-L/usr/lib/x86_64-linux-gnu;-lavutil;-pthread;-lva-drm;-lva;-lva-x11;-lva;-lvdpau;-lX11;-lm;-ldrm;-L/usr/lib/x86_64-linux-gnu/pkgconfig/../;-lvpl;-ldl;-lstdc++;-lOpenCL;-lva;-latomic;-lX11
+TC_FFMPEG_STATIC_LDFLAGS_OTHER:INTERNAL=-pthread;-pthread;-pthread;-pthread;-pthread;-pthread;-pthread;-pthread;-pthread;-pthread
+TC_FFMPEG_STATIC_LIBDIR:INTERNAL=
+TC_FFMPEG_STATIC_LIBRARIES:INTERNAL=avformat;m;atomic;xml2;bz2;gme;openmpt;stdc++;chromaprint;bluray;z;gnutls;rabbitmq;rist;srt-gnutls;ssh;zmq;vpx;m;vpx;m;vpx;m;vpx;m;webpmux;m;atomic;lzma;dav1d;rsvg-2;m;gio-2.0;gdk_pixbuf-2.0;gobject-2.0;glib-2.0;cairo;zvbi;pthread;m;png;z;snappy;stdc++;aom;codec2;gsm;jxl;jxl_threads;mp3lame;m;openjp2;opus;rav1e;m;shine;speex;SvtAv1Enc;theoraenc;theoradec;ogg;twolame;vorbis;vorbisenc;webp;x264;x265;xvidcore;z;va;vpl;dl;stdc++;m;soxr;atomic;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11;avutil;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11;swresample;m;soxr;atomic;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11;avutil;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11;avcodec;vpx;m;vpx;m;vpx;m;vpx;m;webpmux;m;atomic;lzma;dav1d;rsvg-2;m;gio-2.0;gdk_pixbuf-2.0;gobject-2.0;glib-2.0;cairo;zvbi;pthread;m;png;z;snappy;stdc++;aom;codec2;gsm;jxl;jxl_threads;mp3lame;m;openjp2;opus;rav1e;m;shine;speex;SvtAv1Enc;theoraenc;theoradec;ogg;twolame;vorbis;vorbisenc;webp;x264;x265;xvidcore;z;va;vpl;dl;stdc++;m;soxr;atomic;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11;avutil;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11;swresample;m;soxr;atomic;avutil;va-drm;va;va-x11;va;vdpau;X11;m;drm;vpl;dl;stdc++;OpenCL;va;atomic;X11
+TC_FFMPEG_STATIC_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu/pkgconfig/../;/usr/lib/x86_64-linux-gnu;/usr/lib/x86_64-linux-gnu/pkgconfig/../
+TC_FFMPEG_STATIC_LIBS:INTERNAL=
+TC_FFMPEG_STATIC_LIBS_L:INTERNAL=
+TC_FFMPEG_STATIC_LIBS_OTHER:INTERNAL=
+TC_FFMPEG_STATIC_LIBS_PATHS:INTERNAL=
+TC_FFMPEG_VERSION:INTERNAL=
+TC_FFMPEG_libavcodec_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
+TC_FFMPEG_libavcodec_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_FFMPEG_libavcodec_MODULE_NAME:INTERNAL=libavcodec
+TC_FFMPEG_libavcodec_PREFIX:INTERNAL=/usr
+TC_FFMPEG_libavcodec_VERSION:INTERNAL=60.31.102
+TC_FFMPEG_libavformat_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
+TC_FFMPEG_libavformat_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_FFMPEG_libavformat_MODULE_NAME:INTERNAL=libavformat
+TC_FFMPEG_libavformat_PREFIX:INTERNAL=/usr
+TC_FFMPEG_libavformat_VERSION:INTERNAL=60.16.100
+TC_FFMPEG_libavutil_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
+TC_FFMPEG_libavutil_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_FFMPEG_libavutil_MODULE_NAME:INTERNAL=libavutil
+TC_FFMPEG_libavutil_PREFIX:INTERNAL=/usr
+TC_FFMPEG_libavutil_VERSION:INTERNAL=58.29.100
+TC_FFMPEG_libswresample_INCLUDEDIR:INTERNAL=/usr/include/x86_64-linux-gnu
+TC_FFMPEG_libswresample_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
+TC_FFMPEG_libswresample_MODULE_NAME:INTERNAL=libswresample
+TC_FFMPEG_libswresample_PREFIX:INTERNAL=/usr
+TC_FFMPEG_libswresample_VERSION:INTERNAL=4.12.100
 //ADVANCED property for variable: Vulkan_GLSLANG_VALIDATOR_EXECUTABLE
 Vulkan_GLSLANG_VALIDATOR_EXECUTABLE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Vulkan_GLSLC_EXECUTABLE
@@ -1563,8 +1670,12 @@ _CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED:INTERNAL=TRUE
 _GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=/usr/local
 __pkg_config_arguments_AUDIO:INTERNAL=REQUIRED;IMPORTED_TARGET;libavformat;libavcodec;libswresample;libavutil;libpulse;libpulse-simple
 __pkg_config_arguments_PKG_XKB:INTERNAL=QUIET;xkbcommon
+__pkg_config_arguments_TC_AUBIO:INTERNAL=IMPORTED_TARGET;aubio
+__pkg_config_arguments_TC_FFMPEG:INTERNAL=REQUIRED;IMPORTED_TARGET;libavformat;libavcodec;libavutil;libswresample
 __pkg_config_checked_AUDIO:INTERNAL=1
 __pkg_config_checked_PKG_XKB:INTERNAL=1
+__pkg_config_checked_TC_AUBIO:INTERNAL=1
+__pkg_config_checked_TC_FFMPEG:INTERNAL=1
 //ADVANCED property for variable: pkgcfg_lib_AUDIO_avcodec
 pkgcfg_lib_AUDIO_avcodec-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: pkgcfg_lib_AUDIO_avformat
@@ -1579,5 +1690,15 @@ pkgcfg_lib_AUDIO_pulse-simple-ADVANCED:INTERNAL=1
 pkgcfg_lib_AUDIO_swresample-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: pkgcfg_lib_PKG_XKB_xkbcommon
 pkgcfg_lib_PKG_XKB_xkbcommon-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: pkgcfg_lib_TC_AUBIO_aubio
+pkgcfg_lib_TC_AUBIO_aubio-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: pkgcfg_lib_TC_FFMPEG_avcodec
+pkgcfg_lib_TC_FFMPEG_avcodec-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: pkgcfg_lib_TC_FFMPEG_avformat
+pkgcfg_lib_TC_FFMPEG_avformat-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: pkgcfg_lib_TC_FFMPEG_avutil
+pkgcfg_lib_TC_FFMPEG_avutil-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: pkgcfg_lib_TC_FFMPEG_swresample
+pkgcfg_lib_TC_FFMPEG_swresample-ADVANCED:INTERNAL=1
 prefix_result:INTERNAL=/usr/lib/x86_64-linux-gnu
 
