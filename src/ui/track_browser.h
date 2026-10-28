@@ -34,6 +34,7 @@ public:
     // cancel returns false with an empty error.
     bool openRemoteDeck(int playerId, const QString& ip, QString* error = nullptr);
     bool isRemote() const { return remote_ != nullptr; }
+    int remotePlayerId() const { return remote_ ? playerId_ : 0; }         // the deck whose database is shown, 0 for a local one
     // Tracks (in playlist order) of a playlist item, empty for any other item.
     QList<ExportTrack> playlistTracks(const QTreeWidgetItem* item) const;
     bool hasPdb() const { return hasPdb_; }

@@ -29,12 +29,21 @@ public:
     void startViaNetworkManager(const QString& iface);
     static bool networkManagerAvailable();
 
+    // Makes the link-local address permanent for this interface: the NetworkManager profile that carries it (or a new one, "vdj-prolink-<iface>") is set
+    // to link-local only (no DHCP wait), IPv6 off, autoconnect, and tied to the interface name, which for a USB dongle comes from its hardware address.
+    // After that the address is back at every boot and cable plug, with no pkexec prompt and without vdj-ui running. Runs as the user; the result comes
+    // as permanentDone. The AutoIP switch of the menu is a different, temporary thing.
+    void makePermanent(const QString& iface);
+    static QString permanentCommands(const QString& iface);         // the nmcli commands, as text for the confirmation dialog
+    bool permanentBusy() const { return permProc_ != nullptr; }
+
     bool active() const { return active_; }
     QString iface() const { return iface_; }
     QString ip() const { return ip_; }
     QString lastError() const { return lastError_; }
 
 signals:
+    void permanentDone(bool ok, const QString& message);      // message: the profile that was set up, or why it failed
     void started(const QString& iface, const QString& ip);
     void stopped(const QString& iface, const QString& ip);
     void ipChanged(const QString& ip);
@@ -60,6 +69,7 @@ private:
     bool startedOnce_ = false;
     bool viaNm_ = false;
     QProcess* nmProc_ = nullptr;
+    QProcess* permProc_ = nullptr;
 };
 
 } // namespace vdj

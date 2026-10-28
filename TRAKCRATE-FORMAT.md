@@ -21,6 +21,7 @@ The words MUST, SHOULD and MAY are used as in RFC 2119.
 
 ```
 <library>/
+├── scripts/                            optional user scripts (track-script-*, crate-script-*), run only by hand; see doc/trakcrate/scripts.md
 ├── user-settings/                      optional files copied from a real player/drive (section 10)
 ├── track-master-copy/
 │   └── <folder>/                       a folder name: any name that is a legal single path component
@@ -93,20 +94,20 @@ All `.txt` files are UTF-8 without a byte order mark, with `\n` line ends (reade
 
 Free-form key/value metadata. The keys below are defined; others are kept untouched.
 
-| key | value |
-|---|---|
-| `title`, `artist`, `album`, `genre`, `label`, `key`, `remixer`, `mix_name`, `comment` | text. `key` is the musical key as the user writes it (`Fmaj`, `8A`). |
-| `year`, `track_number` | integer |
-| `rating` | integer 0..5 (stars) |
-| `color` | colour name |
-| `bpm_tag` | the BPM found in the file's own tags (decimal). A hint only; the beat grid decides. |
-| `date_added`, `release_date` | ISO 8601 date |
-| `duration_ms`, `sample_rate`, `bit_depth`, `bitrate` (bits per second), `channels`, `file_size` | integers describing the audio |
-| `container` | `mp3`, `wav` |
-| `original_filename` | the file name before import |
-| `audio_sha256` | lower case hex SHA-256 of the audio file. The identity of a track: the same hash means the same audio. |
-| `peak_dbfs`, `rms_dbfs` | measured loudness, one decimal. Waveform heights are NOT normalised with these: they are information only. |
-| `rekordbox_track_id` | track id in the drive this track was imported from (informational) |
+| key                                                                                             | value                                                                                                      |
+|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `title`, `artist`, `album`, `genre`, `label`, `key`, `remixer`, `mix_name`, `comment`           | text. `key` is the musical key as the user writes it (`Fmaj`, `8A`).                                       |
+| `year`, `track_number`                                                                          | integer                                                                                                    |
+| `rating`                                                                                        | integer 0..5 (stars)                                                                                       |
+| `color`                                                                                         | colour name                                                                                                |
+| `bpm_tag`                                                                                       | the BPM found in the file's own tags (decimal). A hint only; the beat grid decides.                        |
+| `date_added`, `release_date`                                                                    | ISO 8601 date                                                                                              |
+| `duration_ms`, `sample_rate`, `bit_depth`, `bitrate` (bits per second), `channels`, `file_size` | integers describing the audio                                                                              |
+| `container`                                                                                     | `mp3`, `wav`                                                                                               |
+| `original_filename`                                                                             | the file name before import                                                                                |
+| `audio_sha256`                                                                                  | lower case hex SHA-256 of the audio file. The identity of a track: the same hash means the same audio.     |
+| `peak_dbfs`, `rms_dbfs`                                                                         | measured loudness, one decimal. Waveform heights are NOT normalised with these: they are information only. |
+| `rekordbox_track_id`                                                                            | track id in the drive this track was imported from (informational)                                         |
 
 A missing `title` is displayed as the track directory's name.
 
@@ -122,13 +123,13 @@ confidence: 0.84
 analyser: trakcrate-beats 1
 ```
 
-| key | value |
-|---|---|
-| `bpm` | beats per minute, decimal. `0` (or absent) means "analysed, no usable grid". |
-| `first_beat_us` | time of beat 1 from the start of the audio, in microseconds. May be negative or exceed one beat. |
-| `confidence` | 0..1, written by analysers that have one |
-| `analyser` | who made the grid (`trakcrate-beats 1`, `aubio`, `rekordbox`) |
-| `variable_tempo` | `1` when the source grid had changing tempo and only the first tempo was kept |
+| key              | value                                                                                            |
+|------------------|--------------------------------------------------------------------------------------------------|
+| `bpm`            | beats per minute, decimal. `0` (or absent) means "analysed, no usable grid".                     |
+| `first_beat_us`  | time of beat 1 from the start of the audio, in microseconds. May be negative or exceed one beat. |
+| `confidence`     | 0..1, written by analysers that have one                                                         |
+| `analyser`       | who made the grid (`trakcrate-beats 1`, `aubio`, `rekordbox`)                                    |
+| `variable_tempo` | `1` when the source grid had changing tempo and only the first tempo was kept                    |
 
 Beat *n* (counting from 0) is at `first_beat_us + n * 60e6 / bpm` microseconds. A missing file means the track has not been analysed.
 Beat number 1 of a bar is not recorded: players count in groups of four from the first beat.
@@ -145,14 +146,14 @@ An unlimited list of marks on the track. Most are only visible in the waveform o
 
 Columns, TAB separated:
 
-| # | name | value |
-|---|---|---|
-| 1 | `beat` | beat position counted from the first beat of the grid (0.0 = the first beat), decimals allowed; `-` when the track has no grid |
-| 2 | `ms` | position in milliseconds from the start, 0.1 ms precision |
-| 3 | `label` | free text without TABs; may be empty |
-| 4 | `hot` | `A`, `B` or `C` to make this a hot cue on export; `-` for none |
-| 5 | `colour` | `#rrggbb` or `-` |
-| 6.. | extra | kept as they are (for example `loop_end_ms=14000` on a loop imported from rekordbox) |
+| #   | name     | value                                                                                                                          |
+|-----|----------|--------------------------------------------------------------------------------------------------------------------------------|
+| 1   | `beat`   | beat position counted from the first beat of the grid (0.0 = the first beat), decimals allowed; `-` when the track has no grid |
+| 2   | `ms`     | position in milliseconds from the start, 0.1 ms precision                                                                      |
+| 3   | `label`  | free text without TABs; may be empty                                                                                           |
+| 4   | `hot`    | `A`, `B` or `C` to make this a hot cue on export; `-` for none                                                                 |
+| 5   | `colour` | `#rrggbb` or `-`                                                                                                               |
+| 6.. | extra    | kept as they are (for example `loop_end_ms=14000` on a loop imported from rekordbox)                                           |
 
 If `beat` and `ms` disagree (the grid changed afterwards), `ms` wins. Marks are written sorted by position. Leading `#` lines are kept.
 More than three marks with `hot` set is an error at export time.
@@ -199,11 +200,11 @@ offset 12  sections, repeated until the end of the file:
 
 Sections (unknown tags MUST be skipped):
 
-| tag | content |
-|---|---|
-| `PWAV` | 400 bytes, preview over the whole track. Bits 0..4 height 0..31, bits 5..7 whiteness 0..7. |
-| `PWV2` | 100 bytes, tiny preview. Bits 0..3 height 0..15. |
-| `PWV3` | `columns` bytes, detail at 150 columns per second, encoded like `PWAV`. |
+| tag    | content                                                                                                                                                            |
+|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PWAV` | 400 bytes, preview over the whole track. Bits 0..4 height 0..31, bits 5..7 whiteness 0..7.                                                                         |
+| `PWV2` | 100 bytes, tiny preview. Bits 0..3 height 0..15.                                                                                                                   |
+| `PWV3` | `columns` bytes, detail at 150 columns per second, encoded like `PWAV`.                                                                                            |
 | `PWV5` | `columns` entries of 2 bytes, **big endian**: bits 15..13 red, 12..10 green, 9..7 blue (each 0..7), bits 6..2 height 0..31, bits 1..0 unused. Same rate as `PWV3`. |
 
 `PWV3` and `PWV5` MUST have the same number of entries as `columns`.

@@ -9,6 +9,7 @@
 #include <functional>
 
 class QComboBox;
+class QHBoxLayout;
 class QLabel;
 class QListWidget;
 class QLineEdit;
@@ -18,6 +19,7 @@ class QUndoStack;
 namespace vdj {
 
 class ArtworkView;
+class ScriptManager;
 class ConfigManager;
 class StarRatingWidget;
 class WaveformWidget;
@@ -31,6 +33,7 @@ class TrakcrateTrackEditor : public QWidget {
 public:
     explicit TrakcrateTrackEditor(QWidget* parent = nullptr);
 
+    void setScripts(ScriptManager* scripts);        // the Scripts menu of the loaded track
     void setConfig(ConfigManager* config);          // remembers the chosen image editor
     ArtworkView* artworkView() const { return art_; }
     void setTrack(const QString& trackDir);        // empty: no track
@@ -99,6 +102,8 @@ private:
     QUndoStack* undo_;
     QLabel* title_;
     ArtworkView* art_;
+    ScriptManager* scripts_ = nullptr;
+    QHBoxLayout* ratingRow_ = nullptr;
     QLabel* facts_;
     StarRatingWidget* stars_;
     QLineEdit* comment_;

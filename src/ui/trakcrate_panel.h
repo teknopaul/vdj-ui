@@ -24,12 +24,17 @@ class QPushButton;
 class QSortFilterProxyModel;
 class QTimer;
 class QTreeView;
+class TrakcrateTableView;
 class QTreeWidget;
 class QTreeWidgetItem;
 
 namespace vdj {
 
 class ConfigManager;
+class ScriptManager;
+class TrakcrateTableView;
+class TrakcrateTreeWidget;
+class TrakcratePreviewPlayer;
 class TrakcrateJobRunner;
 class TrakcrateTrackModel;
 
@@ -44,6 +49,23 @@ public:
 
     bool openLibrary(const QString& path, QString* err = nullptr);
     bool createLibrary(const QString& path, QString* err = nullptr);     // creates the layout (if needed) and opens it
+    // The mini player under the track list (playlists, pendrives and their lists). blocker returns why playing is not allowed (for example that the
+    // app is on the Pro DJ Link network), or an empty string.
+    TrakcratePreviewPlayer* preview() const { return preview_; }
+    void setPlaybackBlocker(std::function<QString()> blocker);
+    void stopPreview();
+    // Moves rows of the shown playlist (or pendrive list) as one block so that they sit before row `insertBefore` (rows.size() = the end); the rows are
+    // table rows. This is what a drag and drop and the Move menu items do. The change is written at once. False (with err) when the view is not a
+    // playlist or pendrive list, or the move failed.
+    bool moveRows(const std::vector<int>& rows, int insertBefore, QString* err = nullptr);
+    // Moves a virtual pendrive's list to sit before list `insertBefore` of that pendrive (what a drag in the tree does).
+    // Moves the selected rows of the shown playlist: -2 to the start, -1 up one, +1 down one, +2 to the end (the right click items and Ctrl+Up / Down).
+    bool moveSelected(int how, QString* err = nullptr);
+    // Ctrl+Up / Down on the chosen pendrive list: one place up (-1) or down (+1) among the lists of its pendrive.
+    bool moveChosenEntry(int direction, QString* err = nullptr);
+    bool moveEntry(const QString& drive, int from, int insertBefore, QString* err = nullptr);
+    bool startPreview(int proxyRow = -1, QString* err = nullptr);     // plays the shown playlist / entry, or all entries of the chosen pendrive
+    ScriptManager* scripts() const { return scripts_; }          // the library's scripts (doc/trakcrate/scripts.md)
     bool hasLibrary() const { return lib_.isOpen(); }
     const trakcrate::Library& library() const { return lib_; }
 
@@ -89,6 +111,7 @@ public:
     bool waitForJob(int timeoutMs = 10000);
 
 signals:
+    void status(const QString& message);
     void libraryChanged(const QString& path);
     void importFinished(const QString& summary, bool ok);
     void analysisFinished(const QString& summary, bool ok);
@@ -128,10 +151,18 @@ private:
     trakcrate::Library lib_;
     QString shownList_;                                   // which tree item the table last showed (to select its first track once)
     TrakcrateJobRunner* jobs_;
+    ScriptManager* scripts_;
+    TrakcratePreviewPlayer* preview_;
+    struct PreviewItem { QString entryDir; int row; };
+    std::vector<PreviewItem> previewMap_;               // a pendrive plays all its entries: which entry and row each track is
+    void onPreviewEnd(const QString& owner);
+    void onPreviewTrack(const QString& owner, int index, const QString& dir);
+    QString currentListKey() const;
+    QPushButton* scriptsButton_;
     TrakcrateTrackModel* model_;
     QSortFilterProxyModel* proxy_;
-    QTreeWidget* tree_;
-    QTreeView* table_;
+    TrakcrateTreeWidget* tree_;
+    TrakcrateTableView* table_;
     QLabel* libraryLabel_;
     QPushButton* importButton_;
     QPushButton* refreshButton_;

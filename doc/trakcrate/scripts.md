@@ -124,3 +124,12 @@ Installed under `/usr/share/doc/vdj-ui/script-examples/`, copied by "New script"
 - How a script returns structured changes to the UI (nothing now; the UI just reloads files).
 - Whether scripts should run in a sandbox (bubblewrap/firejail) as an option; not by default, since a script's purpose is to change the user's files and may legitimately need a lot of the system.
 - Windows or macOS: out of scope (Ubuntu only; the paths, `.desktop` files and executable bits assume Linux).
+
+## Implemented (phase 14)
+
+- **Core** (`src/trakcrate/scripts.*`, no Qt): discovery, states (ready / new / changed / warning / foreign / disabled), headers (`# description:`, `# dry-run: yes`, `# selection: yes`, `# no-snapshot`, `.desc` companion), arguments, the `TRAKCRATE_*` environment, snapshots and restore.
+- **Runner** (`src/ui/trakcrate_scripts.*`): `execve` through `QProcess`, no shell; own process group (timeout and Cancel signal the whole group: SIGTERM, SIGKILL after 5 s); stdin closed; nice 10; output capped at 1 MiB; 5 minute timeout for track scripts, none for crate scripts; library lock file `.trakcrate-lock` (a lock left by a dead process is taken over); appends to `scripts/.log`.
+- **Review and disabled state** are stored per user in the app config (sections `trakcrate-script-reviewed` and `trakcrate-script-disabled`), not in the library, so a cloned library cannot arrive pre-approved. A new or changed script asks for review before it runs.
+- **UI:** a Scripts button in the trakcrate pane (crate scripts) and a Scripts button in the track editor (track scripts). Each script has Run, Run (dry run), Open with editor, Show in file manager, Copy path, Show last output, Disable. Also New script, Undo last script, Scripts log. Crate scripts ask first. After a run the pane, editor and deck reload.
+- Open with editor uses the remembered `trakcrate/script_editor` or the first `text/plain` application in the `.desktop` files; never `xdg-open`.
+- **Not done:** the CLI equivalents, the `TRAKCRATE_DECK` / `TRAKCRATE_TRACK_POSITION_MS` values from a deck (the environment code supports them, the menu does not pass them yet), selection files for crate scripts, `# selection: yes` handling in the UI, a spinner while running, watching `scripts/` for changes (the menu is rebuilt each time it opens), the example scripts, and an optional terminal editor command.

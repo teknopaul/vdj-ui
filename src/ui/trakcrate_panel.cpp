@@ -1,5 +1,6 @@
 #include "trakcrate_panel.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <QIcon>
@@ -25,7 +26,9 @@
 #include <QPushButton>
 #include <QScrollBar>
 #include <QSet>
+#include <QPainter>
 #include <QSortFilterProxyModel>
+#include <QStyledItemDelegate>
 #include <QSplitter>
 #include <QThread>
 #include <QTimer>
@@ -41,10 +44,32 @@
 #include "trakcrate_import_dialog.h"
 #include "trakcrate_pendrive_dialog.h"
 #include "trakcrate_rbimport_dialog.h"
+#include "trakcrate_preview_player.h"
+#include "trakcrate_scripts.h"
+#include "trakcrate_table_view.h"
+#include "trakcrate_tree_widget.h"
 #include "trakcrate_job.h"
 #include "trakcrate_track_model.h"
 
 namespace vdj {
+
+namespace {
+
+// The normal cell with a 1 px dark yellow line under it: together the cells of a row draw a line under the row (on top of the row banding).
+class RowLineDelegate : public QStyledItemDelegate {
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        QStyledItemDelegate::paint(painter, option, index);
+        painter->save();
+        painter->setPen(QColor(0x6d, 0x59, 0x00));
+        painter->drawLine(option.rect.left(), option.rect.bottom(), option.rect.right(), option.rect.bottom());
+        painter->restore();
+    }
+};
+
+} // namespace
 
 namespace {
 constexpr int KindRole = Qt::UserRole;       // "folder", "playlist", "drive" or "entry"; empty for the group headings
@@ -92,16 +117,37 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     top->addWidget(newPendriveButton_);
     top->addWidget(exportButton_);
     top->addWidget(refreshButton_);
+    scripts_ = new ScriptManager(config_, this);
+    scriptsButton_ = new QPushButton(QStringLiteral("Scripts"));
+    scriptsButton_->setToolTip(QStringLiteral("Scripts for the whole library (scripts/crate-script-*). They only run when you start them."));
+    scriptsButton_->setEnabled(false);
+    auto* scriptsMenu = new QMenu(scriptsButton_);
+    scriptsButton_->setMenu(scriptsMenu);
+    connect(scriptsMenu, &QMenu::aboutToShow, this, [this, scriptsMenu] {
+        populateScriptsMenu(scriptsMenu, scripts_, trakcrate::ScriptKind::Crate, this, [] { return QString(); });
+    });
+    connect(scripts_, &ScriptManager::ran, this, [this] { refresh(); });
+    top->addWidget(scriptsButton_);
 
-    tree_ = new QTreeWidget;
+    tree_ = new TrakcrateTreeWidget;
     tree_->setHeaderHidden(true);
     tree_->setMinimumWidth(140);
-    tree_->setContextMenuPolicy(Qt::CustomContextMenu);   // the logo above it is 128 px wide
+    tree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    tree_->setDragEnabled(true);                          // only the lists of a virtual pendrive can be dragged (see rebuildTree)
+    tree_->setDragDropMode(QAbstractItemView::InternalMove);
+    tree_->setDropIndicatorShown(true);
+    tree_->onEntryDropped = [this](const QString& drive, int from, int before) { QString err; if (!moveEntry(drive, from, before, &err) && !err.isEmpty()) emit status(err); };   // the logo above it is 128 px wide
 
-    table_ = new QTreeView;
+    table_ = new TrakcrateTableView;
     table_->setModel(proxy_);
     table_->setRootIsDecorated(false);
     table_->setAlternatingRowColors(true);
+    table_->setDragDropMode(QAbstractItemView::NoDragDrop);      // on for playlists and pendrive lists, see onTreeSelection
+    table_->setDropIndicatorShown(true);
+    table_->onKeyMove = [this](int dir) { QString err; if (!moveSelected(dir, &err) && !err.isEmpty()) emit status(err); };
+    tree_->onKeyMove = [this](int dir) { QString err; if (!moveChosenEntry(dir, &err) && !err.isEmpty()) emit status(err); };
+    table_->onRowsDropped = [this](const std::vector<int>& rows, int before) { QString err; if (!moveRows(rows, before, &err) && !err.isEmpty()) emit status(err); };
+    table_->setItemDelegate(new RowLineDelegate(table_));
     table_->setSortingEnabled(true);
     table_->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -123,7 +169,7 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     details_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     auto* detailBox = new QWidget;
     auto* detailLayout = new QVBoxLayout(detailBox);
-    detailLayout->addWidget(artwork_, 0, Qt::AlignHCenter);
+    detailLayout->addWidget(artwork_, 0, Qt::AlignLeft);
     detailLayout->addWidget(details_, 1);
     detailBox->setMinimumWidth(190);
 
@@ -131,6 +177,8 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     auto* middleLayout = new QVBoxLayout(middle);
     middleLayout->setContentsMargins(0, 0, 0, 0);
     middleLayout->addWidget(table_, 1);
+    preview_ = new TrakcratePreviewPlayer(config_);
+    middleLayout->addWidget(preview_);
 
     auto* splitter = new QSplitter(Qt::Horizontal);
     // left column: the trakcrate logo at the top left, the folder and playlist tree below it
@@ -190,9 +238,17 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     });
     connect(table_, &QAbstractItemView::doubleClicked, this, [this](const QModelIndex& idx) {
         const QString d = model_->trackDir(proxy_->mapToSource(idx).row());
-        if (!d.isEmpty()) emit loadRequested(d);
+        if (!d.isEmpty()) { preview_->stop(); emit loadRequested(d); }       // the deck needs the audio output
     });
     connect(table_, &QWidget::customContextMenuRequested, this, &TrakcratePanel::tableContextMenu);
+    connect(preview_, &TrakcratePreviewPlayer::playRequested, this, [this] {
+        const QModelIndex cur = table_->currentIndex();
+        QString err;
+        startPreview(cur.isValid() ? cur.row() : -1, &err);
+    });
+    connect(preview_, &TrakcratePreviewPlayer::endOfList, this, &TrakcratePanel::onPreviewEnd);
+    connect(preview_, &TrakcratePreviewPlayer::trackStarted, this, &TrakcratePanel::onPreviewTrack);
+    connect(preview_, &TrakcratePreviewPlayer::status, this, &TrakcratePanel::status);
     connect(tree_, &QWidget::customContextMenuRequested, this, &TrakcratePanel::treeContextMenu);
     connect(tree_, &QTreeWidget::currentItemChanged, this, &TrakcratePanel::onTreeSelection);
     connect(table_->selectionModel(), &QItemSelectionModel::currentChanged, this, &TrakcratePanel::onTrackSelection);
@@ -246,6 +302,8 @@ bool TrakcratePanel::openLibrary(const QString& path, QString* err)
     newPendriveButton_->setEnabled(true);
     exportButton_->setEnabled(true);
     refreshButton_->setEnabled(true);
+    scriptsButton_->setEnabled(true);
+    scripts_->setLibrary(QString::fromStdString(lib_.root().string()));
     model_->clear();
     showDetails(QModelIndex());
     rebuildTree();
@@ -311,6 +369,8 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
     folders->setFlags(Qt::ItemIsEnabled);
     lists->setFlags(Qt::ItemIsEnabled);
     drives->setFlags(Qt::ItemIsEnabled);
+    QTreeWidgetItem* settings = new QTreeWidgetItem(tree_, QStringList(QStringLiteral("User Settings")));
+    settings->setFlags(Qt::ItemIsEnabled);
     drives->setData(0, KindRole, QStringLiteral("drives"));
     QTreeWidgetItem* restore = nullptr;
     const QIcon folderIcon(QStringLiteral(":/img/trakcrate-22x22.png"));
@@ -345,6 +405,27 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
                 if (keepKind == QLatin1String("entry") && keepName == QString::fromStdString(e.dir) && keepDrive == QString::fromStdString(dname)) restore = it;
             }
         }
+    }
+    // the settings files copied onto every pendrive; only their names for now, until their contents are understood
+    if (lib_.isOpen()) {
+        const QIcon settingsIcon(QStringLiteral(":/img/user-settings-22x22.png"));
+        std::vector<std::string> names;
+        std::error_code ec;
+        for (trakcrate::fs::recursive_directory_iterator it(lib_.settingsDir(), ec), end; !ec && it != end; it.increment(ec))
+            if (it->is_regular_file(ec)) names.push_back(it->path().lexically_relative(lib_.settingsDir()).generic_string());
+        std::sort(names.begin(), names.end());
+        for (const std::string& n : names) {
+            auto* it = new QTreeWidgetItem(settings, QStringList(QString::fromStdString(n)));
+            it->setIcon(0, settingsIcon);
+            it->setData(0, KindRole, QStringLiteral("setting"));
+        }
+    }
+    {   // only the lists of a pendrive can be dragged
+        std::function<void(QTreeWidgetItem*)> flag = [&](QTreeWidgetItem* it) {
+            if (it->data(0, KindRole).toString() != QLatin1String("entry")) it->setFlags(it->flags() & ~Qt::ItemIsDragEnabled);
+            for (int i = 0; i < it->childCount(); ++i) flag(it->child(i));
+        };
+        for (int i = 0; i < tree_->topLevelItemCount(); ++i) flag(tree_->topLevelItem(i));
     }
     tree_->expandAll();
     if (hadItems) {
@@ -390,12 +471,130 @@ void TrakcratePanel::onTreeSelection()
     else if (kind == QLatin1String("entry")) model_->showPlaylist(lib_.driveLibrary(cur->data(0, DriveRole).toString().toStdString()), name);
     else model_->clear();
     showDetails(QModelIndex());
+    // A playlist is shown in its own order, always: that order is the DJ's work. Only folders can be sorted by a column.
+    const bool ordered = kind == QLatin1String("playlist") || kind == QLatin1String("entry");
+    if (ordered) {
+        table_->setSortingEnabled(false);
+        table_->sortByColumn(-1, Qt::AscendingOrder);
+        proxy_->sort(-1);
+        table_->header()->setSortIndicatorShown(false);
+    } else if (!table_->isSortingEnabled()) {
+        table_->setSortingEnabled(true);
+        table_->sortByColumn(-1, Qt::AscendingOrder);
+    }
+    model_->setDraggable(ordered);
+    table_->setDragEnabled(ordered);
+    table_->setAcceptDrops(ordered);
+    table_->setDragDropMode(ordered ? QAbstractItemView::InternalMove : QAbstractItemView::NoDragDrop);
+    preview_->setAllowedHint(kind == QLatin1String("playlist") || kind == QLatin1String("entry") || kind == QLatin1String("drive"));
     // a different list was chosen: highlight its first track so the artwork and details are shown straight away
     const QString key = kind + QLatin1Char('\x1f') + name + QLatin1Char('\x1f') + (cur ? cur->data(0, DriveRole).toString() : QString());
     if (key != shownList_) {
         shownList_ = key;
         if (proxy_->rowCount() > 0) table_->setCurrentIndex(proxy_->index(0, 0));
     }
+}
+
+QString TrakcratePanel::currentListKey() const
+{
+    QTreeWidgetItem* cur = tree_->currentItem();
+    if (!cur) return QString();
+    return cur->data(0, KindRole).toString() + QLatin1Char('\x1f') + cur->data(0, NameRole).toString() + QLatin1Char('\x1f') + cur->data(0, DriveRole).toString();
+}
+
+// "Next playlist": the list after the one that just played, in the order of the tree (playlists, or the lists of the same pendrive). Empty lists are
+// skipped. A pendrive as a whole already plays all its lists, so it has no next. Nothing after it: the player stops.
+void TrakcratePanel::onPreviewEnd(const QString& owner)
+{
+    const QString kind = owner.section(QLatin1Char('\x1f'), 0, 0), name = owner.section(QLatin1Char('\x1f'), 1, 1), drive = owner.section(QLatin1Char('\x1f'), 2, 2);
+    if (kind != QLatin1String("playlist") && kind != QLatin1String("entry")) { preview_->stop(); return; }
+    QTreeWidgetItem* parent = nullptr;
+    int at = -1;
+    for (int g = 0; g < tree_->topLevelItemCount() && at < 0; ++g) {
+        QList<QTreeWidgetItem*> candidates;
+        QTreeWidgetItem* top = tree_->topLevelItem(g);
+        if (kind == QLatin1String("playlist")) candidates << top;
+        else for (int d = 0; d < top->childCount(); ++d) candidates << top->child(d);
+        for (QTreeWidgetItem* c : candidates)
+            for (int i = 0; i < c->childCount(); ++i) {
+                QTreeWidgetItem* it = c->child(i);
+                if (it->data(0, KindRole).toString() == kind && it->data(0, NameRole).toString() == name && it->data(0, DriveRole).toString() == drive) { parent = c; at = i; }
+            }
+    }
+    if (!parent) { preview_->stop(); return; }
+    for (int i = at + 1; i < parent->childCount(); ++i) {
+        tree_->setCurrentItem(parent->child(i));            // the list that plays is the one shown
+        QString err;
+        if (startPreview(-1, &err)) return;
+    }
+    preview_->stop();
+}
+
+void TrakcratePanel::setPlaybackBlocker(std::function<QString()> blocker) { preview_->setBlocker(std::move(blocker)); }
+
+void TrakcratePanel::stopPreview() { preview_->stop(); }
+
+// Plays what the tree has chosen: a playlist, a list of a pendrive, or (on the pendrive itself) all its lists one after the other. The order is the
+// one on screen. proxyRow is where to start (-1: the first track).
+bool TrakcratePanel::startPreview(int proxyRow, QString* err)
+{
+    QTreeWidgetItem* cur = tree_->currentItem();
+    if (!lib_.isOpen() || !cur) { if (err) *err = QStringLiteral("choose a playlist or a pendrive"); return false; }
+    const QString kind = cur->data(0, KindRole).toString();
+    QStringList dirs;
+    previewMap_.clear();
+    int start = 0;
+    if (kind == QLatin1String("playlist") || kind == QLatin1String("entry")) {
+        for (int r = 0; r < proxy_->rowCount(); ++r) dirs << model_->trackDir(proxy_->mapToSource(proxy_->index(r, 0)).row());
+        if (proxyRow > 0 && proxyRow < dirs.size()) start = proxyRow;
+    } else if (kind == QLatin1String("drive")) {
+        const std::string drive = cur->data(0, NameRole).toString().toStdString();
+        const trakcrate::Library dl = lib_.driveLibrary(drive);
+        for (const trakcrate::Library::DriveEntry& e : lib_.driveEntries(drive)) {
+            int row = 0;
+            for (const trakcrate::fs::path& t : dl.playlistTracks(e.dir)) {
+                dirs << QString::fromStdString(t.string());
+                previewMap_.push_back({QString::fromStdString(e.dir), row++});
+            }
+        }
+    } else {
+        if (err) *err = QStringLiteral("choose a playlist or a pendrive to play");
+        return false;
+    }
+    dirs.removeAll(QString());
+    return preview_->playList(currentListKey(), dirs, start, err);
+}
+
+// The track changed: show it. The view is only moved when it is the one playing (a pendrive moves from list to list); browsing elsewhere is left alone.
+void TrakcratePanel::onPreviewTrack(const QString& owner, int index, const QString& dir)
+{
+    if (owner.startsWith(QLatin1String("drive")) && index >= 0 && size_t(index) < previewMap_.size()) {
+        const PreviewItem it = previewMap_[size_t(index)];
+        QTreeWidgetItem* cur = tree_->currentItem();
+        QString driveName = owner.section(QLatin1Char('\x1f'), 1, 1);
+        bool onEntry = cur && cur->data(0, KindRole).toString() == QLatin1String("entry") && cur->data(0, NameRole).toString() == it.entryDir
+                       && cur->data(0, DriveRole).toString() == driveName;
+        bool onDrive = cur && currentListKey() == owner;
+        if (!onEntry && (onDrive || (cur && cur->data(0, KindRole).toString() == QLatin1String("entry") && cur->data(0, DriveRole).toString() == driveName))) {
+            for (int g = 0; g < tree_->topLevelItemCount(); ++g)
+                for (int d = 0; d < tree_->topLevelItem(g)->childCount(); ++d) {
+                    QTreeWidgetItem* di = tree_->topLevelItem(g)->child(d);
+                    if (di->data(0, KindRole).toString() != QLatin1String("drive") || di->data(0, NameRole).toString() != driveName) continue;
+                    for (int e = 0; e < di->childCount(); ++e)
+                        if (di->child(e)->data(0, NameRole).toString() == it.entryDir) { tree_->setCurrentItem(di->child(e)); onEntry = true; }
+                }
+        }
+        if (!onEntry) return;
+    } else if (currentListKey() != owner) {
+        return;
+    }
+    for (int r = 0; r < proxy_->rowCount(); ++r)
+        if (model_->trackDir(proxy_->mapToSource(proxy_->index(r, 0)).row()) == dir) {
+            table_->setCurrentIndex(proxy_->index(r, 0));
+            table_->selectionModel()->select(proxy_->index(r, 0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+            table_->scrollTo(proxy_->index(r, 0));
+            return;
+        }
 }
 
 void TrakcratePanel::selectFolder(const QString& name)
@@ -454,7 +653,10 @@ void TrakcratePanel::showDetails(const QModelIndex& proxyIndex)
     html += row("Year", m.get("year"));
     trakcrate::BeatGrid g = trakcrate::beatGridFrom(t.grid);
     if (t.hasGrid && !g.empty()) html += QStringLiteral("<b>BPM</b> %1<br>").arg(g.bpm, 0, 'f', 2);
-    html += row("Rating", m.get("rating"));
+    {   // stars, like the remote deck browser: nothing at all for an unrated track
+        const int stars = int(std::max(0LL, std::min(5LL, m.getInt("rating", 0))));
+        if (stars > 0) html += QStringLiteral("<b>Rating</b> %1<br>").arg(QString(stars, QChar(0x2605)));
+    }
     html += row("Comment", m.get("comment"));
     html += row("Format", m.get("container") + " " + m.get("sample_rate") + " Hz");
     html += QStringLiteral("<b>Cuemarks</b> %1<br>").arg(int(t.cuemarks.marks.size()));
@@ -814,30 +1016,36 @@ void TrakcratePanel::tableContextMenu(const QPoint& pos)
     detect->setEnabled(dirs.size() == 1 && !jobs_->busy() && trakcrate::bpmDetectAvailable());
     QAction* load = menu.addAction(QStringLiteral("Load into player"));
     load->setEnabled(dirs.size() == 1);
+    QAction* playHere = menu.addAction(QStringLiteral("Play the list from here"));
+    playHere->setEnabled(under.isValid() && currentListKey() != QString() && currentListKey() != QLatin1String("folder"));
     menu.addSeparator();
-    QAction *entryUp = nullptr, *entryDown = nullptr, *entryRemove = nullptr;
-    if (tree_->currentItem() && tree_->currentItem()->data(0, KindRole).toString() == QLatin1String("entry")) {
-        menu.addSeparator();
-        const bool unsorted = table_->header()->sortIndicatorSection() < 0;      // moving only makes sense in the pendrive's own order
-        entryUp = menu.addAction(QStringLiteral("Move up in this pendrive playlist"));
-        entryDown = menu.addAction(QStringLiteral("Move down in this pendrive playlist"));
-        entryRemove = menu.addAction(QStringLiteral("Remove from this pendrive playlist"));
-        entryUp->setEnabled(unsorted && !dirs.isEmpty());
-        entryDown->setEnabled(unsorted && !dirs.isEmpty());
-        entryRemove->setEnabled(!dirs.isEmpty());
+    QAction *mvUp = nullptr, *mvDown = nullptr, *mvStart = nullptr, *mvEnd = nullptr, *entryRemove = nullptr;
+    const QString curKind = tree_->currentItem() ? tree_->currentItem()->data(0, KindRole).toString() : QString();
+    if (curKind == QLatin1String("playlist") || curKind == QLatin1String("entry")) {
+        mvStart = menu.addAction(QStringLiteral("Move to start"));
+        mvUp = menu.addAction(QStringLiteral("Move up"));
+        mvDown = menu.addAction(QStringLiteral("Move down"));
+        mvEnd = menu.addAction(QStringLiteral("Move to end"));
+        for (QAction* a : {mvStart, mvUp, mvDown, mvEnd}) a->setEnabled(!dirs.isEmpty());
+        if (curKind == QLatin1String("entry")) {
+            menu.addSeparator();
+            entryRemove = menu.addAction(QStringLiteral("Remove from this pendrive playlist"));
+            entryRemove->setEnabled(!dirs.isEmpty());
+        }
         menu.addSeparator();
     }
-    QAction* unsort = menu.addAction(QStringLiteral("Playlist order (clear sorting)"));
     analyse->setEnabled(!dirs.isEmpty() && !jobs_->busy());
     force->setEnabled(analyse->isEnabled());
     QAction* chosen = menu.exec(table_->viewport()->mapToGlobal(pos));
     if (chosen == analyse) analyseTracks(dirs, false);
     else if (chosen == force) analyseTracks(dirs, true);
-    else if (chosen == load) emit loadRequested(dirs.first());
-    else if (entryUp && chosen == entryUp) editEntryTracks(-1, false);
-    else if (entryDown && chosen == entryDown) editEntryTracks(1, false);
+    else if (chosen == load) { preview_->stop(); emit loadRequested(dirs.first()); }
+    else if (chosen == playHere) { QString err; startPreview(under.isValid() ? under.row() : -1, &err); }
+    else if (chosen && (chosen == mvStart || chosen == mvUp || chosen == mvDown || chosen == mvEnd)) {
+        QString err;
+        if (!moveSelected(chosen == mvStart ? -2 : chosen == mvUp ? -1 : chosen == mvDown ? 1 : 2, &err) && !err.isEmpty()) emit status(err);
+    }
     else if (entryRemove && chosen == entryRemove) editEntryTracks(0, true);
-    else if (chosen == unsort) table_->sortByColumn(-1, Qt::AscendingOrder);
     else if (chosen == detect) detectBpm(dirs.first());
 }
 
@@ -937,6 +1145,74 @@ void TrakcratePanel::exportPendrive(const QString& drive, bool physical)
     if (dlg.exec() != QDialog::Accepted) return;
     if (!exportDrive(dlg.options(), dlg.registerAsVirtualPendrive() ? dlg.virtualPendriveName() : QString()))
         QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Another job is still running, or the template database is missing."));
+}
+
+bool TrakcratePanel::moveRows(const std::vector<int>& rows, int insertBefore, QString* err)
+{
+    QTreeWidgetItem* cur = tree_->currentItem();
+    const QString kind = cur ? cur->data(0, KindRole).toString() : QString();
+    auto fail = [&](const QString& m) { if (err) *err = m; return false; };
+    if (!lib_.isOpen() || (kind != QLatin1String("playlist") && kind != QLatin1String("entry"))) return fail(QStringLiteral("only a playlist can be reordered"));
+    std::vector<int> src;
+    for (int r : rows) src.push_back(proxy_->mapToSource(proxy_->index(r, 0)).row());      // the table is never sorted here: rows are positions
+    std::string e;
+    bool ok;
+    if (kind == QLatin1String("playlist")) ok = lib_.moveEntries(cur->data(0, NameRole).toString().toStdString(), src, insertBefore, &e);
+    else ok = lib_.driveLibrary(cur->data(0, DriveRole).toString().toStdString()).moveEntries(cur->data(0, NameRole).toString().toStdString(), src, insertBefore, &e);
+    if (!ok) return fail(QString::fromStdString(e));
+    // show the new order with the moved rows selected where they landed
+    std::sort(src.begin(), src.end());
+    src.erase(std::unique(src.begin(), src.end()), src.end());
+    int before = 0;
+    for (int r : src) if (r < insertBefore) ++before;
+    const int first = insertBefore - before;
+    onTreeSelection();
+    QItemSelection sel;
+    for (size_t i = 0; i < src.size(); ++i) {
+        const QModelIndex a = proxy_->index(first + int(i), 0), b = proxy_->index(first + int(i), proxy_->columnCount() - 1);
+        if (a.isValid()) sel.select(a, b);
+    }
+    table_->selectionModel()->select(sel, QItemSelectionModel::ClearAndSelect);
+    if (proxy_->index(first, 0).isValid()) table_->scrollTo(proxy_->index(first, 0));
+    return true;
+}
+
+bool TrakcratePanel::moveSelected(int how, QString* err)
+{
+    std::vector<int> rows;
+    for (const QModelIndex& i : table_->selectionModel()->selectedRows()) rows.push_back(i.row());
+    std::sort(rows.begin(), rows.end());
+    if (rows.empty()) return false;
+    const int n = proxy_->rowCount();
+    const int at = how == -2 ? 0 : how == 2 ? n : how == -1 ? std::max(0, rows.front() - 1) : std::min(n, rows.back() + 2);
+    return moveRows(rows, at, err);
+}
+
+bool TrakcratePanel::moveChosenEntry(int direction, QString* err)
+{
+    QTreeWidgetItem* cur = tree_->currentItem();
+    if (!cur || cur->data(0, KindRole).toString() != QLatin1String("entry")) return false;
+    const int i = cur->data(0, IndexRole).toInt();
+    return moveEntry(cur->data(0, DriveRole).toString(), i, direction < 0 ? i - 1 : i + 2, err);
+}
+
+bool TrakcratePanel::moveEntry(const QString& drive, int from, int insertBefore, QString* err)
+{
+    if (!lib_.isOpen()) return false;
+    const int count = int(lib_.driveEntries(drive.toStdString()).size());
+    int to = insertBefore > from ? insertBefore - 1 : insertBefore;
+    to = std::max(0, std::min(count - 1, to));                         // Ctrl+Up on the first list, Ctrl+Down on the last: nothing to do
+    if (to == from) return true;
+    std::string e;
+    if (!lib_.moveDriveEntry(drive.toStdString(), from, to, &e)) { if (err) *err = QString::fromStdString(e); return false; }
+    rebuildTree(false);
+    for (int g = 0; g < tree_->topLevelItemCount(); ++g)                    // the list that was moved stays the chosen one (its folder name changed)
+        for (int d = 0; d < tree_->topLevelItem(g)->childCount(); ++d) {
+            QTreeWidgetItem* di = tree_->topLevelItem(g)->child(d);
+            if (di->data(0, KindRole).toString() == QLatin1String("drive") && di->data(0, NameRole).toString() == drive && to < di->childCount())
+                tree_->setCurrentItem(di->child(to));
+        }
+    return true;
 }
 
 void TrakcratePanel::editEntryTracks(int move, bool remove)

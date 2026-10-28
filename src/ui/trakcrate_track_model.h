@@ -29,6 +29,9 @@ public:
     QString trackDir(int row) const;                               // empty for a bad row
     bool track(int row, trakcrate::Track* out) const;              // reads the files of that row
 
+    // Rows can be dragged (to reorder a playlist) once this is on. The drop itself is handled by the view.
+    void setDraggable(bool on) { draggable_ = on; }
+    Qt::ItemFlags flags(const QModelIndex& index) const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -48,6 +51,7 @@ private:
     void setRows(const std::vector<trakcrate::fs::path>& dirs);
 
     std::vector<Row> rows_;
+    bool draggable_ = false;
 };
 
 } // namespace vdj

@@ -123,6 +123,8 @@ add_library(vdj-cdj STATIC
     ui/star_rating_widget.cpp
     ui/trakcrate_track_editor.cpp
     ui/artwork_view.cpp
+    ui/trakcrate_scripts.cpp
+    ui/trakcrate_preview_player.cpp
     ui/artwork_launcher.cpp
     ui/trakcrate_rbimport_dialog.cpp
     ui/trakcrate_panel.cpp
@@ -204,6 +206,7 @@ add_library(vdj-trakcrate STATIC
     trakcrate/cuemark_edit.cpp
     trakcrate/grid_edit.cpp
     trakcrate/artwork_edit.cpp
+    trakcrate/scripts.cpp
     trakcrate/bpm_detect.cpp
     trakcrate/analysis.cpp
     trakcrate/pdb_writer.cpp

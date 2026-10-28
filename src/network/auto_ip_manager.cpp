@@ -81,6 +81,54 @@ nmcli con mod "$con" ipv4.link-local enabled || exit 3
 nmcli con up "$con" || exit 4
 )SH";
 
+// The profile that carries the interface is changed (or one is made); the last line printed is the profile name.
+static const char kPermanentScript[] = R"SH(
+iface="$1"
+con=$(nmcli -g GENERAL.CONNECTION dev show "$iface" 2>/dev/null)
+if [ -z "$con" ] || [ "$con" = "--" ]; then
+  con="vdj-prolink-$iface"
+  nmcli con add type ethernet ifname "$iface" con-name "$con" ipv4.method link-local ipv6.method disabled connection.autoconnect yes || exit 3
+else
+  nmcli con mod "$con" ipv4.method link-local ipv6.method disabled connection.autoconnect yes connection.interface-name "$iface" || exit 3
+fi
+nmcli con up "$con" || exit 4
+echo "$con"
+)SH";
+
+QString AutoIpManager::permanentCommands(const QString& iface)
+{
+    return QStringLiteral("nmcli con mod <the profile of %1> ipv4.method link-local ipv6.method disabled connection.autoconnect yes connection.interface-name %1\n"
+                          "(or, when %1 has no profile: nmcli con add type ethernet ifname %1 con-name vdj-prolink-%1 ipv4.method link-local ...)\n"
+                          "nmcli con up <the profile>").arg(iface);
+}
+
+void AutoIpManager::makePermanent(const QString& iface)
+{
+    if (permProc_) return;
+    if (iface.isEmpty() || !networkManagerAvailable()) {
+        emit permanentDone(false, QStringLiteral("nmcli (NetworkManager) is not available"));
+        return;
+    }
+    permProc_ = new QProcess(this);
+    permProc_->setProcessChannelMode(QProcess::MergedChannels);
+    connect(permProc_, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this, proc = QPointer<QProcess>(permProc_)](int code, QProcess::ExitStatus) {
+        if (!proc) return;
+        const QString out = QString::fromLocal8Bit(proc->readAll()).trimmed();
+        proc->deleteLater();
+        permProc_ = nullptr;
+        if (code == 0) emit permanentDone(true, out.section(QLatin1Char('\n'), -1));
+        else emit permanentDone(false, out.isEmpty() ? QStringLiteral("nmcli failed (exit %1)").arg(code) : out);
+    });
+    connect(permProc_, &QProcess::errorOccurred, this, [this, proc = QPointer<QProcess>(permProc_)](QProcess::ProcessError e) {
+        if (e != QProcess::FailedToStart || !proc) return;
+        proc->deleteLater();
+        permProc_ = nullptr;
+        emit permanentDone(false, QStringLiteral("cannot run /bin/sh"));
+    });
+    permProc_->start(QStringLiteral("/bin/sh"), { QStringLiteral("-c"), QString::fromLatin1(kPermanentScript), QStringLiteral("vdj-autoip-permanent"), iface });
+}
+
 AutoIpManager::AutoIpManager(QObject* parent)
     : QObject(parent)
 {

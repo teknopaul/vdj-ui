@@ -57,6 +57,9 @@ The interface for the decks is asked once and saved; Config > *Forget Saved Netw
 whoever assigned it). When AutoIP gets no address in time and NetworkManager is present, vdj-ui offers to enable link-local on the connection with `nmcli`
 (`ipv4.link-local enabled`, left enabled afterwards). Config > *Application Font...* sets the font for the whole app (default Liberation Sans, package `fonts-liberation`).
 
+see [LINUX_NETWORKING.md](LINUX_NETWORKING.md)
+
+
 ### DJ Tools ([sanename](https://sanename.org): djtoolz)
 
 *View > DJ Tools* shows the live DJ Tools. It plays in time with the VDJ sequencer (the clock the decks follow), so it is silent while the

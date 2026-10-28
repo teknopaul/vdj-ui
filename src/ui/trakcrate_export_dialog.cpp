@@ -78,7 +78,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     for (QCheckBox* c : {exportExt_, rbfltr_, usbmng_, djprofile_}) copies->addWidget(c);
     adv->addLayout(copies);
 
-    register_ = new QCheckBox(QStringLiteral("Register the folder as a virtual pendrive afterwards (to serve it to the decks)"));
+    register_ = new QCheckBox(QStringLiteral("Register the folder as an HD pendrive copy afterwards (to serve it to the decks)"));
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     ok_ = buttons->button(QDialogButtonBox::Ok);
     ok_->setText(QStringLiteral("Export"));

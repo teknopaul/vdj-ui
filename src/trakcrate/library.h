@@ -58,6 +58,10 @@ public:
     // Moves entry `from` to position `to` (both 0 based) and renumbers.
     bool moveInPlaylist(const std::string& name, int from, int to, std::string* err = nullptr) const;
 
+    // Moves a set of entries as one block, keeping their order among themselves, so that the block starts where position `to` was: `to` counts in the
+    // list as it is now (0 = the start, size = the end), the rows are 0 based. Renumbers. False for a bad row or position, or no rows.
+    bool moveEntries(const std::string& name, const std::vector<int>& rows, int to, std::string* err = nullptr) const;
+
     // ---- user defined pendrives ----
     // drives/<name>/ is a small library of its own (drives/<name>/pendrives/<NNN_entry>/symlinks/...): its "playlists" are the entries put on the
     // pendrive, in order. An entry is a snapshot of a master folder (kind "folder", tracks in name order) or of a playlist (kind "playlist", its order),

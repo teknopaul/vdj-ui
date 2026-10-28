@@ -6,6 +6,7 @@ i.e. a user editable file system in a base directory
 
 ```
 trakcrate/
+├── scripts/                   optional user scripts, run by hand only (scripts.md)
 ├── user-settings/
 ├── track-master-copy/
 │   └── <folder_name>/

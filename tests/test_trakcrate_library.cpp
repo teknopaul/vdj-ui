@@ -56,6 +56,7 @@ private slots:
     void playlistRemoveAndDelete();
     void unsafeNamesRefused();
     void pendriveEntries();
+    void moveEntriesAsABlock();
     void removalImpactAndForget();
 };
 
@@ -372,6 +373,34 @@ static fs::path mk(const Library& lib, const char* folder, const char* name)
     fs::path d = lib.createTrackDir(folder, name);
     std::ofstream(d / "track.wav") << "x";
     return d;
+}
+
+void TestTrakcrateLibrary::moveEntriesAsABlock()
+{
+    Library lib;
+    QVERIFY(Library::create(tmp_ / "lib") && Library::open(tmp_ / "lib", &lib));
+    std::vector<fs::path> t;
+    for (const char* n : {"a", "b", "c", "d", "e", "f"}) t.push_back(mk(lib, "F", n));
+    QVERIFY(lib.createPlaylist("P") && lib.addTracksToPlaylist("P", t));
+    auto names = [&]() { std::string s; for (const fs::path& p : lib.playlistTracks("P")) s += p.filename().string(); return s; };
+    QCOMPARE(names(), std::string("abcdef"));
+    QVERIFY(lib.moveEntries("P", {4, 5}, 0));                    // to the start, keeping their order
+    QCOMPARE(names(), std::string("efabcd"));
+    QVERIFY(lib.moveEntries("P", {0, 1}, 6));                    // to the end
+    QCOMPARE(names(), std::string("abcdef"));
+    QVERIFY(lib.moveEntries("P", {1, 3}, 5));                    // not contiguous: they gather before the old row 5
+    QCOMPARE(names(), std::string("acebdf"));
+    QVERIFY(lib.moveEntries("P", {5}, 2));
+    QCOMPARE(names(), std::string("acfebd"));
+    QVERIFY(lib.moveEntries("P", {2}, 2) && lib.moveEntries("P", {2}, 3));      // dropped where it already is: nothing changes
+    QCOMPARE(names(), std::string("acfebd"));
+    QVERIFY(!lib.moveEntries("P", {}, 1));
+    QVERIFY(!lib.moveEntries("P", {9}, 1));
+    QVERIFY(!lib.moveEntries("P", {1}, 7));
+    QVERIFY(!lib.moveEntries("P", {-1}, 1));
+    QCOMPARE(names(), std::string("acfebd"));
+    QVERIFY(lib.moveEntries("P", {1, 1, 0}, 6));                 // duplicates are ignored
+    QCOMPARE(names(), std::string("febdac"));
 }
 
 void TestTrakcrateLibrary::pendriveEntries()

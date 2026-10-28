@@ -136,6 +136,7 @@ private:
     void populateDeckFilesMenu();
     void browseDeck(int playerId, const QString& ip);
     void setAutoIpChecked(bool on);
+    void makeAutoIpPermanent();
     QString activeInterface() const;
 
     DeckWidget* deckAt(int playerId) const;
@@ -198,6 +199,7 @@ private:
     QAction* linkExportAction_ = nullptr;
     QMenu* exportMenu_ = nullptr;
     PendriveToolBar* pendriveBar_ = nullptr;
+    bool exportNone_ = false;                        // the user chose "No pendrive": nothing is exported, and the browser does not put one back
     void updatePendriveBar();                       // exported marker and the USB STOP dimming
     PendriveRegistry* pendrives_ = nullptr;
     VirtualPendrivesDialog* pendrivesDialog_ = nullptr;

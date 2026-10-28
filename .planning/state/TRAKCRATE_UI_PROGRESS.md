@@ -15,7 +15,7 @@
 | 11 | Cuemarks and hot cues | complete |
 | 12 | Beat grid nudging | complete |
 | 13 | Artwork editor integration | complete |
-| 14 | Scripts menu | pending |
+| 14 | Scripts menu | complete |
 
 ## Review notes
 
@@ -184,3 +184,16 @@ Files for review:
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/artwork_launcher.cpp`
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/artwork_view.cpp`
 - `/home/teknopaul/bzr_workspace/vdj-ui/tests/test_trakcrate_artwork_edit.cpp`
+
+### Phase 14 — Scripts menu
+
+⚠ never tried with the GUI: menus, review dialog and editor launch are untested by hand
+
+⚠ deck number/position, crate selection files, spinner, example scripts and CLI equivalents are not done
+
+⚠ review state lives in the per-user app config, not in the library (deliberate, see scripts.md)
+
+Files for review:
+- `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/trakcrate_scripts.cpp`
+- `/home/teknopaul/bzr_workspace/vdj-ui/src/trakcrate/scripts.cpp`
+- `/home/teknopaul/bzr_workspace/vdj-ui/tests/test_trakcrate_scripts.cpp`

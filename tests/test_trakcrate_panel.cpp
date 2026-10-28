@@ -2,12 +2,16 @@
 
 #include <QApplication>
 #include <QLabel>
+#include <QPushButton>
+#include <QCheckBox>
 #include <QSignalSpy>
 #include <QTreeView>
 #include <QTreeWidget>
 
 #include "ui/trakcrate_job.h"
 #include "ui/trakcrate_panel.h"
+#include "ui/trakcrate_preview_player.h"
+#include "audio/audio_player.h"
 #include "trakcrate/exporter.h"
 #include "trakcrate/usb_speed.h"
 #include <QFile>
@@ -76,6 +80,8 @@ private slots:
     void panelExportsAPlaylist();
     void panelImportsARekordboxDrive();
     void panelPendrives();
+    void panelPreviewPlayer();
+    void panelReordersPlaylists();
     void usbLabels();
     void bpmHelpers();
     void panelAppliesBpm();
@@ -416,6 +422,215 @@ void TestTrakcratePanel::panelImportsARekordboxDrive()
     QVERIFY2(done.at(0).at(1).toBool(), qPrintable(done.at(0).at(0).toString()));
     QCOMPARE(p.library().listFolders().size(), size_t(1));
     QCOMPARE(p.library().listPlaylists().size(), size_t(1));
+}
+
+void TestTrakcratePanel::panelReordersPlaylists()
+{
+    for (const char* n : {"a", "b", "c", "d"}) writeWav(tmp_ / "Set" / (std::string(n) + ".wav"), 300, std::string("Track ") + n);
+    writeWav(tmp_ / "Other" / "z.wav", 330, "Z");
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    for (const char* f : {"Set", "Other"}) {
+        QVERIFY(p.importFolder((tmp_ / f).string().c_str(), tc::ImportOptions()));
+        QVERIFY(p.waitForJob());
+    }
+    QTreeView* table = p.findChild<QTreeView*>();
+    QTreeWidget* tree = p.findChild<QTreeWidget*>();
+    auto titles = [&]() {
+        QStringList l;
+        for (int r = 0; r < p.visibleTrackCount(); ++r) l << table->model()->index(r, 0).data().toString();
+        return l;
+    };
+    // folders can be sorted, playlists cannot: their order is the DJ's work
+    p.selectFolder("Set");
+    QVERIFY(table->isSortingEnabled());
+    p.selectPlaylist("Set");
+    QVERIFY(!table->isSortingEnabled());
+    QCOMPARE(table->dragDropMode(), QAbstractItemView::InternalMove);
+    QCOMPARE(titles(), QStringList({"Track a", "Track b", "Track c", "Track d"}));
+    QString err;
+    QVERIFY(p.moveRows({3}, 0, &err));                                                  // Move to start
+    QCOMPARE(titles(), QStringList({"Track d", "Track a", "Track b", "Track c"}));
+    QCOMPARE(table->selectionModel()->selectedRows().size(), 1);
+    QCOMPARE(table->selectionModel()->selectedRows().first().row(), 0);
+    QVERIFY(p.moveRows({0, 1}, 4, &err));                                               // two rows to the end (drag below the last)
+    QCOMPARE(titles(), QStringList({"Track b", "Track c", "Track d", "Track a"}));
+    QCOMPARE(table->selectionModel()->selectedRows().size(), 2);
+    QVERIFY(!p.moveRows({}, 1, &err));
+    // the order is on disk: a fresh panel on the same library sees it
+    {
+        TrakcratePanel q;
+        QVERIFY(q.openLibrary((tmp_ / "lib").string().c_str()));
+        q.selectPlaylist("Set");
+        QTreeView* t2 = q.findChild<QTreeView*>();
+        QCOMPARE(t2->model()->index(0, 0).data().toString(), QString("Track b"));
+        QCOMPARE(t2->model()->index(3, 0).data().toString(), QString("Track a"));
+    }
+    p.selectFolder("Set");
+    QVERIFY(!p.moveRows({0}, 2, &err));                                                 // a folder has no order to change
+
+    // Ctrl+Up / Ctrl+Down move the selected tracks one place
+    p.selectPlaylist("Set");
+    table->setFocus();
+    table->selectionModel()->select(table->model()->index(1, 0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    QTest::keyClick(table, Qt::Key_Up, Qt::ControlModifier);
+    QCOMPARE(titles(), QStringList({"Track c", "Track b", "Track d", "Track a"}));
+    QTest::keyClick(table, Qt::Key_Down, Qt::ControlModifier);
+    QTest::keyClick(table, Qt::Key_Down, Qt::ControlModifier);
+    QCOMPARE(titles(), QStringList({"Track b", "Track d", "Track c", "Track a"}));
+    QTest::keyClick(table, Qt::Key_Down, Qt::ControlModifier);
+    QTest::keyClick(table, Qt::Key_Down, Qt::ControlModifier);                           // already last: stays there
+    QCOMPARE(titles(), QStringList({"Track b", "Track d", "Track a", "Track c"}));
+    QVERIFY(p.moveSelected(-2));                                                         // Move to start
+    QCOMPARE(titles().first(), QString("Track c"));
+    QVERIFY(p.moveSelected(2));                                                          // Move to end
+    QCOMPARE(titles().last(), QString("Track c"));
+
+    // the lists of a pendrive are dragged into order in the tree
+    QVERIFY(p.createPendrive(QStringLiteral("Fri"), {QStringLiteral("Set")}, {QStringLiteral("Other")}, &err));
+    QCOMPARE(p.library().driveEntries("Fri")[0].name, std::string("Set"));
+    QVERIFY(p.moveEntry("Fri", 1, 0, &err));                                            // Other dropped before Set
+    QCOMPARE(p.library().driveEntries("Fri")[0].name, std::string("Other"));
+    QVERIFY(tree->currentItem() && tree->currentItem()->text(0).startsWith("Other"));    // the moved list stays chosen
+    QVERIFY(p.moveEntry("Fri", 0, 2, &err));                                            // dropped after the last one
+    QCOMPARE(p.library().driveEntries("Fri")[1].name, std::string("Other"));
+    QVERIFY(p.moveEntry("Fri", 1, 1, &err) && p.moveEntry("Fri", 1, 2, &err));          // dropped where it is
+    QCOMPARE(p.library().driveEntries("Fri")[1].name, std::string("Other"));
+    tree->setFocus();
+    QTest::keyClick(tree, Qt::Key_Up, Qt::ControlModifier);                              // Ctrl+Up on the chosen list
+    QCOMPARE(p.library().driveEntries("Fri")[0].name, std::string("Other"));
+    QTest::keyClick(tree, Qt::Key_Up, Qt::ControlModifier);                              // already first
+    QCOMPARE(p.library().driveEntries("Fri")[0].name, std::string("Other"));
+    QTest::keyClick(tree, Qt::Key_Down, Qt::ControlModifier);
+    QCOMPARE(p.library().driveEntries("Fri")[1].name, std::string("Other"));
+    QTest::keyClick(tree, Qt::Key_Down, Qt::ControlModifier);                            // already last
+    QCOMPARE(p.library().driveEntries("Fri")[1].name, std::string("Other"));
+}
+
+void TestTrakcratePanel::panelPreviewPlayer()
+{
+    writeWav(tmp_ / "House" / "a.wav", 300, "A one");
+    writeWav(tmp_ / "House" / "b.wav", 330, "B two");
+    writeWav(tmp_ / "Dub" / "c.wav", 350, "C three");
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    for (const char* f : {"House", "Dub"}) {
+        QVERIFY(p.importFolder((tmp_ / f).string().c_str(), tc::ImportOptions()));
+        QVERIFY(p.waitForJob());
+    }
+    QString err;
+    QVERIFY(p.createPendrive(QStringLiteral("Fri"), {QStringLiteral("House")}, {QStringLiteral("Dub")}, &err));
+    TrakcratePreviewPlayer* pv = p.preview();
+    QTreeWidget* tree = p.findChild<QTreeWidget*>();
+    QSignalSpy started(pv, &TrakcratePreviewPlayer::trackStarted);
+    QSignalSpy stopped(pv, &TrakcratePreviewPlayer::stopped);
+
+    // the tempo arithmetic: natural, or all at one BPM within what the stretcher can do
+    QCOMPARE(TrakcratePreviewPlayer::tempoFor(120, 132), 1.1);
+    QCOMPARE(TrakcratePreviewPlayer::tempoFor(0, 128), 1.0);
+    QCOMPARE(TrakcratePreviewPlayer::tempoFor(60, 200), 2.0);
+    QCOMPARE(TrakcratePreviewPlayer::tempoFor(200, 60), 0.5);
+
+    // a folder is not played; the buttons say so
+    p.selectFolder("House");
+    QVERIFY(!pv->playButton()->isEnabled());
+    QVERIFY(!p.startPreview(-1, &err));
+
+    // a playlist plays one track after the other and the playing row follows
+    p.selectPlaylist("House");
+    QVERIFY(pv->playButton()->isEnabled());
+    QTreeView* table = p.findChild<QTreeView*>();
+    QVERIFY(p.startPreview(-1, &err));
+    QVERIFY(pv->isActive());
+    QCOMPARE(started.count(), 1);
+    QCOMPARE(pv->currentIndex(), 0);
+    const QString first = pv->currentDir();
+    QCOMPARE(table->currentIndex().row(), 0);
+    QVERIFY(pv->label()->text().contains("1/2"));
+    QVERIFY(pv->stopButton()->isEnabled());
+    emit pv->player()->finished();                                                      // the first track ended
+    QCOMPARE(pv->currentIndex(), 1);
+    QCOMPARE(table->currentIndex().row(), 1);                                           // the highlight and the details moved on
+    QVERIFY(pv->currentDir() != first);
+    emit pv->player()->finished();                                                      // the last one: the list is over
+    QVERIFY(!pv->isActive());
+    QCOMPARE(stopped.count(), 1);
+
+    // "next playlist" is off by default; when ticked the next playlist follows and the list after the last one ends the player
+    QVERIFY(!pv->continueBox()->isChecked());
+    p.selectPlaylist("Dub");                                                            // playlists are in alphabetical order: Dub, House
+    QVERIFY(p.startPreview(0, &err));
+    emit pv->player()->finished();
+    QVERIFY(!pv->isActive());                                                           // unticked: the end of Dub is the end
+    pv->continueBox()->setChecked(true);
+    QVERIFY(p.startPreview(0, &err));
+    emit pv->player()->finished();
+    QVERIFY(pv->isActive());                                                            // ticked: on to House
+    QVERIFY(tree->currentItem()->data(0, Qt::UserRole).toString() == QLatin1String("playlist"));
+    QCOMPARE(tree->currentItem()->text(0), QStringLiteral("House"));
+    QCOMPARE(pv->currentIndex(), 0);
+    emit pv->player()->finished();
+    emit pv->player()->finished();                                                      // the end of the last playlist: nothing follows
+    QVERIFY(!pv->isActive());
+    pv->continueBox()->setChecked(false);
+    p.selectPlaylist("House");
+
+    // all at one BPM: a track with a grid is stretched, the audio on disk is not touched
+    tc::Track t;
+    QVERIFY(tc::loadTrack(first.toStdString(), &t));
+    tc::BeatGrid g;
+    g.bpm = 120;
+    tc::setBeatGrid(t.grid, g);
+    t.hasGrid = true;
+    QVERIFY(tc::saveBeatGrid(t));
+    std::string before, after;
+    tc::readFile(tc::audioFileOf(first.toStdString()), &before);
+    pv->setFixedBpm(true, 132);
+    QVERIFY(pv->fixedBpm());
+    QVERIFY(p.startPreview(0, &err));
+    QCOMPARE(pv->currentTempo(), 1.1);
+    pv->setFixedBpm(false);
+    QCOMPARE(pv->currentTempo(), 1.0);                                                  // switching mode applies at once
+    pv->stop();
+    tc::readFile(tc::audioFileOf(first.toStdString()), &after);
+    QVERIFY(before == after);
+    QCOMPARE(tc::audioFileOf(first.toStdString()).filename().string(), tc::audioFileOf(first.toStdString()).filename().string());
+
+    // a pendrive plays all its lists in order and the tree follows from list to list
+    QTreeWidgetItem* drive = nullptr;
+    for (int g2 = 0; g2 < tree->topLevelItemCount(); ++g2)
+        for (int d = 0; d < tree->topLevelItem(g2)->childCount(); ++d)
+            if (tree->topLevelItem(g2)->child(d)->data(0, Qt::UserRole).toString() == QLatin1String("drive")) drive = tree->topLevelItem(g2)->child(d);
+    QVERIFY(drive);
+    tree->setCurrentItem(drive);
+    QVERIFY(pv->playButton()->isEnabled());
+    started.clear();
+    QVERIFY(p.startPreview(-1, &err));
+    QVERIFY(tree->currentItem() != drive);                                              // the pendrive lists no tracks: the view moves to the list playing
+    QVERIFY(tree->currentItem()->text(0).startsWith("House"));
+    emit pv->player()->finished();
+    emit pv->player()->finished();                                                      // into the second list (Dub)
+    QCOMPARE(pv->currentIndex(), 2);
+    QVERIFY(tree->currentItem() != drive);
+    QVERIFY(tree->currentItem()->text(0).startsWith("Dub"));
+    QCOMPARE(table->currentIndex().row(), 0);
+    pv->stop();
+
+    // not while on the Pro DJ Link network
+    bool onNetwork = true;
+    p.setPlaybackBlocker([&]() { return onNetwork ? QStringLiteral("connected") : QString(); });
+    QVERIFY(!pv->playButton()->isEnabled());
+    QVERIFY(!p.startPreview(-1, &err));
+    QVERIFY(err.contains("connected"));
+    QVERIFY(!pv->isActive());
+    onNetwork = false;
+    pv->refreshAllowed();
+    QVERIFY(pv->playButton()->isEnabled());
+    QVERIFY(p.startPreview(-1, &err));
+    onNetwork = true;                                                                    // connecting stops it
+    p.stopPreview();
+    QVERIFY(!pv->isActive());
+    QVERIFY(!pv->nextButton()->isEnabled());
 }
 
 void TestTrakcratePanel::panelPendrives()

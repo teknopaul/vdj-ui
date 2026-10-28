@@ -21,7 +21,7 @@ enum { RoleFolder = Qt::UserRole, RoleName, RoleKind };      // kind: 0 group, 1
 VirtualPendrivesDialog::VirtualPendrivesDialog(PendriveRegistry* registry, QWidget* parent)
     : QDialog(parent), registry_(registry)
 {
-    setWindowTitle(QStringLiteral("Virtual Pendrives"));
+    setWindowTitle(QStringLiteral("Pendrives"));
     resize(640, 420);
     auto* lay = new QVBoxLayout(this);
     lay->addWidget(new QLabel(QStringLiteral("Folders with a rekordbox export (PIONEER/rekordbox/export.pdb) and the pendrives plugged into this PC. "
@@ -85,7 +85,7 @@ void VirtualPendrivesDialog::rebuild()
         if (!exportedFolder_.isEmpty() && QDir::cleanPath(folder) == QDir::cleanPath(exportedFolder_)) return exportedState_;
         return hasDb ? QStringLiteral("ready") : QStringLiteral("no rekordbox export");
     };
-    auto* virt = new QTreeWidgetItem(tree_, { QStringLiteral("Virtual (your folders)") });
+    auto* virt = new QTreeWidgetItem(tree_, { QStringLiteral("HD Pendrive Copies") });
     virt->setData(0, RoleKind, 0);
     for (const auto& p : registry_->virtualPendrives()) {
         const bool ok = PendriveRegistry::isRekordboxFolder(p.folder);
@@ -137,7 +137,7 @@ void VirtualPendrivesDialog::addFolder()
     const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Select a folder with PIONEER/rekordbox/export.pdb"));
     if (dir.isEmpty()) return;
     bool ok = false;
-    const QString name = QInputDialog::getText(this, QStringLiteral("Virtual Pendrive"), QStringLiteral("Name:"), QLineEdit::Normal,
+    const QString name = QInputDialog::getText(this, QStringLiteral("HD Pendrive Copy"), QStringLiteral("Name:"), QLineEdit::Normal,
                                                PendriveRegistry::defaultNameFor(dir), &ok);
     if (!ok) return;
     const QString err = registry_->add(name, dir);

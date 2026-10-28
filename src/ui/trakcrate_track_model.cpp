@@ -113,6 +113,13 @@ void TrakcrateTrackModel::load(const Row& r) const
     r.flags = flags.join(QStringLiteral(", "));
 }
 
+Qt::ItemFlags TrakcrateTrackModel::flags(const QModelIndex& index) const
+{
+    Qt::ItemFlags f = QAbstractTableModel::flags(index) & ~Qt::ItemIsDropEnabled;
+    if (index.isValid() && draggable_) f |= Qt::ItemIsDragEnabled;
+    return f;
+}
+
 int TrakcrateTrackModel::rowCount(const QModelIndex& parent) const { return parent.isValid() ? 0 : int(rows_.size()); }
 int TrakcrateTrackModel::columnCount(const QModelIndex& parent) const { return parent.isValid() ? 0 : ColumnCount; }
 

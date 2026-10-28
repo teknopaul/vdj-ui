@@ -228,6 +228,30 @@ bool Library::moveInPlaylist(const std::string& name, int from, int to, std::str
     return writeOrder(name, order, err);
 }
 
+bool Library::moveEntries(const std::string& name, const std::vector<int>& rowsIn, int to, std::string* err) const
+{
+    std::vector<std::string> order = playlistEntries(name);
+    std::vector<int> rows = rowsIn;
+    std::sort(rows.begin(), rows.end());
+    rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+    if (rows.empty() || to < 0 || size_t(to) > order.size()) return fail(err, "nothing to move, or a bad position");
+    for (int r : rows)
+        if (r < 0 || size_t(r) >= order.size()) return fail(err, "no such playlist entry");
+    std::vector<std::string> block, rest;
+    int before = 0;                                              // selected rows above the target: they leave the list before it
+    for (size_t i = 0; i < order.size(); ++i) {
+        if (std::binary_search(rows.begin(), rows.end(), int(i))) {
+            block.push_back(order[i]);
+            if (int(i) < to) ++before;
+        } else {
+            rest.push_back(order[i]);
+        }
+    }
+    rest.insert(rest.begin() + (to - before), block.begin(), block.end());
+    if (rest == order) return true;
+    return writeOrder(name, rest, err);
+}
+
 // ---- user defined pendrives -----------------------------------------------------------------------------------------------------------
 
 std::vector<std::string> Library::listDrives() const { return listDirs(drivesDir()); }

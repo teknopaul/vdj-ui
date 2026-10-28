@@ -4,6 +4,8 @@
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QLabel>
+#include <QMenu>
+#include <QToolButton>
 #include <QMessageBox>
 #include <QLineEdit>
 #include <QListWidget>
@@ -19,6 +21,7 @@
 #include "trakcrate/grid_edit.h"
 #include "trakcrate/track.h"
 #include "trakcrate_analysis.h"
+#include "trakcrate_scripts.h"
 #include "waveform_widget.h"
 
 namespace vdj {
@@ -134,6 +137,7 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     right->addWidget(facts_, 1);
     top->addLayout(right, 1);
     auto* ratingRow = new QHBoxLayout;
+    ratingRow_ = ratingRow;
     ratingRow->addWidget(new QLabel(QStringLiteral("Rating")));
     ratingRow->addWidget(stars_);
     ratingRow->addStretch(1);
@@ -204,6 +208,29 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     connect(undo_, &QUndoStack::canUndoChanged, undoButton_, &QPushButton::setEnabled);
     connect(undo_, &QUndoStack::canRedoChanged, redoButton_, &QPushButton::setEnabled);
     setTrack(QString());
+}
+
+void TrakcrateTrackEditor::setScripts(ScriptManager* scripts)
+{
+    scripts_ = scripts;
+    auto* button = new QToolButton;
+    button->setText(QStringLiteral("Scripts"));
+    button->setPopupMode(QToolButton::InstantPopup);
+    button->setToolTip(QStringLiteral("Scripts for this track (scripts/track-script-*). They only run when you start them."));
+    auto* menu = new QMenu(button);
+    button->setMenu(menu);
+    connect(menu, &QMenu::aboutToShow, this, [this, menu] {
+        populateScriptsMenu(menu, scripts_, trakcrate::ScriptKind::Track, this, [this] { return dir_; });
+    });
+    connect(scripts_, &ScriptManager::ran, this, [this] {
+        if (dir_.isEmpty()) return;
+        const QString d = dir_;
+        setTrack(d);                                          // the files may have changed: read them again
+        emit trackChanged(d);
+        emit gridChanged(d);
+    });
+    // next to Undo / Redo in the rating row
+    ratingRow_->insertWidget(ratingRow_->indexOf(undoButton_), button);
 }
 
 void TrakcrateTrackEditor::setConfig(ConfigManager* config) { art_->setConfig(config); }

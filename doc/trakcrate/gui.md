@@ -101,3 +101,21 @@ Decided: no shared library between the GUI and the command line tools.
 - How much of the existing Rekordbox PC-mode and `track_browser` should be reused? The browser already shows folders and rekordbox DBs from pendrives; the trakcrate pane could be a mode of it so a user can drag from a real pendrive into the master.
 - Undo scope across the CLI and GUI (the CLI has none).
 - Whether bulk text edits (regex rename) belong in the GUI or only in the CLI.
+
+## Preview player (implemented)
+
+A mini player sits under the track list (`src/ui/trakcrate_preview_player.*`). It plays the shown playlist, a list of a virtual pendrive, or (on the pendrive itself) all its lists one after the other, so a DJ can listen to a whole set at home.
+
+- Play/Pause, Stop, previous and next. "Play the list from here" is in the track context menu. Folders cannot be played.
+- **Natural BPM** plays each track at its own tempo. **All at BPM** plays every track at one BPM: the track's BPM comes from `beatgrid.txt` (else the BPM tag), the tempo ratio is clamped to 0.5 to 2, and a track without a BPM plays at its natural tempo. The stretching is done in memory by `AudioPlayer`; no file is changed.
+- The playing track is selected in the list as it changes, so its artwork and details show. On a pendrive the tree moves from list to list. If you browse another list meanwhile, the view is left alone.
+- One list at a time. Playing is refused while the app is connected to the Pro DJ Link network, Connect stops the player first, and loading a track into the deck stops it. Stop gives the audio output back to the DJ decks.
+- The mode and BPM are remembered (`trakcrate/preview_mode`, `trakcrate/preview_bpm`).
+
+## Ordering (implemented)
+
+- A playlist (and a list of a virtual pendrive) is always shown in its own order, which is the DJ's work: the columns cannot be sorted there. Folders can be sorted by a column.
+- **Drag and drop:** drag the selected rows to a new place in a playlist or pendrive list. A line shows where they will land. Several rows move as one block.
+- **Right click:** Move to start, Move up, Move down, Move to end (on the selected rows).
+- **Virtual pendrives:** drag a list within its pendrive in the tree to put the lists in order (dropping on the pendrive itself puts it last).
+- The order is written at once (`NNN_` prefixes, `Library::moveEntries`); there is no "clear sorting" because the order is never lost.

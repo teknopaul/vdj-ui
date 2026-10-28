@@ -131,6 +131,16 @@ add_test(NAME vdj-ui-linkexport-test COMMAND vdj-ui-linkexport-test)
 set_tests_properties(vdj-ui-linkexport-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 # end LINK export
 
+add_executable(vdj-ui-pendrive-toolbar-test test_pendrive_toolbar.cpp)
+target_link_libraries(vdj-ui-pendrive-toolbar-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-pendrive-toolbar-test COMMAND vdj-ui-pendrive-toolbar-test)
+set_tests_properties(vdj-ui-pendrive-toolbar-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-autoip-permanent-test test_autoip_permanent.cpp)
+target_link_libraries(vdj-ui-autoip-permanent-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-autoip-permanent-test COMMAND vdj-ui-autoip-permanent-test)
+set_tests_properties(vdj-ui-autoip-permanent-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(vdj-ui-pendrive-registry-test test_pendrive_registry.cpp)
 target_link_libraries(vdj-ui-pendrive-registry-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-pendrive-registry-test COMMAND vdj-ui-pendrive-registry-test)
@@ -308,6 +318,11 @@ add_executable(vdj-ui-trakcrate-artwork-edit-test test_trakcrate_artwork_edit.cp
 target_link_libraries(vdj-ui-trakcrate-artwork-edit-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-artwork-edit-test COMMAND vdj-ui-trakcrate-artwork-edit-test)
 set_tests_properties(vdj-ui-trakcrate-artwork-edit-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-scripts-test test_trakcrate_scripts.cpp)
+target_link_libraries(vdj-ui-trakcrate-scripts-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-scripts-test COMMAND vdj-ui-trakcrate-scripts-test)
+set_tests_properties(vdj-ui-trakcrate-scripts-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 add_executable(vdj-ui-trakcrate-rbimport-test test_trakcrate_rbimport.cpp)
 target_compile_definitions(vdj-ui-trakcrate-rbimport-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
