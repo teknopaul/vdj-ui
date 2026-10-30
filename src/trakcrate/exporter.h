@@ -12,7 +12,7 @@
 // Exports playlists of the library as a rekordbox format drive (doc/trakcrate/rekordbox-db-output.md). The metadata (database, analysis
 // files, artwork, settings) is built in a staging directory on tmpfs and checked there; then everything is copied to the destination in one
 // sequential pass, each file written once, audio first and export.pdb last, so an interrupted export leaves no database; then the destination
-// is read back and compared by SHA-256. The destination must be an empty directory. Nothing is ever written anywhere else.
+// can be read back and compared by SHA-256 (optional). Data is not synced file by file: one sync of the drive comes before export.pdb and one after. The destination must be an empty directory. Nothing is ever written anywhere else.
 namespace trakcrate {
 
 // Turns the bytes of an image file into a square JPEG of `size` pixels (the exporter asks for 240 and 80). Qt-free code cannot do that itself.
@@ -27,10 +27,16 @@ struct ExportList {
 struct ExportOptions {
     std::vector<std::string> playlists;      // the playlists (library "pendrives") to put on the drive, in this order
     std::vector<ExportList> lists;           // further lists, after the playlists (see Library::driveEntries)
-    fs::path dest;                           // an empty directory, or one that does not exist yet
+    fs::path dest;                           // an empty directory, or one that does not exist yet (or, with `update`, a drive written by an earlier export)
+    // Update a drive that already holds an export: audio and small files are only written when they differ (each through a temporary name and a
+    // rename, so a file is old or new, never half), nothing is deleted, export.pdb is built in memory and written last after the old one has been
+    // backed up as export.pdb.bak (and .bak.2, .bak.3: the three newest are kept). Cancel stops before the backup; once export.pdb is being
+    // replaced the export always finishes, a database must be whole.
+    bool update = false;
     std::string templatePdb;                 // bytes of the template export.pdb (required)
     fs::path stagingBase;                    // where the staging directory goes; empty = /dev/shm, else $XDG_RUNTIME_DIR, else the system temp
-    bool verify = true;                      // read the destination back and compare checksums
+    // Checksums are off by default: hashing costs CPU, reading the drive back doubles the time on a slow stick. Turning on either makes every file hashed.
+    bool verify = false;                     // read the destination back and compare checksums
     bool allowUnanalysed = false;            // tracks without analysis get a flat waveform and no beat grid instead of refusing the export
     uint64_t minFreeBytes = 1u << 20;        // space that must remain free on the destination
 
@@ -39,7 +45,7 @@ struct ExportOptions {
     bool includeArtwork = true;
     bool includePvbr = true, includePwv4 = true, includePwv5 = true;
     CuemarkRenderOptions cuemarks;           // the spikes drawn into the exported waveforms (never into the master)
-    bool writeManifest = true;               // SHA256SUMS and trakcrate-manifest.txt in the root of the drive
+    bool writeManifest = false;              // SHA256SUMS and trakcrate-manifest.txt in the root of the drive
     std::string devSetting, mySetting;       // replacement settings files (bytes); empty = the built in ones
     std::string djprofile, rbfltr, exportExt;   // replacements for PIONEER/djprofile.nxs, rekordbox/RBFLTR.DAT, rekordbox/exportExt.pdb; empty = the built in ones
     // Files copied from a real drive (a folder holding PIONEER/): other tracks' data, only to find out which files a player needs.
@@ -47,6 +53,12 @@ struct ExportOptions {
     bool copyExportExt = false, copyRbfltr = false, copyUsbmng = false, copyDjprofile = false;
 
     ArtworkEncoder encodeArtwork;            // null: no artwork on the drive
+};
+
+// A file on the drive that the new export.pdb no longer refers to: audio under Contents/, artwork, analysis files.
+struct Orphan {
+    std::string rel;                         // relative to the destination
+    uint64_t size = 0;
 };
 
 struct ExportResult {
@@ -60,6 +72,9 @@ struct ExportResult {
     std::string stagingUsed;                 // the directory used (removed again)
     bool stagedOnTmpfs = false;
     bool verified = false;
+    int skipped = 0;                         // update: files already identical on the drive
+    std::vector<Orphan> orphans;             // update: files left from earlier exports that nothing refers to any more (nothing is deleted, see deleteOrphans)
+    std::string backup;                      // update: the backup made of the old export.pdb (relative to the destination), empty if none
 };
 
 struct ExportSummary {
@@ -72,6 +87,10 @@ struct ExportSummary {
 using ExportProgress = std::function<void(int done, int total, const std::string& current)>;
 
 ExportResult exportDrive(const Library& lib, const ExportOptions& opts, const ExportProgress& progress = nullptr, const std::atomic<bool>* cancel = nullptr);
+
+// Removes the given orphans from dest (and folders that become empty). Only plain files below Contents/, PIONEER/Artwork/ and PIONEER/USBANLZ/ are
+// ever touched, whatever the list says. Returns the bytes freed; `failed` gets the paths that could not be removed.
+uint64_t deleteOrphans(const fs::path& dest, const std::vector<Orphan>& orphans, std::vector<std::string>* failed = nullptr);
 
 // What an export of these playlists would involve, without writing anything.
 ExportSummary summariseExport(const Library& lib, const ExportOptions& opts);

@@ -27,9 +27,13 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=1
+current_page=5
 FILE_NAME_0=5124;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fdoc%2Ftrakcrate%2Fpdb-write-notes.md;0;2
-FILE_NAME_1=43287;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fdoc%2Ftrakcrate%2Fusbanalz-hashing.md;0;4
+FILE_NAME_1=23179;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fdoc%2Ftrakcrate%2Fusbanalz-hashing.md;0;4
+FILE_NAME_2=313;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fgraceful-export.prompt.md;0;4
+FILE_NAME_3=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fdoc%2Ftrakcrate%2Ftrakcrate-db-format.md;0;4
+FILE_NAME_4=1947;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fuser-settings.prompt.md;0;4
+FILE_NAME_5=621;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fpendrive-care.prompt.md;0;4
 
 [VTE]
 last_dir=/home/teknopaul

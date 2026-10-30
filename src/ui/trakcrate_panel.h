@@ -176,6 +176,9 @@ private:
     QProgressBar* progress_;
     QLabel* progressLabel_;
     QPushButton* cancelButton_;
+    QPushButton* orphanButton_;
+    std::vector<trakcrate::Orphan> orphans_;
+    void deleteOrphansDialog();
     QLabel* artwork_;
     QLabel* details_;
     QFileSystemWatcher* watcher_;

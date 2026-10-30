@@ -1,17 +1,22 @@
 #include "trakcrate_export_dialog.h"
 
+#include <QAbstractItemView>
+#include <QSizePolicy>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QFormLayout>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QIcon>
+#include <QPixmap>
+#include <QToolButton>
 #include <QPushButton>
 #include <QStorageInfo>
 
@@ -27,7 +32,8 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
 {
     setWindowTitle(QStringLiteral("Export to a rekordbox drive"));
     playlists_ = new QListWidget;
-    playlists_->setMaximumHeight(130);
+    playlists_->setMinimumHeight(100);
+    playlists_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     for (const std::string& p : lib_.listPlaylists()) {
         auto* it = new QListWidgetItem(QString::fromStdString(p), playlists_);
         it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
@@ -38,12 +44,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     auto* browse = new QPushButton(QStringLiteral("Browse..."));
     browse_ = browse;
     drives_ = new QComboBox;
-    drives_->addItem(QStringLiteral("Mounted drives..."));
-    for (const PhysicalPendrive& d : PendriveRegistry::scanPhysical()) {
-            const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(d.mountPoint.toStdString());
-            drives_->addItem(QStringLiteral("%1  (%2 free%3)").arg(d.name).arg(QLocale().formattedDataSize(d.freeBytes))
-                                 .arg(!usb.found ? QString() : QStringLiteral(", ") + QString::fromStdString(usb.label) + (usb.downgraded() ? QStringLiteral(" - supports USB 3") : QString())), d.mountPoint);
-        }
+    rescanDrives();
     auto* destRow = new QHBoxLayout;
     destRow->addWidget(dest_, 1);
     destRow->addWidget(browse);
@@ -51,6 +52,8 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     summary_ = new QLabel;
     summary_->setWordWrap(true);
     summary_->setTextFormat(Qt::RichText);
+    summary_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    summary_->setMinimumHeight(summary_->fontMetrics().lineSpacing() * 6);     // room for the usual messages: the dialog does not jump when they change
 
     advanced_ = new QGroupBox(QStringLiteral("Advanced / compatibility testing"));
     advanced_->setCheckable(true);
@@ -63,7 +66,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     manifest_ = new QCheckBox(QStringLiteral("SHA256SUMS and trakcrate-manifest.txt in the root"));
     verify_ = new QCheckBox(QStringLiteral("Read the drive back and compare checksums"));
     unanalysed_ = new QCheckBox(QStringLiteral("Allow tracks that are not analysed (flat waveform, no beat grid)"));
-    for (QCheckBox* c : {settings_, artwork_, pvbr_, pwv4_, pwv5_, manifest_, verify_}) c->setChecked(true);
+    for (QCheckBox* c : {settings_, artwork_, pvbr_, pwv4_, pwv5_}) c->setChecked(true);      // checksums and the read back are slow on a stick: off unless asked for
     realDrive_ = new QLineEdit;
     realDrive_->setPlaceholderText(QStringLiteral("folder holding PIONEER/ of a real rekordbox drive (other tracks' data!)"));
     exportExt_ = new QCheckBox(QStringLiteral("exportExt.pdb"));
@@ -78,18 +81,53 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     for (QCheckBox* c : {exportExt_, rbfltr_, usbmng_, djprofile_}) copies->addWidget(c);
     adv->addLayout(copies);
 
+    update_ = new QCheckBox(QStringLiteral("Update the drive (only changed files are written; the old export.pdb is kept as export.pdb.bak, up to 3 backups)"));
+    update_->hide();
     register_ = new QCheckBox(QStringLiteral("Register the folder as an HD pendrive copy afterwards (to serve it to the decks)"));
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     ok_ = buttons->button(QDialogButtonBox::Ok);
     ok_->setText(QStringLiteral("Export"));
 
-    auto* form = new QFormLayout;
-    form->addRow(QStringLiteral("Playlists"), playlists_);
-    form->addRow(QStringLiteral("Destination"), destRow);
-    form->addRow(QString(), drives_);
+    // a grid, not a form: when the dialog is made taller all the extra height goes to the playlist list, the destination and pendrive rows keep their size
+    auto* form = new QGridLayout;
+    auto iconLabel = [](const char* res, const QString& tip) {
+        auto* l = new QLabel;
+        l->setPixmap(QPixmap(QString::fromLatin1(res)));
+        l->setFixedSize(64, 64);
+        l->setToolTip(tip);
+        return l;
+    };
+    // fixed-height row: the combo's popup must not make the dialog grow
+    auto* drivesRow = new QWidget;
+    auto* drivesLay = new QHBoxLayout(drivesRow);
+    drivesLay->setContentsMargins(0, 0, 0, 0);
+    drivesLay->addWidget(drives_, 1, Qt::AlignVCenter);
+    auto* refresh = new QToolButton;
+    refresh->setIcon(QIcon(QStringLiteral(":/img/view-refresh-22x22.png")));
+    refresh->setToolTip(QStringLiteral("Look for newly plugged in drives"));
+    drivesLay->addWidget(refresh, 0, Qt::AlignVCenter);
+    connect(refresh, &QToolButton::clicked, this, &TrakcrateExportDialog::rescanDrives);
+    drivesRow->setFixedHeight(64);
+    drivesRow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    // a long drive name must not widen the combo (and so the dialog): the width does not depend on the item shown, the popup still shows it whole
+    drives_->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    drives_->setMinimumContentsLength(20);
+    drives_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+    drives_->view()->setTextElideMode(Qt::ElideNone);
+    form->addWidget(iconLabel(":/img/traklist-64x64.png", QStringLiteral("Playlists")), 0, 0, Qt::AlignTop);
+    form->addWidget(playlists_, 0, 1);
+    form->addWidget(new QLabel(QStringLiteral("Destination")), 1, 0);
+    form->addLayout(destRow, 1, 1);
+    form->addWidget(iconLabel(":/img/pendrive-64x64.png", QStringLiteral("Pendrive")), 2, 0, Qt::AlignTop);
+    form->addWidget(drivesRow, 2, 1, Qt::AlignTop);
+    form->setRowStretch(0, 1);
+    form->setRowStretch(1, 0);
+    form->setRowStretch(2, 0);
+    form->setColumnStretch(1, 1);
     auto* layout = new QVBoxLayout(this);
-    layout->addLayout(form);
+    layout->addLayout(form, 1);
     layout->addWidget(summary_);
+    layout->addWidget(update_);
     layout->addWidget(register_);
     layout->addWidget(advanced_);
     layout->addWidget(buttons);
@@ -101,8 +139,18 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     connect(refreshTimer_, &QTimer::timeout, this, &TrakcrateExportDialog::refreshSummary);
     connect(browse, &QPushButton::clicked, this, &TrakcrateExportDialog::browse);
     connect(drives_, QOverload<int>::of(&QComboBox::activated), this, &TrakcrateExportDialog::detectedChosen);
+    // the destination path is shown in bold; typing a path of one's own no longer matches the drive shown in the combo
+    connect(dest_, &QLineEdit::textChanged, this, [this](const QString& t) {
+        QFont f = dest_->font();
+        f.setBold(!t.isEmpty());
+        dest_->setFont(f);
+    });
+    connect(dest_, &QLineEdit::textEdited, this, [this](const QString& t) {
+        if (drives_->currentIndex() > 0 && drives_->currentData().toString() != t) drives_->setCurrentIndex(0);
+    });
     connect(dest_, &QLineEdit::textChanged, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(playlists_, &QListWidget::itemChanged, refreshTimer_, QOverload<>::of(&QTimer::start));
+    connect(update_, &QCheckBox::toggled, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(unanalysed_, &QCheckBox::toggled, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -145,10 +193,23 @@ void TrakcrateExportDialog::browse()
     if (!dir.isEmpty()) setDestination(dir);
 }
 
+void TrakcrateExportDialog::rescanDrives()
+{
+    const QString chosen = drives_->currentIndex() > 0 ? drives_->currentData().toString() : QString();
+    drives_->clear();
+    drives_->addItem(QStringLiteral("Mounted drives..."));
+    for (const PhysicalPendrive& d : PendriveRegistry::scanPhysical()) {
+        const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(d.mountPoint.toStdString());
+        drives_->addItem(QStringLiteral("%1  (%2 free%3)").arg(d.name).arg(QLocale().formattedDataSize(d.freeBytes))
+                             .arg(!usb.found ? QString() : QStringLiteral(", ") + QString::fromStdString(usb.label) + (usb.downgraded() ? QStringLiteral(" - supports USB 3") : QString())), d.mountPoint);
+    }
+    const int again = chosen.isEmpty() ? -1 : drives_->findData(chosen);
+    if (again > 0) drives_->setCurrentIndex(again);
+}
+
 void TrakcrateExportDialog::detectedChosen(int index)
 {
-    if (index > 0) setDestination(drives_->itemData(index).toString());
-    drives_->setCurrentIndex(0);
+    if (index > 0) setDestination(drives_->itemData(index).toString());     // the chosen drive stays shown in the combo
 }
 
 trakcrate::ExportOptions TrakcrateExportDialog::options() const
@@ -167,6 +228,7 @@ trakcrate::ExportOptions TrakcrateExportDialog::options() const
     }
     o.dest = dest_->text().trimmed().toStdString();
     o.allowUnanalysed = unanalysed_->isChecked();
+    o.update = !update_->isHidden() && update_->isChecked();
     // the advanced switches only count when the box is ticked; otherwise a normal full export
     const bool adv = advanced_->isChecked();
     o.includeSettings = !adv || settings_->isChecked();
@@ -174,8 +236,8 @@ trakcrate::ExportOptions TrakcrateExportDialog::options() const
     o.includePvbr = !adv || pvbr_->isChecked();
     o.includePwv4 = !adv || pwv4_->isChecked();
     o.includePwv5 = !adv || pwv5_->isChecked();
-    o.writeManifest = !adv || manifest_->isChecked();
-    o.verify = !adv || verify_->isChecked();
+    o.writeManifest = adv && manifest_->isChecked();
+    o.verify = adv && verify_->isChecked();
     if (adv && !realDrive_->text().trimmed().isEmpty()) {
         o.optionalFilesFrom = realDrive_->text().trimmed().toStdString();
         o.copyExportExt = exportExt_->isChecked();
@@ -214,11 +276,16 @@ void TrakcrateExportDialog::refreshSummary()
             if (QFileInfo(path).exists() && !QFileInfo(path).isDir()) { good = false; html += QStringLiteral("<span style='color:#c00'>The destination is not a folder.</span><br>"); }
             else if (QDir(path).exists()) {
                 const std::vector<std::string> clash = trakcrate::exportConflicts(o.dest);      // other files on a stick are fine
+                update_->setVisible(!clash.empty());
                 if (!clash.empty()) {
                     QStringList names;
                     for (const std::string& n : clash) names << QString::fromStdString(n);
-                    good = false;
-                    html += QStringLiteral("<span style='color:#c00'>The destination already has %1 (an earlier export?).</span><br>").arg(names.join(QStringLiteral(", ")).toHtmlEscaped());
+                    if (o.update) {
+                        html += QStringLiteral("Updating the earlier export on the drive (%1): nothing is deleted.<br>").arg(names.join(QStringLiteral(", ")).toHtmlEscaped());
+                    } else {
+                        good = false;
+                        html += QStringLiteral("<span style='color:#c00'>The destination already has %1 (an earlier export?). Tick Update to refresh it.</span><br>").arg(names.join(QStringLiteral(", ")).toHtmlEscaped());
+                    }
                 }
             }
             const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(existing.exists() ? existing.absolutePath().toStdString() : std::string());
@@ -233,6 +300,7 @@ void TrakcrateExportDialog::refreshSummary()
             if (st.bytesAvailable() < need) { good = false; html += QStringLiteral("<span style='color:#c00'>Not enough space.</span><br>"); }
         }
     }
+    if (o.dest.empty() || !QDir(QString::fromStdString(o.dest.string())).exists()) update_->setVisible(false);
     summary_->setText(html);
     ok_->setEnabled(good);
 }

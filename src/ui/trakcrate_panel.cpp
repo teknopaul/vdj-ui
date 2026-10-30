@@ -251,8 +251,11 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     progress_->hide();
     cancelButton_ = new QPushButton(QStringLiteral("Cancel"));
     cancelButton_->hide();
+    orphanButton_ = new QPushButton;
+    orphanButton_->hide();
     auto* bottom = new QHBoxLayout;
     bottom->addWidget(progressLabel_, 1);
+    bottom->addWidget(orphanButton_);
     bottom->addWidget(progress_);
     bottom->addWidget(cancelButton_);
 
@@ -274,6 +277,7 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     connect(refreshButton_, &QPushButton::clicked, this, &TrakcratePanel::refresh);
     connect(exportButton_, &QPushButton::clicked, this, &TrakcratePanel::exportDialog);
     connect(cancelButton_, &QPushButton::clicked, jobs_, &TrakcrateJobRunner::cancel);
+    connect(orphanButton_, &QPushButton::clicked, this, &TrakcratePanel::deleteOrphansDialog);
     // Qt only toggles ascending/descending; a third click on the same header goes back to the library's own (playlist) order.
     connect(table_->header(), &QHeaderView::sectionClicked, this, [this, last = std::make_shared<std::pair<int, Qt::SortOrder>>(-1, Qt::AscendingOrder)](int col) {
         const Qt::SortOrder now = table_->header()->sortIndicatorOrder();
@@ -820,10 +824,40 @@ bool TrakcratePanel::importFolder(const QString& folder, const trakcrate::Import
     return started;
 }
 
+void TrakcratePanel::deleteOrphansDialog()
+{
+    if (orphans_.empty() || jobs_->busy()) return;
+    uint64_t bytes = 0;
+    QStringList list;
+    for (const trakcrate::Orphan& o : orphans_) {
+        bytes += o.size;
+        list << QStringLiteral("%1  (%2)").arg(QString::fromStdString(o.rel), QLocale().formattedDataSize(qint64(o.size)));
+    }
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Question);
+    box.setWindowTitle(QStringLiteral("Orphaned files"));
+    box.setText(QStringLiteral("%1 file(s), %2, on %3 are not used by the database any more (tracks, artwork and analysis files of earlier exports).\n\n"
+                               "Delete them to free space? This cannot be undone.").arg(orphans_.size()).arg(QLocale().formattedDataSize(qint64(bytes)), exportDest_));
+    box.setDetailedText(list.join(QLatin1Char('\n')));
+    QPushButton* del = box.addButton(QStringLiteral("Delete orphans"), QMessageBox::DestructiveRole);
+    QPushButton* keep = box.addButton(QStringLiteral("Keep"), QMessageBox::RejectRole);
+    box.setDefaultButton(keep);
+    box.exec();
+    if (box.clickedButton() != del) return;
+    std::vector<std::string> failed;
+    const uint64_t freed = trakcrate::deleteOrphans(exportDest_.toStdString(), orphans_, &failed);
+    orphans_.clear();
+    orphanButton_->hide();
+    QString msg = QStringLiteral("Deleted orphans, %1 freed").arg(QLocale().formattedDataSize(qint64(freed)));
+    if (!failed.empty()) msg += QStringLiteral(" (%1 could not be removed)").arg(failed.size());
+    progressLabel_->setText(msg);
+}
+
 void TrakcratePanel::setBusyUi(bool busy)
 {
     progress_->setVisible(busy);
     cancelButton_->setVisible(busy);
+    if (busy) { orphanButton_->hide(); orphans_.clear(); }
     if (busy) { progress_->setRange(0, 0); progress_->setValue(0); }
     importButton_->setEnabled(!busy && lib_.isOpen());
     exportButton_->setEnabled(!busy && lib_.isOpen());
@@ -836,6 +870,8 @@ void TrakcratePanel::onJobProgress(int done, int total, const QString& current)
     progress_->setRange(0, total > 0 ? total : 0);
     progress_->setValue(done);
     if (!current.isEmpty()) progressLabel_->setText(current);
+    // the database write cannot be interrupted (it must be whole to be of use)
+    if (export_ && current.endsWith(QStringLiteral("rekordbox/export.pdb"))) cancelButton_->setVisible(false);
     // an import fills the library as it goes: show the new folders, playlists and tracks every couple of seconds
     if ((report_ || rb_) && (!liveTimer_.isValid() || liveTimer_.elapsed() > 2000)) {
         liveTimer_.restart();
@@ -858,6 +894,17 @@ void TrakcratePanel::onJobFinished(const QString&, bool cancelled)
             summary = QStringLiteral("Exported %1 track(s) in %2 playlist(s) to %3 (%4 files, %5 MiB%6)")
                           .arg(r.tracks).arg(r.playlists).arg(exportDest_).arg(r.files).arg(qint64(r.bytesWritten >> 20))
                           .arg(r.verified ? QStringLiteral(", verified") : QString());
+            if (r.skipped > 0) summary += QStringLiteral("; %1 unchanged file(s) skipped").arg(r.skipped);
+            if (!r.backup.empty()) summary += QStringLiteral("; old database kept as %1").arg(QString::fromStdString(r.backup));
+            if (!r.orphans.empty()) {
+                uint64_t bytes = 0;
+                for (const trakcrate::Orphan& o : r.orphans) bytes += o.size;
+                orphans_ = r.orphans;
+                summary += QStringLiteral("; %1 orphaned file(s) on the drive (%2)").arg(r.orphans.size()).arg(QLocale().formattedDataSize(qint64(bytes)));
+                orphanButton_->setText(QStringLiteral("Orphans (%1)...").arg(r.orphans.size()));
+                orphanButton_->setToolTip(QStringLiteral("Tracks, artwork and analysis files from earlier exports that the database no longer uses"));
+                orphanButton_->show();
+            }
         } else {
             summary = r.cancelled ? QStringLiteral("Export cancelled") : QStringLiteral("Export failed: %1").arg(QString::fromStdString(r.error));
         }

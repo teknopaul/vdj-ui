@@ -37,6 +37,7 @@ public:
 private slots:
     void browse();
     void detectedChosen(int index);
+    void rescanDrives();
     void refreshSummary();
 
 private:
@@ -46,6 +47,7 @@ private:
     QPushButton* browse_ = nullptr;
     QLineEdit* dest_;
     QComboBox* drives_;
+    QCheckBox* update_;
     QLabel* summary_;
     QGroupBox* advanced_;
     QCheckBox *settings_, *artwork_, *pvbr_, *pwv4_, *pwv5_, *manifest_, *verify_, *unanalysed_;

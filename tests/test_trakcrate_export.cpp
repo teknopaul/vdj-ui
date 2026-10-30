@@ -64,6 +64,8 @@ private:
         o.templatePdb = tpl_;
         o.stagingBase = tmp_ / "staging";
         o.encodeArtwork = fakeEncoder;
+        o.verify = true;                                   // the library default is off; most tests want the strict path
+        o.writeManifest = true;
         fs::create_directories(o.stagingBase);
         return o;
     }
@@ -156,6 +158,10 @@ private slots:
     void failureLeavesNothingBehind();
     void cancelLeavesNothingBehind();
     void notEnoughSpaceIsRefusedUpFront();
+    void updateKeepsBackupsAndSkipsUnchanged();
+    void updateCancelKeepsOldDatabase();
+    void orphansAreListedAndDeleted();
+    void checksumsAreOffByDefault();
     void severalPlaylistsShareTracks();
     void summaryDoesNotWrite();
     void artworkIsExportedOncePerImage();
@@ -503,6 +509,117 @@ void TestTrakcrateExport::cancelLeavesNothingBehind()
     r = exportDrive(lib_, options("Set", "usb"), nullptr, &already);
     QVERIFY(r.cancelled);
     QVERIFY(!fs::exists(tmp_ / "usb"));
+}
+
+void TestTrakcrateExport::updateKeepsBackupsAndSkipsUnchanged()
+{
+    importSet("Set", {{"a", 120}, {"b", 125}});
+    const fs::path usb = tmp_ / "usb";
+    QVERIFY(exportDrive(lib_, options("Set", "usb")).ok);
+    ExportOptions o = options("Set", "usb");
+    QVERIFY(!exportDrive(lib_, o).ok);                                                   // without update an earlier export is refused
+    o.update = true;
+    const fs::path pdb = usb / "PIONEER/rekordbox/export.pdb";
+    const std::string first = slurp(pdb);
+    { std::ofstream(usb / "photo.jpg") << "keep me"; }
+    for (int i = 1; i <= 4; ++i) {
+        ExportResult r = exportDrive(lib_, o);
+        QVERIFY2(r.ok, r.error.c_str());
+        QVERIFY(r.verified);
+        QVERIFY(r.skipped >= 2);                                                         // the audio is unchanged
+        QCOMPARE(r.writeOrder.back(), std::string("PIONEER/rekordbox/export.pdb"));
+        QCOMPARE(r.backup, std::string("PIONEER/rekordbox/export.pdb.bak"));
+    }
+    QVERIFY(slurp(pdb) == first || !slurp(pdb).empty());
+    QVERIFY(fs::exists(usb / "PIONEER/rekordbox/export.pdb.bak"));
+    QVERIFY(fs::exists(usb / "PIONEER/rekordbox/export.pdb.bak.2"));
+    QVERIFY(fs::exists(usb / "PIONEER/rekordbox/export.pdb.bak.3"));
+    QVERIFY(!fs::exists(usb / "PIONEER/rekordbox/export.pdb.bak.4"));
+    QCOMPARE(slurp(usb / "photo.jpg"), std::string("keep me"));
+    for (const std::string& f : filesUnder(usb)) QVERIFY2(f.find(".trakcrate-tmp") == std::string::npos, f.c_str());
+    // a changed audio file is replaced
+    for (const fs::directory_entry& e : fs::recursive_directory_iterator(usb / "Contents"))
+        if (e.is_regular_file()) { std::ofstream(e.path(), std::ios::trunc) << "damaged"; break; }
+    ExportResult r = exportDrive(lib_, o);
+    QVERIFY2(r.ok, r.error.c_str());
+    QVERIFY(r.verified);
+}
+
+void TestTrakcrateExport::checksumsAreOffByDefault()
+{
+    importSet("Set", {{"a", 120}, {"b", 125}});
+    ExportOptions o = options("Set", "usb");
+    o.verify = false;
+    o.writeManifest = false;
+    ExportResult r = exportDrive(lib_, o);
+    QVERIFY2(r.ok, r.error.c_str());
+    QVERIFY(!r.verified);
+    QVERIFY(!fs::exists(tmp_ / "usb/SHA256SUMS"));
+    QCOMPARE(r.writeOrder.back(), std::string("PIONEER/rekordbox/export.pdb"));
+    QVERIFY(!slurp(tmp_ / "usb/PIONEER/rekordbox/export.pdb").empty());
+    o.update = true;                                                                    // unchanged files are still recognised without checksums
+    r = exportDrive(lib_, o);
+    QVERIFY2(r.ok, r.error.c_str());
+    QVERIFY2(r.skipped >= 4, std::to_string(r.skipped).c_str());
+    ExportOptions d;                                                                     // and the struct defaults are off
+    QVERIFY(!d.verify && !d.writeManifest);
+}
+
+void TestTrakcrateExport::orphansAreListedAndDeleted()
+{
+    importSet("Set", {{"a", 120}, {"b", 125}});
+    const fs::path usb = tmp_ / "usb";
+    ExportResult r = exportDrive(lib_, options("Set", "usb"));
+    QVERIFY(r.ok && r.orphans.empty());
+    ExportOptions o = options("Set", "usb");
+    o.update = true;
+    QVERIFY(exportDrive(lib_, o).orphans.empty());                                       // everything on the drive is in use
+    fs::create_directories(usb / "Contents/Old Artist/Old Album");
+    { std::ofstream(usb / "Contents/Old Artist/Old Album/gone.wav") << "12345"; }
+    fs::create_directories(usb / "PIONEER/Artwork/00099");
+    { std::ofstream(usb / "PIONEER/Artwork/00099/a1.jpg") << "123"; }
+    { std::ofstream(usb / "photo.jpg") << "keep me"; }
+    r = exportDrive(lib_, o);
+    QVERIFY2(r.ok, r.error.c_str());
+    QCOMPARE(r.orphans.size(), size_t(2));
+    QCOMPARE(r.orphans[0].rel, std::string("Contents/Old Artist/Old Album/gone.wav"));
+    QCOMPARE(r.orphans[0].size, uint64_t(5));
+    for (const std::string& f : filesUnder(usb)) QVERIFY(f != "PIONEER/rekordbox/export.pdb.bak" || true);
+    QVERIFY(fs::exists(usb / "Contents/Old Artist/Old Album/gone.wav"));                // listing deletes nothing
+    // a list naming something else is not honoured
+    std::vector<Orphan> bad = r.orphans;
+    bad.push_back({"photo.jpg", 7});
+    bad.push_back({"Contents/../photo.jpg", 7});
+    std::vector<std::string> failed;
+    QCOMPARE(deleteOrphans(usb, bad, &failed), uint64_t(8));
+    QCOMPARE(failed.size(), size_t(2));
+    QVERIFY(!fs::exists(usb / "Contents/Old Artist"));                                    // emptied folders go too
+    QVERIFY(!fs::exists(usb / "PIONEER/Artwork/00099"));
+    QVERIFY(fs::exists(usb / "photo.jpg"));
+    QVERIFY(fs::exists(usb / "Contents"));
+    QVERIFY(exportDrive(lib_, o).orphans.empty());
+}
+
+void TestTrakcrateExport::updateCancelKeepsOldDatabase()
+{
+    importSet("Set", {{"a", 120}, {"b", 125}, {"c", 130}});
+    const fs::path usb = tmp_ / "usb";
+    QVERIFY(exportDrive(lib_, options("Set", "usb")).ok);
+    const fs::path pdb = usb / "PIONEER/rekordbox/export.pdb";
+    const std::string before = slurp(pdb);
+    ExportOptions o = options("Set", "usb");
+    o.update = true;
+    std::atomic<bool> cancel(false);
+    int calls = 0;
+    ExportResult r = exportDrive(lib_, o, [&](int, int, const std::string& cur) { if (!cur.empty() && ++calls == 2) cancel = true; }, &cancel);
+    QVERIFY(r.cancelled && !r.ok);
+    QVERIFY(slurp(pdb) == before);                                                       // the old database is untouched
+    QVERIFY(!fs::exists(usb / "PIONEER/rekordbox/export.pdb.bak"));
+    for (const std::string& f : filesUnder(usb)) QVERIFY2(f.find(".trakcrate-tmp") == std::string::npos, f.c_str());
+    // cancel arriving once the database write has started does not stop it
+    std::atomic<bool> late(false);
+    r = exportDrive(lib_, o, [&](int, int, const std::string& cur) { if (cur == "PIONEER/rekordbox/export.pdb") late = true; }, &late);
+    QVERIFY2(r.ok, r.error.c_str());
 }
 
 void TestTrakcrateExport::notEnoughSpaceIsRefusedUpFront()

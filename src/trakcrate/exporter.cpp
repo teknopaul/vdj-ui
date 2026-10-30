@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -262,18 +263,21 @@ struct OutFile {
     uint64_t size = 0;
 };
 
-bool copyOne(const fs::path& dest, OutFile& f, const std::atomic<bool>* cancel, uint64_t* total, std::string* err, bool* cancelled)
+// update: the file goes to "<name>.trakcrate-tmp" and is renamed over the old one when complete, so an interrupted copy never damages a file the
+// drive already holds; a partial temporary is removed again.
+bool copyOne(const fs::path& dest, OutFile& f, const std::atomic<bool>* cancel, uint64_t* total, std::string* err, bool* cancelled, bool update = false, bool hashing = true, bool syncFile = false)
 {
-    const fs::path out = dest / f.rel;
+    const fs::path final = dest / f.rel;
+    const fs::path out = update ? fs::path(final.string() + ".trakcrate-tmp") : final;
     std::error_code ec;
     fs::create_directories(out.parent_path(), ec);
     if (ec) { *err = "cannot create folder " + out.parent_path().string() + ": " + ec.message(); return false; }
-    int fd = ::open(out.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+    int fd = ::open(out.c_str(), update ? (O_WRONLY | O_CREAT | O_TRUNC) : (O_WRONLY | O_CREAT | O_EXCL), 0644);
     if (fd < 0) { *err = "cannot create " + out.string() + ": " + std::strerror(errno); return false; }
     Sha256 sha;
     uint64_t written = 0;
     auto put = [&](const char* p, size_t n) {
-        sha.update(p, n);
+        if (hashing) sha.update(p, n);
         size_t done = 0;
         while (done < n) {
             ssize_t w = ::write(fd, p + done, n - done);
@@ -296,12 +300,16 @@ bool copyOne(const fs::path& dest, OutFile& f, const std::atomic<bool>* cancel, 
         }
         if (ok && in.bad()) { *err = "read error on " + f.src.string(); ok = false; }
     }
-    if (ok && ::fsync(fd) != 0) { *err = "cannot sync " + out.string() + ": " + std::strerror(errno); ok = false; }
+    if (ok && syncFile && ::fsync(fd) != 0) { *err = "cannot sync " + out.string() + ": " + std::strerror(errno); ok = false; }
     ::close(fd);
-    if (!ok) return false;
-    const std::string h = sha.finishHex();
-    if (!f.hash.empty() && f.hash != h) { *err = "source changed while copying: " + f.rel; return false; }
-    f.hash = h;
+    const std::string h = hashing ? sha.finishHex() : std::string();
+    if (ok && hashing && !f.hash.empty() && f.hash != h) { *err = "source changed while copying: " + f.rel; ok = false; }
+    if (ok && update && ::rename(out.c_str(), final.c_str()) != 0) { *err = "cannot replace " + final.string() + ": " + std::strerror(errno); ok = false; }
+    if (!ok) {
+        if (update) ::unlink(out.c_str());
+        return false;
+    }
+    if (hashing) f.hash = h;
     f.size = written;
     *total += written;
     return true;
@@ -315,6 +323,51 @@ std::string hashFile(const fs::path& p, std::string* err)
     static thread_local std::string buf(1 << 20, '\0');
     while (in.read(&buf[0], std::streamsize(buf.size())) || in.gcount() > 0) h.update(buf.data(), size_t(in.gcount()));
     return h.finishHex();
+}
+
+// update: true when the drive already holds this file. Small files (staged or in memory) are compared byte for byte; audio by size and modified time
+// (FAT keeps two second resolution), or by checksum when `hashing` since the read back needs them anyway.
+bool skipIfIdentical(const fs::path& dest, OutFile& f, int* skipped, bool hashing)
+{
+    std::error_code ec;
+    const fs::path have = dest / f.rel;
+    if (!fs::is_regular_file(have, ec)) return false;
+    const uint64_t size = f.inMemory ? f.mem.size() : fs::file_size(f.src, ec);
+    if (ec || fs::file_size(have, ec) != size || ec) return false;
+    if (hashing) {
+        std::string srcHash = f.hash;
+        if (srcHash.empty()) srcHash = f.inMemory ? sha256Hex(f.mem) : hashFile(f.src, nullptr);
+        if (srcHash.empty() || hashFile(have, nullptr) != srcHash) return false;
+        f.hash = srcHash;
+    } else if (f.inMemory || size < (1u << 20)) {
+        std::string a, b;
+        if (!(f.inMemory ? (a = f.mem, true) : readFile(f.src, &a)) || !readFile(have, &b) || a != b) return false;
+    } else {
+        const auto srcTime = fs::last_write_time(f.src, ec);
+        const auto haveTime = fs::last_write_time(have, ec);
+        if (ec || haveTime + std::chrono::seconds(2) < srcTime) return false;
+    }
+    f.size = size;
+    ++*skipped;
+    return true;
+}
+
+// update: keeps the three newest copies of the old export.pdb as export.pdb.bak (newest), .bak.2 and .bak.3. The live file is copied, never moved,
+// so a drive always has a database. `made` is the name of the new backup (empty when there was no export.pdb).
+bool backupPdb(const fs::path& pdb, std::string* made, std::string* err)
+{
+    std::error_code ec;
+    made->clear();
+    if (!fs::is_regular_file(pdb, ec)) return true;
+    const auto bak = [&](int n) { return fs::path(pdb.string() + (n == 1 ? ".bak" : ".bak." + std::to_string(n))); };
+    fs::remove(bak(3), ec);
+    for (int n = 2; n >= 1; --n)
+        if (fs::exists(bak(n), ec) && ::rename(bak(n).c_str(), bak(n + 1).c_str()) != 0) { *err = "cannot rotate " + bak(n).string() + ": " + std::strerror(errno); return false; }
+    std::string bytes;
+    if (!readFile(pdb, &bytes, err)) return false;
+    if (!atomicWrite(bak(1), bytes, err)) return false;
+    *made = bak(1).filename().string();
+    return true;
 }
 
 } // namespace
@@ -356,7 +409,7 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
     const bool destExisted = fs::exists(o.dest, ec);
     if (destExisted) {
         if (!fs::is_directory(o.dest, ec)) return fail("the destination is not a folder: " + o.dest.string());
-        const std::vector<std::string> clash = exportConflicts(o.dest);
+        const std::vector<std::string> clash = o.update ? std::vector<std::string>() : exportConflicts(o.dest);
         if (!clash.empty()) {
             std::string names;
             for (const std::string& n : clash) names += (names.empty() ? "" : ", ") + n;
@@ -382,8 +435,15 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
         fs::path probe = o.dest;
         while (!probe.empty() && !fs::exists(probe, ec)) probe = probe.parent_path();
         fs::space_info sp = fs::space(probe.empty() ? fs::path(".") : probe, ec);
-        if (!ec && sp.available < audioBytes + meta + o.minFreeBytes)
-            return fail("not enough space on the destination: needs " + std::to_string((audioBytes + meta + o.minFreeBytes) >> 20) + " MiB, " +
+        uint64_t needAudio = audioBytes;
+        if (o.update)                                           // files that are already there do not need room
+            for (const GTrack& t : g.tracks) {
+                std::error_code e2;
+                const fs::path have = o.dest / t.plan.filePath.substr(1);
+                if (fs::is_regular_file(have, e2) && fs::file_size(have, e2) == t.audioBytes) needAudio -= t.audioBytes;
+            }
+        if (!ec && sp.available < needAudio + meta + o.minFreeBytes)
+            return fail("not enough space on the destination: needs " + std::to_string((needAudio + meta + o.minFreeBytes) >> 20) + " MiB, " +
                         std::to_string(sp.available >> 20) + " MiB free");
     }
     Staging stage;
@@ -400,6 +460,7 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
     }
 
     // ---- stage: database, analysis files, artwork, settings
+    const bool hashing = o.verify || o.writeManifest;
     std::string err;
     BuiltPdb built;
     if (!buildPdb(g.plan, o.templatePdb, &built, &err)) return fail("database: " + err);
@@ -519,15 +580,17 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
         OutFile f;
         f.rel = rel;
         f.src = stage.dir / rel;
-        f.hash = hashFile(f.src, &err);
-        if (f.hash.empty()) return fail(err);
+        if (hashing) {
+            f.hash = hashFile(f.src, &err);
+            if (f.hash.empty()) return fail(err);
+        }
         files.push_back(f);
     }
     const size_t metaFirst = files.size();
     OutFile pdb;
     pdb.rel = "PIONEER/rekordbox/export.pdb";
     pdb.src = stage.dir / pdb.rel;
-    pdb.hash = sha256Hex(built.bytes);
+    if (hashing) pdb.hash = sha256Hex(built.bytes);
     (void)metaFirst;
 
     if (!o.includeSettings) variant.push_back("no DEVSETTING.DAT / MYSETTING.DAT");
@@ -542,15 +605,25 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
     // ---- write
     if (!destExisted) fs::create_directories(o.dest, ec);
     auto cleanup = [&]() {
+        if (o.update) return;                                                          // the drive's earlier contents stay as they are; temporaries are removed by copyOne
         std::error_code e2;
         for (const char* mine : kTopLevel) fs::remove_all(o.dest / mine, e2);          // only what this export wrote: the stick may hold other files
         if (!destExisted) fs::remove(o.dest, e2);
     };
-    auto step = [&](OutFile& f) {
+    auto syncDrive = [&]() {
+        int fd = ::open(o.dest.c_str(), O_RDONLY | O_DIRECTORY);
+        if (fd >= 0) { ::syncfs(fd); ::close(fd); }
+    };
+    auto step = [&](OutFile& f, bool syncFile = false) {
         if (cancel && cancel->load()) { res.cancelled = true; res.error = "cancelled"; return false; }
         if (progress) progress(done, total, f.rel);
         bool cancelled = false;
-        if (!copyOne(o.dest, f, cancel, &res.bytesWritten, &err, &cancelled)) {
+        if (o.update && skipIfIdentical(o.dest, f, &res.skipped, hashing)) {
+            res.writeOrder.push_back(f.rel);
+            ++done;
+            return true;
+        }
+        if (!copyOne(o.dest, f, cancel, &res.bytesWritten, &err, &cancelled, o.update, hashing, syncFile)) {
             res.cancelled = cancelled;
             res.error = cancelled ? "cancelled" : err;
             return false;
@@ -577,13 +650,21 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
         files.push_back(a);
         files.push_back(b);
     }
-    if (!step(pdb)) { cleanup(); return res; }
+    syncDrive();                                                // all the data is on the stick before the database that names it
+    if (o.update) {
+        // point of no return: from here the new database is written whatever the cancel flag says
+        if (cancel && cancel->load()) { res.cancelled = true; res.error = "cancelled"; return res; }
+        if (progress) progress(done, total, pdb.rel);
+        if (!backupPdb(o.dest / pdb.rel, &res.backup, &err)) { res.error = "backup of export.pdb: " + err; return res; }
+        if (!res.backup.empty()) res.backup = "PIONEER/rekordbox/" + res.backup;
+        bool cancelled = false;
+        if (!copyOne(o.dest, pdb, nullptr, &res.bytesWritten, &err, &cancelled, true, hashing, true)) { res.error = err; return res; }
+        res.writeOrder.push_back(pdb.rel);
+        ++done;
+    } else if (!step(pdb, true)) { cleanup(); return res; }
     files.push_back(pdb);
     res.files = int(files.size());
-    {
-        int fd = ::open(o.dest.c_str(), O_RDONLY | O_DIRECTORY);
-        if (fd >= 0) { ::syncfs(fd); ::close(fd); }
-    }
+    syncDrive();
     if (progress) progress(done, total, std::string());
 
     if (o.verify) {
@@ -594,8 +675,55 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
         }
         res.verified = true;
     }
+    if (o.update) {                                            // what the drive holds that the new database does not name
+        std::set<std::string> keep;
+        for (const OutFile& f : files) keep.insert(f.rel);
+        for (const char* root : {"Contents", "PIONEER/Artwork", "PIONEER/USBANLZ"}) {
+            for (fs::recursive_directory_iterator it(o.dest / root, fs::directory_options::skip_permission_denied, ec), end; !ec && it != end; it.increment(ec)) {
+                std::error_code e2;
+                if (!it->is_regular_file(e2)) continue;
+                const std::string rel = it->path().lexically_relative(o.dest).generic_string();
+                if (keep.count(rel) || rel == "PIONEER/USBANLZ/USBMNG.DAT" || (rel.size() > 14 && rel.compare(rel.size() - 14, 14, ".trakcrate-tmp") == 0)) continue;
+                Orphan orphan;
+                orphan.rel = rel;
+                orphan.size = fs::file_size(it->path(), e2);
+                res.orphans.push_back(orphan);
+            }
+            ec.clear();
+        }
+        std::sort(res.orphans.begin(), res.orphans.end(), [](const Orphan& a, const Orphan& b) { return a.rel < b.rel; });
+    }
     res.ok = true;
     return res;
+}
+
+uint64_t deleteOrphans(const fs::path& dest, const std::vector<Orphan>& orphans, std::vector<std::string>* failed)
+{
+    uint64_t freed = 0;
+    std::set<fs::path> dirs;
+    for (const Orphan& o : orphans) {
+        const fs::path rel(o.rel);
+        bool inside = rel.is_relative() && !rel.empty();
+        for (const fs::path& part : rel) if (part == "..") inside = false;
+        const std::string r = rel.generic_string();
+        inside = inside && (r.rfind("Contents/", 0) == 0 || r.rfind("PIONEER/Artwork/", 0) == 0 || r.rfind("PIONEER/USBANLZ/", 0) == 0) && r != "PIONEER/USBANLZ/USBMNG.DAT";
+        std::error_code ec;
+        const fs::path full = dest / rel;
+        if (!inside || !fs::is_regular_file(fs::symlink_status(full, ec)) || !fs::remove(full, ec)) {
+            if (failed) failed->push_back(o.rel);
+            continue;
+        }
+        freed += o.size;
+        for (fs::path d = full.parent_path(); d != dest && d.string().size() > dest.string().size(); d = d.parent_path()) dirs.insert(d);
+    }
+    // deepest folders first; remove() on a non-empty folder just fails, which is what we want
+    for (auto it = dirs.rbegin(); it != dirs.rend(); ++it) {
+        const std::string name = it->filename().string();
+        if (name == "Contents" || name == "Artwork" || name == "USBANLZ") continue;
+        std::error_code ec;
+        fs::remove(*it, ec);
+    }
+    return freed;
 }
 
 } // namespace trakcrate

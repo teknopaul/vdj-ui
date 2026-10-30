@@ -390,6 +390,8 @@ void TestTrakcratePanel::panelExportsAPlaylist()
     o.playlists = {"Gig"};
     o.dest = tmp_ / "stick";
     o.stagingBase = tmp_;
+    o.verify = true;
+    o.writeManifest = true;
     QSignalSpy done(&p, &TrakcratePanel::exportFinished);
     QSignalSpy reg(&p, &TrakcratePanel::registerPendriveRequested);
     QVERIFY(p.exportDrive(o, "Gig on stick"));
@@ -414,6 +416,30 @@ void TestTrakcratePanel::panelExportsAPlaylist()
     QVERIFY(done.last().at(0).toString().contains("already has"));
     QCOMPARE(reg.count(), 1);
     QVERIFY(tc::fs::exists(tmp_ / "stick/PIONEER/rekordbox/export.pdb"));                // the earlier export is untouched
+
+    // update: the same folder is refreshed, the old database kept as a backup
+    o.update = true;
+    QVERIFY(p.exportDrive(o));
+    QVERIFY(p.waitForJob(20000));
+    QCOMPARE(done.count(), 3);
+    QVERIFY2(done.last().at(1).toBool(), qPrintable(done.last().at(0).toString()));
+    QVERIFY(done.last().at(0).toString().contains("export.pdb.bak"));
+    QVERIFY(tc::fs::exists(tmp_ / "stick/PIONEER/rekordbox/export.pdb.bak"));
+
+    // Cancel button: the job ends, the UI carries on, an update leaves the drive's database whole
+    p.show();
+    QVERIFY(p.exportDrive(o));
+    QPushButton* cancelButton = nullptr;
+    for (QPushButton* b : p.findChildren<QPushButton*>()) if (b->text() == "Cancel") cancelButton = b;
+    QVERIFY(cancelButton);
+    cancelButton->click();
+    QVERIFY(p.waitForJob(20000));
+    QCOMPARE(done.count(), 4);
+    QVERIFY(!p.busy());
+    QVERIFY(tc::fs::file_size(tmp_ / "stick/PIONEER/rekordbox/export.pdb") > 1000);
+    QVERIFY(p.exportDrive(o));                                                           // and it can export again
+    QVERIFY(p.waitForJob(20000));
+    QCOMPARE(done.count(), 5);
 }
 
 void TestTrakcratePanel::panelImportsARekordboxDrive()
