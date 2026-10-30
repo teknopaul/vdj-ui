@@ -34,3 +34,4 @@ _CPack_Packages/
 /tests/CTestTestfile.cmake
 /tests/vdj-ui-*-test
 /tests/vdj-ui-test
+/target-test/

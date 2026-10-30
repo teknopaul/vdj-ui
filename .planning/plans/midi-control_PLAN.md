@@ -58,7 +58,7 @@ The controller drives the sampler (`.planning/plans/sampler_PLAN.md`, `drum-mach
 
 - C++17 / Qt (Qt6, Qt5 fallback; Widgets, no new Qt modules). Style: 4 spaces, short comments, `QStringLiteral`, `namespace vdj`.
 - Build: `cd /home/teknopaul/bzr_workspace/vdj-ui && make -j8` (in-source tree; `cmake .` after adding files, **never `cmake ..` from `build/`**). Tests: QtTest executables registered at the end of
-  `tests/CMakeLists.txt` (copy the last block, `QT_QPA_PLATFORM=offscreen`); run `QT_QPA_PLATFORM=offscreen ./tests/vdj-ui-<name>-test`. Do not run the GUI. Do not commit.
+  `tests/CMakeLists.txt` (copy the last block, `QT_QPA_PLATFORM=offscreen`); run `QT_QPA_PLATFORM=offscreen ./target-test/vdj-ui-<name>-test`. Do not run the GUI. Do not commit.
 - ALSA events arrive on the `MidiMapInput` reader thread: everything that touches widgets or the module settings must run on the GUI thread (use signals with the default connection, which queues across threads).
 
 ## Facts about the existing code (verified, do not re-derive)

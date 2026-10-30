@@ -1,3 +1,6 @@
+# All test binaries go to <source>/target-test so they never land in the source tree.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/target-test")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Test)
 
 if(Qt6_FOUND)

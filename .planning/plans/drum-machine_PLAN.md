@@ -25,7 +25,7 @@ What the prompt asks for, as decisions (the numbers in brackets are used in the 
 - Build: `cd /home/teknopaul/bzr_workspace/vdj-ui && make -j8` (the tree is built in-source; `cmake .` after adding files). Tests: QtTest executables in `tests/`,
   registered at the end of `tests/CMakeLists.txt` (copy the last block: `add_executable`, `target_link_libraries(... ${QT_TEST} vdj-cdj)`, `add_test`,
   `QT_QPA_PLATFORM=offscreen`). New sources go in the `vdj-cdj` list of `src/CMakeLists.txt` (audio/ and ui/ groups). Run a test directly:
-  `QT_QPA_PLATFORM=offscreen ./tests/vdj-ui-<name>-test`. Do not run the GUI. Do not commit.
+  `QT_QPA_PLATFORM=offscreen ./target-test/vdj-ui-<name>-test`. Do not run the GUI. Do not commit.
 - Never use `cmake ..` from `build/` (it regenerates the tracked Makefiles); use `cmake .` in the project root.
 - Ignore the Inkscape backup files in `img/` (`*.svg.2026_*`); do not put them anywhere.
 
