@@ -22,7 +22,9 @@ The words MUST, SHOULD and MAY are used as in RFC 2119.
 ```
 <library>/
 ├── scripts/                            optional user scripts (track-script-*, crate-script-*), run only by hand; see doc/trakcrate/scripts.md
-├── user-settings/                      optional files copied from a real player/drive (section 10)
+├── user-settings/                      named sets of the player support files (section 10)
+│   ├── default.txt                     set: <name>, the set exports use unless told otherwise
+│   └── <set>/                          set.txt and DEVSETTING.DAT, MYSETTING.DAT, djprofile.nxs, RBFLTR.DAT, exportExt.pdb
 ├── track-master-copy/
 │   └── <folder>/                       a folder name: any name that is a legal single path component
 │       └── <track>/                    one directory per track
@@ -41,6 +43,7 @@ The words MUST, SHOULD and MAY are used as in RFC 2119.
 │           └── 000_<track>             symlinks to track directories; the numeric prefix is the play order
 └── drives/                             user defined pendrives (section 2.4)
     └── <pendrive>/
+        ├── drive.txt                   optional: settings: <set>, the settings set this pendrive is exported with (section 2.4)
         └── pendrives/
             └── 000_<entry>/            one entry = one playlist on the exported drive; the prefix is the entry order
                 ├── entry.txt           kind: folder|playlist, source: the folder or playlist it was made from
@@ -76,6 +79,7 @@ A playlist is a directory `pendrives/<name>/` holding `symlinks/`. Each entry in
 `drives/<name>/` describes what goes onto one pendrive. It is a small library of its own: its `pendrives/` directory holds the **entries**, numbered `000_`, `001_`, ... in the order they appear on the drive.
 An entry is a snapshot, taken when it was added, of a master folder (`kind: folder`, tracks in natural name order) or of a playlist (`kind: playlist`, its order), made of the same
 `symlinks/NNN_<track>` links as a playlist. Reordering or removing tracks or entries of a pendrive never changes the library's folders and playlists, and deleting a pendrive removes only links.
+`drives/<name>/drive.txt` is an optional key/value file (section 3). The key `settings` names the settings set (section 10) the pendrive is exported with; no file, no key or a name that no longer exists means the library's default set. Unknown keys MUST be kept when the file is rewritten. A set that a pendrive links to MUST NOT be deleted, and renaming a set updates the links.
 When a pendrive is exported each entry becomes one playlist of the rekordbox drive, named after the entry; a track in several entries is stored once.
 Deleting a master folder removes the links to its tracks from every playlist and pendrive entry (tools MUST warn and list them first).
 
@@ -215,8 +219,27 @@ The colour preview (rekordbox `PWV4`) is not stored: it is derived at export.
 
 ## 10. `user-settings/`
 
-Optional files copied from a real player or drive, used by exports instead of built-in defaults: `DEVSETTING.DAT`, `MYSETTING.DAT` (verified before use: their layout and CRC-16/XMODEM are described in `doc/trakcrate/settings-files.md`).
-Device specific or personal files (`RBFLTR.DAT`, `exportExt.pdb`, `USBMNG.DAT`, `djprofile.nxs`) may also be kept here; they are never written to an export unless the user asks.
+The five files a player expects next to the database are **never optional**: a deck that finds one missing complains or crashes. They are kept as named **settings sets**, one directory each, so a DJ can have several (one copied from each real rekordbox drive) and mark one as the default:
+
+```
+user-settings/
+├── default.txt              set: <name>
+└── <set>/                   a single path component that does not start with '.'
+    ├── set.txt              key: value: created (ISO 8601, UTC), source ("built-in", "rekordbox:<drive>", "migrated", "copy of <set>"), user_name
+    ├── DEVSETTING.DAT       PIONEER/DEVSETTING.DAT
+    ├── MYSETTING.DAT        PIONEER/MYSETTING.DAT
+    ├── djprofile.nxs        PIONEER/djprofile.nxs  (holds the name of the person the drive is for)
+    ├── RBFLTR.DAT           PIONEER/rekordbox/RBFLTR.DAT
+    └── exportExt.pdb        PIONEER/rekordbox/exportExt.pdb
+```
+
+- `default.txt` names the default set. When it is absent or names a set that is gone, the first set in natural name order is the default. A library without any set is legal: exports then use the files compiled into the tool.
+- A set MAY lack files (a partial copy from a drive). A missing file is replaced by the tool's built in file when the set is used; readers MUST NOT treat a missing file as an error.
+- `DEVSETTING.DAT` and `MYSETTING.DAT` are verified before use (layout and CRC-16/XMODEM: `doc/trakcrate/settings-files.md`); a damaged one makes the export fail naming the set and the file.
+- `set.txt` is informational (`user_name` caches the name found in `djprofile.nxs`; the file is the truth). Unknown keys MUST be kept.
+- `USBMNG.DAT` is never part of a set: it describes one drive's files and is generated.
+- Exports take the set from the caller, else from the pendrive's link (section 2.4), else the default. On a drive that already holds an export the caller chooses between keeping the drive's settings files and adding only the missing ones (the default) or overwriting them with the set's.
+- **Migration.** Earlier versions kept the five files directly in `user-settings/`. A library holding such files and no set directory moves them into a set named `imported` and makes it the default. Other files in `user-settings/` are left alone. (This layout was never published, so no compatibility is promised beyond that.)
 
 ## 11. `anlz/`
 

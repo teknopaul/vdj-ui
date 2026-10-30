@@ -2,6 +2,8 @@
 
 #include "fsutil.h"
 
+#include <algorithm>
+
 namespace trakcrate {
 
 uint16_t crc16Xmodem(const void* data, size_t len)
@@ -64,6 +66,48 @@ bool loadSettingsFile(const std::string& path, std::string* out, std::string* er
         return false;
     }
     *out = bytes;
+    return true;
+}
+
+bool parseDjprofile(const std::string& bytes, DjProfile* out, std::string* err)
+{
+    if (bytes.size() != kDjprofileSize) {
+        if (err) *err = "djprofile.nxs is " + std::to_string(bytes.size()) + " bytes, expected " + std::to_string(kDjprofileSize);
+        return false;
+    }
+    uint64_t ts = 0;
+    for (int i = 0; i < 8; ++i) ts = ts << 8 | uint8_t(bytes[4 + i]);
+    const size_t end = bytes.find('\0', kDjprofileNameAt);
+    if (end == std::string::npos) {
+        if (err) *err = "djprofile.nxs: the user name is not terminated";
+        return false;
+    }
+    out->timestampMs = ts;
+    out->userName = bytes.substr(kDjprofileNameAt, end - kDjprofileNameAt);
+    out->unknownAt1c = uint32_t(uint8_t(bytes[0x1c])) << 24 | uint32_t(uint8_t(bytes[0x1d])) << 16 | uint32_t(uint8_t(bytes[0x1e])) << 8 | uint8_t(bytes[0x1f]);
+    return true;
+}
+
+bool setDjprofileUserName(std::string* bytes, const std::string& name, std::string* err)
+{
+    auto fail = [&](const std::string& m) { if (err) *err = m; return false; };
+    DjProfile cur;
+    if (!parseDjprofile(*bytes, &cur, err)) return false;
+    if (name.empty()) return fail("the user name is empty");
+    if (name.size() > kDjprofileNameMax) return fail("the user name is longer than " + std::to_string(kDjprofileNameMax) + " bytes");
+    for (unsigned char c : name)
+        if (c < 0x20 || c == 0x7f) return fail("the user name contains a control character");
+    // valid UTF-8 only (a name cut in the middle of a character would show as rubbish on the deck)
+    for (size_t i = 0; i < name.size();) {
+        unsigned char c = name[i];
+        size_t n = c < 0x80 ? 1 : (c >> 5) == 6 ? 2 : (c >> 4) == 14 ? 3 : (c >> 3) == 30 ? 4 : 0;
+        if (n == 0 || i + n > name.size()) return fail("the user name is not valid UTF-8");
+        for (size_t k = 1; k < n; ++k)
+            if ((uint8_t(name[i + k]) & 0xc0) != 0x80) return fail("the user name is not valid UTF-8");
+        i += n;
+    }
+    std::fill(bytes->begin() + kDjprofileNameAt, bytes->end(), '\0');
+    std::copy(name.begin(), name.end(), bytes->begin() + kDjprofileNameAt);
     return true;
 }
 

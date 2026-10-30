@@ -10,9 +10,13 @@
 
 #include "ui/trakcrate_job.h"
 #include "ui/trakcrate_panel.h"
+#include "ui/trakcrate_settings_viewer.h"
+#include "ui/trakcrate_export_dialog.h"
 #include "ui/trakcrate_preview_player.h"
 #include "audio/audio_player.h"
 #include "trakcrate/exporter.h"
+#include "trakcrate/settings_files.h"
+#include "trakcrate/settings_sets.h"
 #include "trakcrate/usb_speed.h"
 #include <QFile>
 #include "ui/trakcrate_track_model.h"
@@ -80,6 +84,9 @@ private slots:
     void panelExportsAPlaylist();
     void panelImportsARekordboxDrive();
     void panelPendrives();
+    void panelSettingsSets();
+    void settingsViewer();
+    void pendriveSettingsLinkAndExportDialog();
     void panelPreviewPlayer();
     void panelReordersPlaylists();
     void usbLabels();
@@ -683,6 +690,143 @@ void TestTrakcratePanel::panelPreviewPlayer()
     p.stopPreview();
     QVERIFY(!pv->isActive());
     QVERIFY(!pv->nextButton()->isEnabled());
+}
+
+void TestTrakcratePanel::panelSettingsSets()
+{
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    QTreeWidget* tree = p.findChild<QTreeWidget*>();
+    QVERIFY(tree);
+    auto group = [&]() -> QTreeWidgetItem* {
+        for (int i = 0; i < tree->topLevelItemCount(); ++i) if (tree->topLevelItem(i)->text(0) == QLatin1String("User Settings")) return tree->topLevelItem(i);
+        return nullptr;
+    };
+    QVERIFY(group());
+    // no sets yet: a hint, not an error
+    QCOMPARE(group()->childCount(), 1);
+    QCOMPARE(group()->child(0)->data(0, Qt::UserRole).toString(), QStringLiteral("settings-hint"));
+
+    QString err;
+    QVERIFY2(p.createSettingsSet(QStringLiteral("Home"), QStringLiteral("Ana"), &err), qPrintable(err));
+    QVERIFY(p.createSettingsSet(QStringLiteral("Club"), QStringLiteral("Bo"), &err));
+    QVERIFY(!p.createSettingsSet(QStringLiteral("Club"), QStringLiteral("Bo"), &err));           // exists
+    QVERIFY(!err.isEmpty());
+    QVERIFY(!p.createSettingsSet(QStringLiteral("a/b"), QStringLiteral("Bo"), &err));
+    QCOMPARE(group()->childCount(), 2);
+    // sets in name order, the default (the first created) marked, the five files below each (set.txt is not shown)
+    QCOMPARE(group()->child(0)->data(0, Qt::UserRole + 1).toString(), QStringLiteral("Club"));
+    QCOMPARE(group()->child(0)->text(0), QStringLiteral("Club"));
+    QCOMPARE(group()->child(1)->text(0), QStringLiteral("Home (default)"));
+    QCOMPARE(group()->child(1)->data(0, Qt::UserRole).toString(), QStringLiteral("settings-set"));
+    QCOMPARE(group()->child(1)->childCount(), 5);
+    QCOMPARE(group()->child(1)->child(0)->data(0, Qt::UserRole).toString(), QStringLiteral("setting"));
+    QCOMPARE(group()->child(1)->child(0)->data(0, Qt::UserRole + 3).toString(), QStringLiteral("Home"));
+
+    QVERIFY(p.makeDefaultSettingsSet(QStringLiteral("Club"), &err));
+    QCOMPARE(group()->child(0)->text(0), QStringLiteral("Club (default)"));
+    QVERIFY(p.renameSettingsSet(QStringLiteral("Club"), QStringLiteral("Gig"), &err));
+    QCOMPARE(group()->child(0)->text(0), QStringLiteral("Gig (default)"));
+    QVERIFY(p.duplicateSettingsSet(QStringLiteral("Gig"), QStringLiteral("Gig 2"), &err));
+    QCOMPARE(group()->childCount(), 3);
+    QVERIFY(p.setSettingsUserName(QStringLiteral("Gig 2"), QStringLiteral("Cy"), &err));
+    tc::DjProfile prof;
+    std::string bytes;
+    QVERIFY(tc::readFile(tc::settingsSetDir(p.library(), "Gig 2") / "djprofile.nxs", &bytes) && tc::parseDjprofile(bytes, &prof));
+    QCOMPARE(prof.userName, std::string("Cy"));
+    QVERIFY(!p.setSettingsUserName(QStringLiteral("Gig 2"), QString(), &err));
+    QVERIFY(p.deleteSettingsSet(QStringLiteral("Gig"), &err));
+    QVERIFY(!p.deleteSettingsSet(QStringLiteral("Gig"), &err));
+    QCOMPARE(group()->childCount(), 2);
+    // the default moved to a remaining set
+    bool one = false;
+    for (int i = 0; i < group()->childCount(); ++i) one = one || group()->child(i)->text(0).endsWith(QLatin1String("(default)"));
+    QVERIFY(one);
+
+    // copy from a rekordbox pendrive
+    const tc::fs::path drive = tmp_ / "usb";
+    tc::fs::create_directories(drive / "PIONEER");
+    QVERIFY(tc::atomicWrite(drive / "PIONEER/DEVSETTING.DAT", tc::defaultDevSetting()));
+    QVERIFY(!p.copySettingsSet(QStringLiteral("FromDeck"), QString::fromStdString((tmp_ / "empty").string()), &err));
+    QVERIFY(p.copySettingsSet(QStringLiteral("FromDeck"), QString::fromStdString(drive.string()), &err));
+    QCOMPARE(group()->childCount(), 3);
+}
+
+void TestTrakcratePanel::settingsViewer()
+{
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    QVERIFY(!p.showSettingsViewer(QStringLiteral("Nope")));
+    QVERIFY(p.createSettingsSet(QStringLiteral("Home"), QStringLiteral("Ana")));
+    QVERIFY(p.createSettingsSet(QStringLiteral("Club"), QStringLiteral("Bo")));
+    TrakcrateSettingsViewer* v = p.showSettingsViewer(QStringLiteral("Home"), QStringLiteral("djprofile.nxs"));
+    QVERIFY(v);
+    QCOMPARE(v->set(), QStringLiteral("Home"));
+    QVERIFY(v->rowCount() > 3);
+    QCOMPARE(v->differingRows(), 0);                                                    // no comparison
+    v->setCompareSet(QStringLiteral("Club"));
+    QCOMPARE(v->compareSet(), QStringLiteral("Club"));
+    QCOMPARE(v->differingRows(), 1);                                                    // only the name differs
+    v->setFile(QStringLiteral("MYSETTING.DAT"));
+    QCOMPARE(v->differingRows(), 0);                                                    // both sets hold the built in file
+    // the viewer changes nothing but the name
+    v->setFile(QStringLiteral("djprofile.nxs"));
+    QString err;
+    QVERIFY2(v->saveUserName(&err), qPrintable(err));
+    v->setCompareSet(QString());
+    v->setSet(QStringLiteral("Club"));
+    v->setCompareSet(QStringLiteral("Home"));
+    QCOMPARE(v->differingRows(), 1);
+    delete v;
+}
+
+void TestTrakcratePanel::pendriveSettingsLinkAndExportDialog()
+{
+    writeWav(tmp_ / "House" / "a.wav", 300);
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    QVERIFY(p.importFolder((tmp_ / "House").string().c_str(), tc::ImportOptions()));
+    QVERIFY(p.waitForJob());
+    QString err;
+    QVERIFY(p.createSettingsSet(QStringLiteral("Home"), QStringLiteral("Ana")));
+    QVERIFY(p.createSettingsSet(QStringLiteral("Club"), QStringLiteral("Bo")));
+    QVERIFY(p.createPendrive(QStringLiteral("Fri"), {QStringLiteral("House")}, {}, &err));
+    QVERIFY(!p.setPendriveSettings(QStringLiteral("Fri"), QStringLiteral("Nope"), &err));
+    QVERIFY(!p.setPendriveSettings(QStringLiteral("Nope"), QStringLiteral("Club"), &err));
+    QVERIFY(p.setPendriveSettings(QStringLiteral("Fri"), QStringLiteral("Club"), &err));
+    QCOMPARE(tc::driveSettingsSet(p.library(), "Fri"), std::string("Club"));
+    QVERIFY(!p.deleteSettingsSet(QStringLiteral("Club"), &err));                        // in use by a pendrive
+    QVERIFY(err.contains(QStringLiteral("Fri")));
+
+    TrakcrateExportDialog dlg(p.library());
+    dlg.setPendrive(QStringLiteral("Fri"), false);
+    dlg.setDestination(QString::fromStdString((tmp_ / "out").string()));
+    QCOMPARE(dlg.settingsSet(), QStringLiteral("Club"));                                // preselected from the link
+    tc::ExportOptions o = dlg.options();
+    QCOMPARE(o.settingsSet, std::string("Club"));
+    QVERIFY(!o.settingsBuiltIn);
+    QVERIFY(o.settingsPolicy == tc::ExportOptions::SettingsPolicy::AddMissing);
+    dlg.setSettingsSet(TrakcrateExportDialog::builtInSettingsKey());
+    dlg.setReplaceSettings(true);
+    o = dlg.options();
+    QVERIFY(o.settingsBuiltIn);
+    QVERIFY(o.settingsPolicy == tc::ExportOptions::SettingsPolicy::Replace);
+    dlg.setSettingsSet(QString());
+    QVERIFY(dlg.options().settingsSet.empty());                                         // the default set
+
+    // exporting the linked pendrive puts that set's profile on the drive
+    dlg.setSettingsSet(QStringLiteral("Club"));
+    dlg.setReplaceSettings(false);
+    o = dlg.options();
+    o.allowUnanalysed = true;
+    QVERIFY(p.exportDrive(o));
+    QVERIFY(p.waitForJob(30000));
+    std::string bytes;
+    tc::DjProfile prof;
+    QVERIFY(tc::readFile(tmp_ / "out/PIONEER/djprofile.nxs", &bytes) && tc::parseDjprofile(bytes, &prof));
+    QCOMPARE(prof.userName, std::string("Bo"));
+    QVERIFY(p.setPendriveSettings(QStringLiteral("Fri"), QString(), &err));             // unlink, now the set can go
+    QVERIFY(p.deleteSettingsSet(QStringLiteral("Club"), &err));
 }
 
 void TestTrakcratePanel::panelPendrives()

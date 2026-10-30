@@ -1,6 +1,7 @@
 #include "library.h"
 
 #include "natsort.h"
+#include "settings_sets.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -30,6 +31,8 @@ bool Library::open(const fs::path& root, Library* out, std::string* err)
     std::error_code ec;
     if (!fs::is_directory(root / "track-master-copy", ec)) return fail(err, "not a trakcrate library: " + root.string());
     out->root_ = fs::absolute(root, ec).lexically_normal();
+    std::string migrateErr;
+    if (!migrateFlatSettings(out->root_, &migrateErr)) return fail(err, migrateErr);      // flat user-settings/ files become the set "imported"
     return true;
 }
 

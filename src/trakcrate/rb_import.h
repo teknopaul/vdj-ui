@@ -24,9 +24,11 @@ struct RbImportOptions {
     bool looseByPath = false;
     bool beatgrid = true, cues = true, waveform = true, artwork = true;
     bool keepAnlz = true;                    // <track>/anlz/ANLZ0000.DAT|EXT|2EX copied verbatim
-    bool settings = false;                   // DEVSETTING.DAT and MYSETTING.DAT into user-settings/ (checked first), used by later exports
-    bool deviceFiles = false;                // RBFLTR.DAT, USBMNG.DAT, exportExt.pdb into user-settings/ (device specific, off by default)
-    bool profile = false;                    // djprofile.nxs into user-settings/ (holds the user's name, off by default)
+    // The player files below are copied into one new settings set of user-settings/ (settings_sets.h), used by later exports. USBMNG.DAT is never kept.
+    bool settings = false;                   // DEVSETTING.DAT and MYSETTING.DAT (checked first)
+    bool deviceFiles = false;                // RBFLTR.DAT and exportExt.pdb (device specific)
+    bool profile = false;                    // djprofile.nxs (holds the user's name)
+    std::string settingsSetName = "rekordbox";   // name of the set (made unique when taken)
     std::string folder;                      // master folder for tracks directly under Contents/ (default "rekordbox")
     bool dryRun = false;
 };
@@ -41,6 +43,7 @@ struct RbImportReport {
     int playlists = 0;
     int folders = 0;                         // master folders created
     int settingsFiles = 0;
+    std::string settingsSet;                 // the set the settings files went into, empty if none
     std::vector<std::string> warnings;       // per item problems, a variable tempo grid, a playlist that already existed, ...
 };
 

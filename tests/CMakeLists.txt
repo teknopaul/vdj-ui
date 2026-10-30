@@ -269,6 +269,10 @@ add_executable(vdj-ui-trakcrate-library-test test_trakcrate_library.cpp)
 target_link_libraries(vdj-ui-trakcrate-library-test PRIVATE ${QT_TEST} vdj-trakcrate)
 add_test(NAME vdj-ui-trakcrate-library-test COMMAND vdj-ui-trakcrate-library-test)
 
+add_executable(vdj-ui-trakcrate-settings-test test_trakcrate_settings.cpp)
+target_link_libraries(vdj-ui-trakcrate-settings-test PRIVATE ${QT_TEST} vdj-trakcrate)
+add_test(NAME vdj-ui-trakcrate-settings-test COMMAND vdj-ui-trakcrate-settings-test)
+
 add_executable(vdj-ui-trakcrate-import-test test_trakcrate_import.cpp)
 target_compile_definitions(vdj-ui-trakcrate-import-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
 target_link_libraries(vdj-ui-trakcrate-import-test PRIVATE ${QT_TEST} vdj-trakcrate)

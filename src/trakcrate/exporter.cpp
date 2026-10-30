@@ -7,6 +7,7 @@
 #include "natsort.h"
 #include "pdb_build.h"
 #include "settings_files.h"
+#include "settings_sets.h"
 #include "sha256.h"
 
 #include <cdj/anlz.h>
@@ -372,10 +373,41 @@ bool backupPdb(const fs::path& pdb, std::string* made, std::string* err)
 
 } // namespace
 
-ExportSummary summariseExport(const Library& lib, const ExportOptions& opts)
+// The five files an export writes for the player, relative to the destination, and USBMNG.DAT which is only ever added.
+static bool isSettingsRel(const std::string& rel)
+{
+    for (const std::string& f : settingsDriveFileNames())
+        if (rel == f) return true;
+    return false;
+}
+
+// Fills the settings byte fields that are empty from the chosen set. False (err says why) when the set is missing or one of its files is damaged.
+static bool applySettingsSet(const Library& lib, ExportOptions* o, std::string* err)
+{
+    if (!o->includeSettings) return true;
+    SettingsFiles sf;
+    if (o->settingsBuiltIn) {
+        sf.devSetting = defaultDevSetting(); sf.mySetting = defaultMySetting(); sf.djprofile = defaultDjprofile();
+        sf.rbfltr = defaultRbfltr(); sf.exportExt = defaultExportExt();
+    } else if (!resolveSettingsFiles(lib, o->settingsSet, &sf, nullptr, err)) {
+        return false;
+    }
+    if (o->devSetting.empty()) o->devSetting = sf.devSetting;
+    if (o->mySetting.empty()) o->mySetting = sf.mySetting;
+    if (o->djprofile.empty()) o->djprofile = sf.djprofile;
+    if (o->rbfltr.empty()) o->rbfltr = sf.rbfltr;
+    if (o->exportExt.empty()) o->exportExt = sf.exportExt;
+    return true;
+}
+
+ExportSummary summariseExport(const Library& lib, const ExportOptions& optsIn)
 {
     ExportSummary s;
+    ExportOptions opts = optsIn;
+    std::string setErr;
+    const bool setOk = applySettingsSet(lib, &opts, &setErr);
     Gathered g = gather(lib, opts);
+    if (!setOk) g.problems.push_back("settings: " + setErr);
     s.tracks = int(g.tracks.size());
     for (const GTrack& t : g.tracks) s.audioBytes += t.audioBytes;
     s.metadataBytes = estimateMetadata(g);
@@ -398,11 +430,16 @@ std::vector<std::string> exportConflicts(const fs::path& dest)
     return found;
 }
 
-ExportResult exportDrive(const Library& lib, const ExportOptions& o, const ExportProgress& progress, const std::atomic<bool>* cancel)
+ExportResult exportDrive(const Library& lib, const ExportOptions& optsIn, const ExportProgress& progress, const std::atomic<bool>* cancel)
 {
     ExportResult res;
     auto fail = [&](const std::string& m) { res.error = m; return res; };
     std::error_code ec;
+    ExportOptions o = optsIn;
+    {
+        std::string setErr;
+        if (!applySettingsSet(lib, &o, &setErr)) return fail("settings: " + setErr);
+    }
 
     if (o.templatePdb.empty()) return fail("no template export.pdb");
     if (o.dest.empty()) return fail("no destination");
@@ -618,7 +655,20 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
         if (cancel && cancel->load()) { res.cancelled = true; res.error = "cancelled"; return false; }
         if (progress) progress(done, total, f.rel);
         bool cancelled = false;
-        if (o.update && skipIfIdentical(o.dest, f, &res.skipped, hashing)) {
+        const bool isSetting = o.includeSettings && isSettingsRel(f.rel);
+        if (o.update && (f.rel == "PIONEER/USBANLZ/USBMNG.DAT" || (isSetting && o.settingsPolicy == ExportOptions::SettingsPolicy::AddMissing))) {
+            std::error_code e3;
+            if (fs::is_regular_file(o.dest / f.rel, e3)) {                      // the drive's own copy stays; the checksum lists what the drive holds
+                if (hashing) { f.hash = hashFile(o.dest / f.rel, &err); if (f.hash.empty()) { res.error = err; return false; } }
+                if (isSetting) res.settingsKept.push_back(f.rel);
+                ++res.skipped;
+                res.writeOrder.push_back(f.rel);
+                ++done;
+                return true;
+            }
+        }
+        if (o.update && skipIfIdentical(o.dest, f, &res.skipped, hashing)) {          // Replace: the drive may hold these very bytes already
+            if (isSetting) res.settingsKept.push_back(f.rel);
             res.writeOrder.push_back(f.rel);
             ++done;
             return true;
@@ -629,6 +679,7 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
             return false;
         }
         res.writeOrder.push_back(f.rel);
+        if (isSetting) res.settingsWritten.push_back(f.rel);
         ++done;
         return true;
     };

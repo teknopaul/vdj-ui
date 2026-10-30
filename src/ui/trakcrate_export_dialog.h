@@ -12,6 +12,7 @@ class QGroupBox;
 class QLabel;
 class QLineEdit;
 class QListWidget;
+class QRadioButton;
 class QTimer;
 
 namespace vdj {
@@ -33,6 +34,12 @@ public:
     // Export a user defined pendrive: its entries (ticked here, in the pendrive's order) replace the playlist list. physical = write to a mounted
     // stick: the destination is chosen from the list of mounted drives only, it cannot be typed or browsed.
     void setPendrive(const QString& drive, bool physical);
+    // The settings set chosen for the player files: "" = the library's default set, kBuiltInSettings = the compiled in files.
+    QString settingsSet() const;
+    void setSettingsSet(const QString& name);
+    bool replaceSettings() const;
+    void setReplaceSettings(bool on);
+    static QString builtInSettingsKey() { return QStringLiteral("\x01builtin"); }
 
 private slots:
     void browse();
@@ -48,6 +55,8 @@ private:
     QLineEdit* dest_;
     QComboBox* drives_;
     QCheckBox* update_;
+    QComboBox* settingsSet_;
+    QRadioButton *addMissing_, *replace_;
     QLabel* summary_;
     QGroupBox* advanced_;
     QCheckBox *settings_, *artwork_, *pvbr_, *pwv4_, *pwv5_, *manifest_, *verify_, *unanalysed_;

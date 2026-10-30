@@ -35,7 +35,7 @@ private:
     trakcrate::Library lib_;
     bool haveLib_ = false;
     QComboBox* drives_;
-    QLineEdit* folder_;
+    QLineEdit *folder_, *settingsSet_;
     QLabel* status_;
     QLabel* playlistNote_;
     QTreeWidget* lists_;

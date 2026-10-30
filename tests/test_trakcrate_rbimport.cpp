@@ -6,6 +6,7 @@
 #include "trakcrate/importer.h"
 #include "trakcrate/rb_import.h"
 #include "trakcrate/settings_files.h"
+#include "trakcrate/settings_sets.h"
 
 #include <fstream>
 
@@ -106,7 +107,7 @@ private slots:
         QCOMPARE(r.withCues, 1);
         QCOMPARE(r.playlists, 1);
         QCOMPARE(r.settingsFiles, 2);
-        QVERIFY(verifySettingsFile(slurp(dst_.settingsDir() / "DEVSETTING.DAT")));
+        QVERIFY(verifySettingsFile(slurp(dst_.settingsDir() / "rekordbox" / "DEVSETTING.DAT")));
         QCOMPARE(slurp(drive_ / "PIONEER/rekordbox/export.pdb"), before);            // the drive is not touched
 
         QCOMPARE(dst_.listFolders().size(), size_t(1));
@@ -159,7 +160,7 @@ private slots:
     {
         makeDrive();
         QVERIFY(importRekordboxDrive(dst_, drive_, RbImportOptions()).ok);
-        QVERIFY(!fs::exists(dst_.settingsDir() / "DEVSETTING.DAT"));              // not asked for
+        QVERIFY(listSettingsSets(dst_).empty());              // not asked for
         RbImportReport again = importRekordboxDrive(dst_, drive_, RbImportOptions());
         QVERIFY(again.ok);
         QCOMPARE(again.imported, 0);

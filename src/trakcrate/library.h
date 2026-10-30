@@ -11,7 +11,7 @@ namespace trakcrate {
 
 // The master database: a plain directory tree (doc/trakcrate/trakcrate-db-format.md)
 //
-//   <root>/user-settings/
+//   <root>/user-settings/<set>/                       named sets of the player support files (settings_sets.h)
 //   <root>/track-master-copy/<folder>/<track>/        audio, meta.txt, source.txt, beatgrid.txt, cuemarks.txt, artwork.jpg ...
 //   <root>/pendrives/<name>/symlinks/000_<track>      symlinks to track folders; the numeric prefix is the order
 //

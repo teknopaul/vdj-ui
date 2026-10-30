@@ -5,7 +5,7 @@ Currently we only write them in advanced settings, we need to write them by defa
 We need some options...
 
 So the User Settings tree view in trakcrate needs another level of tree structure.
-N.B. this breaks our doc/trakcrate/trakcrate-db-format.md desgin a bit but fortunatly its not published yet so its still changable.  Code and docs need updating.  
+N.B. this breaks our doc/trakcrate/trakcrate-db-format.md design a bit but fortunately its not published yet so its still changeable.  Code and docs need updating.  
 
 
 ## Settings options for the user in trakcrate
@@ -28,7 +28,7 @@ When exporting we should always either ....
 2. copy new files if they are missing
 3. update settings with trakcrate versions
 
-The should be a combobox drop down to choose which settings to use when wer are going to have to add or update for the export.
+The should be a combobox drop down to choose which settings to use when we are going to have to add or update for the export.
 
 Virtual Pendrives should support linking to a set of settings to be the default for that virtual pendrive, (that needs a trakcrate db extension that needs code and documenting too)
 

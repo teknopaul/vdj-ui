@@ -7,7 +7,7 @@ i.e. a user editable file system in a base directory
 ```
 trakcrate/
 ├── scripts/                   optional user scripts, run by hand only (scripts.md)
-├── user-settings/
+├── user-settings/             named sets of the player files, never optional on a pendrive (default.txt + <set>/ with the five files)
 ├── track-master-copy/
 │   └── <folder_name>/
 │       └── <track-name>/      contains 1 .mp3 or .wav and the meta data in readable formats .txt
@@ -16,7 +16,7 @@ trakcrate/
 |                              and artwork (which by default is extracted from .mp3 and .wav when importing tracks
 └── pendrives/
     └── <pendrive-name>/
-        └── symlinks/          list of track symlinks with `000_` prefix to specify ordering
+        └── symlinks/              (a virtual pendrive under drives/<name>/ may also hold drive.txt with `settings: <set>`)          list of track symlinks with `000_` prefix to specify ordering
 ```
 
 We should output, instead of to physical pendrives directly to folders in this PC that then can be cloned to multiple drive.

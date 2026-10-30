@@ -42,6 +42,14 @@ struct ExportOptions {
 
     // compatibility testing: which optional pieces to include (all on by default)
     bool includeSettings = true;             // PIONEER/DEVSETTING.DAT, MYSETTING.DAT, djprofile.nxs and rekordbox/RBFLTR.DAT, exportExt.pdb: players need them all
+    // Which files those are: a settings set of the library (settings_sets.h; empty = the library's default set, and a library without sets gives the
+    // compiled in files). Any of the byte fields below that is not empty overrides the set's file. Production callers leave includeSettings true.
+    std::string settingsSet;
+    bool settingsBuiltIn = false;            // ignore every set: the compiled in files
+    // What to do with those five files when the drive already has them (update): AddMissing keeps the drive's own and only adds absent ones,
+    // Replace overwrites them with these. A fresh destination gets all five either way. USBMNG.DAT is always only added when missing.
+    enum class SettingsPolicy { AddMissing, Replace };
+    SettingsPolicy settingsPolicy = SettingsPolicy::AddMissing;
     bool includeArtwork = true;
     bool includePvbr = true, includePwv4 = true, includePwv5 = true;
     CuemarkRenderOptions cuemarks;           // the spikes drawn into the exported waveforms (never into the master)
@@ -74,6 +82,8 @@ struct ExportResult {
     bool verified = false;
     int skipped = 0;                         // update: files already identical on the drive
     std::vector<Orphan> orphans;             // update: files left from earlier exports that nothing refers to any more (nothing is deleted, see deleteOrphans)
+    std::vector<std::string> settingsWritten;   // the settings files (relative to the destination) this export wrote
+    std::vector<std::string> settingsKept;      // update with AddMissing: the settings files the drive already had and that were left alone
     std::string backup;                      // update: the backup made of the old export.pdb (relative to the destination), empty if none
 };
 

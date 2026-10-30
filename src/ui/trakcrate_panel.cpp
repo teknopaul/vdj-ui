@@ -42,6 +42,9 @@
 
 #include "config/config_manager.h"
 #include "trakcrate/settings_files.h"
+#include "trakcrate/settings_sets.h"
+#include "trakcrate_settings_dialogs.h"
+#include "trakcrate_settings_viewer.h"
 #include "trakcrate_artwork.h"
 #include "trakcrate_bpm_dialog.h"
 #include "trakcrate_export_dialog.h"
@@ -309,6 +312,7 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     connect(preview_, &TrakcratePreviewPlayer::trackStarted, this, &TrakcratePanel::onPreviewTrack);
     connect(preview_, &TrakcratePreviewPlayer::status, this, &TrakcratePanel::status);
     connect(tree_, &QWidget::customContextMenuRequested, this, &TrakcratePanel::treeContextMenu);
+    connect(tree_, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* it, int) { onTreeDoubleClick(it); });
     connect(tree_, &QTreeWidget::currentItemChanged, this, &TrakcratePanel::onTreeSelection);
     connect(table_->selectionModel(), &QItemSelectionModel::currentChanged, this, &TrakcratePanel::onTrackSelection);
     connect(jobs_, &TrakcrateJobRunner::progress, this, &TrakcratePanel::onJobProgress);
@@ -500,18 +504,40 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
             }
         }
     }
-    // the settings files copied onto every pendrive; only their names for now, until their contents are understood
+    // the settings sets: the player support files copied onto every pendrive, one set per child
     if (lib_.isOpen()) {
         const QIcon settingsIcon(QStringLiteral(":/img/user-settings-22x22.png"));
-        std::vector<std::string> names;
-        std::error_code ec;
-        for (trakcrate::fs::recursive_directory_iterator it(lib_.settingsDir(), ec), end; !ec && it != end; it.increment(ec))
-            if (it->is_regular_file(ec)) names.push_back(it->path().lexically_relative(lib_.settingsDir()).generic_string());
-        std::sort(names.begin(), names.end());
-        for (const std::string& n : names) {
-            auto* it = new QTreeWidgetItem(settings, QStringList(QString::fromStdString(n)));
-            it->setIcon(0, settingsIcon);
-            it->setData(0, KindRole, QStringLiteral("setting"));
+        const std::vector<trakcrate::SettingsSet> sets = trakcrate::listSettingsSets(lib_);
+        settings->setData(0, KindRole, QStringLiteral("settings"));
+        settings->setData(0, NameRole, QStringLiteral("User Settings"));
+        for (const trakcrate::SettingsSet& set : sets) {
+            const QString nm = QString::fromStdString(set.name);
+            auto* si = new QTreeWidgetItem(settings, QStringList(set.isDefault ? nm + QStringLiteral(" (default)") : nm));
+            si->setIcon(0, settingsIcon);
+            si->setData(0, KindRole, QStringLiteral("settings-set"));
+            si->setData(0, NameRole, nm);
+            if (set.isDefault) { QFont f = si->font(0); f.setBold(true); si->setFont(0, f); }
+            QStringList tip;
+            if (!set.userName.empty()) tip << QStringLiteral("Name on the players: %1").arg(QString::fromStdString(set.userName));
+            if (!set.source.empty()) tip << QStringLiteral("Source: %1").arg(QString::fromStdString(set.source));
+            si->setToolTip(0, tip.join(QLatin1Char('\n')));
+            std::vector<std::string> names;
+            std::error_code ec;
+            for (trakcrate::fs::recursive_directory_iterator it(trakcrate::settingsSetDir(lib_, set.name), ec), end; !ec && it != end; it.increment(ec))
+                if (it->is_regular_file(ec) && it->path().filename() != "set.txt")
+                    names.push_back(it->path().lexically_relative(trakcrate::settingsSetDir(lib_, set.name)).generic_string());
+            std::sort(names.begin(), names.end());
+            for (const std::string& n : names) {
+                auto* it = new QTreeWidgetItem(si, QStringList(QString::fromStdString(n)));
+                it->setIcon(0, settingsIcon);
+                it->setData(0, KindRole, QStringLiteral("setting"));
+                it->setData(0, DriveRole, nm);                                  // the set it belongs to
+            }
+        }
+        if (sets.empty()) {
+            auto* hint = new QTreeWidgetItem(settings, QStringList(QStringLiteral("None yet: exports use the built in files. Double-click to create.")));
+            hint->setData(0, KindRole, QStringLiteral("settings-hint"));
+            hint->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
         }
     }
     {   // only the lists of a pendrive can be dragged
@@ -525,6 +551,7 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
     if (!hadItems) {                                     // first time the view is shown: Playlists open, Virtual Pendrives one level, the rest closed
         folders->setExpanded(false);
         settings->setExpanded(false);
+        for (int i = 0; i < settings->childCount(); ++i) settings->child(i)->setExpanded(false);
         for (int i = 0; i < drives->childCount(); ++i) drives->child(i)->setExpanded(false);
     } else {
         std::function<void(QTreeWidgetItem*)> fold = [&](QTreeWidgetItem* it) {
@@ -895,6 +922,8 @@ void TrakcratePanel::onJobFinished(const QString&, bool cancelled)
                           .arg(r.tracks).arg(r.playlists).arg(exportDest_).arg(r.files).arg(qint64(r.bytesWritten >> 20))
                           .arg(r.verified ? QStringLiteral(", verified") : QString());
             if (r.skipped > 0) summary += QStringLiteral("; %1 unchanged file(s) skipped").arg(r.skipped);
+            if (!r.settingsWritten.empty() || !r.settingsKept.empty())
+                summary += QStringLiteral("; settings: %1 written, %2 kept").arg(r.settingsWritten.size()).arg(r.settingsKept.size());
             if (!r.backup.empty()) summary += QStringLiteral("; old database kept as %1").arg(QString::fromStdString(r.backup));
             if (!r.orphans.empty()) {
                 uint64_t bytes = 0;
@@ -1036,15 +1065,12 @@ bool TrakcratePanel::exportDrive(trakcrate::ExportOptions opts, const QString& r
         jpeg->assign(out.constData(), size_t(out.size()));
         return true;
     };
-    std::string settingsBytes;                           // player settings copied from a real drive at import time, if any
-    if (opts.devSetting.empty() && trakcrate::readFile(lib_.settingsDir() / "DEVSETTING.DAT", &settingsBytes) && trakcrate::verifySettingsFile(settingsBytes))
-        opts.devSetting = settingsBytes;
-    if (opts.mySetting.empty() && trakcrate::readFile(lib_.settingsDir() / "MYSETTING.DAT", &settingsBytes) && trakcrate::verifySettingsFile(settingsBytes))
-        opts.mySetting = settingsBytes;
-    // the other support files copied at import time (a drive imported from rekordbox keeps its own); without them the built in ones are used
-    if (opts.djprofile.empty() && trakcrate::readFile(lib_.settingsDir() / "djprofile.nxs", &settingsBytes) && !settingsBytes.empty()) opts.djprofile = settingsBytes;
-    if (opts.rbfltr.empty() && trakcrate::readFile(lib_.settingsDir() / "RBFLTR.DAT", &settingsBytes) && !settingsBytes.empty()) opts.rbfltr = settingsBytes;
-    if (opts.exportExt.empty() && trakcrate::readFile(lib_.settingsDir() / "exportExt.pdb", &settingsBytes) && !settingsBytes.empty()) opts.exportExt = settingsBytes;
+    if (opts.includeSettings && !opts.settingsBuiltIn && trakcrate::listSettingsSets(lib_).empty()) {
+        // a library always has settings after its first export: made from the built in files with the user's login name on the profile
+        std::string e;
+        if (trakcrate::createSettingsSet(lib_, "Default", defaultSettingsUserName().toStdString(), &e)) rebuildTree(false);
+    }
+    // the player support files come from opts.settingsSet (empty = the library's default settings set), resolved by exportDrive
     export_ = std::make_shared<trakcrate::ExportResult>();
     analysis_.reset(); bpm_.reset(); rb_.reset();
     report_.reset();
@@ -1288,6 +1314,9 @@ void TrakcratePanel::exportPendrive(const QString& drive, bool physical)
     if (!lib_.isOpen()) return;
     TrakcrateExportDialog dlg(lib_, this);
     dlg.setPendrive(drive, physical);
+    bool dangling = false;
+    trakcrate::effectiveDriveSettingsSet(lib_, drive.toStdString(), &dangling);
+    if (dangling) emit status(QStringLiteral("The settings linked to \"%1\" no longer exist: the default settings are used").arg(drive));
     if (dlg.exec() != QDialog::Accepted) return;
     if (!exportDrive(dlg.options(), dlg.registerAsVirtualPendrive() ? dlg.virtualPendriveName() : QString()))
         QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Another job is still running, or the template database is missing."));
@@ -1382,6 +1411,116 @@ void TrakcratePanel::editEntryTracks(int move, bool remove)
     refresh();                                                      // keeps the entry selected
 }
 
+static bool settingsResult(bool ok, const std::string& e, QString* err)
+{
+    if (!ok && err) *err = QString::fromStdString(e);
+    return ok;
+}
+
+bool TrakcratePanel::createSettingsSet(const QString& name, const QString& userName, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::createSettingsSet(lib_, name.toStdString(), userName.toStdString(), &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+bool TrakcratePanel::copySettingsSet(const QString& name, const QString& driveFolder, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::copySettingsSetFromDrive(lib_, name.toStdString(), driveFolder.toStdString(), nullptr, &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+bool TrakcratePanel::renameSettingsSet(const QString& from, const QString& to, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::renameSettingsSet(lib_, from.toStdString(), to.toStdString(), &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+bool TrakcratePanel::duplicateSettingsSet(const QString& from, const QString& to, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::duplicateSettingsSet(lib_, from.toStdString(), to.toStdString(), &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+bool TrakcratePanel::deleteSettingsSet(const QString& name, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::deleteSettingsSet(lib_, name.toStdString(), &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+bool TrakcratePanel::makeDefaultSettingsSet(const QString& name, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::setDefaultSettingsSet(lib_, name.toStdString(), &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+bool TrakcratePanel::setSettingsUserName(const QString& set, const QString& userName, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::setSettingsSetUserName(lib_, set.toStdString(), userName.toStdString(), &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+bool TrakcratePanel::setPendriveSettings(const QString& drive, const QString& set, QString* err)
+{
+    std::string e;
+    const bool ok = lib_.isOpen() && trakcrate::setDriveSettingsSet(lib_, drive.toStdString(), set.toStdString(), &e);
+    if (ok) refresh();
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
+void TrakcratePanel::newSettingsDialog()
+{
+    if (!lib_.isOpen()) return;
+    NewSettingsDialog dlg(lib_, this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    QString err;
+    if (!createSettingsSet(dlg.setName(), dlg.userName(), &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
+}
+
+void TrakcratePanel::copySettingsDialog()
+{
+    if (!lib_.isOpen()) return;
+    CopySettingsDialog dlg(lib_, this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    QString err;
+    if (!copySettingsSet(dlg.setName(), dlg.driveFolder(), &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
+}
+
+TrakcrateSettingsViewer* TrakcratePanel::showSettingsViewer(const QString& set, const QString& file, const QString& compareWith)
+{
+    if (!lib_.isOpen() || !trakcrate::hasSettingsSet(lib_, set.toStdString())) return nullptr;
+    auto* v = new TrakcrateSettingsViewer(lib_, this);
+    v->setAttribute(Qt::WA_DeleteOnClose);
+    v->setSet(set);
+    if (!file.isEmpty()) v->setFile(file);
+    v->setCompareSet(compareWith);
+    connect(v, &TrakcrateSettingsViewer::userNameChanged, this, [this] { refresh(); });
+    v->show();
+    return v;
+}
+
+void TrakcratePanel::onTreeDoubleClick(QTreeWidgetItem* item)
+{
+    if (!item) return;
+    const QString kind = item->data(0, KindRole).toString();
+    if (kind == QLatin1String("settings-hint")) newSettingsDialog();
+    else if (kind == QLatin1String("settings-set")) showSettingsViewer(item->data(0, NameRole).toString());
+    else if (kind == QLatin1String("setting")) showSettingsViewer(item->data(0, DriveRole).toString(), item->text(0));
+}
+
 void TrakcratePanel::treeContextMenu(const QPoint& pos)
 {
     if (!lib_.isOpen()) return;
@@ -1391,9 +1530,28 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
     QMenu menu(this);
     const bool idle = !jobs_->busy();
     QAction* newDrive = menu.addAction(QStringLiteral("New pendrive..."));
+    QAction *newSettings = nullptr, *copySettings = nullptr, *defSettings = nullptr, *renSettings = nullptr, *dupSettings = nullptr, *delSettings = nullptr, *userSettings = nullptr, *viewSettings = nullptr, *cmpSettings = nullptr;
+    if (kind == QLatin1String("settings") || kind == QLatin1String("settings-hint") || kind == QLatin1String("settings-set") || kind == QLatin1String("setting")) {
+        menu.addSeparator();
+        newSettings = menu.addAction(QStringLiteral("New settings..."));
+        copySettings = menu.addAction(QStringLiteral("Copy settings from a rekordbox pendrive..."));
+        const QString set = kind == QLatin1String("settings-set") ? name : kind == QLatin1String("setting") ? it->data(0, DriveRole).toString() : QString();
+        if (!set.isEmpty()) {
+            menu.addSeparator();
+            viewSettings = menu.addAction(QStringLiteral("View..."));
+            cmpSettings = menu.addAction(QStringLiteral("Compare with another..."));
+            cmpSettings->setEnabled(trakcrate::listSettingsSets(lib_).size() > 1);
+            defSettings = menu.addAction(QStringLiteral("Make default"));
+            defSettings->setEnabled(trakcrate::defaultSettingsSet(lib_) != set.toStdString());
+            userSettings = menu.addAction(QStringLiteral("Change the name on the players..."));
+            renSettings = menu.addAction(QStringLiteral("Rename..."));
+            dupSettings = menu.addAction(QStringLiteral("Duplicate..."));
+            delSettings = menu.addAction(QStringLiteral("Delete..."));
+        }
+    }
     QMenu* addMenu = nullptr;
     QAction *delFolder = nullptr, *delList = nullptr, *physical = nullptr, *folderOut = nullptr, *delDrive = nullptr, *renDrive = nullptr, *up = nullptr, *down = nullptr, *removeEntry = nullptr;
-    std::map<QAction*, QString> targets;
+    std::map<QAction*, QString> targets, driveSettings;
     if (kind == QLatin1String("folder") || kind == QLatin1String("playlist")) {
         addMenu = menu.addMenu(QStringLiteral("Add to pendrive"));
         for (const std::string& d : lib_.listDrives()) targets[addMenu->addAction(QString::fromStdString(d))] = QString::fromStdString(d);
@@ -1408,6 +1566,20 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
         physical->setEnabled(idle);
         folderOut->setEnabled(idle);
         menu.addSeparator();
+        {
+            QMenu* sm = menu.addMenu(QStringLiteral("Settings"));
+            const std::string linked = trakcrate::driveSettingsSet(lib_, name.toStdString());
+            QAction* follow = sm->addAction(QStringLiteral("Follow the default settings"));
+            follow->setCheckable(true);
+            follow->setChecked(linked.empty());
+            driveSettings[follow] = QString();
+            for (const trakcrate::SettingsSet& x : trakcrate::listSettingsSets(lib_)) {
+                QAction* a = sm->addAction(QString::fromStdString(x.name));
+                a->setCheckable(true);
+                a->setChecked(x.name == linked);
+                driveSettings[a] = QString::fromStdString(x.name);
+            }
+        }
         renDrive = menu.addAction(QStringLiteral("Rename pendrive..."));
         delDrive = menu.addAction(QStringLiteral("Delete pendrive..."));
     } else if (kind == QLatin1String("entry")) {
@@ -1420,7 +1592,49 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
     if (!chosen) return;
     QString err;
     if (chosen == newDrive) newPendriveDialog();
-    else if (targets.count(chosen)) {
+    else if (driveSettings.count(chosen)) {
+        if (!setPendriveSettings(name, driveSettings[chosen], &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
+    } else if (chosen == newSettings) newSettingsDialog();
+    else if (chosen == copySettings) copySettingsDialog();
+    else if (chosen && (chosen == viewSettings || chosen == cmpSettings)) {
+        const QString set = kind == QLatin1String("settings-set") ? name : it->data(0, DriveRole).toString();
+        QString other;
+        if (chosen == cmpSettings) {
+            QStringList others;
+            for (const trakcrate::SettingsSet& x : trakcrate::listSettingsSets(lib_))
+                if (QString::fromStdString(x.name) != set) others << QString::fromStdString(x.name);
+            bool got = false;
+            other = QInputDialog::getItem(this, QStringLiteral("Compare settings"), QStringLiteral("Compare \"%1\" with:").arg(set), others, 0, false, &got);
+            if (!got) return;
+        }
+        showSettingsViewer(set, kind == QLatin1String("setting") ? it->text(0) : QString(), other);
+    }
+    else if (chosen && (chosen == defSettings || chosen == renSettings || chosen == dupSettings || chosen == delSettings || chosen == userSettings)) {
+        const QString set = kind == QLatin1String("settings-set") ? name : it->data(0, DriveRole).toString();
+        QString e;
+        bool ok = true;
+        if (chosen == defSettings) ok = makeDefaultSettingsSet(set, &e);
+        else if (chosen == renSettings || chosen == dupSettings) {
+            bool got = false;
+            const bool dup = chosen == dupSettings;
+            const QString to = QInputDialog::getText(this, dup ? QStringLiteral("Duplicate settings") : QStringLiteral("Rename settings"), QStringLiteral("Name:"),
+                                                     QLineEdit::Normal, dup ? QString::fromStdString(trakcrate::uniqueSettingsSetName(lib_, set.toStdString())) : set, &got).trimmed();
+            if (got && to != set) ok = dup ? duplicateSettingsSet(set, to, &e) : renameSettingsSet(set, to, &e);
+        } else if (chosen == userSettings) {
+            trakcrate::DjProfile prof;
+            std::string bytes;
+            trakcrate::readFile(trakcrate::settingsSetDir(lib_, set.toStdString()) / "djprofile.nxs", &bytes);
+            if (bytes.empty()) bytes = trakcrate::defaultDjprofile();
+            trakcrate::parseDjprofile(bytes, &prof);
+            bool got = false;
+            const QString to = QInputDialog::getText(this, QStringLiteral("Name on the players"), QStringLiteral("The name the players show for this pendrive:"),
+                                                     QLineEdit::Normal, QString::fromStdString(prof.userName), &got).trimmed();
+            if (got) ok = setSettingsUserName(set, to, &e);
+        } else if (QMessageBox::question(this, QStringLiteral("Delete settings"), QStringLiteral("Delete the settings \"%1\"?").arg(set)) == QMessageBox::Yes) {
+            ok = deleteSettingsSet(set, &e);
+        }
+        if (!ok) QMessageBox::warning(this, QStringLiteral("trakcrate"), e);
+    } else if (targets.count(chosen)) {
         if (!addToPendrive(targets[chosen], kind, name, &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
     } else if (chosen == delFolder) deleteFolderDialog(name);
     else if (chosen == delList) {

@@ -66,6 +66,8 @@ Status: **Phase 7** (ANLZ, settings and artwork writers added; see the last sect
 
 Settings files (`settings_files.cpp`, `settings_defaults.cpp`): `DEVSETTING.DAT` and `MYSETTING.DAT` are the real files of the 7 track drive, embedded verbatim. The CRC rule (CRC-16/XMODEM over the bytes from the magic at 0x68 up to the CRC) is checked on both. `MYSETTING.DAT` carries rekordbox preferences; the payload bytes are not decoded. `djprofile.nxs` (a user name inside) and `RBFLTR.DAT` (device specific) are **not** written.
 
+`djprofile.nxs` (`settings_files.cpp`): bytes 0x00-0x03 (`00 42 d7 c3`) and 0x1c-0x1f (`a2 3f 2b 74`) are not understood, and the 0x04 timestamp is a guess at the profile's creation date. A changed user name is written without touching them and has **not** been tried on a deck. **Help wanted:** a `djprofile.nxs` from a rekordbox drive made under a different user name (and ideally two from the same user at different times) would show whether 0x1c is a checksum, an id or per-user constant. Details in `settings-files.md`.
+
 Artwork (`artwork_paths.cpp`, `src/ui/trakcrate_artwork.cpp`):
 
 | What | Value | Basis |

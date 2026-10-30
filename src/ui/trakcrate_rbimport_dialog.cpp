@@ -101,10 +101,17 @@ TrakcrateRbImportDialog::TrakcrateRbImportDialog(const trakcrate::Library* lib, 
     waveform_ = box(QStringLiteral("Waveforms"), true);
     artwork_ = box(QStringLiteral("Artwork"), true, QStringLiteral("rekordbox drives hold 80x80 images; the picture inside the audio file is used when the drive has none"));
     anlz_ = box(QStringLiteral("Keep the original analysis files (anlz/ in each track)"), true, QStringLiteral("Byte for byte copies, for formats we do not read yet"));
-    settings_ = box(QStringLiteral("Copy the player settings (DEVSETTING.DAT, MYSETTING.DAT) and use them for exports"), false,
-                    QStringLiteral("Checked first. Exports use these instead of the built in defaults"));
-    device_ = box(QStringLiteral("Copy device specific files (RBFLTR.DAT, exportExt.pdb)"), false);
-    profile_ = box(QStringLiteral("Copy djprofile.nxs (contains your name)"), false);
+    settings_ = box(QStringLiteral("Copy the player settings (DEVSETTING.DAT, MYSETTING.DAT) into a new settings set"), true,
+                    QStringLiteral("Kept under User Settings; pick them when exporting. A damaged file is not copied"));
+    device_ = box(QStringLiteral("Copy device specific files (RBFLTR.DAT, exportExt.pdb)"), true);
+    profile_ = box(QStringLiteral("Copy djprofile.nxs (contains the name of the drive's owner)"), true);
+    {
+        auto* row = new QHBoxLayout;
+        row->addWidget(new QLabel(QStringLiteral("Name of the settings set:")));
+        settingsSet_ = new QLineEdit(QStringLiteral("rekordbox"));
+        row->addWidget(settingsSet_, 1);
+        top->addLayout(row);
+    }
     link_ = box(QStringLiteral("Link to the audio on the drive instead of copying it"), false, QStringLiteral("Only sensible for a drive that stays connected"));
     dryRun_ = box(QStringLiteral("Dry run: count what would be imported, change nothing"), false);
 
@@ -198,6 +205,7 @@ trakcrate::RbImportOptions TrakcrateRbImportDialog::options() const
     o.settings = settings_->isChecked();
     o.deviceFiles = device_->isChecked();
     o.profile = profile_->isChecked();
+    o.settingsSetName = settingsSet_->text().trimmed().toStdString();
     o.mode = link_->isChecked() ? trakcrate::ImportMode::Link : trakcrate::ImportMode::Copy;
     o.dryRun = dryRun_->isChecked();
     return o;

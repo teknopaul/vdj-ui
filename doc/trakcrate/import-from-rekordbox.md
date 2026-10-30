@@ -93,8 +93,9 @@ What it takes from the drive (read only):
 | `PIONEER/Artwork/.../a<id>.jpg` (80x80), else the picture inside the audio | `artwork.jpg` | `artwork=rekordbox` |
 | the original `ANLZ0000.DAT/.EXT/.2EX` | `anlz/` byte for byte | n/a |
 | playlists | `pendrives/<Folder - Playlist>/` in the drive's order; an existing playlist keeps its tracks and order, tracks it lacks are appended | n/a |
-| `DEVSETTING.DAT`, `MYSETTING.DAT` (option, CRC checked) | `user-settings/`, used by later exports | n/a |
-| `RBFLTR.DAT`, `exportExt.pdb`, `djprofile.nxs` (separate options, off) | `user-settings/` | n/a |
+| `DEVSETTING.DAT`, `MYSETTING.DAT` (option, CRC checked) | a new settings set `user-settings/<set>/` (default name `rekordbox`, made unique), chosen when exporting | n/a |
+| `RBFLTR.DAT`, `exportExt.pdb`, `djprofile.nxs` (separate options, on by default in the GUI) | the same set | n/a |
+| `USBMNG.DAT` | not kept: it describes that drive's files only | n/a |
 
 Master folders come from the path under `Contents/` (`Contents/Intapol/UK Dembow/x.mp3` becomes `Intapol - UK Dembow`). Audio already in the library (same SHA-256) is not stored again.
 Tracks whose audio file is missing on the drive are skipped and listed in the report (the doc above suggested importing their metadata anyway; skipped is simpler and nothing can be exported without audio).

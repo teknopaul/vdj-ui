@@ -119,6 +119,8 @@ add_library(vdj-cdj STATIC
     ui/trakcrate_import_dialog.cpp
     ui/trakcrate_bpm_dialog.cpp
     ui/trakcrate_pendrive_dialog.cpp
+    ui/trakcrate_settings_dialogs.cpp
+    ui/trakcrate_settings_viewer.cpp
     ui/trakcrate_analysis.cpp
     ui/star_rating_widget.cpp
     ui/level_meter_widget.cpp
@@ -216,6 +218,8 @@ add_library(vdj-trakcrate STATIC
     trakcrate/mp3_index.cpp
     trakcrate/settings_files.cpp
     trakcrate/settings_defaults.cpp
+    trakcrate/settings_sets.cpp
+    trakcrate/settings_view.cpp
     trakcrate/default_files.cpp
     trakcrate/artwork_paths.cpp
     trakcrate/exporter.cpp

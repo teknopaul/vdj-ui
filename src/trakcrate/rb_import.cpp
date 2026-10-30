@@ -5,6 +5,7 @@
 #include "audio_probe.h"
 #include "natsort.h"
 #include "settings_files.h"
+#include "settings_sets.h"
 #include "sha256.h"
 #include "track.h"
 
@@ -524,20 +525,21 @@ RbImportReport importRekordboxDrive(const Library& lib, const fs::path& rootIn, 
     rep.folders = int(madeFolders.size());
     if (!rep.cancelled) for (size_t i = 0; i < lists.size(); ++i) makePlaylist(i);          // those not finished earlier (tracks the database lacks)
 
-    // settings copied from the drive, only when asked
-    if (!opts.dryRun && !rep.cancelled) {
-        auto copySetting = [&](const char* relName, bool check) {
-            const fs::path src = root / "PIONEER" / relName;
-            std::string bytes, err;
-            if (!fs::is_regular_file(src, ec) || !readFile(src, &bytes, &err)) return;
-            if (check && !verifySettingsFile(bytes, &err)) { rep.warnings.push_back(std::string(relName) + " not copied: " + err); return; }
-            fs::create_directories(lib.settingsDir(), ec);
-            if (atomicWrite(lib.settingsDir() / fs::path(relName).filename(), bytes, &err)) ++rep.settingsFiles;
-            else rep.warnings.push_back(std::string(relName) + ": " + err);
-        };
-        if (opts.settings) { copySetting("DEVSETTING.DAT", true); copySetting("MYSETTING.DAT", true); }
-        if (opts.deviceFiles) { copySetting("rekordbox/RBFLTR.DAT", false); copySetting("rekordbox/exportExt.pdb", false); copySetting("USBMNG.DAT", false); }
-        if (opts.profile) copySetting("djprofile.nxs", false);
+    // settings copied from the drive into a new settings set, only when asked
+    if (!opts.dryRun && !rep.cancelled && (opts.settings || opts.deviceFiles || opts.profile)) {
+        std::vector<std::string> only;
+        if (opts.settings) { only.push_back("DEVSETTING.DAT"); only.push_back("MYSETTING.DAT"); }
+        if (opts.deviceFiles) { only.push_back("RBFLTR.DAT"); only.push_back("exportExt.pdb"); }
+        if (opts.profile) only.push_back("djprofile.nxs");
+        const std::string setName = uniqueSettingsSetName(lib, opts.settingsSetName.empty() ? "rekordbox" : opts.settingsSetName);
+        std::vector<std::string> found;
+        std::string err;
+        if (copySettingsSetFromDrive(lib, setName, root, &found, &err, &only)) {
+            rep.settingsFiles = int(found.size());
+            rep.settingsSet = setName;
+        } else {
+            rep.warnings.push_back("settings not copied: " + err);
+        }
     }
     rep.ok = true;
     return rep;

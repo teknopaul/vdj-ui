@@ -35,6 +35,7 @@ class ConfigManager;
 class ScriptManager;
 class TrakcrateTableView;
 class TrakcrateTreeWidget;
+class TrakcrateSettingsViewer;
 class TrakcratePreviewPlayer;
 class TrakcrateJobRunner;
 class TrakcrateTrackModel;
@@ -101,6 +102,21 @@ public:
     // the artwork encoder are filled in here. When registerName is not empty the destination is offered as a virtual pendrive on success.
     bool exportDrive(trakcrate::ExportOptions opts, const QString& registerName = QString());
 
+    // Settings sets (trakcrate/settings_sets.h): the player support files copied onto every pendrive. These change the library at once, refresh the
+    // tree and return false with err on failure; the dialogs of the User Settings menu call them.
+    bool createSettingsSet(const QString& name, const QString& userName, QString* err = nullptr);
+    bool copySettingsSet(const QString& name, const QString& driveFolder, QString* err = nullptr);
+    bool renameSettingsSet(const QString& from, const QString& to, QString* err = nullptr);
+    bool duplicateSettingsSet(const QString& from, const QString& to, QString* err = nullptr);
+    bool deleteSettingsSet(const QString& name, QString* err = nullptr);
+    bool makeDefaultSettingsSet(const QString& name, QString* err = nullptr);
+    // Links a virtual pendrive to a settings set ("" = follow the default); exports of that pendrive use it.
+    bool setPendriveSettings(const QString& drive, const QString& set, QString* err = nullptr);
+    bool setSettingsUserName(const QString& set, const QString& userName, QString* err = nullptr);
+
+    // The read only viewer of a set's files (and the differences to another set); not modal, deletes itself when closed.
+    TrakcrateSettingsViewer* showSettingsViewer(const QString& set, const QString& file = QString(), const QString& compareWith = QString());
+
     void refresh();                                                       // re-read the folder and playlist lists and the table
     void selectFolder(const QString& name);
     void selectPlaylist(const QString& name);
@@ -137,6 +153,9 @@ private slots:
     void newPendriveDialog();
     void treeContextMenu(const QPoint& pos);
     void deleteFolderDialog(const QString& folder);
+    void newSettingsDialog();
+    void copySettingsDialog();
+    void onTreeDoubleClick(QTreeWidgetItem* item);
     void exportPendrive(const QString& drive, bool physical);
     void editEntryTracks(int move, bool remove);                 // on the open pendrive entry: move the selected tracks (-1 up, +1 down) or remove them
     void rekordboxImportDialog();

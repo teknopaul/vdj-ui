@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QGridLayout>
 #include <QGroupBox>
+#include <QRadioButton>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -20,6 +21,7 @@
 #include <QPushButton>
 #include <QStorageInfo>
 
+#include "trakcrate/settings_sets.h"
 #include "trakcrate/usb_speed.h"
 #include <QTimer>
 #include <QVBoxLayout>
@@ -58,7 +60,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     advanced_ = new QGroupBox(QStringLiteral("Advanced / compatibility testing"));
     advanced_->setCheckable(true);
     advanced_->setChecked(false);
-    settings_ = new QCheckBox(QStringLiteral("DEVSETTING.DAT and MYSETTING.DAT"));
+    settings_ = new QCheckBox(QStringLiteral("The five player settings files (players need them: compatibility testing only)"));
     artwork_ = new QCheckBox(QStringLiteral("Artwork"));
     pvbr_ = new QCheckBox(QStringLiteral("PVBR tag (variable bitrate index)"));
     pwv4_ = new QCheckBox(QStringLiteral("PWV4 tag (colour preview waveform, approximated)"));
@@ -73,13 +75,24 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     rbfltr_ = new QCheckBox(QStringLiteral("RBFLTR.DAT"));
     usbmng_ = new QCheckBox(QStringLiteral("USBMNG.DAT"));
     djprofile_ = new QCheckBox(QStringLiteral("djprofile.nxs (contains a user name)"));
-    auto* adv = new QVBoxLayout(advanced_);
+    auto* advOuter = new QVBoxLayout(advanced_);
+    auto* extras = new QWidget;                                  // shown only while the box is ticked
+    advOuter->addWidget(extras);
+    advOuter->setContentsMargins(advOuter->contentsMargins().left(), 0, advOuter->contentsMargins().right(), 0);
+    auto* adv = new QVBoxLayout(extras);
+    adv->setContentsMargins(0, 0, 0, 0);
     for (QCheckBox* c : {settings_, artwork_, pvbr_, pwv4_, pwv5_, manifest_, verify_, unanalysed_}) adv->addWidget(c);
     adv->addWidget(new QLabel(QStringLiteral("Copy from a real drive, only to find out which files a player needs:")));
     adv->addWidget(realDrive_);
     auto* copies = new QHBoxLayout;
     for (QCheckBox* c : {exportExt_, rbfltr_, usbmng_, djprofile_}) copies->addWidget(c);
     adv->addLayout(copies);
+    extras->setVisible(false);
+    connect(advanced_, &QGroupBox::toggled, this, [this, extras](bool on) {
+        extras->setVisible(on);
+        layout()->activate();
+        resize(width(), on ? sizeHint().height() : minimumSizeHint().height());
+    });
 
     update_ = new QCheckBox(QStringLiteral("Update the drive (only changed files are written; the old export.pdb is kept as export.pdb.bak, up to 3 backups)"));
     update_->hide();
@@ -129,6 +142,26 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     layout->addWidget(summary_);
     layout->addWidget(update_);
     layout->addWidget(register_);
+    {
+        auto* box = new QGroupBox(QStringLiteral("Player settings"));
+        auto* bl = new QVBoxLayout(box);
+        auto* row = new QHBoxLayout;
+        row->addWidget(new QLabel(QStringLiteral("Settings to use:")));
+        settingsSet_ = new QComboBox;
+        settingsSet_->setToolTip(QStringLiteral("DEVSETTING.DAT, MYSETTING.DAT, djprofile.nxs, RBFLTR.DAT and exportExt.pdb. Players need all of them, so they are always written."));
+        row->addWidget(settingsSet_, 1);
+        bl->addLayout(row);
+        addMissing_ = new QRadioButton(QStringLiteral("Keep the settings files already on the drive, add the missing ones"));
+        replace_ = new QRadioButton(QStringLiteral("Update the settings files on the drive with these"));
+        addMissing_->setChecked(true);
+        bl->addWidget(addMissing_);
+        bl->addWidget(replace_);
+        const std::string def = trakcrate::defaultSettingsSet(lib_);
+        settingsSet_->addItem(def.empty() ? QStringLiteral("Default (none created yet: built in files)") : QStringLiteral("Default (%1)").arg(QString::fromStdString(def)), QString());
+        for (const trakcrate::SettingsSet& set : trakcrate::listSettingsSets(lib_)) settingsSet_->addItem(QString::fromStdString(set.name), QString::fromStdString(set.name));
+        settingsSet_->addItem(QStringLiteral("Built in files (no settings set)"), builtInSettingsKey());
+        layout->addWidget(box);
+    }
     layout->addWidget(advanced_);
     layout->addWidget(buttons);
     resize(560, sizeHint().height());
@@ -162,6 +195,7 @@ void TrakcrateExportDialog::setPendrive(const QString& drive, bool physical)
     pendrive_ = drive;
     setWindowTitle(physical ? QStringLiteral("Write pendrive \"%1\" to a physical device").arg(drive)
                             : QStringLiteral("Write pendrive \"%1\" as a rekordbox folder").arg(drive));
+    setSettingsSet(QString::fromStdString(trakcrate::effectiveDriveSettingsSet(lib_, drive.toStdString())));      // the set the pendrive is linked to
     playlists_->clear();
     const auto entries = lib_.driveEntries(drive.toStdString());
     for (size_t i = 0; i < entries.size(); ++i) {
@@ -176,6 +210,16 @@ void TrakcrateExportDialog::setPendrive(const QString& drive, bool physical)
         if (browse_) browse_->setVisible(false);
     }
     refreshSummary();
+}
+
+QString TrakcrateExportDialog::settingsSet() const { return settingsSet_->currentData().toString(); }
+bool TrakcrateExportDialog::replaceSettings() const { return replace_->isChecked(); }
+void TrakcrateExportDialog::setReplaceSettings(bool on) { (on ? replace_ : addMissing_)->setChecked(true); }
+
+void TrakcrateExportDialog::setSettingsSet(const QString& name)
+{
+    const int i = settingsSet_->findData(name);
+    settingsSet_->setCurrentIndex(i >= 0 ? i : 0);
 }
 
 void TrakcrateExportDialog::setDestination(const QString& dir) { dest_->setText(dir); refreshSummary(); }
@@ -228,6 +272,9 @@ trakcrate::ExportOptions TrakcrateExportDialog::options() const
     }
     o.dest = dest_->text().trimmed().toStdString();
     o.allowUnanalysed = unanalysed_->isChecked();
+    if (settingsSet() == builtInSettingsKey()) o.settingsBuiltIn = true;
+    else o.settingsSet = settingsSet().toStdString();
+    o.settingsPolicy = replace_->isChecked() ? trakcrate::ExportOptions::SettingsPolicy::Replace : trakcrate::ExportOptions::SettingsPolicy::AddMissing;
     o.update = !update_->isHidden() && update_->isChecked();
     // the advanced switches only count when the box is ticked; otherwise a normal full export
     const bool adv = advanced_->isChecked();

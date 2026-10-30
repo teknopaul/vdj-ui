@@ -31,6 +31,23 @@ const std::string& defaultExportExt();
 // what rekordbox writes (400058 bytes). A copy from another drive carries that drive's entries, so it is not used.
 std::string emptyUsbmng();
 
+// PIONEER/djprofile.nxs (doc/trakcrate/settings-files.md): 160 bytes. 0x00 u32 unknown, 0x04 u64 big endian milliseconds since 1970 (the profile's
+// date), 0x1c four unknown bytes (not a checksum of anything tried, see the doc), 0x20 the user name, NUL terminated, zero padded to the end.
+constexpr size_t kDjprofileSize = 160;
+constexpr size_t kDjprofileNameAt = 0x20;
+constexpr size_t kDjprofileNameMax = 63;           // bytes; the field is 128 long but only this much is assumed safe
+
+struct DjProfile {
+    uint64_t timestampMs = 0;
+    std::string userName;
+    uint32_t unknownAt1c = 0;                      // shown by the viewer; left untouched by an edit
+};
+bool parseDjprofile(const std::string& bytes, DjProfile* out, std::string* err = nullptr);
+
+// Writes the user name into the bytes of a djprofile.nxs, leaving every other byte (including the four unknown ones at 0x1c) as it was.
+// The name is UTF-8, 1..kDjprofileNameMax bytes, no control characters. UNTESTED ON A DECK: see doc/trakcrate/settings-files.md.
+bool setDjprofileUserName(std::string* bytes, const std::string& name, std::string* err = nullptr);
+
 // Reads a settings file a user provided as the template (for example from their own drive) and refuses a damaged one.
 bool loadSettingsFile(const std::string& path, std::string* out, std::string* err = nullptr);
 

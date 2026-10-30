@@ -8,6 +8,7 @@
 #include "trakcrate/exporter.h"
 #include "trakcrate/importer.h"
 #include "trakcrate/settings_files.h"
+#include "trakcrate/settings_sets.h"
 #include "trakcrate/sha256.h"
 
 #include <fstream>
@@ -160,6 +161,11 @@ private slots:
     void notEnoughSpaceIsRefusedUpFront();
     void updateKeepsBackupsAndSkipsUnchanged();
     void updateCancelKeepsOldDatabase();
+    void freshExportHasFiveFilesFromTheDefaultSet();
+    void chosenSetLandsOnTheDrive();
+    void unknownOrDamagedSetIsRefused();
+    void updateAddMissingKeepsTheDrivesSettings();
+    void updateReplaceOverwritesSettings();
     void orphansAreListedAndDeleted();
     void checksumsAreOffByDefault();
     void severalPlaylistsShareTracks();
@@ -620,6 +626,127 @@ void TestTrakcrateExport::updateCancelKeepsOldDatabase()
     std::atomic<bool> late(false);
     r = exportDrive(lib_, o, [&](int, int, const std::string& cur) { if (cur == "PIONEER/rekordbox/export.pdb") late = true; }, &late);
     QVERIFY2(r.ok, r.error.c_str());
+}
+
+static const char* const kFive[] = {"PIONEER/DEVSETTING.DAT", "PIONEER/MYSETTING.DAT", "PIONEER/djprofile.nxs", "PIONEER/rekordbox/RBFLTR.DAT",
+                                    "PIONEER/rekordbox/exportExt.pdb"};
+
+void TestTrakcrateExport::freshExportHasFiveFilesFromTheDefaultSet()
+{
+    importSet("Set", {{"a", 120}});
+    // no set at all: built in files
+    ExportResult r = exportDrive(lib_, options("Set", "usb0"));
+    QVERIFY2(r.ok, r.error.c_str());
+    for (const char* f : kFive) QVERIFY2(fs::is_regular_file(tmp_ / "usb0" / f), f);
+    QCOMPARE(r.settingsWritten.size(), size_t(5));
+    QVERIFY(r.settingsKept.empty());
+    QCOMPARE(slurp(tmp_ / "usb0/PIONEER/djprofile.nxs"), defaultDjprofile());
+    // with a default set the empty settingsSet means that set
+    QVERIFY(createSettingsSet(lib_, "Home", "Ana"));
+    r = exportDrive(lib_, options("Set", "usb1"));
+    QVERIFY2(r.ok, r.error.c_str());
+    DjProfile p;
+    QVERIFY(parseDjprofile(slurp(tmp_ / "usb1/PIONEER/djprofile.nxs"), &p));
+    QCOMPARE(p.userName, std::string("Ana"));
+    // settingsBuiltIn ignores sets
+    ExportOptions o = options("Set", "usb2");
+    o.settingsBuiltIn = true;
+    QVERIFY(exportDrive(lib_, o).ok);
+    QCOMPARE(slurp(tmp_ / "usb2/PIONEER/djprofile.nxs"), defaultDjprofile());
+}
+
+void TestTrakcrateExport::chosenSetLandsOnTheDrive()
+{
+    importSet("Set", {{"a", 120}});
+    QVERIFY(createSettingsSet(lib_, "Home", "Ana"));
+    QVERIFY(createSettingsSet(lib_, "Club", "Bo"));
+    ExportOptions o = options("Set", "usb");
+    o.settingsSet = "Club";
+    QVERIFY(exportDrive(lib_, o).ok);
+    DjProfile p;
+    QVERIFY(parseDjprofile(slurp(tmp_ / "usb/PIONEER/djprofile.nxs"), &p));
+    QCOMPARE(p.userName, std::string("Bo"));
+    // an explicit byte override still wins over the set
+    o = options("Set", "usb2");
+    o.settingsSet = "Club";
+    o.rbfltr = "FMAI-override";
+    QVERIFY(exportDrive(lib_, o).ok);
+    QCOMPARE(slurp(tmp_ / "usb2/PIONEER/rekordbox/RBFLTR.DAT"), std::string("FMAI-override"));
+}
+
+void TestTrakcrateExport::unknownOrDamagedSetIsRefused()
+{
+    importSet("Set", {{"a", 120}});
+    ExportOptions o = options("Set", "usb");
+    o.settingsSet = "Nope";
+    ExportResult r = exportDrive(lib_, o);
+    QVERIFY(!r.ok);
+    QVERIFY2(r.error.find("Nope") != std::string::npos, r.error.c_str());
+    QVERIFY(!fs::exists(tmp_ / "usb"));                                                  // nothing was written
+    QVERIFY(summariseExport(lib_, o).problems.size() >= 1);
+    QVERIFY(createSettingsSet(lib_, "Bad", ""));
+    std::string bad = defaultMySetting();
+    bad[0x70] ^= 1;
+    QVERIFY(atomicWrite(settingsSetDir(lib_, "Bad") / "MYSETTING.DAT", bad));
+    o.settingsSet = "Bad";
+    r = exportDrive(lib_, o);
+    QVERIFY(!r.ok);
+    QVERIFY2(r.error.find("MYSETTING.DAT") != std::string::npos, r.error.c_str());
+}
+
+void TestTrakcrateExport::updateAddMissingKeepsTheDrivesSettings()
+{
+    importSet("Set", {{"a", 120}});
+    QVERIFY(createSettingsSet(lib_, "Home", "Ana"));
+    QVERIFY(exportDrive(lib_, options("Set", "usb")).ok);
+    const fs::path usb = tmp_ / "usb";
+    // the drive's MYSETTING.DAT was changed on a deck, djprofile.nxs went missing
+    std::string mine = defaultMySetting();
+    mine[0x70] = char(mine[0x70] ^ 0x01);
+    fixSettingsCrc(&mine);
+    QVERIFY(atomicWrite(usb / "PIONEER/MYSETTING.DAT", mine));
+    fs::remove(usb / "PIONEER/djprofile.nxs");
+    const std::string usbmng = slurp(usb / "PIONEER/USBANLZ/USBMNG.DAT");
+    QVERIFY(atomicWrite(usb / "PIONEER/USBANLZ/USBMNG.DAT", usbmng + "deck"));
+    ExportOptions o = options("Set", "usb");
+    o.update = true;
+    ExportResult r = exportDrive(lib_, o);
+    QVERIFY2(r.ok, r.error.c_str());
+    QVERIFY(r.verified);                                                                 // the read back agrees with the kept files
+    QCOMPARE(slurp(usb / "PIONEER/MYSETTING.DAT"), mine);
+    QVERIFY(fs::is_regular_file(usb / "PIONEER/djprofile.nxs"));
+    QVERIFY(contains(r.settingsKept, "PIONEER/MYSETTING.DAT"));
+    QVERIFY(contains(r.settingsKept, "PIONEER/DEVSETTING.DAT"));
+    QCOMPARE(r.settingsWritten, (std::vector<std::string>{"PIONEER/djprofile.nxs"}));
+    QCOMPARE(slurp(usb / "PIONEER/USBANLZ/USBMNG.DAT"), usbmng + "deck");                // never overwritten
+    QCOMPARE(r.writeOrder.back(), std::string("PIONEER/rekordbox/export.pdb"));
+}
+
+void TestTrakcrateExport::updateReplaceOverwritesSettings()
+{
+    importSet("Set", {{"a", 120}});
+    QVERIFY(createSettingsSet(lib_, "Home", "Ana"));
+    QVERIFY(exportDrive(lib_, options("Set", "usb")).ok);
+    const fs::path usb = tmp_ / "usb";
+    QVERIFY(atomicWrite(usb / "PIONEER/MYSETTING.DAT", "from a deck"));
+    ExportOptions o = options("Set", "usb");
+    o.update = true;
+    o.settingsPolicy = ExportOptions::SettingsPolicy::Replace;
+    ExportResult r = exportDrive(lib_, o);
+    QVERIFY2(r.ok, r.error.c_str());
+    QVERIFY(r.verified);
+    QCOMPARE(slurp(usb / "PIONEER/MYSETTING.DAT"), defaultMySetting());
+    QVERIFY(contains(r.settingsWritten, "PIONEER/MYSETTING.DAT"));
+    QVERIFY(contains(r.settingsKept, "PIONEER/DEVSETTING.DAT"));                         // identical bytes: nothing to write
+    QVERIFY(!contains(r.settingsWritten, "PIONEER/DEVSETTING.DAT"));
+    // the set changes: Replace brings the new profile over
+    QVERIFY(createSettingsSet(lib_, "Other", "Cy"));
+    o.settingsSet = "Other";
+    r = exportDrive(lib_, o);
+    QVERIFY2(r.ok, r.error.c_str());
+    DjProfile p;
+    QVERIFY(parseDjprofile(slurp(usb / "PIONEER/djprofile.nxs"), &p));
+    QCOMPARE(p.userName, std::string("Cy"));
 }
 
 void TestTrakcrateExport::notEnoughSpaceIsRefusedUpFront()

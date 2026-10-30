@@ -45,3 +45,11 @@ Add dated notes here while developing, newest first.
 - 2026-10-28 (CLI Phase 2): `src-cli/c/lib/kv.c` (print a `key: value` line with the format's escapes) and `lib/natsort.c` are the first real format code in C; both are small and general to the trakcrate format, candidates for a libcdj-side `trakcrate format` module if the GUI ever wants to share them. `helper/cmd_probe.c` (tags and cover via libavformat) duplicates `src/trakcrate/audio_probe.cpp`. The bash `tc_kv_get/tc_kv_set` (awk) in `common.sh` are a third implementation of the same key/value rules (C++ `KvDoc`, C `kv.c` print only). The lock (`.trakcrate-lock`) is implemented in bash (`tc_lock`) and in C++ (`trakcrate_scripts.cpp`).
 - 2026-10-28 (CLI Phase 1): `src-cli/c/test/snip_core.h` is a copy of `references/libcdj/src/test/snip_core.h` (assertions for the snip framework). Pure test infrastructure: if more projects need it, it belongs with the snip tool rather than libcdj. `src-cli/c/lib/status.h` (the TC_* exit statuses) is CLI specific and stays.
 - 2026-10-28: file created with the candidates known from reading `src/trakcrate/` and libcdj's headers. Nothing has been moved.
+
+## Settings sets (user-settings plan)
+
+- `src/trakcrate/settings_sets.cpp` has its own small key/value reader and writer (`readKv`, `escapeValue`); `track.cpp` has another for `meta.txt`. A shared `kvfile` helper in `fsutil` would remove both copies, and `drive.txt` and `set.txt` could use it too.
+- `TrakcratePanel::treeContextMenu` is now long (pendrive, playlist, folder, settings branches). Each branch could be a small function that fills the menu and returns its action table.
+- The seven settings wrappers in `trakcrate_panel.cpp` (`createSettingsSet`, `renameSettingsSet`, ...) repeat the same lines. A helper taking a lambda would shorten them.
+- The CLI (`src-cli/`) has no settings sets; porting `settings_sets` to the C helper would make both tools agree on `user-settings/<set>/`.
+- `ExportOptions` still has both the settings byte fields and `settingsSet`; once callers stop passing bytes the fields could go.
