@@ -1,0 +1,18 @@
+Package: trakcrate-cli
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: @ARCH@
+Essential: no
+Depends: bash (>= 4.4), coreutils, findutils, rsync, file, @SHLIBS@
+Recommends:
+Suggests:
+Installed-Size: @SIZE@
+Maintainer: teknopaul [teknopaul@tp23.org]
+Conflicts:
+Replaces:
+Provides: trakcrate-cli
+Description: Command line tools for trakcrate libraries.
+ A set of helpers for scripting a trakcrate library (a plain directory tree of
+ audio, text metadata and symlinked playlists) and for building rekordbox
+ format pendrives from it. Independent of the vdj-ui GUI.

@@ -6,6 +6,10 @@ Source: `references/libcdj/rekordbox/PIONEER/` (the 7-track export). The big pen
 
 Copying them verbatim once from a real pendrive is reasonable and the safe default. We also know enough to generate the two `*SETTING.DAT` files, so we can stamp out settings later if wanted. `djprofile.nxs` and `RBFLTR.DAT` are different: see below.
 
+## Decision: always write all five (implemented)
+
+A pendrive missing these files made the real decks complain and crash, so none of them is optional. The five files of a real export (`DEVSETTING.DAT`, `MYSETTING.DAT`, `djprofile.nxs`, `rekordbox/RBFLTR.DAT`, `rekordbox/exportExt.pdb`) are kept in `data/trakcrate/user-settings/` (GUI) and `src-cli/c/data/user-settings/` (CLI), compiled into the programs, and every export writes them. A library's own `user-settings/` copies (from a rekordbox import) win over the built in ones. `djprofile.nxs` carries the name of the person it was made for, see below. `USBMNG.DAT`, `MPJ/` and `CDJ/` are still not written.
+
 ## DEVSETTING.DAT (140 bytes) and MYSETTING.DAT (148 bytes)
 
 Same container. All integers little endian.

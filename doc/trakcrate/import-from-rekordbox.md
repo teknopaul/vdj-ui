@@ -92,7 +92,7 @@ What it takes from the drive (read only):
 | PWAV, PWV2, PWV3, PWV5 waveforms | `waveform.bin` (PWV4 is still approximated at export) | `waveform=rekordbox` |
 | `PIONEER/Artwork/.../a<id>.jpg` (80x80), else the picture inside the audio | `artwork.jpg` | `artwork=rekordbox` |
 | the original `ANLZ0000.DAT/.EXT/.2EX` | `anlz/` byte for byte | n/a |
-| playlists | `pendrives/<Folder - Playlist>/` in the drive's order; an existing playlist is left alone | n/a |
+| playlists | `pendrives/<Folder - Playlist>/` in the drive's order; an existing playlist keeps its tracks and order, tracks it lacks are appended | n/a |
 | `DEVSETTING.DAT`, `MYSETTING.DAT` (option, CRC checked) | `user-settings/`, used by later exports | n/a |
 | `RBFLTR.DAT`, `exportExt.pdb`, `djprofile.nxs` (separate options, off) | `user-settings/` | n/a |
 
@@ -117,4 +117,5 @@ Importing by the drive's own `Contents/Artist/Album` folders gives hundreds of f
 - A track in no folder playlist goes into one folder named `rekordbox`, or, with "use their folders on the drive", into the folder of its location under `Contents/` (the old behaviour).
 - A drive **without playlists** (some DJs work that way) is imported into folders named after its folders on the drive, with no playlists.
 - API: `RbImportOptions::playlistFolders`, `folderOff`, `playlistOff`, `looseByPath`; `listRekordboxPlaylists(root)` gives the ids and names for the dialog.
+- Playlists (and folders) the library already has are listed with "(already in the library)" and start **unticked** in the GUI. Ticking one adds only the tracks the library lacks (appended at the end); the existing tracks and their order are not touched. The CLI adds new tracks to an existing playlist the same way.
 - A repeated import skips tracks it already has (same drive path and size), wherever they were filed. To redo an import with different folder choices, remove the earlier import's folders (or use a new library) first.

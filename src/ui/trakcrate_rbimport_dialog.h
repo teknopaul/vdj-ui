@@ -3,6 +3,7 @@
 
 #include <QDialog>
 
+#include "trakcrate/library.h"
 #include "trakcrate/rb_import.h"
 
 class QCheckBox;
@@ -19,7 +20,8 @@ class TrakcrateRbImportDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit TrakcrateRbImportDialog(QWidget* parent = nullptr);
+    // lib (may be null): playlists and folders it already has are listed unticked, ticking one adds only the tracks the library lacks.
+    explicit TrakcrateRbImportDialog(const trakcrate::Library* lib = nullptr, QWidget* parent = nullptr);
 
     void setFolder(const QString& folder);
     QString folder() const;
@@ -30,6 +32,8 @@ private slots:
     void folderEdited();
 
 private:
+    trakcrate::Library lib_;
+    bool haveLib_ = false;
     QComboBox* drives_;
     QLineEdit* folder_;
     QLabel* status_;

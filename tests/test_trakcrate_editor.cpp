@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScrollBar>
 #include <QSignalSpy>
 #include <QUndoStack>
 
@@ -55,6 +56,7 @@ private slots:
     void playerLoadsAMasterTrack();
     void cuemarksAreEditedWrittenAndUndone();
     void waveformEditModeReportsWhatTheUserDid();
+    void scrollBarPansTheZoomedWaveform();
 };
 
 void TestTrakcrateEditor::starsClickKeysAndClear()
@@ -255,6 +257,31 @@ void TestTrakcrateEditor::cuemarksAreEditedWrittenAndUndone()
     ed.undoStack()->redo();
     QCOMPARE(ed.cuemarkCount(), 1);
     Q_UNUSED(before);
+}
+
+void TestTrakcrateEditor::scrollBarPansTheZoomedWaveform()
+{
+    TrakcrateTrackEditor ed;
+    ed.setTrack(dir_);
+    ed.resize(600, 500);
+    ed.show();
+    WaveformWidget* w = ed.waveform();
+    QScrollBar* sb = ed.waveScrollBar();
+    QVERIFY(w->hasWaveform());
+    QVERIFY(!sb->isEnabled());                                   // the whole track is showing: nothing to scroll
+    const double len = w->analysis().lengthMs();
+    w->zoomAt(w->width() / 2, 4.0);                              // zoom in on the middle
+    QVERIFY(sb->isEnabled());
+    QVERIFY(w->viewStart() > 0);
+    QCOMPARE(sb->value(), int(std::lround(w->viewStart())));
+    QCOMPARE(double(sb->pageStep()), std::floor(w->viewSpan()));
+    sb->setValue(0);                                             // dragging the handle to the left reaches the very start
+    QCOMPARE(w->viewStart(), 0.0);
+    QVERIFY(w->viewSpan() < len);
+    sb->setValue(sb->maximum());
+    QVERIFY(qAbs(w->viewStart() + w->viewSpan() - len) < 1.5);   // and to the right, the very end
+    w->fit();
+    QVERIFY(!sb->isEnabled());
 }
 
 void TestTrakcrateEditor::waveformEditModeReportsWhatTheUserDid()

@@ -49,6 +49,10 @@ struct RbPlaylistInfo {
     std::string name;                        // the path: "Folder - Playlist"
     int tracks = 0;
 };
+// True when the library already has this playlist (hasPlaylist) / a master folder of this name. The dialog leaves those unticked.
+// Ticking an existing playlist adds the tracks it lacks and leaves the others alone.
+bool rekordboxPlaylistKnown(const Library& lib, const RbPlaylistInfo& p);
+bool rekordboxFolderKnown(const Library& lib, const RbPlaylistInfo& p);
 // The playlists (not the folders) of a drive's database, in natural name order. Empty for a drive without playlists; err says if the database is unreadable.
 std::vector<RbPlaylistInfo> listRekordboxPlaylists(const fs::path& root, std::string* err = nullptr);
 

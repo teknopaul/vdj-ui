@@ -1,0 +1,179 @@
+#!/bin/bash
+#
+# trakcrate ls [PATTERN]: list the tracks of the library (doc/trakcrate/cli-interface.md)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate ls [options] [PATTERN]
+
+List the tracks. PATTERN is matched against "folder/track", case-insensitively: a plain word
+matches anywhere in it, a pattern with * ? [ ] must match the whole name.
+
+Options:
+  -l, --long        more columns in the text format
+  --format FORMAT   text, tsv, json, jsonl or paths (one track directory per line, -0: NUL separated)
+  -0                NUL separated output with --format paths
+  --library DIR, -q, -v
+
+Fields (tsv, json, jsonl): path folder track title artist album genre key rating bpm duration_ms
+container audio_sha256 analysed origin_meta origin_beatgrid origin_cues origin_waveform origin_artwork'
+tc_help_or_summary "list the tracks of the library" "$usage" "$@"
+
+long=
+nul=
+pattern=
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        -l|--long) long=1; shift ;;
+        -0) nul=1; shift ;;
+        --) shift; break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *)
+            if [ -n "$pattern" ]; then
+                tc_usage_err "only one pattern"
+            fi
+            pattern=$1
+            shift
+            ;;
+    esac
+done
+if [ $# -gt 0 ]; then
+    if [ -n "$pattern" ] || [ $# -gt 1 ]; then
+        tc_usage_err "only one pattern"
+    fi
+    pattern=$1
+fi
+
+tc_library
+format=${TRAKCRATE_FORMAT:-text}
+
+# the tracks that match, one directory per line
+select_tracks()
+{
+    local dir rel
+    shopt -s nocasematch
+    while IFS= read -r dir; do
+        rel=${dir#"$tc_master"/}
+        if [ -n "$pattern" ]; then
+            case $pattern in
+                *[\*\?\[]*)
+                    # shellcheck disable=SC2053
+                    [[ $rel == $pattern ]] || continue
+                    ;;
+                *)
+                    [[ $rel == *"$pattern"* ]] || continue
+                    ;;
+            esac
+        fi
+        printf '%s\n' "$dir"
+    done < <(tc_all_tracks)
+}
+
+if [ "$format" = paths ]; then
+    if [ -n "$nul" ]; then
+        select_tracks | tr '\n' '\0'
+    else
+        select_tracks
+    fi
+    exit 0
+fi
+
+# one awk pass reads meta.txt, beatgrid.txt and source.txt of every track
+select_tracks | MASTER=$tc_master FORMAT=$format LONG=$long awk '
+    function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+    function unesc(s,   out, i, c, n) {
+        out = ""
+        for (i = 1; i <= length(s); i++) {
+            c = substr(s, i, 1)
+            if (c == "\\" && i < length(s)) {
+                n = substr(s, i + 1, 1)
+                if (n == "n") { out = out "\n"; i++; continue }
+                if (n == "\\") { out = out "\\"; i++; continue }
+            }
+            out = out c
+        }
+        return out
+    }
+    # reads a key/value file into the array kv (last of a repeated key wins)
+    function readkv(file, kv,   line, i, k) {
+        delete kv
+        while ((getline line < file) > 0) {
+            sub(/\r$/, "", line)
+            if (line ~ /^[ \t]*(#|$)/) continue
+            i = index(line, ":")
+            if (i == 0) continue
+            kv[trim(substr(line, 1, i - 1))] = unesc(trim(substr(line, i + 1)))
+        }
+        close(file)
+    }
+    function exists(file,   r) { r = (getline x < file); if (r >= 0) { close(file); return 1 } return 0 }
+    function jstr(s,   out, i, c) {
+        out = "\""
+        for (i = 1; i <= length(s); i++) {
+            c = substr(s, i, 1)
+            if (c == "\"") out = out "\\\""
+            else if (c == "\\") out = out "\\\\"
+            else if (c == "\n") out = out "\\n"
+            else if (c == "\t") out = out "\\t"
+            else if (c == "\r") out = out "\\r"
+            else out = out c
+        }
+        return out "\""
+    }
+    function tsvstr(s) { gsub(/\\/, "\\\\", s); gsub(/\t/, "\\t", s); gsub(/\n/, "\\n", s); return s }
+    function isnum(s) { return s ~ /^-?[0-9]+(\.[0-9]+)?$/ }
+    BEGIN {
+        n = split("path folder track title artist album genre key rating bpm duration_ms container audio_sha256 analysed origin_meta origin_beatgrid origin_cues origin_waveform origin_artwork", F, " ")
+        fmt = ENVIRON["FORMAT"]; master = ENVIRON["MASTER"]; long = ENVIRON["LONG"]
+        if (fmt == "tsv") { h = F[1]; for (i = 2; i <= n; i++) h = h "\t" F[i]; print h }
+        if (fmt == "json") printf "["
+        first = 1
+    }
+    {
+        dir = $0
+        rel = substr(dir, length(master) + 2)
+        slash = index(rel, "/")
+        folder = substr(rel, 1, slash - 1); track = substr(rel, slash + 1)
+        readkv(dir "/meta.txt", meta); readkv(dir "/beatgrid.txt", grid); readkv(dir "/source.txt", src)
+        v["path"] = dir; v["folder"] = folder; v["track"] = track
+        v["title"] = ("title" in meta) ? meta["title"] : track
+        v["artist"] = meta["artist"]; v["album"] = meta["album"]; v["genre"] = meta["genre"]; v["key"] = meta["key"]
+        v["rating"] = meta["rating"]
+        v["bpm"] = ("bpm" in grid) ? grid["bpm"] : ""
+        v["duration_ms"] = meta["duration_ms"]; v["container"] = meta["container"]; v["audio_sha256"] = meta["audio_sha256"]
+        v["analysed"] = (exists(dir "/beatgrid.txt") && exists(dir "/waveform.bin")) ? 1 : 0
+        v["origin_meta"] = ("origin.meta" in src) ? src["origin.meta"] : "generated"
+        v["origin_beatgrid"] = ("origin.beatgrid" in src) ? src["origin.beatgrid"] : "generated"
+        v["origin_cues"] = ("origin.cues" in src) ? src["origin.cues"] : "generated"
+        v["origin_waveform"] = ("origin.waveform" in src) ? src["origin.waveform"] : "generated"
+        v["origin_artwork"] = ("origin.artwork" in src) ? src["origin.artwork"] : "generated"
+        if (fmt == "tsv") {
+            line = ""
+            for (i = 1; i <= n; i++) line = line (i > 1 ? "\t" : "") tsvstr(v[F[i]])
+            print line
+        } else if (fmt == "json" || fmt == "jsonl") {
+            obj = "{"; sep = ""
+            for (i = 1; i <= n; i++) {
+                k = F[i]; val = v[k]
+                if (val == "") continue
+                if (k == "analysed") out = (val == 1) ? "true" : "false"
+                else if ((k == "rating" || k == "bpm" || k == "duration_ms") && isnum(val)) out = val
+                else out = jstr(val)
+                obj = obj sep jstr(k) ":" out; sep = ","
+            }
+            obj = obj "}"
+            if (fmt == "json") { printf "%s%s", (first ? "" : ","), obj } else print obj
+        } else {
+            label = folder "/" track
+            if (long == "1") printf "%-44s %-32s %-24s %7s %s\n", label, substr(v["title"], 1, 32), substr(v["artist"], 1, 24), (v["bpm"] == "" ? "-" : v["bpm"]), (v["analysed"] ? "analysed" : "-")
+            else print label
+        }
+        first = 0
+    }
+    END { if (fmt == "json") print "]" }
+'

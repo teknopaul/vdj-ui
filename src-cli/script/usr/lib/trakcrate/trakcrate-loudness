@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# trakcrate loudness [TRACK...]: peak and RMS levels, to see which tracks are not normalised
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate loudness [options] [TRACK...]
+
+Reports peak_dbfs and rms_dbfs from meta.txt (written by "trakcrate analyse"); all tracks when none is named.
+A track that has not been analysed shows no values (status skipped).
+Fields (tsv, json, jsonl): path peak_dbfs rms_dbfs status.   Options: --format FORMAT, --library DIR, -q, -v'
+tc_help_or_summary "peak and RMS levels of tracks" "$usage" "$@"
+
+declare -a tracks=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --) shift; tracks+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) tracks+=("$1"); shift ;;
+    esac
+done
+
+tc_library
+format=${TRAKCRATE_FORMAT:-text}
+declare -a dirs=()
+if [ "${#tracks[@]}" -eq 0 ]; then
+    mapfile -t dirs < <(tc_all_tracks)
+else
+    for t in "${tracks[@]}"; do
+        tc_track "$t"
+        dirs+=("$tc_track_dir")
+    done
+fi
+
+case $format in
+    tsv) printf 'path\tpeak_dbfs\trms_dbfs\tstatus\n' ;;
+    json) printf '[' ;;
+esac
+first=1
+for d in "${dirs[@]}"; do
+    peak=$(tc_kv_get "$d/meta.txt" peak_dbfs || true)
+    rms=$(tc_kv_get "$d/meta.txt" rms_dbfs || true)
+    status=ok
+    if [ -z "$peak" ] && [ -z "$rms" ]; then
+        status=skipped
+    fi
+    case $format in
+        tsv) printf '%s\t%s\t%s\t%s\n' "$d" "$peak" "$rms" "$status" ;;
+        json|jsonl)
+            rec='{"path":'$(tc_json_str "$d")
+            if [ -n "$peak" ]; then rec+=',"peak_dbfs":'$peak; fi
+            if [ -n "$rms" ]; then rec+=',"rms_dbfs":'$rms; fi
+            rec+=',"status":"'$status'"}'
+            if [ "$format" = json ]; then
+                printf '%s%s' "$([ "$first" = 1 ] || echo ,)" "$rec"
+            else
+                printf '%s\n' "$rec"
+            fi
+            ;;
+        paths) printf '%s\n' "$d" ;;
+        *) printf '%-44s peak %7s dBFS  rms %7s dBFS\n' "${d#"$tc_master"/}" "${peak:--}" "${rms:--}" ;;
+    esac
+    first=0
+done
+if [ "$format" = json ]; then
+    printf ']\n'
+fi

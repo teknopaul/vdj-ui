@@ -247,3 +247,18 @@ A library is valid when:
 - `waveform.bin`, if present, starts with `TCWV` version 1 and its `PWV3`/`PWV5` lengths agree.
 
 Everything else being absent, malformed or unknown is tolerated and reported, not fatal.
+
+## 16. Hidden entries and the library lock
+
+**Hidden entries.** A directory entry whose name starts with `.` is never a folder, track, playlist or pendrive. Readers MUST skip it when listing (and MUST NOT delete it).
+In use: `.trash/` (removed tracks kept for undo), `.trakcrate-history/` inside a track directory or the library (snapshots taken before a script runs), `.trakcrate-lock`, and the
+temporary files of atomic writes (section 1, rule 5; writers SHOULD name them `.<name>.tmp.<pid>` in the target directory so they are skipped by the rule).
+
+**The library lock.** Writers that change more than one file, or run long (import, analysis, export of a library, scripts), take an advisory lock so two tools do not write at the same time:
+
+- The lock is the file `<library>/.trakcrate-lock`, created with `O_CREAT|O_EXCL`; its content is the owner's process id in decimal and a newline.
+- If creating it fails, read the pid. If no such process exists (`kill(pid, 0)` fails with `ESRCH`) the lock is stale: remove it and try once more. Otherwise the library is busy.
+- Release by removing the file. A tool MUST release it on every exit path it controls.
+- Readers never take it. A single small atomic edit of one file (section 1, rule 5) does not need it.
+- Status of the references: the C++ implementation takes the lock only for script runs so far; the command line tools (`doc/trakcrate/cli.md`) take it for every multi-file write.
+  A tool that finds the lock held reports "library busy" (exit status 4 for the command line tools, `doc/trakcrate/cli-interface.md`).

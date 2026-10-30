@@ -1,0 +1,95 @@
+.TH VDJ-UI 1 "September 2026" "vdj-ui 0.1.0" "User Commands"
+.SH NAME
+vdj-ui \- 🎧 Qt GUI for Virtual DJ (renders ProLink beat grids)
+.SH SYNOPSIS
+.B vdj-ui
+[\fIoptions\fR]
+.SH DESCRIPTION
+.B vdj-ui
+is a Qt-based GUI for Virtual DJ that renders real-time beat positions from
+Pioneer CDJ/XDJ ProLink networks. It is designed for nightclub use with a dark
+theme, keyboard operation, and real-time beat grid rendering for up to five
+decks.
+.PP
+A single-page application provides a deck area (one horizontal row per deck),
+a track browser, a now-playing display, and a status bar showing network and
+master state. The VDJ and its physical decks are connected over the ProLink
+network; the relative beat position of each deck is rendered as a moving
+vertical line across a 4/4 beat grid aligned across all deck rows.
+.SH OPTIONS
+.TP
+.B \fB\-\-mock-beat\fR
+Run with interior/mock beat data so the grid scrolls without a connected
+network (used for development and testing).
+.TP
+.B \fB\-\-mock-vdj\fR
+Provide a mock VDJ so deck controls can be exercised without hardware.
+.TP
+.B \fB\-\-debug\fR
+Enable debug mode at startup: show the packet log dock panel and enable
+packet logging to the configured log file.
+.TP
+.B \fB\-\-link\-export\fR \fIFOLDER\fR
+Experimental. Open the rekordbox export in \fIFOLDER\fR in the browser and serve it to the other decks like a player with a USB stick in it, once connected
+(the Network menu has a checkbox "Export the Loaded Database as a LINK Player" for the database that is open; off by default). See doc/link\-export.md.
+.TP
+.B \fB\-\-rekordbox\-mode\fR \fIEXPORT\fR
+Experimental. Open the Rekordbox PC mode panel and start pretending to be a rekordbox PC that serves the rekordbox export
+in the folder \fIEXPORT\fR (the one containing PIONEER/rekordbox/export.pdb) to the decks. The same mode can be started
+from the Network menu. Options: \fB\-\-rb\-iface\fR \fINAME\fR, \fB\-\-rb\-name\fR \fINAME\fR (computer name shown on the decks),
+\fB\-\-rb\-device\fR \fIN\fR (default 17), \fB\-\-rb\-log\-dir\fR \fIDIR\fR,
+\fB\-\-rb\-unknown\-policy\fR \fIignore|empty|close\fR, \fB\-\-rb\-nfs\-exports\fR \fIA,B\fR (mount names offered to the decks, default /), \fB\-\-rb\-nfs\-export\-style\fR \fIlist|group|empty|unavailable\fR (how mountd EXPORT is answered), \fB\-\-rb\-no\-serve\fR (do not serve the files over NFS; by default the
+export folder is served read-only, portmapper on UDP 50111, mountd 50112, nfs 2049). Do not use together with Network > Connect or ADJ (same UDP ports).
+See doc/rekordbox\-mode.md.
+.SH KEYBOARD SHORTCUTS
+.TP
+.B F11
+Toggle full screen.
+.TP
+.B Ctrl+D
+Toggle the debug packet log panel.
+.TP
+.B Ctrl+Q
+Quit the application.
+.PP
+Play/pause, sync to master, become master, copy BPM, and pitch nudge all have
+configurable keyboard shortcuts for low-light operation (see
+.BR KeyboardShortcuts ).
+.SH CONFIGURATION
+Configuration and state are stored as flat files under
+.B /etc/vdj-ui/
+(or the user cache directory) and should be readable and writable by the
+normal user (UID 1000). The directory contains joystick mappings and USB/MIDI
+routing.
+.SH NETWORK
+.B vdj-ui
+can listen on a selectable network interface for ProLink packets, optionally
+participate as a VDJ in sync, NFS read, and NFS publish. The Network > AutoIP
+menu item starts the avahi-autoipd based link-local address helper (via a polkit
+GUI prompt for root). NFS mounts from connected players are managed
+automatically and released on shutdown.
+.SH LINK EXPORT
+The drive viewer has a tool bar with the virtual and plugged\-in pendrives, \fBUSB STOP\fR and \fBInsert\fR: Insert exports the chosen pendrive to the decks, USB STOP unmounts it like the
+button on a deck (dimmed when a deck uses the stick). The decks follow the switching only when \fBvdj\-ui\fR announces itself as an XDJ, so start it with \fBVDJ_UI_MODEL=XDJ\fR.
+The network interface is asked once and saved (Config > Forget Saved Network Interface); Config > Application Font sets the font. See doc/link\-export.md.
+.SH ENVIRONMENT
+.TP
+.B VDJ_UI_MODEL
+\fBXDJ\fR announces the virtual player as an XDJ\-700 (keep\-alive type and the 284\-byte status packet); needed for USB STOP / Insert. Default: CDJ\-1000.
+.SH FILES
+.TP
+.B /etc/vdj-ui/
+Configuration directory (user 1000 read-write).
+.TP
+.B ~/.cache/vdj-ui/mnt/
+Mount points for player NFS shares.
+.SH EXIT STATUS
+.B 0
+on success (normal quit), non-zero if the application fails to start.
+.SH BUGS
+Report issues at the project repository. Debug mode with packet logging may
+impact performance on low-power targets such as the Raspberry Pi and is
+disabled by default.
+.SH SEE ALSO
+.BR cpack (1),
+.BR mount (8)

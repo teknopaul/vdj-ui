@@ -117,7 +117,7 @@ rebuild_cache/fast: rebuild_cache
 
 # Special rule for the target list_install_components
 list_install_components:
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"Unspecified\""
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"Unspecified\" \"icons\""
 .PHONY : list_install_components
 
 # Special rule for the target list_install_components
@@ -190,6 +190,19 @@ preinstall/fast:
 depend:
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
+
+#=============================================================================
+# Target rules for targets named install-icons
+
+# Build rule for target.
+install-icons: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 install-icons
+.PHONY : install-icons
+
+# fast build rule for target.
+install-icons/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/install-icons.dir/build.make CMakeFiles/install-icons.dir/build
+.PHONY : install-icons/fast
 
 #=============================================================================
 # Target rules for targets named deb
@@ -268,6 +281,19 @@ vdj-trakcrate: cmake_check_build_system
 vdj-trakcrate/fast:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/build
 .PHONY : vdj-trakcrate/fast
+
+#=============================================================================
+# Target rules for targets named vdj-usb-watch
+
+# Build rule for target.
+vdj-usb-watch: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-usb-watch
+.PHONY : vdj-usb-watch
+
+# fast build rule for target.
+vdj-usb-watch/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-usb-watch.dir/build.make src/CMakeFiles/vdj-usb-watch.dir/build
+.PHONY : vdj-usb-watch/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui
@@ -411,6 +437,32 @@ vdj-trakcrate_autogen: cmake_check_build_system
 vdj-trakcrate_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate_autogen.dir/build.make src/CMakeFiles/vdj-trakcrate_autogen.dir/build
 .PHONY : vdj-trakcrate_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-usb-watch_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-usb-watch_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-usb-watch_autogen_timestamp_deps
+.PHONY : vdj-usb-watch_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-usb-watch_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-usb-watch_autogen_timestamp_deps.dir/build.make src/CMakeFiles/vdj-usb-watch_autogen_timestamp_deps.dir/build
+.PHONY : vdj-usb-watch_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-usb-watch_autogen
+
+# Build rule for target.
+vdj-usb-watch_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-usb-watch_autogen
+.PHONY : vdj-usb-watch_autogen
+
+# fast build rule for target.
+vdj-usb-watch_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-usb-watch_autogen.dir/build.make src/CMakeFiles/vdj-usb-watch_autogen.dir/build
+.PHONY : vdj-usb-watch_autogen/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui_autogen_timestamp_deps
@@ -762,6 +814,32 @@ vdj-ui-linkexport-test: cmake_check_build_system
 vdj-ui-linkexport-test/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test.dir/build
 .PHONY : vdj-ui-linkexport-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-pendrive-toolbar-test
+
+# Build rule for target.
+vdj-ui-pendrive-toolbar-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-pendrive-toolbar-test
+.PHONY : vdj-ui-pendrive-toolbar-test
+
+# fast build rule for target.
+vdj-ui-pendrive-toolbar-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-toolbar-test.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-toolbar-test.dir/build
+.PHONY : vdj-ui-pendrive-toolbar-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-autoip-permanent-test
+
+# Build rule for target.
+vdj-ui-autoip-permanent-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-autoip-permanent-test
+.PHONY : vdj-ui-autoip-permanent-test
+
+# fast build rule for target.
+vdj-ui-autoip-permanent-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-autoip-permanent-test.dir/build.make tests/CMakeFiles/vdj-ui-autoip-permanent-test.dir/build
+.PHONY : vdj-ui-autoip-permanent-test/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui-pendrive-registry-test
@@ -1180,6 +1258,84 @@ vdj-ui-trakcrate-artwork-test/fast:
 .PHONY : vdj-ui-trakcrate-artwork-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-editor-test
+
+# Build rule for target.
+vdj-ui-trakcrate-editor-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-editor-test
+.PHONY : vdj-ui-trakcrate-editor-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-editor-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-editor-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-editor-test.dir/build
+.PHONY : vdj-ui-trakcrate-editor-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-nudge-test
+
+# Build rule for target.
+vdj-ui-trakcrate-nudge-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-nudge-test
+.PHONY : vdj-ui-trakcrate-nudge-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-nudge-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-nudge-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-nudge-test.dir/build
+.PHONY : vdj-ui-trakcrate-nudge-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-artwork-edit-test
+
+# Build rule for target.
+vdj-ui-trakcrate-artwork-edit-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-artwork-edit-test
+.PHONY : vdj-ui-trakcrate-artwork-edit-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-artwork-edit-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-artwork-edit-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-artwork-edit-test.dir/build
+.PHONY : vdj-ui-trakcrate-artwork-edit-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-scripts-test
+
+# Build rule for target.
+vdj-ui-trakcrate-scripts-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-scripts-test
+.PHONY : vdj-ui-trakcrate-scripts-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-scripts-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-scripts-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-scripts-test.dir/build
+.PHONY : vdj-ui-trakcrate-scripts-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-rbimport-test
+
+# Build rule for target.
+vdj-ui-trakcrate-rbimport-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-rbimport-test
+.PHONY : vdj-ui-trakcrate-rbimport-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-rbimport-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-rbimport-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-rbimport-test.dir/build
+.PHONY : vdj-ui-trakcrate-rbimport-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-cuemarks-test
+
+# Build rule for target.
+vdj-ui-trakcrate-cuemarks-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-cuemarks-test
+.PHONY : vdj-ui-trakcrate-cuemarks-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-cuemarks-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test.dir/build
+.PHONY : vdj-ui-trakcrate-cuemarks-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-trakcrate-export-test
 
 # Build rule for target.
@@ -1191,6 +1347,19 @@ vdj-ui-trakcrate-export-test: cmake_check_build_system
 vdj-ui-trakcrate-export-test/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-export-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-export-test.dir/build
 .PHONY : vdj-ui-trakcrate-export-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-level-meter-test
+
+# Build rule for target.
+vdj-ui-level-meter-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-level-meter-test
+.PHONY : vdj-ui-level-meter-test
+
+# fast build rule for target.
+vdj-ui-level-meter-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-level-meter-test.dir/build.make tests/CMakeFiles/vdj-ui-level-meter-test.dir/build
+.PHONY : vdj-ui-level-meter-test/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
@@ -1763,6 +1932,58 @@ vdj-ui-linkexport-test_autogen: cmake_check_build_system
 vdj-ui-linkexport-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-linkexport-test_autogen.dir/build
 .PHONY : vdj-ui-linkexport-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps
+.PHONY : vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-pendrive-toolbar-test_autogen
+
+# Build rule for target.
+vdj-ui-pendrive-toolbar-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-pendrive-toolbar-test_autogen
+.PHONY : vdj-ui-pendrive-toolbar-test_autogen
+
+# fast build rule for target.
+vdj-ui-pendrive-toolbar-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-pendrive-toolbar-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-pendrive-toolbar-test_autogen.dir/build
+.PHONY : vdj-ui-pendrive-toolbar-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-autoip-permanent-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-autoip-permanent-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-autoip-permanent-test_autogen_timestamp_deps
+.PHONY : vdj-ui-autoip-permanent-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-autoip-permanent-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-autoip-permanent-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-autoip-permanent-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-autoip-permanent-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-autoip-permanent-test_autogen
+
+# Build rule for target.
+vdj-ui-autoip-permanent-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-autoip-permanent-test_autogen
+.PHONY : vdj-ui-autoip-permanent-test_autogen
+
+# fast build rule for target.
+vdj-ui-autoip-permanent-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-autoip-permanent-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-autoip-permanent-test_autogen.dir/build
+.PHONY : vdj-ui-autoip-permanent-test_autogen/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui-pendrive-registry-test_autogen_timestamp_deps
@@ -2597,6 +2818,162 @@ vdj-ui-trakcrate-artwork-test_autogen/fast:
 .PHONY : vdj-ui-trakcrate-artwork-test_autogen/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-editor-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-editor-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-editor-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-editor-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-editor-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-editor-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-editor-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-editor-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-editor-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-editor-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-editor-test_autogen
+.PHONY : vdj-ui-trakcrate-editor-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-editor-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-editor-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-editor-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-editor-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-nudge-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-nudge-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-nudge-test_autogen
+.PHONY : vdj-ui-trakcrate-nudge-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-nudge-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-nudge-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-nudge-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-nudge-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-artwork-edit-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-artwork-edit-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-artwork-edit-test_autogen
+.PHONY : vdj-ui-trakcrate-artwork-edit-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-artwork-edit-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-artwork-edit-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-artwork-edit-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-artwork-edit-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-scripts-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-scripts-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-scripts-test_autogen
+.PHONY : vdj-ui-trakcrate-scripts-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-scripts-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-scripts-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-scripts-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-scripts-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-rbimport-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-rbimport-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-rbimport-test_autogen
+.PHONY : vdj-ui-trakcrate-rbimport-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-rbimport-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-rbimport-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-rbimport-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-rbimport-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-cuemarks-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-cuemarks-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-cuemarks-test_autogen
+.PHONY : vdj-ui-trakcrate-cuemarks-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-cuemarks-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-cuemarks-test_autogen/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-trakcrate-export-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -2622,6 +2999,32 @@ vdj-ui-trakcrate-export-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-export-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-export-test_autogen.dir/build
 .PHONY : vdj-ui-trakcrate-export-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-level-meter-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-level-meter-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-level-meter-test_autogen_timestamp_deps
+.PHONY : vdj-ui-level-meter-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-level-meter-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-level-meter-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-level-meter-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-level-meter-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-level-meter-test_autogen
+
+# Build rule for target.
+vdj-ui-level-meter-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-level-meter-test_autogen
+.PHONY : vdj-ui-level-meter-test_autogen
+
+# fast build rule for target.
+vdj-ui-level-meter-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-level-meter-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-level-meter-test_autogen.dir/build
+.PHONY : vdj-ui-level-meter-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2638,6 +3041,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... deb"
+	@echo "... install-icons"
 	@echo "... vdj-cdj_autogen"
 	@echo "... vdj-cdj_autogen_timestamp_deps"
 	@echo "... vdj-dbserver_autogen"
@@ -2648,6 +3052,8 @@ help:
 	@echo "... vdj-trakcrate_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test_autogen"
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-autoip-permanent-test_autogen"
+	@echo "... vdj-ui-autoip-permanent-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beat-tempo-test_autogen"
 	@echo "... vdj-ui-beat-tempo-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatclock-test_autogen"
@@ -2704,6 +3110,8 @@ help:
 	@echo "... vdj-ui-integration-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-joystickmap-test_autogen"
 	@echo "... vdj-ui-joystickmap-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-level-meter-test_autogen"
+	@echo "... vdj-ui-level-meter-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-linkexport-test_autogen"
 	@echo "... vdj-ui-linkexport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-midi-map-input-test_autogen"
@@ -2716,6 +3124,8 @@ help:
 	@echo "... vdj-ui-packet-logger-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-pendrive-registry-test_autogen"
 	@echo "... vdj-ui-pendrive-registry-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-pendrive-toolbar-test_autogen"
+	@echo "... vdj-ui-pendrive-toolbar-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-playerquantize-test_autogen"
 	@echo "... vdj-ui-playerquantize-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rblibrary-test_autogen"
@@ -2740,24 +3150,38 @@ help:
 	@echo "... vdj-ui-trakcrate-analysis-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-anlz-roundtrip-test_autogen"
 	@echo "... vdj-ui-trakcrate-anlz-roundtrip-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-artwork-edit-test_autogen"
+	@echo "... vdj-ui-trakcrate-artwork-edit-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-artwork-test_autogen"
 	@echo "... vdj-ui-trakcrate-artwork-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen"
+	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-editor-test_autogen"
+	@echo "... vdj-ui-trakcrate-editor-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-export-test_autogen"
 	@echo "... vdj-ui-trakcrate-export-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-import-test_autogen"
 	@echo "... vdj-ui-trakcrate-import-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-library-test_autogen"
 	@echo "... vdj-ui-trakcrate-library-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-nudge-test_autogen"
+	@echo "... vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-panel-test_autogen"
 	@echo "... vdj-ui-trakcrate-panel-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-pdb-build-test_autogen"
 	@echo "... vdj-ui-trakcrate-pdb-build-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-rbimport-test_autogen"
+	@echo "... vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-scripts-test_autogen"
+	@echo "... vdj-ui-trakcrate-scripts-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-wrapper-test_autogen"
 	@echo "... vdj-ui-wrapper-test_autogen_timestamp_deps"
 	@echo "... vdj-ui_autogen"
 	@echo "... vdj-ui_autogen_timestamp_deps"
+	@echo "... vdj-usb-watch_autogen"
+	@echo "... vdj-usb-watch_autogen_timestamp_deps"
 	@echo "... xdj-nfs_autogen"
 	@echo "... xdj-nfs_autogen_timestamp_deps"
 	@echo "... xone-ladspa_autogen"
@@ -2768,6 +3192,7 @@ help:
 	@echo "... vdj-trakcrate"
 	@echo "... vdj-ui"
 	@echo "... vdj-ui-audio-test"
+	@echo "... vdj-ui-autoip-permanent-test"
 	@echo "... vdj-ui-beat-tempo-test"
 	@echo "... vdj-ui-beatclock-test"
 	@echo "... vdj-ui-beatgrid-test"
@@ -2796,12 +3221,14 @@ help:
 	@echo "... vdj-ui-fx-test"
 	@echo "... vdj-ui-integration-test"
 	@echo "... vdj-ui-joystickmap-test"
+	@echo "... vdj-ui-level-meter-test"
 	@echo "... vdj-ui-linkexport-test"
 	@echo "... vdj-ui-midi-map-input-test"
 	@echo "... vdj-ui-midi-matic-test"
 	@echo "... vdj-ui-nfsmount-test"
 	@echo "... vdj-ui-packet-logger-test"
 	@echo "... vdj-ui-pendrive-registry-test"
+	@echo "... vdj-ui-pendrive-toolbar-test"
 	@echo "... vdj-ui-playerquantize-test"
 	@echo "... vdj-ui-rblibrary-test"
 	@echo "... vdj-ui-rbmode-test"
@@ -2814,14 +3241,21 @@ help:
 	@echo "... vdj-ui-tracks-test"
 	@echo "... vdj-ui-trakcrate-analysis-test"
 	@echo "... vdj-ui-trakcrate-anlz-roundtrip-test"
+	@echo "... vdj-ui-trakcrate-artwork-edit-test"
 	@echo "... vdj-ui-trakcrate-artwork-test"
+	@echo "... vdj-ui-trakcrate-cuemarks-test"
+	@echo "... vdj-ui-trakcrate-editor-test"
 	@echo "... vdj-ui-trakcrate-export-test"
 	@echo "... vdj-ui-trakcrate-import-test"
 	@echo "... vdj-ui-trakcrate-library-test"
+	@echo "... vdj-ui-trakcrate-nudge-test"
 	@echo "... vdj-ui-trakcrate-panel-test"
 	@echo "... vdj-ui-trakcrate-pdb-build-test"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test"
+	@echo "... vdj-ui-trakcrate-rbimport-test"
+	@echo "... vdj-ui-trakcrate-scripts-test"
 	@echo "... vdj-ui-wrapper-test"
+	@echo "... vdj-usb-watch"
 	@echo "... xdj-nfs"
 	@echo "... xone-ladspa"
 .PHONY : help

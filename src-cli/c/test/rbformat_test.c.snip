@@ -1,0 +1,289 @@
+#define _GNU_SOURCE
+#include <errno.h>
+#include <stdarg.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "../lib/buf.h"
+#include "../lib/fsutil.h"
+#include "../lib/sha256.h"
+#include "../lib/kv.h"
+#include "../lib/beatgrid.h"
+#include "../lib/cuemarks.h"
+#include "../lib/pcm.h"
+#include "../lib/wave.h"
+#include "../lib/rbsettings.h"
+#include "../lib/rbpdb.h"
+#include "../lib/rbanlz.h"
+#include "../lib/rbcue.h"
+
+//SNIP_FILE SNIP_fsutil ../lib/fsutil.c
+//SNIP_FILE SNIP_sha256 ../lib/sha256.c
+//SNIP_FILE SNIP_wave ../lib/wave.c
+//SNIP_FILE SNIP_rbsettings ../lib/rbsettings.c
+//SNIP_FILE SNIP_rbpdb ../lib/rbpdb.c
+//SNIP_FILE SNIP_rbanlz ../lib/rbanlz.c
+//SNIP_FILE SNIP_rbcue ../lib/rbcue.c
+
+#include "snip_core.h"
+
+static void test_crc16(void)
+{
+    const uint8_t *dev, *my;
+    size_t dl, ml;
+    uint8_t copy[200];
+    const char *why = "";
+
+    snip_equals("CRC-16/XMODEM check value of 123456789", 0x31C3, tc_crc16_xmodem("123456789", 9));
+    dev = tc_default_devsetting(&dl);
+    my = tc_default_mysetting(&ml);
+    snip_equals("DEVSETTING.DAT is well formed", 0, tc_settings_verify(dev, dl, &why));
+    snip_equals("MYSETTING.DAT is well formed", 0, tc_settings_verify(my, ml, &why));
+    memcpy(copy, my, ml);
+    copy[0x70] ^= 0xFF;
+    snip_equals("a changed payload fails the CRC", -1, tc_settings_verify(copy, ml, &why));
+    snip_assert("and says so", strcmp(why, "CRC mismatch") == 0);
+    snip_equals("the CRC can be fixed", 0, tc_settings_fix_crc(copy, ml));
+    snip_equals("and then passes", 0, tc_settings_verify(copy, ml, &why));
+    snip_equals("a short file is refused", -1, tc_settings_verify(my, 10, &why));
+}
+
+static void test_devsql_strings(void)
+{
+    size_t n;
+    uint8_t *e;
+    char big[700];
+
+    e = tc_devsql_string("", &n);
+    snip_equals("empty: one byte", 1, (int)n);
+    snip_equals("empty is 0x03", 0x03, e[0]);
+    free(e);
+    e = tc_devsql_string("abc", &n);
+    snip_equals("short ASCII: kind + text", 4, (int)n);
+    snip_equals("kind = (len + 1) << 1 | 1", 0x09, e[0]);
+    snip_assert("text follows", memcmp(e + 1, "abc", 3) == 0);
+    free(e);
+    memset(big, 'x', 200);
+    big[200] = 0;
+    e = tc_devsql_string(big, &n);
+    snip_equals("long ASCII: 4 byte header", 204, (int)n);
+    snip_equals("long ASCII kind", 0x40, e[0]);
+    snip_equals("long ASCII length includes the header", 204, e[1] | e[2] << 8);
+    free(e);
+    e = tc_devsql_string("\xc5\x99", &n);          /* r with caron */
+    snip_equals("UTF-16LE: header + 2 bytes", 6, (int)n);
+    snip_equals("UTF-16 kind", 0x90, e[0]);
+    snip_equals("the code unit", 0x0159, e[4] | e[5] << 8);
+    free(e);
+    e = tc_devsql_string("\xf0\x9f\x8e\xa7", &n);  /* U+1F3A7 needs a surrogate pair */
+    snip_equals("surrogate pair: header + 4 bytes", 8, (int)n);
+    free(e);
+    memset(big, 'y', 650);
+    big[650] = 0;
+    e = tc_devsql_string(big, &n);
+    snip_equals("a very long text is cut to 500 bytes", 504, (int)n);
+    free(e);
+}
+
+static void test_beats_from_grid(void)
+{
+    struct tc_beatgrid g = { 120.0, 100500, 0.9, "", 0 };
+    struct tc_anlz_beat *b;
+    uint16_t *sub;
+    size_t n;
+
+    snip_equals("grid", 0, tc_anlz_beats_from_grid(&g, 3000, &b, &sub, &n));
+    snip_equals("beats in 3 s at 120 bpm from 100.5 ms", 6, (int)n);
+    snip_equals("first number", 1, b[0].number);
+    snip_equals("fifth number wraps to 1", 1, b[4].number);
+    snip_equals("tempo x100", 12000, b[0].bpm_x100);
+    snip_equals("first time in ms", 100, b[0].time_ms);
+    snip_equals("microsecond remainder", 500, sub[0]);
+    snip_equals("second beat 500 ms later", 600, b[1].time_ms);
+    free(b);
+    free(sub);
+    g.bpm = 0;
+    snip_equals("empty grid", 0, tc_anlz_beats_from_grid(&g, 3000, &b, &sub, &n));
+    snip_equals("no beats", 0, (int)n);
+}
+
+static void test_anlz_build(void)
+{
+    uint8_t pwav[400] = { 0 }, pwv2[100] = { 0 }, pwv3[30] = { 0 };
+    uint16_t pwv5[30] = { 0 };
+    struct tc_anlz_beat beats[2] = { { 1, 12800, 100 }, { 2, 12800, 569 } };
+    struct tc_anlz_cue hot[4];
+    struct tc_anlz_track d;
+    uint8_t *dat, *ext;
+    size_t dl, el;
+    char err[100];
+    int i;
+
+    memset(&d, 0, sizeof d);
+    memset(hot, 0, sizeof hot);
+    for (i = 0; i < 4; i++) {
+        hot[i].hot_cue = i + 1;
+        hot[i].time_ms = 1000u * (unsigned)(i + 1);
+        hot[i].marker = 1000;
+    }
+    d.audio_path = "/Contents/F/t.mp3";
+    d.beats = beats;
+    d.nbeats = 2;
+    d.pwav = pwav;
+    d.pwv2 = pwv2;
+    d.pwv3 = pwv3;
+    d.pwv5 = pwv5;
+    d.columns = 30;
+    d.hot_cues = hot;
+    d.nhot = 4;
+    d.include_pvbr = 1;
+    d.include_pwv5 = 1;
+    snip_equals("build", 0, tc_anlz_build(&d, &dat, &dl, &ext, &el, err, sizeof err));
+    snip_assert("DAT starts with PMAI", memcmp(dat, "PMAI", 4) == 0);
+    snip_assert("EXT starts with PMAI", memcmp(ext, "PMAI", 4) == 0);
+    snip_lequals("DAT length field", (long)dl, (long)tc_get_be32(dat + 8));
+    snip_lequals("EXT length field", (long)el, (long)tc_get_be32(ext + 8));
+    snip_assert("the path is UTF-16BE", memmem(dat, dl, "\0/\0C\0o\0n\0t", 10) != NULL);
+    snip_assert("the DAT has PQTZ", memmem(dat, dl, "PQTZ", 4) != NULL);
+    snip_assert("the EXT has PQT2 for a track with a grid", memmem(ext, el, "PQT2", 4) != NULL);
+    snip_assert("the DAT lists three hot cues, the EXT all four", memmem(ext, el, "PCP2", 4) != NULL);
+    free(dat);
+    free(ext);
+    d.nbeats = 0;
+    snip_equals("a track without a grid", 0, tc_anlz_build(&d, &dat, &dl, &ext, &el, err, sizeof err));
+    snip_assert("has no PQT2", memmem(ext, el, "PQT2", 4) == NULL);
+    free(dat);
+    free(ext);
+    d.pwav = NULL;
+    snip_equals("missing preview is refused", -1, tc_anlz_build(&d, &dat, &dl, &ext, &el, err, sizeof err));
+}
+
+static void test_pdb_build_and_parse(void)
+{
+    char *tpl, err[200];
+    size_t tl, len = 0, nrows, i;
+    struct tc_plan_track tracks[3];
+    size_t pl_tracks[2] = { 0, 1 };
+    struct tc_plan_playlist pls[1];
+    struct tc_export_plan plan;
+    struct tc_built_pdb built;
+    struct tc_pdb f;
+    const struct tc_pdb_row **rows;
+    uint8_t *again;
+
+    snip_equals("template", 0, tc_read_file("../../script/usr/share/trakcrate/template-export.pdb", &tpl, &tl));
+    memset(tracks, 0, sizeof tracks);
+    for (i = 0; i < 3; i++) {
+        tracks[i].title = i == 2 ? "T\xc5\x99" "eti" : "A track";
+        tracks[i].artist = i == 0 ? "Alpha" : "Beta";
+        tracks[i].album = "Album";
+        tracks[i].file_name = "t.mp3";
+        tracks[i].file_path = i == 0 ? "/Contents/F/a.mp3" : i == 1 ? "/Contents/F/b.mp3" : "/Contents/F/c.mp3";
+        tracks[i].audio_hash = "0123456789abcdef";
+        tracks[i].artwork_key = i == 2 ? NULL : "k1";
+        tracks[i].artwork_path = "/PIONEER/Artwork/00001/a1.jpg";
+        tracks[i].sample_rate = 44100;
+        tracks[i].sample_depth = 16;
+    }
+    pls[0].name = "P";
+    pls[0].tracks = pl_tracks;
+    pls[0].ntracks = 2;
+    plan.tracks = tracks;
+    plan.ntracks = 3;
+    plan.playlists = pls;
+    plan.nplaylists = 1;
+    snip_equals("build", 0, tc_pdb_build(&plan, (uint8_t *)tpl, tl, &built, err, sizeof err));
+    snip_assert("a whole number of pages", built.len % 4096 == 0);
+    snip_equals("one distinct artwork", 1, (int)built.nartwork);
+    snip_assert("analysis paths are distinct", strcmp(built.analyze_paths[0], built.analyze_paths[1]) != 0);
+    snip_assert("and well formed", strncmp(built.analyze_paths[0], "/PIONEER/USBANLZ/P", 18) == 0);
+    snip_equals("parse what was built", 0, tc_pdb_parse(built.bytes, built.len, &f, err, sizeof err));
+    rows = tc_pdb_table_rows(&f, 0, &nrows);
+    snip_equals("three track rows", 3, (int)nrows);
+    free(rows);
+    rows = tc_pdb_table_rows(&f, 8, &nrows);
+    snip_equals("two playlist entries", 2, (int)nrows);
+    free(rows);
+    again = tc_pdb_serialise(&f, &len, err, sizeof err);
+    snip_assert("serialise", again != NULL);
+    snip_assert("parse then serialise gives the same bytes", again != NULL && len == built.len && memcmp(again, built.bytes, len) == 0);
+    free(again);
+    tc_pdb_free(&f);
+    tc_built_pdb_free(&built);
+    plan.playlists = pls;
+    pl_tracks[1] = 7;
+    snip_equals("a playlist entry that is not a track is refused", -1, tc_pdb_build(&plan, (uint8_t *)tpl, tl, &built, err, sizeof err));
+    snip_equals("an unusable template is refused", -1, tc_pdb_build(&plan, (uint8_t *)"nope", 4, &built, err, sizeof err));
+    free(tpl);
+}
+
+static void test_cue_render(void)
+{
+    struct tc_waveform w, r;
+    struct tc_cuemarks cm;
+    struct tc_cuemark marks[2];
+    struct tc_cuerender o = { 1, 2, 0, 0 };
+    size_t i;
+
+    memset(&w, 0, sizeof w);
+    w.columns = 1500;
+    w.pwv3 = calloc(w.columns, 1);
+    w.pwv5 = calloc(w.columns, sizeof *w.pwv5);
+    memset(marks, 0, sizeof marks);
+    marks[0].ms = 2000;
+    marks[0].label = "";
+    marks[0].colour = "";
+    marks[0].extra = "";
+    marks[1].ms = 5000;
+    marks[1].hot = 'A';
+    marks[1].label = "";
+    marks[1].colour = "";
+    marks[1].extra = "";
+    cm.header = "";
+    cm.marks = marks;
+    cm.n = 2;
+    snip_equals("render", 0, tc_cuerender(&w, &cm, 10000, &o, &r));
+    snip_equals("the master is untouched", 0, w.pwv3[300]);
+    snip_equals("a spike at 2000 ms = column 300", TC_SPIKE_MONO, r.pwv3[300]);
+    snip_equals("two columns wide", TC_SPIKE_MONO, r.pwv3[301]);
+    snip_equals("and no more", 0, r.pwv3[302]);
+    snip_equals("white in PWV5", TC_SPIKE_WHITE5, r.pwv5[300]);
+    snip_equals("the preview column", TC_SPIKE_MONO, r.pwav[80]);
+    snip_equals("the tiny preview column", TC_SPIKE_TINY, r.pwv2[20]);
+    snip_equals("a hot cue A is the deck's own: skipped", 0, r.pwv3[750]);
+    tc_waveform_free(&r);
+    o.draw_hot = 1;
+    tc_cuerender(&w, &cm, 10000, &o, &r);
+    snip_equals("unless asked for", TC_SPIKE_MONO, r.pwv3[750]);
+    tc_waveform_free(&r);
+    o.enabled = 0;
+    tc_cuerender(&w, &cm, 10000, &o, &r);
+    for (i = 0; i < w.columns; i++) {
+        if (r.pwv3[i] != 0) {
+            snip_error("disabled rendering changed the waveform");
+            break;
+        }
+    }
+    tc_waveform_free(&r);
+    tc_waveform_free(&w);
+}
+
+int main(int argc, char **argv)
+{
+    test_crc16();
+    test_devsql_strings();
+    test_beats_from_grid();
+    test_anlz_build();
+    test_pdb_build_and_parse();
+    test_cue_render();
+    if (errors) { printf("%d errors\n", errors); return 1; }
+    printf("rbformat: all ok\n");
+    return 0;
+}

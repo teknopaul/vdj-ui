@@ -26,8 +26,9 @@ static QString usbSuffix(const QString& path)
     return usb.downgraded() ? QStringLiteral("  (%1, supports USB 3)").arg(QString::fromStdString(usb.label)) : QStringLiteral("  (%1)").arg(QString::fromStdString(usb.label));
 }
 
-TrakcrateRbImportDialog::TrakcrateRbImportDialog(QWidget* parent) : QDialog(parent)
+TrakcrateRbImportDialog::TrakcrateRbImportDialog(const trakcrate::Library* lib, QWidget* parent) : QDialog(parent), haveLib_(lib != nullptr)
 {
+    if (lib) lib_ = *lib;
     setWindowTitle(QStringLiteral("Import from a rekordbox drive"));
     QVBoxLayout* top = new QVBoxLayout(this);
     top->addWidget(new QLabel(QStringLiteral("Real analysis data on the drive (beat grids, cue points, waveforms) and its metadata are taken as they are, "
@@ -158,8 +159,14 @@ void TrakcrateRbImportDialog::fillPlaylists()
     for (const trakcrate::RbPlaylistInfo& p : pls) {
         auto* it = new QTreeWidgetItem(lists_, QStringList{QString::fromStdString(p.name), QString::number(p.tracks), QString(), QString()});
         it->setData(0, Qt::UserRole, p.id);
-        it->setCheckState(2, Qt::Checked);
-        it->setCheckState(3, Qt::Checked);
+        const bool havePl = haveLib_ && trakcrate::rekordboxPlaylistKnown(lib_, p);
+        const bool haveFolder = haveLib_ && trakcrate::rekordboxFolderKnown(lib_, p);
+        it->setCheckState(2, haveFolder || havePl ? Qt::Unchecked : Qt::Checked);          // already in the library: off unless the user asks
+        it->setCheckState(3, havePl ? Qt::Unchecked : Qt::Checked);
+        if (havePl || haveFolder) {
+            it->setText(0, it->text(0) + QStringLiteral("  (already in the library)"));
+            it->setToolTip(0, QStringLiteral("Tick to add the tracks of this playlist the library does not have yet; the tracks it has are left alone"));
+        }
         it->setTextAlignment(1, Qt::AlignRight);
     }
     const bool none = pls.empty();
@@ -168,7 +175,7 @@ void TrakcrateRbImportDialog::fillPlaylists()
     loosePaths_->setEnabled(!none);
     playlistNote_->setText(none ? QStringLiteral("This drive has no playlists: the tracks are imported into folders named after their folders on the drive, without playlists.")
                                 : QStringLiteral("Untick \"folder\" for playlists that only repeat tracks of other playlists. A track is stored once, in the first ticked folder "
-                                                 "that contains it. Unticking \"playlist\" leaves that playlist out of the library."));
+                                                 "that contains it. Unticking \"playlist\" leaves that playlist out of the library. Playlists already in the library start unticked: tick one to add only its new tracks."));
 }
 
 trakcrate::RbImportOptions TrakcrateRbImportDialog::options() const

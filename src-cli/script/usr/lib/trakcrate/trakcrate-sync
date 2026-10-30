@@ -1,0 +1,188 @@
+#!/bin/bash
+#
+# trakcrate sync NAME... TARGET: bring an exported drive up to date with rsync semantics
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate sync [options] PLAYLIST... TARGET
+
+Updates the drive in TARGET (made by "trakcrate export", or an empty folder) to match the playlists: the new drive is laid out in a
+work folder (the database, analysis files and artwork are built there; the audio is only linked) and rsync copies what differs.
+Audio is compared by size and modification time (so FAT'"'"'s two second granularity is allowed for), metadata by content.
+Order: audio first, the rest of PIONEER/, then export.pdb last, so a player never finds a database that names audio that is not
+there yet. Nothing in TARGET is removed unless --delete-orphans is given. SHA256SUMS is not maintained by sync (the audio is not read);
+an old one is removed, trakcrate-manifest.txt is updated. "trakcrate verify TARGET" checks the result.
+
+  --delete-orphans   remove from Contents/ and PIONEER/ what the playlists no longer need; the list is shown and confirmed (--yes skips)
+  -n, --dry-run      show what would be copied and removed (rsync itemized), change nothing
+  --tmpdir DIR       where the work folder goes (default $TMPDIR or /tmp)
+  --exclude-art, --allow-unanalysed, --settings-from DIR, --template FILE, --no-cuemarks, --cuemark-width N, --cuemark-green,
+  --cuemark-hot, --progress-fd N                                                     as for "trakcrate export"
+
+Output (--format tsv, json, jsonl): dest, playlists, tracks, files (copied), bytes (copied), removed, status.
+Options: --format FORMAT, --library DIR, --yes, -q, -v'
+tc_help_or_summary "update an exported drive" "$usage" "$@"
+
+declare -a args=() hflags=()
+delete_orphans=
+tmpdir=${TMPDIR:-/tmp}
+progress_fd=
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --delete-orphans) delete_orphans=1; shift ;;
+        --tmpdir|--tmpdir=*) tc_opt_value --tmpdir "$@"; tmpdir=$tc_value; shift "$tc_shift" ;;
+        --settings-from|--settings-from=*|--template|--template=*|--cuemark-width|--cuemark-width=*)
+            name=${1%%=*}
+            tc_opt_value "$name" "$@"
+            hflags+=("$name" "$tc_value")
+            shift "$tc_shift"
+            ;;
+        --allow-unanalysed|--no-cuemarks|--cuemark-green|--cuemark-hot) hflags+=("$1"); shift ;;
+        --exclude-art|--no-artwork) hflags+=(--no-artwork); shift ;;
+        --progress-fd|--progress-fd=*)
+            tc_opt_value --progress-fd "$@"
+            [[ $tc_value =~ ^[0-9]+$ ]] || tc_usage_err "--progress-fd needs a file descriptor number"
+            progress_fd=$tc_value
+            shift "$tc_shift"
+            ;;
+        --) shift; args+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) args+=("$1"); shift ;;
+    esac
+done
+if [ "${#args[@]}" -lt 2 ]; then
+    tc_usage_err "usage: trakcrate sync PLAYLIST... TARGET"
+fi
+command -v rsync >/dev/null || tc_die "rsync is not installed"
+tc_library
+format=${TRAKCRATE_FORMAT:-text}
+dry=${TRAKCRATE_DRY_RUN:-}
+target=${args[${#args[@]}-1]}
+unset 'args[${#args[@]}-1]'
+if [ -e "$target" ] && [ ! -d "$target" ]; then
+    tc_die "the target is not a folder: $target"
+fi
+
+work=$(mktemp -d "$tmpdir/trakcrate-sync.XXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+
+: > "$work/lists"
+for name in "${args[@]}"; do
+    tc_safe_name "$name" || tc_usage_err "bad playlist name '$name'"
+    pdir=$tc_lib/pendrives/$name
+    [ -d "$pdir" ] || tc_die "no such playlist: $name"
+    declare -a dirs=()
+    tc_playlist_dirs "$pdir" dirs
+    if [ "${#dirs[@]}" -eq 0 ]; then
+        printf '%s\t\n' "$name" >> "$work/lists"
+    fi
+    for d in "${dirs[@]}"; do
+        [ -d "$d" ] || tc_die "playlist $name has a dangling entry"
+        printf '%s\t%s\n' "$name" "$d" >> "$work/lists"
+    done
+done
+
+if [ -n "$progress_fd" ]; then
+    printf '{"event":"start","command":"sync","total":0}\n' >&"$progress_fd"
+    hflags+=(--progress-fd "$progress_fd")
+fi
+started=$(date +%s%3N)
+rc=0
+"$TRAKCRATE_HELPER" export --link-audio --to "$work/tree" "${hflags[@]}" < "$work/lists" > "$work/out" 2> "$work/err" || rc=$?
+if [ -s "$work/err" ]; then
+    cat "$work/err" >&2
+fi
+if [ "$rc" -ne 0 ]; then
+    if [ -n "$progress_fd" ]; then
+        printf '{"event":"done","ok":0,"skipped":0,"failed":1,"elapsed_ms":%s}\n' "$(($(date +%s%3N) - started))" >&"$progress_fd"
+    fi
+    if [ "$rc" -eq 2 ]; then exit 2; fi
+    exit 1
+fi
+IFS=$'\t' read -r _ r_lists r_tracks _ < "$work/out"
+tree=$work/tree
+
+if [ -z "$dry" ]; then mkdir -p -- "$target"; fi
+base=(rsync -rt --copy-links --modify-window=2 "--out-format=%i|%l|%n")
+# the three passes, in order: audio; the rest of PIONEER/; the database and the manifest last
+run_pass()
+{
+    # run_pass NAME RSYNC_ARGS... : the itemized lines go to $work/NAME.items
+    local name=$1
+    shift
+    local mode=()
+    if [ -n "$dry" ]; then mode=(-n); fi
+    "${base[@]}" "${mode[@]}" "$@" > "$work/$name.items"
+}
+orphans=()
+if [ -n "$delete_orphans" ]; then
+    # what would go: a dry run of the two passes that may delete
+    {
+        "${base[@]}" -n --delete "$tree/Contents/" "$target/Contents/" 2>/dev/null || true
+        "${base[@]}" -n --delete --exclude=/rekordbox/export.pdb -c "$tree/PIONEER/" "$target/PIONEER/" 2>/dev/null || true
+    } | sed -n 's/^\*deleting *|[0-9]*|//p' > "$work/orphans" || true
+    # the --out-format of a deletion is "*deleting|0|name"
+    mapfile -t orphans < "$work/orphans"
+    if [ "${#orphans[@]}" -gt 0 ]; then
+        tc_say "no longer needed (${#orphans[@]}):"
+        for o in "${orphans[@]}"; do tc_say "  $o"; done
+        if [ -z "$dry" ] && ! tc_confirm "Remove ${#orphans[@]} file(s) from $target?"; then
+            tc_die "not removing; run again without --delete-orphans, or with --yes"
+        fi
+    fi
+fi
+del=()
+if [ -n "$delete_orphans" ]; then del=(--delete); fi
+
+if [ -d "$tree/Contents" ]; then
+    run_pass audio "${del[@]}" "$tree/Contents/" "$target/Contents/" || tc_die "rsync failed (audio)"
+fi
+run_pass meta "${del[@]}" -c --exclude=/rekordbox/export.pdb "$tree/PIONEER/" "$target/PIONEER/" || tc_die "rsync failed (PIONEER)"
+if [ -z "$dry" ]; then mkdir -p -- "$target/PIONEER/rekordbox"; fi
+run_pass pdb -c "$tree/PIONEER/rekordbox/export.pdb" "$target/PIONEER/rekordbox/" || tc_die "rsync failed (export.pdb)"
+run_pass manifest -c "$tree/trakcrate-manifest.txt" "$target/" || tc_die "rsync failed (manifest)"
+if [ -z "$dry" ] && [ -e "$target/SHA256SUMS" ]; then
+    rm -f -- "$target/SHA256SUMS"
+fi
+
+files=0
+bytes=0
+for f in audio meta pdb manifest; do
+    [ -f "$work/$f.items" ] || continue
+    while IFS='|' read -r item len path; do
+        case $item in
+            \>f*|cL*|\>L*) files=$((files + 1)); bytes=$((bytes + len)); tc_debug "$path" ;;
+        esac
+    done < "$work/$f.items"
+done
+if [ -n "$dry" ] && [ "$format" = text ]; then
+    for f in audio meta pdb manifest; do
+        [ -f "$work/$f.items" ] && awk -F'|' '$1 ~ /^(>f|\*d)/ { print "  " $1 " " $3 }' "$work/$f.items"
+    done
+fi
+if [ -n "$progress_fd" ]; then
+    printf '{"event":"done","ok":%s,"skipped":0,"failed":0,"elapsed_ms":%s}\n' "$r_tracks" "$(($(date +%s%3N) - started))" >&"$progress_fd"
+fi
+status=ok
+if [ -n "$dry" ]; then status=dry-run; fi
+removed=${#orphans[@]}
+case $format in
+    tsv)
+        printf 'dest\tplaylists\ttracks\tfiles\tbytes\tremoved\tstatus\n'
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$target" "$r_lists" "$r_tracks" "$files" "$bytes" "$removed" "$status" ;;
+    json|jsonl)
+        rec='{"dest":'$(tc_json_str "$target")',"playlists":'$r_lists',"tracks":'$r_tracks',"files":'$files',"bytes":'$bytes',"removed":'$removed',"status":"'$status'"}'
+        if [ "$format" = json ]; then printf '[%s]\n' "$rec"; else printf '%s\n' "$rec"; fi ;;
+    paths) printf '%s\n' "$target" ;;
+    *)
+        if [ -n "$dry" ]; then
+            printf 'would copy %s files (%s KiB) to %s, remove %s\n' "$files" "$((bytes >> 10))" "$target" "$removed"
+        else
+            printf 'synced %s tracks in %s playlists to %s: %s files copied (%s KiB), %s removed\n' "$r_tracks" "$r_lists" "$target" "$files" "$((bytes >> 10))" "$removed"
+        fi ;;
+esac

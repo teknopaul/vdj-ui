@@ -6,6 +6,7 @@
 #include <QThread>
 
 #include <alsa/asoundlib.h>
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -22,9 +23,11 @@ public:
         : QThread(parent), device_(device) {}
 
     void requestStop() { stop_.storeRelaxed(1); }
+    void setMeterOnly(bool on) { meterOnly_ = on; }        // levels only: no audio is sent on
 
 signals:
     void chunkReady(QByteArray data, float rms);
+    void levels(float peakL, float peakR, float rmsL, float rmsR);
     void errorOccurred(QString msg);
 
 protected:
@@ -73,13 +76,18 @@ protected:
 
             const auto* s = reinterpret_cast<const int16_t*>(buf.constData());
             int count = static_cast<int>(n) * 2;
-            double sumSq = 0.0;
+            double sumSq = 0.0, sumCh[2] = {0.0, 0.0};
+            float peak[2] = {0.0f, 0.0f};
             for (int i = 0; i < count; ++i) {
                 double v = s[i] / 32768.0;
                 sumSq += v * v;
+                sumCh[i & 1] += v * v;
+                peak[i & 1] = std::max(peak[i & 1], static_cast<float>(std::fabs(v)));
             }
             float rms = static_cast<float>(std::sqrt(sumSq / count));
-            emit chunkReady(buf.left(static_cast<int>(n) * frameBytes), rms);
+            const double frames = std::max(1, count / 2);
+            emit levels(peak[0], peak[1], static_cast<float>(std::sqrt(sumCh[0] / frames)), static_cast<float>(std::sqrt(sumCh[1] / frames)));
+            if (!meterOnly_) emit chunkReady(buf.left(static_cast<int>(n) * frameBytes), rms);
         }
 
         snd_pcm_drop(pcm);
@@ -89,6 +97,7 @@ protected:
 private:
     QString    device_;
     QAtomicInt stop_{0};
+    bool       meterOnly_ = false;
 };
 
 // -------------------------------------------------------------------------
@@ -97,7 +106,7 @@ private:
 
 AudioRecorder::AudioRecorder(QObject* parent) : QObject(parent) {}
 
-AudioRecorder::~AudioRecorder() { stop(); }
+AudioRecorder::~AudioRecorder() { stopMonitor(); stop(); }
 
 QStringList AudioRecorder::availableDevices()
 {
@@ -119,8 +128,35 @@ QStringList AudioRecorder::availableDevices()
     return result;
 }
 
+void AudioRecorder::startMonitor(const QString& alsaDevice)
+{
+    stopMonitor();
+    if (recording_) return;                                 // the recording thread reports the levels
+    monitor_ = new RecordThread(alsaDevice, this);
+    monitor_->setMeterOnly(true);
+    connect(monitor_, &RecordThread::levels, this, &AudioRecorder::onMonitorLevels, Qt::QueuedConnection);
+    connect(monitor_, &RecordThread::errorOccurred, this, &AudioRecorder::monitorFailed, Qt::QueuedConnection);
+    monitor_->start();
+}
+
+void AudioRecorder::stopMonitor()
+{
+    if (!monitor_) return;
+    monitor_->disconnect(this);
+    monitor_->requestStop();
+    monitor_->wait(3000);
+    monitor_->deleteLater();
+    monitor_ = nullptr;
+}
+
+void AudioRecorder::onMonitorLevels(float peakL, float peakR, float rmsL, float rmsR)
+{
+    if (monitor_) emit levels(peakL, peakR, rmsL, rmsR);
+}
+
 bool AudioRecorder::start(const QString& alsaDevice, const QString& outputPath)
 {
+    stopMonitor();                                          // one open of the sound card at a time
     if (recording_) stop();
 
     startLame(outputPath);
@@ -135,6 +171,8 @@ bool AudioRecorder::start(const QString& alsaDevice, const QString& outputPath)
     thread_ = new RecordThread(alsaDevice, this);
     connect(thread_, &RecordThread::chunkReady,
             this, &AudioRecorder::onChunkReady, Qt::QueuedConnection);
+    connect(thread_, &RecordThread::levels,
+            this, &AudioRecorder::levels, Qt::QueuedConnection);
     connect(thread_, &RecordThread::errorOccurred,
             this, &AudioRecorder::errorOccurred);
     thread_->start();

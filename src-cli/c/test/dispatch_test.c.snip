@@ -1,0 +1,141 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../lib/status.h"
+#include "../helper/dispatch.h"
+
+//SNIP_FILE SNIP_dispatch ../helper/dispatch.c
+
+#include "snip_core.h"
+
+static int seen_argc;
+static char seen_arg0[64];
+static char seen_arg1[64];
+
+static int cmd_ok(int argc, char **argv)
+{
+    seen_argc = argc;
+    snprintf(seen_arg0, sizeof seen_arg0, "%s", argc > 0 ? argv[0] : "");
+    snprintf(seen_arg1, sizeof seen_arg1, "%s", argc > 1 ? argv[1] : "");
+    return TC_OK;
+}
+
+static int cmd_partial(int argc, char **argv)
+{
+    (void)argc; (void)argv;
+    return TC_PARTIAL;
+}
+
+static int cmd_version_stub(int argc, char **argv)
+{
+    (void)argc; (void)argv;
+    return 42;
+}
+
+static const struct helper_cmd table[] = {
+    { "ok", cmd_ok, "does it" },
+    { "partial", cmd_partial, "does some of it" },
+    { "version", cmd_version_stub, "the version" },
+    { NULL, NULL, NULL }
+};
+
+static char *slurp(FILE *f)
+{
+    long n;
+    char *s;
+    fflush(f);
+    n = ftell(f);
+    rewind(f);
+    s = calloc((size_t)n + 1, 1);
+    if (fread(s, 1, (size_t)n, f) != (size_t)n) { s[0] = 0; }
+    return s;
+}
+
+static void test_find(void)
+{
+    snip_assert("find: known", helper_find(table, "ok") == &table[0]);
+    snip_assert("find: last", helper_find(table, "version") == &table[2]);
+    snip_assert("find: unknown", helper_find(table, "nope") == NULL);
+    snip_assert("find: NULL name", helper_find(table, NULL) == NULL);
+    snip_assert("find: prefix is not a match", helper_find(table, "o") == NULL);
+    snip_assert("find: empty table", helper_find(&table[3], "ok") == NULL);
+}
+
+static void test_run_dispatches(void)
+{
+    char *argv[] = { "trakcrate-helper", "ok", "a b", "-x", NULL };
+    FILE *out = tmpfile(), *err = tmpfile();
+    char *o, *e;
+
+    snip_equals("run: status of the subcommand", TC_OK, helper_run(table, out, err, 4, argv));
+    snip_equals("run: argc counts from the subcommand", 3, seen_argc);
+    snip_assert("run: argv[0] is the subcommand", strcmp(seen_arg0, "ok") == 0);
+    snip_assert("run: arguments pass untouched", strcmp(seen_arg1, "a b") == 0);
+    o = slurp(out); e = slurp(err);
+    snip_assert("run: nothing printed", o[0] == 0 && e[0] == 0);
+    free(o); free(e); fclose(out); fclose(err);
+
+    argv[1] = "partial";
+    out = tmpfile(); err = tmpfile();
+    snip_equals("run: status passes through", TC_PARTIAL, helper_run(table, out, err, 2, argv));
+    fclose(out); fclose(err);
+}
+
+static void test_run_usage(void)
+{
+    char *none[] = { "trakcrate-helper", NULL };
+    char *bad[] = { "trakcrate-helper", "bogus", NULL };
+    char *help[] = { "trakcrate-helper", "--help", NULL };
+    char *h[] = { "trakcrate-helper", "-h", NULL };
+    FILE *out = tmpfile(), *err = tmpfile();
+    char *o, *e;
+
+    snip_equals("usage: no arguments", TC_USAGE, helper_run(table, out, err, 1, none));
+    o = slurp(out); e = slurp(err);
+    snip_assert("usage: no arguments, usage on stderr", strstr(e, "Usage: trakcrate-helper") != NULL);
+    snip_assert("usage: no arguments, stdout empty", o[0] == 0);
+    free(o); free(e); fclose(out); fclose(err);
+
+    out = tmpfile(); err = tmpfile();
+    snip_equals("usage: unknown subcommand", TC_USAGE, helper_run(table, out, err, 2, bad));
+    e = slurp(err);
+    snip_assert("usage: names the subcommand", strstr(e, "'bogus' is not a subcommand") != NULL);
+    free(e); fclose(out); fclose(err);
+
+    out = tmpfile(); err = tmpfile();
+    snip_equals("usage: --help", TC_OK, helper_run(table, out, err, 2, help));
+    o = slurp(out); e = slurp(err);
+    snip_assert("usage: --help lists the subcommands", strstr(o, "partial") != NULL && strstr(o, "does some of it") != NULL);
+    snip_assert("usage: --help is not an error", e[0] == 0);
+    free(o); free(e); fclose(out); fclose(err);
+
+    out = tmpfile(); err = tmpfile();
+    snip_equals("usage: -h", TC_OK, helper_run(table, out, err, 2, h));
+    fclose(out); fclose(err);
+}
+
+static void test_run_version(void)
+{
+    char *v1[] = { "trakcrate-helper", "--version", NULL };
+    char *v2[] = { "trakcrate-helper", "-V", NULL };
+    FILE *out = tmpfile(), *err = tmpfile();
+
+    snip_equals("--version runs the version subcommand", 42, helper_run(table, out, err, 2, v1));
+    snip_equals("-V too", 42, helper_run(table, out, err, 2, v2));
+    fclose(out); fclose(err);
+}
+
+int main(void)
+{
+    test_find();
+    test_run_dispatches();
+    test_run_usage();
+    test_run_version();
+    if (errors) {
+        printf("%d errors\n", errors);
+        return 1;
+    }
+    printf("dispatch: all ok\n");
+    return 0;
+}

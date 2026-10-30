@@ -63,6 +63,7 @@ TrackBrowser::TrackBrowser(QWidget* parent)
 
     details_ = new TrackDetails(this);
     split->addWidget(details_);
+    details_->setVisible(false);                  // only a loaded rekordbox database has track details; without one the tree gets the whole pane
     split->setStretchFactor(0, 3);
     split->setStretchFactor(1, 2);
 
@@ -117,6 +118,7 @@ void TrackBrowser::refresh()
 {
     miniDelegate_->setRoot(QString());
     tree_->clear();
+    details_->setVisible(false);
     if (mountPoint_.isEmpty())
         return;
 
@@ -253,6 +255,7 @@ bool TrackBrowser::openFolder(const QString& folder, QString* error)
 
     miniDelegate_->setRoot(QString());
     tree_->clear();
+    details_->setVisible(false);
     auto* top = new QTreeWidgetItem(tree_);
     top->setText(0, root.dirName());
     top->setIcon(0, style()->standardIcon(QStyle::SP_DriveHDIcon));
@@ -520,6 +523,7 @@ bool TrackBrowser::loadPdb(const QString& pdbPath, const QString& root, QString*
 
     top->setExpanded(true);
     plRoot->setExpanded(true);
+    details_->setVisible(true);
     return true;
 }
 

@@ -233,6 +233,14 @@ std::vector<RbPlaylistInfo> listRekordboxPlaylists(const fs::path& root, std::st
     return out;
 }
 
+bool rekordboxPlaylistKnown(const Library& lib, const RbPlaylistInfo& p) { return isSafeName(p.name) && lib.hasPlaylist(p.name); }
+
+bool rekordboxFolderKnown(const Library& lib, const RbPlaylistInfo& p)
+{
+    const std::vector<std::string> f = lib.listFolders();
+    return std::find(f.begin(), f.end(), p.name) != f.end();
+}
+
 bool isRekordboxDrive(const fs::path& root)
 {
     std::error_code ec;
@@ -283,7 +291,16 @@ RbImportReport importRekordboxDrive(const Library& lib, const fs::path& rootIn, 
         if (order.empty()) return;
         std::string perr;
         if (pl.name.empty() || !isSafeName(pl.name)) { rep.warnings.push_back("playlist skipped, bad name: " + pl.name); return; }
-        if (lib.hasPlaylist(pl.name)) { rep.warnings.push_back("playlist \"" + pl.name + "\" already exists, left as it was"); return; }
+        if (lib.hasPlaylist(pl.name)) {                      // an existing playlist keeps its tracks and order; only tracks it lacks are appended
+            std::set<fs::path> have;
+            for (const fs::path& p : lib.playlistTracks(pl.name)) have.insert(p.lexically_normal());
+            std::vector<fs::path> fresh;
+            for (const fs::path& p : order)
+                if (have.insert(p.lexically_normal()).second) fresh.push_back(p);
+            if (fresh.empty()) rep.warnings.push_back("playlist \"" + pl.name + "\" already exists, nothing new to add");
+            else if (!lib.addTracksToPlaylist(pl.name, fresh, -1, &perr)) rep.warnings.push_back("playlist \"" + pl.name + "\": " + perr);
+            return;
+        }
         if (lib.createPlaylist(pl.name, &perr) && lib.addTracksToPlaylist(pl.name, order, -1, &perr)) ++rep.playlists;
         else rep.warnings.push_back("playlist \"" + pl.name + "\": " + perr);
     };

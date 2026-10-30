@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../lib/natsort.h"
+
+//SNIP_FILE SNIP_natsort ../lib/natsort.c
+
+#include "snip_core.h"
+
+static int sign(int v) { return v < 0 ? -1 : (v > 0 ? 1 : 0); }
+
+static void less(const char *a, const char *b)
+{
+    char msg[200];
+    snprintf(msg, sizeof msg, "'%s' < '%s'", a, b);
+    snip_equals(msg, -1, sign(tc_natural_compare(a, b)));
+    snprintf(msg, sizeof msg, "'%s' > '%s'", b, a);
+    snip_equals(msg, 1, sign(tc_natural_compare(b, a)));
+}
+
+int main(void)
+{
+    less("track2", "track10");
+    less("Track 2", "track 10");
+    less("a", "b");
+    less("A", "b");
+    less("a", "B");
+    less("abc", "abcd");
+    less("", "a");
+    less("t1", "t01x");
+    less("x007", "x8");
+    less("file9.mp3", "file10.mp3");
+    less("1", "2");
+    less("a1b2", "a1b10");
+    less("99", "100");
+    less("a", "a1");
+
+    snip_equals("equal", 0, tc_natural_compare("same", "same"));
+    snip_equals("empty is equal to empty", 0, tc_natural_compare("", ""));
+    /* the same number written differently: the order is still total (byte comparison breaks the tie) */
+    snip_assert("leading zeros: not equal, ordered", tc_natural_compare("t01", "t1") != 0);
+    snip_equals("leading zeros: antisymmetric", -sign(tc_natural_compare("t01", "t1")), sign(tc_natural_compare("t1", "t01")));
+    /* a very long number does not overflow */
+    snip_equals("long digit runs", -1, sign(tc_natural_compare("n99999999999999999999", "n100000000000000000000")));
+    /* UTF-8 bytes compare as bytes */
+    snip_equals("utf8", -1, sign(tc_natural_compare("a", "\xc3\xa9")));
+
+    if (errors) { printf("%d errors\n", errors); return 1; }
+    printf("natsort: all ok\n");
+    return 0;
+}

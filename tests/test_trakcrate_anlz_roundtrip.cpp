@@ -174,6 +174,7 @@ private slots:
     void unanalysedTrackHasNoGrid();
     void beatsFromAGridMatchRekordbox();
     void cuesArePlacedLikeRekordbox();
+    void vbrCuesMatchARealRekordboxExport();
     void invalidDataIsRefused();
     void waveformsFromAnalysis();
     void crcOfTheSettingsFiles();
@@ -243,6 +244,8 @@ void TestTrakcrateAnlz::beatsFromAGridMatchRekordbox()
     QVERIFY(beatsFromGrid(BeatGrid(), 10000, &sub).empty());
     QVERIFY(sub.empty());
     QVERIFY(beatsFromGrid(g, 0, &sub).empty());
+    g.firstBeatUs = -50000;                                                 // a grid starting before the audio: no beat gets a wrapped time
+    for (const AnlzBeat& b : beatsFromGrid(g, 5000.0, &sub)) QVERIFY(b.timeMs <= 5000);
     QVERIFY(beatsFromGrid(g, 600.0, &sub).size() <= 2);                    // a very short track
 }
 
@@ -283,6 +286,37 @@ void TestTrakcrateAnlz::cuesArePlacedLikeRekordbox()
     anlz_cue_list_free(&l);
     anlz_close(dat);
     anlz_close(ext);
+}
+
+// The hot cues of a VBR mp3 as a current rekordbox wrote them (a real export of 01_afrovox.mp3, cues at 53, 1943 and 3832 ms): listed from the highest
+// hot cue down, with the time in 1/75 s and the seek byte offset in the tail words, and 88 byte PCP2 entries.
+void TestTrakcrateAnlz::vbrCuesMatchARealRekordboxExport()
+{
+    AnlzTrackData d;
+    d.audioPath = "/Contents/x/y.mp3";
+    d.pwav.assign(400, 0); d.pwv2.assign(100, 0);
+    const uint32_t ms[3] = {53, 1943, 3832}, pos[3] = {0, 36945, 75742};
+    for (int i = 0; i < 3; ++i) {
+        AnlzCue c; c.hotCue = i + 1; c.timeMs = ms[i]; c.seek = true; c.bytePos = pos[i];
+        d.hotCues.push_back(c);
+    }
+    AnlzFiles f;
+    QVERIFY(buildAnlz(d, &f));
+    auto hex = [](const std::string& s) { return QByteArray(s.data(), int(s.size())).toHex(); };
+    const QByteArray dat = hex(f.dat), ext = hex(f.ext);
+    // PCPT of hot cue 3 and hot cue 1, copied from the real file
+    QVERIFY(dat.contains("504350540000001c00000038000000030000000000010000ffffffff010003e800000ef8ffffffff0000011f00000000000127de00000000"));
+    QVERIFY(dat.contains("504350540000001c00000038000000010000000000010000ffffffff010003e800000035ffffffff00000003000000000000000000000000"));
+    QVERIFY(dat.indexOf("000000030000000000010000ffffffff") < dat.indexOf("000000010000000000010000ffffffff"));     // 3, 2, 1
+    const QByteArray pcp2 = "50435032000000100000005800000003010003e800000ef8ffffffff000100000000000000000000000000000000ff00"
+                            "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    QVERIFY(ext.contains(pcp2));
+    // a cue of any other file keeps the layout of the older sample files
+    AnlzTrackData o = d;
+    for (AnlzCue& c : o.hotCues) c.seek = false;
+    AnlzFiles g;
+    QVERIFY(buildAnlz(o, &g));
+    QVERIFY(!hex(g.dat).contains("00010000ffffffff010003e8"));
 }
 
 void TestTrakcrateAnlz::invalidDataIsRefused()

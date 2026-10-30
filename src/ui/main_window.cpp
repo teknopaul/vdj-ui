@@ -2131,6 +2131,9 @@ QDockWidget* MainWindow::trakcrateDock()
         if (!dir.isEmpty()) tcEditorDock_->show();
     });
     connect(tcEditor_, &TrakcrateTrackEditor::trackChanged, tcPanel_, &TrakcratePanel::refresh);
+    connect(tcPanel_, &TrakcratePanel::ratingEdited, this, [this](const QString& dir) {
+        if (tcEditor_->trackDir() == dir) tcEditor_->setTrack(dir);          // the editor shows the new stars
+    });
     connect(tcEditor_, &TrakcrateTrackEditor::gridChanged, this, [this](const QString& dir) {
         if (playerPanel_) playerPanel_->reloadTrakcrateAnalysis(dir);       // the deck uses the new grid at once
     });

@@ -1,0 +1,135 @@
+#!/bin/bash
+#
+# trakcrate export NAME... DEST: build a rekordbox format drive from playlists
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate export [options] PLAYLIST... DEST
+
+Builds a drive the CDJ/XDJ players read (PIONEER/ with export.pdb, analysis files, artwork, settings, and Contents/ with the
+audio) from the playlists (pendrives/NAME) of the library, in the order given. DEST is the last argument and must be an empty
+folder or not exist: nothing that is already there is ever changed. The metadata is built in a staging folder on tmpfs and checked
+with libcdj'"'"'s readers first; then each file is written to DEST once, audio first and export.pdb last, so an interrupted export
+leaves no database; then DEST is read back and compared by SHA-256 (--no-verify skips that). SHA256SUMS and
+trakcrate-manifest.txt are written in the root of the drive. Every track must be analysed (see "trakcrate analyse").
+
+  --tmpdir DIR          where the staging folder goes (default /dev/shm, $XDG_RUNTIME_DIR, the system temp folder)
+  --no-verify           do not read DEST back
+  --exclude-art         no artwork on the drive
+  --settings-from DIR   take DEVSETTING.DAT and MYSETTING.DAT from a real drive (DIR/PIONEER/ or DIR) instead of the built in ones
+  --allow-unanalysed    tracks without analysis get a flat waveform and no beat grid instead of refusing the export
+  --no-cuemarks         do not draw cuemarks as spikes into the exported waveforms; --cuemark-width N, --cuemark-green, --cuemark-hot
+  --template FILE       another template export.pdb (default $TRAKCRATE_DATA/template-export.pdb)
+  --no-settings --no-pvbr --no-pwv4 --no-pwv5 --no-manifest    leave a piece out (compatibility testing; recorded in the manifest)
+  -n, --dry-run         check everything and report what would be written, write nothing
+  --progress-fd N       JSON events on file descriptor N (cli-interface.md)
+
+Output (--format tsv, json, jsonl): dest, playlists, tracks, files, bytes, verified, status. Exit status 1 on failure, nothing is left
+in DEST. Options: --format FORMAT, --library DIR, -q, -v'
+tc_help_or_summary "export playlists as a rekordbox format drive" "$usage" "$@"
+
+declare -a args=() hflags=()
+progress_fd=
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --tmpdir|--tmpdir=*|--settings-from|--settings-from=*|--template|--template=*|--cuemark-width|--cuemark-width=*)
+            name=${1%%=*}
+            tc_opt_value "$name" "$@"
+            hflags+=("$name" "$tc_value")
+            shift "$tc_shift"
+            ;;
+        --no-verify|--allow-unanalysed|--no-cuemarks|--cuemark-green|--cuemark-hot|--no-settings|--no-pvbr|--no-pwv4|--no-pwv5|--no-manifest)
+            hflags+=("$1"); shift ;;
+        --exclude-art|--no-artwork) hflags+=(--no-artwork); shift ;;
+        --progress-fd|--progress-fd=*)
+            tc_opt_value --progress-fd "$@"
+            [[ $tc_value =~ ^[0-9]+$ ]] || tc_usage_err "--progress-fd needs a file descriptor number"
+            progress_fd=$tc_value
+            shift "$tc_shift"
+            ;;
+        --) shift; args+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) args+=("$1"); shift ;;
+    esac
+done
+if [ "${#args[@]}" -lt 2 ]; then
+    tc_usage_err "usage: trakcrate export PLAYLIST... DEST"
+fi
+if [ -n "$progress_fd" ] && [ ! -e "/proc/self/fd/$progress_fd" ]; then
+    tc_usage_err "--progress-fd $progress_fd is not open"
+fi
+tc_library
+format=${TRAKCRATE_FORMAT:-text}
+dest=${args[${#args[@]}-1]}
+unset 'args[${#args[@]}-1]'
+
+work=$(mktemp -d "${TMPDIR:-/tmp}/trakcrate-export.XXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+
+# the lists: NAME TAB TRACKDIR for every entry, an empty directory for an empty playlist
+: > "$work/lists"
+for name in "${args[@]}"; do
+    tc_safe_name "$name" || tc_usage_err "bad playlist name '$name'"
+    pdir=$tc_lib/pendrives/$name
+    [ -d "$pdir" ] || tc_die "no such playlist: $name"
+    declare -a dirs=()
+    tc_playlist_dirs "$pdir" dirs
+    if [ "${#dirs[@]}" -eq 0 ]; then
+        printf '%s\t\n' "$name" >> "$work/lists"
+    fi
+    for d in "${dirs[@]}"; do
+        [ -d "$d" ] || tc_die "playlist $name has a dangling entry"
+        printf '%s\t%s\n' "$name" "$d" >> "$work/lists"
+    done
+done
+
+dry=${TRAKCRATE_DRY_RUN:-}
+hflags+=(--to "$dest")
+if [ -n "$dry" ]; then hflags+=(--dry-run); fi
+if [ -n "$progress_fd" ]; then
+    printf '{"event":"start","command":"export","total":0}\n' >&"$progress_fd"
+    hflags+=(--progress-fd "$progress_fd")
+fi
+started=$(date +%s%3N)
+rc=0
+"$TRAKCRATE_HELPER" export "${hflags[@]}" < "$work/lists" > "$work/out" 2> "$work/err" || rc=$?
+if [ -s "$work/err" ]; then
+    cat "$work/err" >&2
+fi
+if [ "$rc" -ne 0 ]; then
+    if [ -n "$progress_fd" ]; then
+        printf '{"event":"done","ok":0,"skipped":0,"failed":1,"elapsed_ms":%s}\n' "$(($(date +%s%3N) - started))" >&"$progress_fd"
+    fi
+    if [ "$rc" -eq 2 ]; then exit 2; fi
+    exit 1
+fi
+IFS=$'\t' read -r r_dest r_lists r_tracks r_files r_bytes r_verified r_audio r_meta < "$work/out"
+if [ -n "$progress_fd" ]; then
+    printf '{"event":"done","ok":%s,"skipped":0,"failed":0,"elapsed_ms":%s}\n' "$r_tracks" "$(($(date +%s%3N) - started))" >&"$progress_fd"
+fi
+status=ok
+if [ -n "$dry" ]; then status=dry-run; fi
+verified=false
+if [ "$r_verified" = 1 ]; then verified=true; fi
+case $format in
+    tsv)
+        printf 'dest\tplaylists\ttracks\tfiles\tbytes\tverified\tstatus\n'
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$r_dest" "$r_lists" "$r_tracks" "$r_files" "$r_bytes" "$verified" "$status" ;;
+    json|jsonl)
+        rec='{"dest":'$(tc_json_str "$r_dest")',"playlists":'$r_lists',"tracks":'$r_tracks',"files":'$r_files',"bytes":'$r_bytes',"verified":'$verified',"status":"'$status'"}'
+        if [ "$format" = json ]; then printf '[%s]\n' "$rec"; else printf '%s\n' "$rec"; fi ;;
+    paths) printf '%s\n' "$r_dest" ;;
+    *)
+        if [ -n "$dry" ]; then
+            printf 'would export %s tracks in %s playlists to %s (%s MiB of audio, about %s MiB of metadata)\n' "$r_tracks" "$r_lists" "$r_dest" \
+                "$((r_audio >> 20))" "$((r_meta >> 20))"
+        else
+            printf 'exported %s tracks in %s playlists to %s: %s files, %s MiB%s\n' "$r_tracks" "$r_lists" "$r_dest" "$r_files" "$((r_bytes >> 20))" \
+                "$([ "$verified" = true ] && echo ', verified')"
+        fi ;;
+esac

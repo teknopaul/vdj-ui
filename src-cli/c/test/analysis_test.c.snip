@@ -1,0 +1,182 @@
+#define _GNU_SOURCE
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "../lib/fsutil.h"
+#include "../lib/kv.h"
+#include "../lib/beatgrid.h"
+#include "../lib/beats.h"
+#include "../lib/wave.h"
+
+//SNIP_FILE SNIP_fsutil ../lib/fsutil.c
+//SNIP_FILE SNIP_kv ../lib/kv.c
+//SNIP_FILE SNIP_beatgrid ../lib/beatgrid.c
+//SNIP_FILE SNIP_beats ../lib/beats.c
+//SNIP_FILE SNIP_wave ../lib/wave.c
+
+#include "snip_core.h"
+
+/* a kick on every beat (decaying 60 Hz sine) and a hat between them */
+static struct tc_pcm click_track(double bpm, double secs, double offset, double level)
+{
+    struct tc_pcm p;
+    size_t i, n = (size_t)(secs * TC_SAMPLE_RATE);
+    double period = 60.0 / bpm;
+
+    p.frames = n;
+    p.sample_rate = TC_SAMPLE_RATE;
+    p.stereo = calloc(n * 2, sizeof(float));
+    for (i = 0; i < n; i++) {
+        double t = (double)i / TC_SAMPLE_RATE, v = 0;
+        if (t >= offset) {
+            double ph = fmod(t - offset, period);
+            if (ph < 0.1) {
+                v = level * exp(-ph * 40) * sin(2 * M_PI * 60 * ph);
+            }
+        }
+        p.stereo[2 * i] = p.stereo[2 * i + 1] = (float)v;
+    }
+    return p;
+}
+
+static void test_beats(void)
+{
+    struct tc_pcm p = click_track(128, 20, 0.1, 0.9);
+    struct tc_beat_analysis r;
+
+    snip_equals("beats: ok", 0, tc_analyse_beats(&p, 0, 70, 180, &r));
+    snip_assert("beats: 128 bpm", fabs(r.grid.bpm - 128.0) < 0.05);
+    snip_assert("beats: first beat near 100 ms", llabs(r.grid.first_beat_us - 100000) < 5000);
+    snip_assert("beats: confident", r.confidence > 0.8);
+    {
+        struct tc_beat_analysis again;
+        tc_analyse_beats(&p, 0, 70, 180, &again);
+        snip_assert("beats: deterministic", again.grid.bpm == r.grid.bpm && again.grid.first_beat_us == r.grid.first_beat_us && again.confidence == r.confidence);
+    }
+    /* a prior picks the octave: 64 bpm is the half-time reading of the same clicks */
+    tc_analyse_beats(&p, 64, 70, 180, &r);
+    snip_assert("beats: a half-time prior", fabs(r.grid.bpm - 64.0) < 0.1 || fabs(r.grid.bpm - 128.0) < 0.1);
+    tc_pcm_free(&p);
+
+    p = click_track(128, 3, 0.1, 0.9);
+    tc_analyse_beats(&p, 0, 70, 180, &r);
+    snip_assert("beats: under 4 seconds gives no grid", r.grid.bpm == 0 && r.confidence == 0);
+    tc_pcm_free(&p);
+
+    p = click_track(128, 10, 0.1, 0.0);
+    tc_analyse_beats(&p, 0, 70, 180, &r);
+    snip_assert("beats: silence gives no grid", r.grid.bpm == 0);
+    tc_pcm_free(&p);
+
+    p.frames = 0;
+    p.stereo = NULL;
+    p.sample_rate = TC_SAMPLE_RATE;
+    snip_equals("beats: no audio", 0, tc_analyse_beats(&p, 0, 70, 180, &r));
+    snip_assert("beats: no audio, no grid", r.grid.bpm == 0);
+}
+
+static void test_waveform(void)
+{
+    struct tc_pcm p = click_track(120, 10, 0.0, 0.5);
+    struct tc_waveform w, back;
+    uint8_t *bytes;
+    size_t len;
+
+    snip_equals("wave: analyse", 0, tc_analyse_waveform(&p, &w));
+    snip_equals("wave: 150 columns per second", 1500, (int)w.columns);
+    snip_assert("wave: the first column holds the kick", (w.pwv3[0] & 31) >= 10 && (w.pwv3[0] & 31) <= 16);       /* a decaying sine of level 0.5 peaks near 0.43 */
+    snip_assert("wave: heights are absolute (half scale for 0.5)", tc_height_from_peak(0.5) == 16);
+    snip_equals("wave: full scale is 31", 31, tc_height_from_peak(1.0));
+    snip_equals("wave: silence is 0", 0, tc_height_from_peak(0));
+    snip_equals("wave: over full scale is clamped", 31, tc_height_from_peak(2.0));
+    snip_equals("wave: band level 0", 0, tc_band_level(0));
+    snip_equals("wave: band level full", 7, tc_band_level(0.9));
+
+    bytes = tc_waveform_serialise(&w, &len);
+    snip_assert("wave: serialise", bytes != NULL && len == 12 + 408 + 108 + 8 + 1500 + 8 + 3000);
+    snip_assert("wave: magic", memcmp(bytes, "TCWV", 4) == 0 && bytes[4] == 1);
+    snip_equals("wave: parse", 0, tc_waveform_parse(bytes, len, &back));
+    snip_assert("wave: round trip", back.columns == w.columns && memcmp(back.pwv3, w.pwv3, w.columns) == 0
+        && memcmp(back.pwv5, w.pwv5, w.columns * 2) == 0 && memcmp(back.pwav, w.pwav, 400) == 0 && memcmp(back.pwv2, w.pwv2, 100) == 0);
+    tc_waveform_free(&back);
+
+    /* damaged files are refused */
+    snip_assert("wave: truncated", tc_waveform_parse(bytes, len - 5, &back) != 0);
+    snip_assert("wave: too short", tc_waveform_parse(bytes, 8, &back) != 0);
+    bytes[4] = 2;
+    snip_assert("wave: unknown version", tc_waveform_parse(bytes, len, &back) != 0);
+    bytes[4] = 1;
+    bytes[8] ^= 1;
+    snip_assert("wave: column count and sections disagree", tc_waveform_parse(bytes, len, &back) != 0);
+    free(bytes);
+
+    /* an unknown section is skipped */
+    {
+        uint8_t *b2 = tc_waveform_serialise(&w, &len), *ext = malloc(len + 12);
+        memcpy(ext, b2, len);
+        memcpy(ext + len, "XXXX\x04\x00\x00\x00zzzz", 12);
+        snip_equals("wave: unknown sections are skipped", 0, tc_waveform_parse(ext, len + 12, &back));
+        tc_waveform_free(&back);
+        free(ext);
+        free(b2);
+    }
+    tc_waveform_free(&w);
+    tc_pcm_free(&p);
+
+    /* a track that is not a whole number of columns long, and an empty one */
+    p.sample_rate = TC_SAMPLE_RATE;
+    p.frames = 1000;
+    p.stereo = calloc(2000, sizeof(float));
+    snip_equals("wave: short", 0, tc_analyse_waveform(&p, &w));
+    snip_equals("wave: 1000 samples are 4 columns of 294", 4, (int)w.columns);
+    tc_waveform_free(&w);
+    p.frames = 0;
+    snip_equals("wave: empty", 0, tc_analyse_waveform(&p, &w));
+    snip_equals("wave: no columns", 0, (int)w.columns);
+    bytes = tc_waveform_serialise(&w, &len);
+    snip_equals("wave: an empty waveform parses", 0, tc_waveform_parse(bytes, len, &back));
+    free(bytes);
+    tc_waveform_free(&back);
+    tc_waveform_free(&w);
+    free(p.stereo);
+}
+
+static void test_loudness(void)
+{
+    struct tc_pcm p = click_track(120, 5, 0.0, 0.5);
+    double peak, rms;
+
+    tc_measure_loudness(&p, &peak, &rms);
+    snip_assert("loudness: a kick of level 0.5 peaks between -9 and -6 dBFS", peak > -9 && peak < -6);
+    snip_assert("loudness: rms is below the peak", rms < peak && rms > -60);
+    tc_pcm_free(&p);
+    p.frames = 100;
+    p.sample_rate = TC_SAMPLE_RATE;
+    p.stereo = calloc(200, sizeof(float));
+    tc_measure_loudness(&p, &peak, &rms);
+    snip_assert("loudness: silence is -120", peak == -120 && rms == -120);
+    free(p.stereo);
+    p.frames = 0;
+    p.stereo = NULL;
+    tc_measure_loudness(&p, &peak, &rms);
+    snip_assert("loudness: nothing is -120", peak == -120);
+}
+
+int main(void)
+{
+    test_beats();
+    test_waveform();
+    test_loudness();
+    if (errors) { printf("%d errors\n", errors); return 1; }
+    printf("analysis: all ok\n");
+    return 0;
+}

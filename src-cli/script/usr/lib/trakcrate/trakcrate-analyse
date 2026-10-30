@@ -1,0 +1,279 @@
+#!/bin/bash
+#
+# trakcrate analyse TRACK...: beat grid, waveform and loudness of tracks (doc/trakcrate/cli.md)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate analyse [options] TRACK...
+       trakcrate analyse [options] --all
+
+Decodes each track once and writes beatgrid.txt, waveform.bin and peak_dbfs / rms_dbfs in meta.txt. Groups whose
+origin in source.txt is rekordbox or edited are skipped unless --force (their origin then becomes generated).
+The result is deterministic: the same audio and options give the same bytes.
+
+Options:
+  --all               every track of the library
+  --only LIST         beatgrid, waveform or beatgrid,waveform
+  --force             also redo protected groups
+  --bpm-min N, --bpm-max N     tempo range (default 70..180)
+  --prior-bpm N       tempo hint; default the bpm_tag of meta.txt, --no-prior ignores it
+  --print             beat grid only, print the result and write nothing
+  -j, --jobs N        tracks in parallel (default $TRAKCRATE_JOBS: the number of CPUs); output stays in order
+  --timeout SEC       give up on a track after SEC seconds (it counts as failed)
+  --fail-fast         stop at the first failure (default: --continue-on-error)
+  --progress          progress lines on stderr;  --progress-fd N: JSON events on file descriptor N (cli-interface.md)
+  -n/--dry-run, --format FORMAT, --library DIR, -q, -v
+
+Fields (tsv, json, jsonl): path status bpm first_beat_us confidence analyser written skipped_groups message
+Exit status: 0, 3 when some tracks failed, 1 when all failed, 4 when the library is busy.'
+tc_help_or_summary "analyse tracks: beat grid, waveform, loudness" "$usage" "$@"
+
+all=
+only=
+force=
+print_only=
+timeout_s=
+fail_fast=
+progress=
+progress_fd=
+declare -a hflags=()
+declare -a tracks=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --all) all=1; shift ;;
+        --only|--only=*) tc_opt_value --only "$@"; only=$tc_value; hflags+=(--only "$only"); shift "$tc_shift" ;;
+        --force) force=1; hflags+=(--force); shift ;;
+        --print) print_only=1; hflags+=(--print); shift ;;
+        --no-prior) hflags+=(--no-prior); shift ;;
+        --bpm-min|--bpm-min=*|--bpm-max|--bpm-max=*|--prior-bpm|--prior-bpm=*)
+            name=${1%%=*}
+            tc_opt_value "$name" "$@"
+            [[ $tc_value =~ ^[0-9]+(\.[0-9]+)?$ ]] || tc_usage_err "$name needs a number, not '$tc_value'"
+            hflags+=("$name" "$tc_value")
+            shift "$tc_shift"
+            ;;
+        -j|--jobs|--jobs=*)
+            name=--jobs
+            if [ "$1" = -j ]; then name=-j; fi
+            tc_opt_value "$name" "$@"
+            [[ $tc_value =~ ^[1-9][0-9]*$ ]] || tc_usage_err "bad number of jobs '$tc_value'"
+            TRAKCRATE_JOBS=$tc_value
+            shift "$tc_shift"
+            ;;
+        --timeout|--timeout=*)
+            tc_opt_value --timeout "$@"
+            [[ $tc_value =~ ^[1-9][0-9]*$ ]] || tc_usage_err "--timeout needs seconds, not '$tc_value'"
+            timeout_s=$tc_value
+            shift "$tc_shift"
+            ;;
+        --fail-fast) fail_fast=1; shift ;;
+        --continue-on-error) fail_fast=; shift ;;
+        --progress) progress=1; shift ;;
+        --progress-fd|--progress-fd=*)
+            tc_opt_value --progress-fd "$@"
+            [[ $tc_value =~ ^[0-9]+$ ]] || tc_usage_err "--progress-fd needs a file descriptor number"
+            progress_fd=$tc_value
+            shift "$tc_shift"
+            ;;
+        --) shift; tracks+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) tracks+=("$1"); shift ;;
+    esac
+done
+case $only in
+    ''|beatgrid|waveform|beatgrid,waveform|waveform,beatgrid) ;;
+    *) tc_usage_err "--only wants beatgrid, waveform or beatgrid,waveform" ;;
+esac
+if [ -n "$print_only" ] && [ -n "$only" ] && [ "$only" != beatgrid ]; then
+    tc_usage_err "--print is for the beat grid only"
+fi
+if [ -n "$progress_fd" ] && [ ! -e "/proc/self/fd/$progress_fd" ]; then
+    tc_usage_err "--progress-fd $progress_fd is not open"
+fi
+
+tc_library
+tc_helper
+format=${TRAKCRATE_FORMAT:-text}
+
+if [ -n "$all" ]; then
+    if [ "${#tracks[@]}" -gt 0 ]; then
+        tc_usage_err "--all and track names exclude each other"
+    fi
+    mapfile -t tracks < <(tc_all_tracks)
+fi
+if [ "${#tracks[@]}" -eq 0 ]; then
+    if [ -n "$all" ]; then
+        tc_say "no tracks"
+        exit 0
+    fi
+    tc_usage_err "which tracks? (trakcrate analyse TRACK... or --all)"
+fi
+
+# resolve everything first: nothing is analysed when one of the names is wrong
+declare -a dirs=()
+for t in "${tracks[@]}"; do
+    tc_track "$t"
+    dirs+=("$tc_track_dir")
+done
+n=${#dirs[@]}
+
+if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+    for d in "${dirs[@]}"; do
+        tc_say "would analyse ${d#"$tc_master"/}"
+    done
+    exit 0
+fi
+
+if [ -z "$print_only" ]; then
+    tc_lock
+fi
+work=$(mktemp -d "${TMPDIR:-/tmp}/trakcrate-analyse.XXXXXX")
+declare -a pids=()
+cleanup()
+{
+    local p
+    for p in "${pids[@]}"; do
+        kill "$p" 2>/dev/null || true
+    done
+    rm -rf -- "$work"
+    tc_unlock
+}
+trap cleanup EXIT
+
+started=$(date +%s%3N)
+jobs=${TRAKCRATE_JOBS:-1}
+
+event()
+{
+    if [ -n "$progress_fd" ]; then
+        printf '%s\n' "$1" >&"$progress_fd"
+    fi
+}
+
+event "{\"event\":\"start\",\"command\":\"analyse\",\"total\":$n}"
+
+launch()
+{
+    local i=$1
+    (
+        if [ -n "$timeout_s" ]; then
+            timeout "$timeout_s" "$TRAKCRATE_HELPER" analyse "${dirs[$i]}" "${hflags[@]}" > "$work/out.$i" 2> "$work/err.$i"
+        else
+            "$TRAKCRATE_HELPER" analyse "${dirs[$i]}" "${hflags[@]}" > "$work/out.$i" 2> "$work/err.$i"
+        fi
+    ) &
+    pids[i]=$!
+}
+
+# the one record: path status bpm first_beat_us confidence analyser written skipped_groups message
+record()
+{
+    local path=$1 status=$2 bpm=$3 first=$4 conf=$5 analyser=$6 written=$7 skipped=$8 message=$9
+    case $format in
+        tsv) printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$path" "$status" "$bpm" "$first" "$conf" "$analyser" "$written" "$skipped" "$message" ;;
+        json|jsonl)
+            local rec
+            rec='{"path":'$(tc_json_str "$path")',"status":"'$status'"'
+            if [ -n "$bpm" ]; then rec+=',"bpm":'$bpm; fi
+            if [ -n "$first" ]; then rec+=',"first_beat_us":'$first; fi
+            if [ -n "$conf" ]; then rec+=',"confidence":'$conf; fi
+            if [ -n "$analyser" ]; then rec+=',"analyser":'$(tc_json_str "$analyser"); fi
+            if [ -n "$written" ]; then rec+=',"written":["'${written//,/\",\"}'"]'; fi
+            if [ -n "$skipped" ]; then rec+=',"skipped_groups":["'${skipped//,/\",\"}'"]'; fi
+            if [ -n "$message" ]; then rec+=',"message":'$(tc_json_str "$message"); fi
+            rec+='}'
+            if [ "$format" = json ]; then
+                printf '%s%s' "$([ "$first_record" = 1 ] || echo ,)" "$rec"
+            else
+                printf '%s\n' "$rec"
+            fi
+            ;;
+        paths) printf '%s\n' "$path" ;;
+        *)
+            printf '%-8s %s' "$status" "${path#"$tc_master"/}"
+            if [ -n "$bpm" ]; then printf '  %s bpm' "$bpm"; fi
+            if [ -n "$message" ]; then printf '  (%s)' "$message"; fi
+            printf '\n'
+            ;;
+    esac
+    first_record=0
+}
+
+case $format in
+    tsv) printf 'path\tstatus\tbpm\tfirst_beat_us\tconfidence\tanalyser\twritten\tskipped_groups\tmessage\n' ;;
+    json) printf '[' ;;
+esac
+first_record=1
+ok=0
+skipped_n=0
+failed=0
+next=0
+for ((i = 0; i < n; i++)); do
+    while [ "$next" -lt "$n" ] && [ "$next" -lt $((i + jobs)) ]; do
+        launch "$next"
+        next=$((next + 1))
+    done
+    rc=0
+    wait "${pids[$i]}" || rc=$?
+    rel=${dirs[$i]#"$tc_master"/}
+    t_now=$(date +%s%3N)
+    if [ "$rc" -eq 0 ]; then
+        IFS=$'\t' read -r bpm first conf written_grid written_wave skipped peak rms < "$work/out.$i" || true
+        if [ "${skipped:--}" = - ]; then
+            skipped=
+        fi
+        written=
+        if [ "${written_grid:-0}" = 1 ]; then written=beatgrid; fi
+        if [ "${written_wave:-0}" = 1 ]; then written=${written:+$written,}waveform; fi
+        analyser=
+        if [ -n "${written_grid:-}" ] && [ "$written_grid" = 1 ] || [ -n "$print_only" ]; then analyser="trakcrate-beats 1"; fi
+        if [ -z "$written" ] && [ -z "$print_only" ]; then
+            status=skipped
+            bpm=; first=; conf=; analyser=
+            skipped_n=$((skipped_n + 1))
+        else
+            status=ok
+            ok=$((ok + 1))
+            if [ -z "$print_only" ] && [ "${written_grid:-0}" != 1 ]; then
+                bpm=; first=; conf=
+            fi
+        fi
+        record "${dirs[$i]}" "$status" "${bpm:-}" "${first:-}" "${conf:-}" "$analyser" "$written" "${skipped:-}" ""
+        tc_debug "analysed $rel"
+    else
+        message=$(head -n 1 "$work/err.$i")
+        if [ "$rc" -eq 124 ]; then
+            message="timed out after ${timeout_s}s"
+        fi
+        record "${dirs[$i]}" failed "" "" "" "" "" "" "${message:-failed (status $rc)}"
+        failed=$((failed + 1))
+        tc_say "failed: $rel: ${message:-status $rc}"
+        status=failed
+    fi
+    esc=$(tc_json_str "${message:-}")
+    event "{\"event\":\"item\",\"index\":$((i + 1)),\"path\":$(tc_json_str "${dirs[$i]}"),\"status\":\"$status\",\"message\":$esc,\"elapsed_ms\":$((t_now - started))}"
+    if [ -n "$progress" ]; then
+        tc_say "[$((i + 1))/$n] $status $rel"
+    fi
+    message=
+    if [ "$status" = failed ] && [ -n "$fail_fast" ]; then
+        break
+    fi
+done
+if [ "$format" = json ]; then
+    printf ']\n'
+fi
+event "{\"event\":\"done\",\"ok\":$ok,\"skipped\":$skipped_n,\"failed\":$failed,\"elapsed_ms\":$(($(date +%s%3N) - started))}"
+tc_say "analysed $ok, skipped $skipped_n, failed $failed"
+
+if [ "$failed" -gt 0 ]; then
+    if [ "$((ok + skipped_n))" -gt 0 ]; then
+        exit 3
+    fi
+    exit 1
+fi

@@ -1,0 +1,213 @@
+#!/bin/bash
+#
+# trakcrate pendrive new|add|ls: playlists, the ordered symlink folders of TRAKCRATE-FORMAT.md section 2.3
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate pendrive <subcommand> [options]
+
+  new NAME                  create the playlist pendrives/NAME/
+  add [--at N] NAME TRACK...   append tracks (or insert them at position N, counted like the 000_ prefixes)
+  ls [NAME]                 the entries of a playlist in order; without NAME the playlists and their sizes
+
+A track already in the playlist is skipped. Entries are symbolic links named <prefix>_<track>, the prefix a
+number of at least 3 digits that defines the order; after a change the prefixes are consecutive.
+
+Options: -n/--dry-run, --format FORMAT, --library DIR, -q, -v'
+tc_help_or_summary "create playlists, add tracks, list their order" "$usage" "$@"
+
+sub=${1:-}
+if [ -z "$sub" ]; then
+    tc_usage_err "which subcommand? (new, add, ls)"
+fi
+shift
+
+at=
+declare -a args=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --at|--at=*)
+            tc_opt_value --at "$@"
+            [[ $tc_value =~ ^[0-9]+$ ]] || tc_usage_err "--at needs a number, not '$tc_value'"
+            at=$((10#$tc_value))
+            shift "$tc_shift"
+            ;;
+        --) shift; args+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) args+=("$1"); shift ;;
+    esac
+done
+
+tc_library
+format=${TRAKCRATE_FORMAT:-text}
+
+playlist_dir()
+{
+    if ! tc_safe_name "$1"; then
+        tc_usage_err "bad playlist name '$1'"
+    fi
+    printf '%s\n' "$tc_lib/pendrives/$1"
+}
+
+cmd_new()
+{
+    if [ "${#args[@]}" -ne 1 ]; then
+        tc_usage_err "usage: trakcrate pendrive new NAME"
+    fi
+    local dir
+    dir=$(playlist_dir "${args[0]}")
+    if [ -d "$dir/symlinks" ]; then
+        tc_say "playlist ${args[0]} already exists"
+        return 0
+    fi
+    if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+        tc_say "would create playlist ${args[0]}"
+        return 0
+    fi
+    mkdir -p -- "$dir/symlinks"
+    tc_say "created playlist ${args[0]}"
+}
+
+cmd_add()
+{
+    if [ "${#args[@]}" -lt 2 ]; then
+        tc_usage_err "usage: trakcrate pendrive add [--at N] NAME TRACK..."
+    fi
+    local name=${args[0]} dir entry i
+    dir=$(playlist_dir "$name")
+    if [ ! -d "$dir/symlinks" ]; then
+        tc_die "no such playlist: $name (create it with 'trakcrate pendrive new $name')"
+    fi
+
+    # the current order, and the resolved track directories of the entries
+    tc_lock
+    local -a names=() links=() dirs=()
+    tc_playlist_load "$dir" names links
+    while IFS= read -r entry; do
+        dirs+=("$(readlink -f -- "$dir/symlinks/$entry" || true)")
+    done < <(tc_playlist_entries "$dir")
+
+    # the new tracks; ones already there are skipped
+    local -a new_names=() new_links=() new_dirs=()
+    local t added=0 skipped=0 dup
+    for t in "${args[@]:1}"; do
+        tc_track "$t"
+        dup=
+        for i in "${!dirs[@]}"; do
+            if [ "${dirs[$i]}" = "$tc_track_dir" ]; then
+                dup=1
+            fi
+        done
+        for i in "${!new_dirs[@]}"; do
+            if [ "${new_dirs[$i]}" = "$tc_track_dir" ]; then
+                dup=1
+            fi
+        done
+        if [ -n "$dup" ]; then
+            tc_say "skipped, already in $name: ${tc_track_dir#"$tc_master"/}"
+            skipped=$((skipped + 1))
+            continue
+        fi
+        new_names+=("${tc_track_dir##*/}")
+        new_dirs+=("$tc_track_dir")
+        new_links+=("$(tc_track_link "$tc_track_dir")")
+        added=$((added + 1))
+    done
+
+    if [ "$added" -eq 0 ]; then
+        tc_say "nothing to add"
+        return 0
+    fi
+
+    local pos=${at:-${#names[@]}}
+    if [ "$pos" -gt "${#names[@]}" ]; then
+        pos=${#names[@]}
+    fi
+    local -a all_names=("${names[@]:0:pos}" "${new_names[@]}" "${names[@]:pos}")
+    local -a all_links=("${links[@]:0:pos}" "${new_links[@]}" "${links[@]:pos}")
+    local count=${#all_names[@]}
+
+    if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+        tc_say "would add $added track(s) to $name at position $pos"
+        return 0
+    fi
+
+    tc_playlist_write "$dir" all_names all_links
+    tc_say "added $added track(s) to $name ($skipped skipped), $count in total"
+}
+
+cmd_ls()
+{
+    local entry link rest pos=0 dir name dangling target
+    if [ "${#args[@]}" -eq 0 ]; then
+        case $format in
+            tsv) printf 'playlist\tentries\n' ;;
+        esac
+        for dir in "$tc_lib"/pendrives/*/; do
+            if [ ! -d "$dir" ]; then
+                continue
+            fi
+            name=$(basename -- "$dir")
+            local n
+            n=$(tc_playlist_entries "${dir%/}" | wc -l)
+            case $format in
+                tsv) printf '%s\t%s\n' "$name" "$n" ;;
+                json|jsonl) printf '{"playlist":%s,"entries":%s}\n' "$(tc_json_str "$name")" "$n" ;;
+                *) printf '%s\t%s\n' "$name" "$n" ;;
+            esac
+        done
+        return 0
+    fi
+    if [ "${#args[@]}" -ne 1 ]; then
+        tc_usage_err "usage: trakcrate pendrive ls [NAME]"
+    fi
+    name=${args[0]}
+    dir=$(playlist_dir "$name")
+    if [ ! -d "$dir/symlinks" ]; then
+        tc_die "no such playlist: $name"
+    fi
+    case $format in
+        tsv) printf 'playlist\tposition\tpath\tlink\tdangling\n' ;;
+        json) printf '[' ;;
+    esac
+    local first=1
+    while IFS= read -r entry; do
+        link=$dir/symlinks/$entry
+        target=$(readlink -f -- "$link" || true)
+        dangling=0
+        if [ ! -e "$link" ]; then
+            dangling=1
+        fi
+        case $format in
+            tsv) printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$pos" "$target" "$entry" "$dangling" ;;
+            json|jsonl)
+                rest=$(printf '{"playlist":%s,"position":%s,"path":%s,"link":%s,"dangling":%s}' \
+                    "$(tc_json_str "$name")" "$pos" "$(tc_json_str "$target")" "$(tc_json_str "$entry")" "$([ "$dangling" = 1 ] && echo true || echo false)")
+                if [ "$format" = json ]; then
+                    printf '%s%s' "$([ "$first" = 1 ] || echo ,)" "$rest"
+                else
+                    printf '%s\n' "$rest"
+                fi
+                ;;
+            paths) printf '%s\n' "$target" ;;
+            *) printf '%s\t%s%s\n' "$entry" "${target#"$tc_master"/}" "$([ "$dangling" = 1 ] && echo '  (dangling)' || true)" ;;
+        esac
+        first=0
+        pos=$((pos + 1))
+    done < <(tc_playlist_entries "$dir")
+    if [ "$format" = json ]; then
+        printf ']\n'
+    fi
+}
+
+case $sub in
+    new) cmd_new ;;
+    add) cmd_add ;;
+    ls) cmd_ls ;;
+    *) tc_usage_err "unknown subcommand '$sub' (new, add, ls)" ;;
+esac

@@ -99,6 +99,8 @@ void TrakcrateTrackModel::load(const Row& r) const
     r.bpm = r.bpmValue > 0 ? QString::number(r.bpmValue, 'f', 2) : QString();
     r.seconds = double(t.meta.getInt("duration_ms", 0)) / 1000.0;
     r.time = formatTime(r.seconds);
+    r.comment = QString::fromStdString(t.meta.get("comment"));
+    r.rating = int(std::max(0LL, std::min(5LL, t.meta.getInt("rating", 0))));
     trakcrate::Waveform wf;
     if (trakcrate::loadWaveform(r.dir, &wf)) r.wave = miniWave(wf);
     r.origin = QStringLiteral("generated");
@@ -113,10 +115,65 @@ void TrakcrateTrackModel::load(const Row& r) const
     r.flags = flags.join(QStringLiteral(", "));
 }
 
+QString TrakcrateTrackModel::starsText(int stars)
+{
+    stars = std::max(0, std::min(5, stars));
+    return QString(stars, QChar(0x2605)) + QString(5 - stars, QChar(0x2606));
+}
+
+bool TrakcrateTrackModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    if (role == Qt::EditRole && index.isValid() && index.column() == Comment) return setComment(index, value.toString());
+    if (role != RatingRole || !index.isValid() || index.row() < 0 || size_t(index.row()) >= rows_.size()) return false;
+    const Row& r = rows_[size_t(index.row())];
+    const int stars = std::max(0, std::min(5, value.toInt()));
+    trakcrate::Track t;
+    std::string err;
+    if (!trakcrate::loadTrack(r.dir, &t, &err)) { emit ratingFailed(QStringLiteral("Could not read the track: %1").arg(QString::fromStdString(err))); return false; }
+    if (int(t.meta.getInt("rating", 0)) == stars) { load(r); r.rating = stars; return true; }
+    t.meta.setInt("rating", stars);
+    trakcrate::setOrigin(t.source, "meta", "edited");
+    if (!trakcrate::saveMeta(t, &err) || !trakcrate::saveSource(t, &err)) {
+        emit ratingFailed(QStringLiteral("Could not save the rating: %1").arg(QString::fromStdString(err)));
+        return false;
+    }
+    load(r);
+    r.rating = stars;
+    r.track.meta.setInt("rating", stars);
+    const QModelIndex first = this->index(index.row(), 0), last = this->index(index.row(), ColumnCount - 1);
+    emit dataChanged(first, last);
+    emit ratingWritten(QString::fromStdString(r.dir.string()), stars);
+    return true;
+}
+
+bool TrakcrateTrackModel::setComment(const QModelIndex& index, const QString& text)
+{
+    if (index.row() < 0 || size_t(index.row()) >= rows_.size()) return false;
+    const Row& r = rows_[size_t(index.row())];
+    trakcrate::Track t;
+    std::string err;
+    if (!trakcrate::loadTrack(r.dir, &t, &err)) { emit ratingFailed(QStringLiteral("Could not read the track: %1").arg(QString::fromStdString(err))); return false; }
+    const std::string v = text.trimmed().toStdString();
+    load(r);
+    if (t.meta.get("comment") == v) return true;
+    t.meta.set("comment", v);
+    trakcrate::setOrigin(t.source, "meta", "edited");
+    if (!trakcrate::saveMeta(t, &err) || !trakcrate::saveSource(t, &err)) {
+        emit ratingFailed(QStringLiteral("Could not save the comment: %1").arg(QString::fromStdString(err)));
+        return false;
+    }
+    r.comment = text.trimmed();
+    r.track.meta.set("comment", v);
+    emit dataChanged(this->index(index.row(), 0), this->index(index.row(), ColumnCount - 1));
+    emit commentWritten(QString::fromStdString(r.dir.string()), r.comment);
+    return true;
+}
+
 Qt::ItemFlags TrakcrateTrackModel::flags(const QModelIndex& index) const
 {
     Qt::ItemFlags f = QAbstractTableModel::flags(index) & ~Qt::ItemIsDropEnabled;
     if (index.isValid() && draggable_) f |= Qt::ItemIsDragEnabled;
+    if (index.isValid() && index.column() == Comment) f |= Qt::ItemIsEditable;
     return f;
 }
 
@@ -127,14 +184,17 @@ QVariant TrakcrateTrackModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || index.row() < 0 || size_t(index.row()) >= rows_.size()) return QVariant();
     const Row& r = rows_[size_t(index.row())];
-    if (role != Qt::DisplayRole && role != SortRole && role != Qt::ToolTipRole && role != Qt::DecorationRole) return QVariant();
+    if (role != Qt::DisplayRole && role != Qt::EditRole && role != SortRole && role != RatingRole && role != Qt::ToolTipRole && role != Qt::DecorationRole) return QVariant();
     load(r);
     if (role == Qt::DecorationRole) return index.column() == Wave && !r.wave.isNull() ? QVariant(r.wave) : QVariant();
     const trakcrate::KvDoc& m = r.track.meta;
+    if (role == RatingRole) return r.rating;
+    if (role == Qt::ToolTipRole && index.column() == Rating) return QStringLiteral("Click a star to rate; click the same star again to clear");
     if (role == Qt::ToolTipRole) return QString::fromStdString(r.dir.string());
     if (role == SortRole) {
         if (index.column() == Bpm) return r.bpmValue;
         if (index.column() == Time) return r.seconds;
+        if (index.column() == Rating) return r.rating;
     }
     QString title = QString::fromStdString(m.get("title"));
     if (title.isEmpty()) title = QString::fromStdString(r.dir.filename().string());
@@ -144,6 +204,8 @@ QVariant TrakcrateTrackModel::data(const QModelIndex& index, int role) const
     case Album: return QString::fromStdString(m.get("album"));
     case Bpm: return r.bpm;
     case Time: return r.time;
+    case Comment: return r.comment;
+    case Rating: return starsText(r.rating);
     case Wave: return QVariant();
     case Origin: return r.origin;
     case Flags: return r.flags;
@@ -154,7 +216,7 @@ QVariant TrakcrateTrackModel::data(const QModelIndex& index, int role) const
 QVariant TrakcrateTrackModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation != Qt::Horizontal || role != Qt::DisplayRole) return QVariant();
-    static const char* names[ColumnCount] = {"Title", "Artist", "Album", "BPM", "Time", "Waveform", "Origin", "Flags"};
+    static const char* names[ColumnCount] = {"Title", "Artist", "Album", "Comment", "BPM", "Time", "Rating", "Waveform", "Origin", "Flags"};
     return section >= 0 && section < ColumnCount ? QVariant(QString::fromLatin1(names[section])) : QVariant();
 }
 

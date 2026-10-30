@@ -1,6 +1,6 @@
 # trakcrate UI pane (requirements)
 
-A pane in vdj-ui for editing the trakcrate master database (`trakcrate-db-format.md`). It is a front end on the `trakcrate` command line (`cli.md`): the GUI does **not** link any trakcrate library; it runs `trakcrate <command>` for every change and every analysis, so every action here has a CLI equivalent by construction and the GUI never holds logic of its own. See "GUI and CLI are separate" below. Because the database is a plain directory tree, the pane must cope with files changing underneath it (the user editing `meta.txt` in an editor, a CLI run in a terminal).
+A pane in vdj-ui for editing the trakcrate master database (`TRAKCRATE-FORMAT.md`, the contract). The pane is C++/Qt code in `src/trakcrate/` (Qt-free core, `src/ui/trakcrate_*` for the widgets) that reads and writes the library directly. The command line tools (`cli.md`, `src-cli/`) are a separate implementation of the same format for script writers: they share no code with the GUI and neither depends on the other. See "GUI and CLI are separate" below. Because the database is a plain directory tree, the pane must cope with files changing underneath it (the user editing `meta.txt` in an editor, a CLI run in a terminal).
 
 ## Placement
 
@@ -36,6 +36,8 @@ Left: folders of `track-master-copy` and the playlists (`pendrives/*`). Centre: 
 - Rescan when files change on disk (file system watcher, plus a Refresh button; large libraries must not be rescanned on every change event).
 
 ### Track table
+- **Comment (implemented):** a Comment column (after Album): double click it, or press F2, to edit the text; Enter saves it to the track's `meta.txt` (`comment`), which the exporter writes to the drive's database, where the decks show it when the track is selected. The track editor has the same field, labelled, for the loaded track.
+- **Rating (implemented):** a Rating column and the details pane always show five stars, solid for the rating and hollow for the rest ("★★☆☆☆"; gold and grey, dark theme only). Clicking a star in the table sets it, the same star again clears it. The edit rewrites the track's `meta.txt` (`rating`, 0 to 5) and marks `meta` as `edited` in `source.txt`, in a folder or a playlist alike (a playlist row is a link to the same track folder). Sorting the column sorts by stars. These table edits are not on the editor's undo stack.
 - Columns: title, artist, album, genre, BPM, key, duration, loudness, a mini waveform (reuse `waveform_delegate`), origin (generated / rekordbox / edited), status flags (missing audio, no beat grid, not analysed).
 - Sort and filter by any column; quick filter box; saved filters for chores such as "no beat grid", "origin rekordbox".
 - Multi-select; drag to reorder inside a playlist and drag tracks between folders and playlists; the drag changes the `000_` symlink prefixes.
@@ -53,6 +55,7 @@ Left: folders of `track-master-copy` and the playlists (`pendrives/*`). Centre: 
 ### Playlists / pendrives
 - Create, rename, delete; add tracks; reorder with drag and drop; show the resulting order numbers.
 - Per-pendrive summary: track count, total size, estimated export size, and tracks that would fail (missing audio, not analysed).
+- **Sizes in the tree (implemented):** the **Folders** heading shows the estimated disk usage of all the folders in decimal gigabytes to two places ("Folders (23.34Gb)"). Each virtual pendrive shows the size of the drive it needs, in whole gigabytes rounded UP ("House Set (2Gb)"; 1.000001Gb is 2Gb). Rounding up is deliberate: a drive's real free bytes are imprecise, one byte over and it does not fit, drives are sold in whole gigabytes, and the player writes to a drive as soon as it is inserted so it needs spare room. The estimate is each track's audio file plus 150 kB for analysis files and artwork, counted once per track however many lists it is in, plus 300 kB for the database and settings (`Library::estimateBytes`, `formatFolderSize`, `pendriveGigabytes`).
 - **Export** to a folder or mounted drive (the staged tmpfs-then-single-write flow), with progress and a verify step; **Sync** an existing drive with a preview of what will be added and what orphans will be removed, with the mandatory warning before removing.
 
 ### Provenance and unknown bytes
@@ -62,7 +65,7 @@ Left: folders of `track-master-copy` and the playlists (`pendrives/*`). Centre: 
 ## Behaviour requirements
 
 - **Never block the UI thread.** Decoding, analysis, import, export and verify run as background jobs (thread pool, as in the CLI `--jobs`), with progress, cancel, and results back as signals. The panel remains usable while jobs run; track rows update as results arrive.
-- **GUI and CLI are separate.** The GUI is a separate package that depends on `trakcrate-cli` and runs it as a child process (`QProcess`, no shell, arguments as a list, `TRAKCRATE_LIBRARY` set from the open library). Concurrency: the CLI takes the library lock for writes; if it is held (another terminal, a script) the command fails with a documented exit status and the GUI shows "library busy" instead of failing.
+- **GUI and CLI are separate.** Both work on the same plain files. Concurrency: multi-file writes take the library lock (`TRAKCRATE-FORMAT.md` section 16); if it is held (the CLI in another terminal, a script) the GUI shows "library busy" instead of failing.
 - **Undo.** Metadata and cue edits go on a `QUndoStack` for the session. Destructive actions (remove from library, delete orphans, replace playlist) are confirmed and, where possible, move files to a `.trash/` folder inside the library instead of deleting.
 - **Atomic, small writes**: edits write the changed file via temp and rename; no bulk rewrite of the library.
 - **External edits**: if a `meta.txt` changes on disk while the user has unsaved edits in the form, show a conflict prompt rather than overwriting.
@@ -73,18 +76,18 @@ Left: folders of `track-master-copy` and the playlists (`pendrives/*`). Centre: 
 
 ## GUI and CLI are separate
 
-Decided: no shared library between the GUI and the command line tools.
+Decided (revised 2026-10-28): the GUI and the command line tools are two independent implementations of the documented library format; no shared code, no dependency either way. (An earlier decision had the GUI run `trakcrate` commands as child processes; the finished GUI links the Qt-free `src/trakcrate/` library instead, and the CLI became a toolkit for people scripting the format.)
 
-- **Writes and analysis go through the CLI.** Editing a rating is `trakcrate set TRACK rating=4`, a cuemark is `trakcrate cuemarks TRACK --add-ms ...`, analysis is `trakcrate analyse` and so on. The commands validate, lock, write atomically and mark the origin, so the GUI cannot drift from them. Machine readable output (`--format json`/`jsonl`) and `--progress-fd` are the API; they are documented as stable (`TRAKCRATE_API`).
-- **Reads may go straight to the files.** The library is plain text and images (`trakcrate-db-format.md`), so the C++ side reads `meta.txt`, `cuemarks.txt`, `beatgrid.txt` and artwork directly for display, as it already reads rekordbox ANLZ files, and watches them for changes. Parsing is small; the formats are documented in these docs. Anything needing the helper's binary formats (PDB, ANLZ, audio) is requested from the CLI instead (`trakcrate info --format json`).
-- **Undo** is the GUI's own stack of inverse commands (set the old value back), not a library feature; destructive actions use the `.trash/` folder and the script snapshots (`scripts.md`).
-- **Extending the GUI.** Because everything is a command, users who add `trakcrate-<name>` commands in `/usr/local/lib/trakcrate/` or `track-script-*` / `crate-script-*` scripts in a library can run them from the GUI's script menus (`scripts.md`); the GUI needs no knowledge of them. This is the reason for the split.
-- **Process cost**: one process start per edit is fine for interactive use; bulk operations (import, analysis, export) are single commands with progress, not loops of calls from the GUI.
-- **Packaging**: the vdj-ui package `Depends: trakcrate-cli`, with the same version policy (`cli.md`, Packaging). The CLI never depends on the GUI.
+- **The format is the contract** (`TRAKCRATE-FORMAT.md`): provenance (`origin: edited`), atomic writes, preserved unknown keys and the lock are rules of the format, so either side leaves the library valid for the other.
+- **External changes**: the GUI watches the files and reloads, so a CLI run, a script or a text editor can change the library while the pane is open.
+- **Undo** is the GUI's own stack of inverse commands, not a library feature; destructive actions use the `.trash/` folder and the script snapshots (`scripts.md`).
+- **Extending the GUI**: scripts in a library's `scripts/` run from the GUI's script menus (`scripts.md`) and may call `trakcrate` commands when the CLI package is installed; the GUI needs no knowledge of them.
+- **Packaging**: the vdj-ui package does not depend on `trakcrate-cli`, and the CLI never depends on the GUI.
+- **Duplicated logic** is expected for now (analysis, PDB/ANLZ writers, import). Candidates for a common C library (libcdj) are logged in `ai-output/refactor-recommendations.md`.
 
 ## Build and code organisation
 
-- New files under `src/ui/`: `trakcrate_panel`, `trakcrate_track_model`, `trakcrate_track_editor`, `trakcrate_import_dialog`, `trakcrate_export_dialog`, and a `trakcrate_jobs` helper. Business logic stays in the CLI commands (`cli.md`); the C++ side only formats, displays and calls commands.
+- New files under `src/ui/`: `trakcrate_panel`, `trakcrate_track_model`, `trakcrate_track_editor`, `trakcrate_import_dialog`, `trakcrate_export_dialog`, and a `trakcrate_jobs` helper. Business logic lives in the Qt-free `src/trakcrate/` library; the widgets only format and display.
 - Tests: model tests with a temporary library built from fixtures; no GUI-driven tests needed for logic, since it lives in the library.
 
 ## Phasing
@@ -99,7 +102,7 @@ Decided: no shared library between the GUI and the command line tools.
 
 - A dock inside the main window, or a separate top-level "library" window? The deck UI is busy; a separate window may suit editing better and the dock can stay a small status/launcher.
 - How much of the existing Rekordbox PC-mode and `track_browser` should be reused? The browser already shows folders and rekordbox DBs from pendrives; the trakcrate pane could be a mode of it so a user can drag from a real pendrive into the master.
-- Undo scope across the CLI and GUI (the CLI has none).
+- Undo scope across the CLI and GUI (the CLI has none; the GUI's stack covers only its own edits).
 - Whether bulk text edits (regex rename) belong in the GUI or only in the CLI.
 
 ## Preview player (implemented)

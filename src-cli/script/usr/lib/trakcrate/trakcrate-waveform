@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# trakcrate waveform TRACK...: waveform data (the waveform part of analyse)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate waveform [options] TRACK...
+
+Renders waveform.bin (PWAV, PWV2, PWV3, PWV5; heights are absolute, never normalised per track), like
+"trakcrate analyse --only waveform". Options: --force and the options of analyse (--jobs, --format, --dry-run ...).
+Not available yet: --png (preview images).'
+tc_help_or_summary "render waveform.bin" "$usage" "$@"
+
+declare -a args=()
+for a in "$@"; do
+    case $a in
+        --png|--png=*|--width|--width=*|--height|--height=*|--kinds|--kinds=*|--curve|--curve=*) tc_usage_err "$a is not available yet" ;;
+        *) args+=("$a") ;;
+    esac
+done
+exec "$TRAKCRATE_BIN" analyse --only waveform "${args[@]}"

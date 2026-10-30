@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# trakcrate beatgrid TRACK...: BPM and phase detection (the beat grid part of analyse)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate beatgrid [options] TRACK...
+
+Detects the tempo and the first beat and writes beatgrid.txt (like "trakcrate analyse --only beatgrid").
+Options: --bpm-min N, --bpm-max N, --prior-bpm N, --no-prior, --force, --print (print the result, write nothing),
+         and the options of analyse (--jobs, --format, --dry-run, --progress ...). The bpm_tag of meta.txt is the
+         tempo hint unless --no-prior (so --from-tag is the default and needs no flag).
+Not available yet: --bpm N (fix the tempo, find only the phase), --first-beat MS.'
+tc_help_or_summary "detect tempo and the first beat" "$usage" "$@"
+
+declare -a args=()
+for a in "$@"; do
+    case $a in
+        --bpm|--bpm=*|--first-beat|--first-beat=*) tc_usage_err "$a is not available yet" ;;
+        --from-tag) ;;
+        *) args+=("$a") ;;
+    esac
+done
+exec "$TRAKCRATE_BIN" analyse --only beatgrid "${args[@]}"

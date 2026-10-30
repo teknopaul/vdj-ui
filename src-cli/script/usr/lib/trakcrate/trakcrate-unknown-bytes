@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# trakcrate unknown-bytes: the values of the analysis file words whose meaning is not known
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate unknown-bytes [options] [TRACK...]
+
+Lists, for the original ANLZ files kept by "trakcrate import-rekordbox" (<track>/anlz/), the words whose meaning nobody knows
+(doc/trakcrate/UNKNOWN_BYTES.md) and the values rekordbox wrote there: the PQTZ second header word, the PQT2 word at 0x2c, the
+PVBR body, the cue markers of PCPT/PCP2. These are the values "trakcrate export" has to invent; every imported drive adds samples.
+Without TRACK all tracks of the library. Read only.
+
+Output (--format tsv, jsonl): track, file, tag, field, kind, value.
+Options: --format FORMAT, --library DIR'
+tc_help_or_summary "show the unknown words of imported analysis files" "$usage" "$@"
+
+declare -a args=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then shift "$tc_shift"; continue; fi
+    case $1 in
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) args+=("$1"); shift ;;
+    esac
+done
+tc_library
+tc_helper
+format=${TRAKCRATE_FORMAT:-text}
+declare -a dirs=()
+if [ "${#args[@]}" -gt 0 ]; then
+    for t in "${args[@]}"; do tc_track "$t"; dirs+=("$tc_track_dir"); done
+else
+    while IFS= read -r d; do dirs+=("$d"); done < <(tc_all_tracks)
+fi
+if [ "$format" = tsv ]; then printf 'track\tfile\ttag\tfield\tkind\tvalue\n'; fi
+n=0
+for d in "${dirs[@]}"; do
+    for f in "$d"/anlz/ANLZ0000.*; do
+        [ -f "$f" ] || continue
+        while IFS=$'\t' read -r tag field kind value; do
+            n=$((n + 1))
+            rel=${d#"$tc_master"/}
+            case $format in
+                tsv|text) printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$rel" "${f##*/}" "$tag" "$field" "$kind" "$value" ;;
+                json|jsonl) printf '{"track":%s,"file":"%s","tag":"%s","field":"%s","kind":"%s","value":"%s"}\n' "$(tc_json_str "$rel")" "${f##*/}" "$tag" "$field" "$kind" "$value" ;;
+            esac
+        done < <("$TRAKCRATE_HELPER" anlz "$f" --unknown)
+    done
+done
+tc_debug "$n values"

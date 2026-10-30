@@ -26,6 +26,12 @@
         <file alias="img/user-settings-22x22.png">img/user-settings-22x22.png</file>
         <file alias="img/playlist-22x22.png">img/playlist-22x22.png</file>
         <file alias="img/vdj-64x64.png">img/vdj-64x64.png</file>
+        <file alias="img/vdj-16x16.png">img/vdj-16x16.png</file>
+        <file alias="img/vdj-24x24.png">img/vdj-24x24.png</file>
+        <file alias="img/vdj-32x32.png">img/vdj-32x32.png</file>
+        <file alias="img/vdj-128x128.png">img/vdj-128x128.png</file>
+        <file alias="img/vdj-256x256.png">img/vdj-256x256.png</file>
+        <file alias="img/vdj-512x512.png">img/vdj-512x512.png</file>
         <file alias="doc/nanokontrol-studio-djtoolz.adjmm">doc/nanokontrol-studio-djtoolz.adjmm</file>
     </qresource>
 </RCC>

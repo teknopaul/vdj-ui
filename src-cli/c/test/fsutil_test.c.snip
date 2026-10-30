@@ -1,0 +1,175 @@
+#define _GNU_SOURCE
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include "../lib/fsutil.h"
+
+//SNIP_FILE SNIP_fsutil ../lib/fsutil.c
+
+#include "snip_core.h"
+
+static char root[64];
+
+static void sh(const char *fmt, const char *a)
+{
+    char cmd[600];
+    snprintf(cmd, sizeof cmd, fmt, a);
+    if (system(cmd)) { }
+}
+
+static void test_safe_name(void)
+{
+    snip_assert("safe: plain", tc_safe_name("Track One"));
+    snip_assert("safe: dots inside", tc_safe_name("a.b..c"));
+    snip_assert("safe: dot file", tc_safe_name(".hidden"));
+    snip_assert("safe: utf8", tc_safe_name("caf\xc3\xa9"));
+    snip_assert("unsafe: empty", !tc_safe_name(""));
+    snip_assert("unsafe: NULL", !tc_safe_name(NULL));
+    snip_assert("unsafe: .", !tc_safe_name("."));
+    snip_assert("unsafe: ..", !tc_safe_name(".."));
+    snip_assert("unsafe: slash", !tc_safe_name("a/b"));
+    snip_assert("unsafe: leading slash", !tc_safe_name("/etc"));
+    snip_assert("unsafe: newline", !tc_safe_name("a\nb"));
+}
+
+static void test_files(void)
+{
+    char path[200], *data;
+    size_t len;
+
+    snprintf(path, sizeof path, "%s/f.txt", root);
+    snip_equals("write", 0, tc_write_atomic(path, "hello\n", 6));
+    snip_equals("read", 0, tc_read_file(path, &data, &len));
+    snip_assert("content", len == 6 && strcmp(data, "hello\n") == 0);
+    free(data);
+    snip_equals("overwrite", 0, tc_write_atomic(path, "x", 1));
+    tc_read_file(path, &data, &len);
+    snip_assert("replaced", len == 1 && data[0] == 'x');
+    free(data);
+    snip_equals("write empty", 0, tc_write_atomic(path, "", 0));
+    snip_equals("read empty", 0, tc_read_file(path, &data, &len));
+    snip_assert("empty", len == 0 && data[0] == 0);
+    free(data);
+    {
+        char big[100000];
+        memset(big, 'a', sizeof big);
+        snip_equals("write big", 0, tc_write_atomic(path, big, sizeof big));
+        tc_read_file(path, &data, &len);
+        snip_assert("big file", len == sizeof big);
+        free(data);
+    }
+    snip_assert("read: missing", tc_read_file("/tmp/nonesuch/zzz", &data, &len) != 0);
+    snprintf(path, sizeof path, "%s/nodir/f.txt", root);
+    snip_assert("write: no such directory", tc_write_atomic(path, "x", 1) != 0);
+    {
+        char cmd[300];
+        snprintf(cmd, sizeof cmd, "test -z \"$(find %s -name '.*.tmp.*')\"", root);
+        snip_equals("no temporary files left behind", 0, system(cmd));
+    }
+}
+
+static void test_within(void)
+{
+    char a[200], b[200];
+
+    sh("mkdir -p %s/lib/master/House/t1", root);
+    sh("mkdir -p %s/outside", root);
+    sh("ln -s ../../../../outside %s/lib/master/House/escape", root);
+    sh("ln -s ../../nonexistent %s/lib/master/House/dangling", root);
+    sh("ln -s t1 %s/lib/master/House/inside", root);
+    snprintf(a, sizeof a, "%s/lib/master", root);
+
+    snprintf(b, sizeof b, "%s/lib/master/House/t1", root);
+    snip_assert("within: a track", tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master/House/inside", root);
+    snip_assert("within: a link that stays inside", tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master/House/escape", root);
+    snip_assert("not within: a link out of the library", !tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master/House/dangling", root);
+    snip_assert("not within: a dangling link is not guessed at", !tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master/../outside", root);
+    snip_assert("not within: ..", !tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master", root);
+    snip_assert("not within: the root itself", !tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master2/x", root);
+    snip_assert("not within: a sibling with the same prefix", !tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master/House/new/deeper", root);
+    snip_assert("within: not yet existing", tc_path_within(a, b));
+    snprintf(b, sizeof b, "%s/lib/master/House/new/../../../x", root);
+    snip_assert("not within: .. in a not yet existing tail", !tc_path_within(a, b));
+    snip_assert("not within: unrelated", !tc_path_within(a, "/etc/passwd"));
+}
+
+static void test_lock(void)
+{
+    char lib[200], lockfile[220], *data;
+    size_t len;
+    pid_t holder = 0, child;
+
+    snprintf(lib, sizeof lib, "%s/lib", root);
+    snprintf(lockfile, sizeof lockfile, "%s/.trakcrate-lock", lib);
+    snip_equals("lock: acquire", 0, tc_lock_acquire(lib, &holder));
+    tc_read_file(lockfile, &data, &len);
+    snip_assert("lock: holds our pid", atoi(data) == (int)getpid());
+    free(data);
+    snip_equals("lock: we hold it (a live process): busy", 1, tc_lock_acquire(lib, &holder));
+    snip_equals("lock: the holder", (int)getpid(), (int)holder);
+    tc_lock_release(lib);
+    snip_assert("lock: released", access(lockfile, F_OK) != 0);
+    tc_lock_release(lib);
+
+    /* a lock of a process that is gone is taken over */
+    child = fork();
+    if (child == 0) {
+        _exit(0);
+    }
+    waitpid(child, NULL, 0);
+    {
+        char content[32];
+        snprintf(content, sizeof content, "%d\n", (int)child);
+        tc_write_atomic(lockfile, content, strlen(content));
+    }
+    snip_equals("lock: a stale lock is taken over", 0, tc_lock_acquire(lib, &holder));
+    tc_read_file(lockfile, &data, &len);
+    snip_assert("lock: now ours", atoi(data) == (int)getpid());
+    free(data);
+
+    /* a lock of another live process is not ours to release */
+    tc_write_atomic(lockfile, "1\n", 2);
+    snip_equals("lock: pid 1 is alive: busy", 1, tc_lock_acquire(lib, &holder));
+    snip_equals("lock: holder is 1", 1, (int)holder);
+    tc_lock_release(lib);
+    snip_assert("lock: not ours, left alone", access(lockfile, F_OK) == 0);
+
+    /* garbage in the file: stale */
+    tc_write_atomic(lockfile, "garbage", 7);
+    snip_equals("lock: a lock without a pid is stale", 0, tc_lock_acquire(lib, &holder));
+    tc_lock_release(lib);
+    snip_equals("lock: no library directory", -1, tc_lock_acquire("/tmp/nonesuch-dir-xyz", &holder));
+}
+
+int main(void)
+{
+    snprintf(root, sizeof root, "/tmp/tc_fsutil_test_XXXXXX");
+    if (mkdtemp(root) == NULL) {
+        return 1;
+    }
+    test_safe_name();
+    test_files();
+    test_within();
+    test_lock();
+    sh("rm -rf %s", root);
+    if (errors) { printf("%d errors\n", errors); return 1; }
+    printf("fsutil: all ok\n");
+    return 0;
+}

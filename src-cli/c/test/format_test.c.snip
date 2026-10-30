@@ -1,0 +1,141 @@
+#define _GNU_SOURCE
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include "../lib/fsutil.h"
+#include "../lib/kv.h"
+#include "../lib/beatgrid.h"
+#include "../lib/cuemarks.h"
+
+//SNIP_FILE SNIP_fsutil ../lib/fsutil.c
+//SNIP_FILE SNIP_kv ../lib/kv.c
+//SNIP_FILE SNIP_beatgrid ../lib/beatgrid.c
+//SNIP_FILE SNIP_cuemarks ../lib/cuemarks.c
+
+#include "snip_core.h"
+
+static void test_beatgrid(void)
+{
+    const char *text = "# trakcrate beatgrid\nbpm: 128.00\nfirst_beat_us: 28027\nconfidence: 0.84\nanalyser: trakcrate-beats 1\nvariable_tempo: 1\nx-extra: keep me\n";
+    tc_kvdoc *d = tc_kv_parse(text, strlen(text));
+    struct tc_beatgrid g;
+    char *out;
+
+    tc_beatgrid_from(d, &g);
+    snip_assert("bpm", fabs(g.bpm - 128.0) < 1e-9);
+    snip_lequals("first beat", 28027, g.first_beat_us);
+    snip_assert("confidence", fabs(g.confidence - 0.84) < 1e-9);
+    snip_assert("analyser", strcmp(g.analyser, "trakcrate-beats 1") == 0);
+    snip_equals("variable tempo", 1, g.variable_tempo);
+    snip_lequals("beat 0", 28027, tc_beatgrid_beat_us(&g, 0));
+    snip_lequals("beat 128 is a minute later", 28027 + 60000000L, tc_beatgrid_beat_us(&g, 128));
+    snip_lequals("beat -1 is before the first", 28027 - 468750, tc_beatgrid_beat_us(&g, -1));
+
+    g.bpm = 130.5;
+    g.first_beat_us = -500;
+    g.confidence = -1;
+    g.analyser[0] = 0;
+    g.variable_tempo = 0;
+    snip_equals("to", 0, tc_beatgrid_to(d, &g));
+    out = tc_kv_serialise(d, NULL);
+    snip_assert("written in place, unset keys removed, unknown keys and comments kept",
+        strcmp(out, "# trakcrate beatgrid\nbpm: 130.50\nfirst_beat_us: -500\nx-extra: keep me\n") == 0);
+    free(out);
+    tc_kv_free(d);
+
+    d = tc_kv_parse("", 0);
+    tc_beatgrid_from(d, &g);
+    snip_assert("empty: no grid", g.bpm == 0 && g.confidence < 0 && g.analyser[0] == 0);
+    snip_lequals("empty grid has no beats", 0, tc_beatgrid_beat_us(&g, 5));
+    tc_kv_free(d);
+
+    d = tc_kv_parse("bpm: -3\n", 8);
+    tc_beatgrid_from(d, &g);
+    snip_assert("a negative bpm is no grid", g.bpm == 0);
+    tc_kv_free(d);
+}
+
+static void test_cuemarks(void)
+{
+    struct tc_cuemarks cm;
+    char *out;
+    const char *text =
+        "# trakcrate cuemarks v1\n# beat\tms\tlabel\thot\tcolour\n"
+        "97.0\t44200.5\tdrop\t-\t#00ff00\n"
+        "33.0\t15051.8\tbreakdown\tA\t-\n"
+        "-\t100.0\tno grid\t-\t-\tloop_end_ms=14000\tmore\n"
+        "this is not a mark\n"
+        "x\ty\tnot numbers\n"
+        "\n"
+        "129 60051.2 outro c\n";
+
+    snip_equals("parse", 0, tc_cuemarks_parse(text, &cm));
+    snip_equals("four marks", 4, (int)cm.n);
+    snip_assert("header kept", strcmp(cm.header, "# trakcrate cuemarks v1\n# beat\tms\tlabel\thot\tcolour\n") == 0);
+    snip_assert("beat", cm.marks[0].beat == 97.0);
+    snip_assert("ms", cm.marks[0].ms == 44200.5);
+    snip_assert("label", strcmp(cm.marks[0].label, "drop") == 0);
+    snip_assert("colour", strcmp(cm.marks[0].colour, "#00ff00") == 0);
+    snip_equals("no hot", 0, cm.marks[0].hot);
+    snip_equals("hot A", 'A', cm.marks[1].hot);
+    snip_assert("no grid: NAN beat", isnan(cm.marks[2].beat));
+    snip_assert("extra columns kept", strcmp(cm.marks[2].extra, "loop_end_ms=14000\tmore") == 0);
+    snip_assert("blank separated line: label", strcmp(cm.marks[3].label, "outro") == 0);
+    snip_equals("blank separated line: lower case hot is accepted", 'C', cm.marks[3].hot);
+
+    out = tc_cuemarks_serialise(&cm, NULL);
+    snip_assert("written sorted by position, '-' for none, extras last",
+        strcmp(out,
+            "# trakcrate cuemarks v1\n# beat\tms\tlabel\thot\tcolour\n"
+            "-\t100.0\tno grid\t-\t-\tloop_end_ms=14000\tmore\n"
+            "33.0\t15051.8\tbreakdown\tA\t-\n"
+            "97.0\t44200.5\tdrop\t-\t#00ff00\n"
+            "129.0\t60051.2\toutro\tC\t-\n") == 0);
+    {
+        struct tc_cuemarks again;
+        char *out2;
+        tc_cuemarks_parse(out, &again);
+        out2 = tc_cuemarks_serialise(&again, NULL);
+        snip_assert("parse and write again: the same bytes", strcmp(out, out2) == 0);
+        free(out2);
+        tc_cuemarks_free(&again);
+    }
+    free(out);
+    tc_cuemarks_free(&cm);
+
+    snip_equals("empty", 0, tc_cuemarks_parse("", &cm));
+    snip_equals("no marks", 0, (int)cm.n);
+    out = tc_cuemarks_serialise(&cm, NULL);
+    snip_assert("empty file written empty", out[0] == 0);
+    free(out);
+    tc_cuemarks_free(&cm);
+
+    /* equal positions keep their order; decimals are written with at most 4 places */
+    snip_equals("ties", 0, tc_cuemarks_parse("1\t5\tfirst\n2\t5\tsecond\n3\t4.12345678\tearlier\n", &cm));
+    out = tc_cuemarks_serialise(&cm, NULL);
+    snip_assert("stable sort, rounding", strcmp(out, "3.0\t4.1235\tearlier\t-\t-\n1.0\t5.0\tfirst\t-\t-\n2.0\t5.0\tsecond\t-\t-\n") == 0);
+    free(out);
+    tc_cuemarks_free(&cm);
+
+    snip_equals("garbage", 0, tc_cuemarks_parse("\t\t\n#\n\xff\xfe\t\x01\n1e400\t1\tx\n", &cm));
+    tc_cuemarks_free(&cm);
+}
+
+int main(void)
+{
+    test_beatgrid();
+    test_cuemarks();
+    if (errors) { printf("%d errors\n", errors); return 1; }
+    printf("format: all ok\n");
+    return 0;
+}

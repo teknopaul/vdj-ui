@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+# trakcrate info TRACK: everything the library knows about one track
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate info [options] TRACK
+
+TRACK is a track directory, folder/track, or a track name that is unique in the library.
+Shows meta.txt, the provenance (source.txt), the beat grid, which analysis files exist, and the playlists the track is in.
+With --format json or jsonl: the record of `trakcrate ls` for the track (cli-interface.md).
+
+Options: --format FORMAT, --library DIR, -q, -v'
+tc_help_or_summary "show all metadata, provenance and analysis of a track" "$usage" "$@"
+
+track=
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --) shift; break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *)
+            if [ -n "$track" ]; then
+                tc_usage_err "only one track"
+            fi
+            track=$1
+            shift
+            ;;
+    esac
+done
+if [ $# -gt 0 ]; then
+    if [ -n "$track" ] || [ $# -gt 1 ]; then
+        tc_usage_err "only one track"
+    fi
+    track=$1
+fi
+if [ -z "$track" ]; then
+    tc_usage_err "which track? (trakcrate info TRACK)"
+fi
+
+tc_library
+tc_track "$track"
+dir=$tc_track_dir
+
+case ${TRAKCRATE_FORMAT:-text} in
+    json|jsonl|tsv|paths)
+        exec "$TRAKCRATE_BIN" --library "$tc_lib" --format "${TRAKCRATE_FORMAT}" ls "${dir#"$tc_master"/}"
+        ;;
+esac
+
+# a key/value file, shown as it is without comments
+show_kv()
+{
+    local file=$1 title=$2
+    if [ -r "$file" ]; then
+        printf '\n[%s]\n' "$title"
+        grep -v -E '^[[:space:]]*(#|$)' "$file" || true
+    fi
+}
+
+printf 'path: %s\n' "$dir"
+show_kv "$dir/meta.txt" meta
+show_kv "$dir/source.txt" source
+show_kv "$dir/beatgrid.txt" beatgrid
+
+printf '\n[files]\n'
+for f in "$dir"/*; do
+    if [ -f "$f" ]; then
+        printf '%s\t%s\n' "${f##*/}" "$(stat -c %s -- "$f")"
+    fi
+done
+
+printf '\n[playlists]\n'
+for p in "$tc_lib"/pendrives/*/symlinks/*; do
+    if [ -L "$p" ] && [ "$(readlink -f -- "$p")" = "$dir" ]; then
+        rest=${p#"$tc_lib"/pendrives/}
+        printf '%s\t%s\n' "${rest%%/*}" "${p##*/}"
+    fi
+done

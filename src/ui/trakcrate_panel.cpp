@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <map>
+#include <unordered_set>
 
 #include <QCoreApplication>
 #include <QDir>
@@ -29,6 +30,9 @@
 #include <QPainter>
 #include <QSortFilterProxyModel>
 #include <QStyledItemDelegate>
+#include <QApplication>
+#include <QStyle>
+#include <QMouseEvent>
 #include <QSplitter>
 #include <QThread>
 #include <QTimer>
@@ -66,6 +70,43 @@ public:
         painter->setPen(QColor(0x6d, 0x59, 0x00));
         painter->drawLine(option.rect.left(), option.rect.bottom(), option.rect.right(), option.rect.bottom());
         painter->restore();
+    }
+};
+
+// The Rating column: five stars, solid for the rating and hollow for the rest, a click sets that many (the same star again clears).
+class RatingDelegate : public RowLineDelegate {
+public:
+    using RowLineDelegate::RowLineDelegate;
+    static int pitch(const QFontMetrics& fm) { return fm.horizontalAdvance(QChar(0x2605)) + 3; }
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex&) const override { return QSize(5 * pitch(option.fontMetrics) + 10, option.fontMetrics.height() + 4); }
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        QStyleOptionViewItem o = option;
+        initStyleOption(&o, index);
+        o.text.clear();
+        QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &o, painter, o.widget);          // background and selection only
+        const int stars = index.data(TrakcrateTrackModel::RatingRole).toInt();
+        painter->save();
+        const int w = pitch(option.fontMetrics);
+        for (int i = 0; i < 5; ++i) {
+            painter->setPen(i < stars ? QColor(240, 180, 20) : QColor(140, 140, 140));
+            painter->drawText(QRect(option.rect.left() + 5 + i * w, option.rect.top(), w, option.rect.height()), Qt::AlignVCenter | Qt::AlignLeft,
+                              QString(QChar(i < stars ? 0x2605 : 0x2606)));
+        }
+        painter->setPen(QColor(0x6d, 0x59, 0x00));
+        painter->drawLine(option.rect.left(), option.rect.bottom(), option.rect.right(), option.rect.bottom());
+        painter->restore();
+    }
+    bool editorEvent(QEvent* ev, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index) override
+    {
+        if (ev->type() != QEvent::MouseButtonRelease) return false;
+        auto* me = static_cast<QMouseEvent*>(ev);
+        if (me->button() != Qt::LeftButton) return false;
+        const int n = (me->pos().x() - option.rect.left() - 5) / pitch(option.fontMetrics) + 1;
+        if (me->pos().x() < option.rect.left() + 5 || n < 1 || n > 5) return false;
+        const int now = index.data(TrakcrateTrackModel::RatingRole).toInt();
+        model->setData(index, n == now ? 0 : n, TrakcrateTrackModel::RatingRole);
+        return true;
     }
 };
 
@@ -148,6 +189,13 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     tree_->onKeyMove = [this](int dir) { QString err; if (!moveChosenEntry(dir, &err) && !err.isEmpty()) emit status(err); };
     table_->onRowsDropped = [this](const std::vector<int>& rows, int before) { QString err; if (!moveRows(rows, before, &err) && !err.isEmpty()) emit status(err); };
     table_->setItemDelegate(new RowLineDelegate(table_));
+    table_->setItemDelegateForColumn(TrakcrateTrackModel::Rating, new RatingDelegate(table_));
+    connect(model_, &TrakcrateTrackModel::ratingFailed, this, &TrakcratePanel::status);
+    connect(model_, &TrakcrateTrackModel::ratingWritten, this, [this](const QString& dir, int stars) {
+        showDetails(table_->currentIndex());
+        emit status(QStringLiteral("Rating set to %1").arg(stars));
+        emit ratingEdited(dir);
+    });
     table_->setSortingEnabled(true);
     table_->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -236,7 +284,14 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
             *last = {col, now};
         }
     });
+    table_->setEditTriggers(QAbstractItemView::EditKeyPressed);          // F2; a double click on the Comment column is handled below
+    connect(model_, &TrakcrateTrackModel::commentWritten, this, [this](const QString& dir, const QString&) {
+        showDetails(table_->currentIndex());
+        emit status(QStringLiteral("Comment saved"));
+        emit ratingEdited(dir);                                         // the track editor reloads if it shows this track
+    });
     connect(table_, &QAbstractItemView::doubleClicked, this, [this](const QModelIndex& idx) {
+        if (idx.column() == TrakcrateTrackModel::Comment) { table_->edit(idx); return; }      // edit the comment instead of loading the track
         const QString d = model_->trackDir(proxy_->mapToSource(idx).row());
         if (!d.isEmpty()) { preview_->stop(); emit loadRequested(d); }       // the deck needs the audio output
     });
@@ -296,6 +351,7 @@ bool TrakcratePanel::openLibrary(const QString& path, QString* err)
         return false;
     }
     lib_ = lib;
+    sizeCache_.clear();
     libraryLabel_->setText(QString::fromStdString(lib_.root().string()));
     importButton_->setEnabled(true);
     rbImportButton_->setEnabled(true);
@@ -341,6 +397,24 @@ void TrakcratePanel::newLibrary()
 
 // ---- the folder and playlist tree ---------------------------------------------------------------------------------------------------
 
+uint64_t TrakcratePanel::estimateBytes(const std::vector<trakcrate::fs::path>& trackDirs)
+{
+    uint64_t n = 0;
+    std::unordered_set<std::string> seen;
+    for (const trakcrate::fs::path& d : trackDirs) {
+        const std::string key = d.string();
+        if (!seen.insert(key).second) continue;
+        auto it = sizeCache_.find(key);
+        if (it == sizeCache_.end()) {
+            const uint64_t b = trakcrate::Library::estimateTrackBytes(d);
+            if (b == 0) continue;                               // no audio (yet): do not remember, an import may be filling it
+            it = sizeCache_.emplace(key, b).first;
+        }
+        n += it->second;
+    }
+    return n > 0 ? n + 300000 : 0;                              // the database and settings
+}
+
 void TrakcratePanel::rebuildTree(bool selectionSignals)
 {
     QString keepKind, keepName, keepDrive;
@@ -351,7 +425,8 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
     }
     // remember what the user had collapsed and where the view was scrolled, so a rebuild does not throw the view away
     auto keyOf = [](const QTreeWidgetItem* it) {
-        return it->text(0) + QLatin1Char('\x1f') + it->data(0, KindRole).toString() + QLatin1Char('\x1f') + it->data(0, DriveRole).toString();
+        const QString nm = it->data(0, NameRole).toString();
+        return (nm.isEmpty() ? it->text(0) : nm) + QLatin1Char('\x1f') + it->data(0, KindRole).toString() + QLatin1Char('\x1f') + it->data(0, DriveRole).toString();
     };
     QSet<QString> collapsed;
     const bool hadItems = tree_->topLevelItemCount() > 0;
@@ -366,6 +441,8 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
     QTreeWidgetItem* folders = new QTreeWidgetItem(tree_, QStringList(QStringLiteral("Folders")));
     QTreeWidgetItem* lists = new QTreeWidgetItem(tree_, QStringList(QStringLiteral("Playlists")));
     QTreeWidgetItem* drives = new QTreeWidgetItem(tree_, QStringList(QStringLiteral("Virtual Pendrives")));
+    folders->setData(0, NameRole, QStringLiteral("Folders"));           // the label carries a size that changes; this keeps the collapsed state
+    drives->setData(0, NameRole, QStringLiteral("Virtual Pendrives"));
     folders->setFlags(Qt::ItemIsEnabled);
     lists->setFlags(Qt::ItemIsEnabled);
     drives->setFlags(Qt::ItemIsEnabled);
@@ -384,7 +461,13 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
         if (keepKind == QLatin1String(kind) && keepName == QString::fromStdString(name)) restore = it;
     };
     if (lib_.isOpen()) {
-        for (const std::string& f : lib_.listFolders()) add(folders, "folder", f);
+        std::vector<trakcrate::fs::path> everything;
+        for (const std::string& f : lib_.listFolders()) {
+            add(folders, "folder", f);
+            for (const std::string& t : lib_.listTracks(f)) everything.push_back(lib_.trackDir(f, t));
+        }
+        folders->setText(0, QStringLiteral("Folders (%1)").arg(QString::fromStdString(trakcrate::formatFolderSize(estimateBytes(everything)))));
+        folders->setToolTip(0, QStringLiteral("Estimated disk space of all the folders: the audio plus an allowance for the analysis files"));
         for (const std::string& p : lib_.listPlaylists()) add(lists, "playlist", p);
         // user defined pendrives, each with its entries (the playlists that will be on it, in order)
         for (const std::string& dname : lib_.listDrives()) {
@@ -394,7 +477,14 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
             d->setData(0, NameRole, QString::fromStdString(dname));
             if (keepKind == QLatin1String("drive") && keepName == QString::fromStdString(dname)) restore = d;
             int index = 0;
-            for (const trakcrate::Library::DriveEntry& e : lib_.driveEntries(dname)) {
+            std::vector<trakcrate::fs::path> onDrive;
+            const std::vector<trakcrate::Library::DriveEntry> entries = lib_.driveEntries(dname);
+            const trakcrate::Library dl = lib_.driveLibrary(dname);
+            for (const trakcrate::Library::DriveEntry& e : entries)
+                for (const trakcrate::fs::path& t : dl.playlistTracks(e.dir)) onDrive.push_back(t);
+            d->setText(0, QStringLiteral("%1 (%2)").arg(QString::fromStdString(dname), QString::fromStdString(trakcrate::formatPendriveSize(estimateBytes(onDrive)))));
+            d->setToolTip(0, QStringLiteral("Smallest pendrive, in whole gigabytes (rounded up), that holds this export"));
+            for (const trakcrate::Library::DriveEntry& e : entries) {
                 auto* it = new QTreeWidgetItem(d, QStringList(QStringLiteral("%1 (%2)").arg(QString::fromStdString(e.name)).arg(e.tracks)));
                 it->setData(0, KindRole, QStringLiteral("entry"));
                 it->setData(0, NameRole, QString::fromStdString(e.dir));
@@ -428,7 +518,11 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
         for (int i = 0; i < tree_->topLevelItemCount(); ++i) flag(tree_->topLevelItem(i));
     }
     tree_->expandAll();
-    if (hadItems) {
+    if (!hadItems) {                                     // first time the view is shown: Playlists open, Virtual Pendrives one level, the rest closed
+        folders->setExpanded(false);
+        settings->setExpanded(false);
+        for (int i = 0; i < drives->childCount(); ++i) drives->child(i)->setExpanded(false);
+    } else {
         std::function<void(QTreeWidgetItem*)> fold = [&](QTreeWidgetItem* it) {
             if (collapsed.contains(keyOf(it))) it->setExpanded(false);
             for (int i = 0; i < it->childCount(); ++i) fold(it->child(i));
@@ -653,9 +747,10 @@ void TrakcratePanel::showDetails(const QModelIndex& proxyIndex)
     html += row("Year", m.get("year"));
     trakcrate::BeatGrid g = trakcrate::beatGridFrom(t.grid);
     if (t.hasGrid && !g.empty()) html += QStringLiteral("<b>BPM</b> %1<br>").arg(g.bpm, 0, 'f', 2);
-    {   // stars, like the remote deck browser: nothing at all for an unrated track
+    {   // always five stars: solid for the rating, hollow for the rest
         const int stars = int(std::max(0LL, std::min(5LL, m.getInt("rating", 0))));
-        if (stars > 0) html += QStringLiteral("<b>Rating</b> %1<br>").arg(QString(stars, QChar(0x2605)));
+        html += QStringLiteral("<b>Rating</b> <span style=\"color:#f0b414\">%1</span><span style=\"color:#8c8c8c\">%2</span><br>")
+                    .arg(QString(stars, QChar(0x2605)), QString(5 - stars, QChar(0x2606)));
     }
     html += row("Comment", m.get("comment"));
     html += row("Format", m.get("container") + " " + m.get("sample_rate") + " Hz");
@@ -669,7 +764,7 @@ void TrakcratePanel::showDetails(const QModelIndex& proxyIndex)
 void TrakcratePanel::rekordboxImportDialog()
 {
     if (!lib_.isOpen()) return;
-    TrakcrateRbImportDialog dlg(this);
+    TrakcrateRbImportDialog dlg(&lib_, this);
     if (dlg.exec() != QDialog::Accepted) return;
     if (!importRekordbox(dlg.folder(), dlg.options()))
         QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Another job is still running."));
@@ -899,6 +994,10 @@ bool TrakcratePanel::exportDrive(trakcrate::ExportOptions opts, const QString& r
         opts.devSetting = settingsBytes;
     if (opts.mySetting.empty() && trakcrate::readFile(lib_.settingsDir() / "MYSETTING.DAT", &settingsBytes) && trakcrate::verifySettingsFile(settingsBytes))
         opts.mySetting = settingsBytes;
+    // the other support files copied at import time (a drive imported from rekordbox keeps its own); without them the built in ones are used
+    if (opts.djprofile.empty() && trakcrate::readFile(lib_.settingsDir() / "djprofile.nxs", &settingsBytes) && !settingsBytes.empty()) opts.djprofile = settingsBytes;
+    if (opts.rbfltr.empty() && trakcrate::readFile(lib_.settingsDir() / "RBFLTR.DAT", &settingsBytes) && !settingsBytes.empty()) opts.rbfltr = settingsBytes;
+    if (opts.exportExt.empty() && trakcrate::readFile(lib_.settingsDir() / "exportExt.pdb", &settingsBytes) && !settingsBytes.empty()) opts.exportExt = settingsBytes;
     export_ = std::make_shared<trakcrate::ExportResult>();
     analysis_.reset(); bpm_.reset(); rb_.reset();
     report_.reset();

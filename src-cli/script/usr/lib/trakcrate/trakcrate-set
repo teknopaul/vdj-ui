@@ -1,0 +1,104 @@
+#!/bin/bash
+#
+# trakcrate set TRACK FIELD=VALUE...: edit the metadata of a track (meta.txt)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate set [options] TRACK FIELD=VALUE...
+
+Sets keys of meta.txt and records origin.meta: edited in source.txt (analysis will not overwrite them).
+FIELD= (empty value) removes the key. Known keys are checked (rating 0..5, year and track_number integers,
+bpm_tag decimal); the keys measured from the audio (duration_ms, sample_rate, bit_depth, bitrate, channels,
+file_size, container, audio_sha256, peak_dbfs, rms_dbfs) need --force. Other keys are kept as they are.
+
+Options: -n/--dry-run, --force, --library DIR, -q, -v'
+tc_help_or_summary "edit the metadata of a track" "$usage" "$@"
+
+force=
+track=
+declare -a assignments=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --force) force=1; shift ;;
+        --) shift; break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *)
+            if [ -z "$track" ]; then
+                track=$1
+            else
+                assignments+=("$1")
+            fi
+            shift
+            ;;
+    esac
+done
+for a in "$@"; do
+    if [ -z "$track" ]; then
+        track=$a
+    else
+        assignments+=("$a")
+    fi
+done
+if [ -z "$track" ] || [ "${#assignments[@]}" -eq 0 ]; then
+    tc_usage_err "usage: trakcrate set TRACK FIELD=VALUE..."
+fi
+
+# validate everything before changing anything
+for a in "${assignments[@]}"; do
+    case $a in
+        *=*) ;;
+        *) tc_usage_err "'$a' is not FIELD=VALUE" ;;
+    esac
+    key=${a%%=*}
+    value=${a#*=}
+    if ! [[ $key =~ ^[a-z][a-z0-9_.-]*$ ]]; then
+        tc_usage_err "bad field name '$key' (lower case letters, digits, _ . -)"
+    fi
+    case $key in
+        duration_ms|sample_rate|bit_depth|bitrate|channels|file_size|container|audio_sha256|peak_dbfs|rms_dbfs)
+            if [ -z "$force" ]; then
+                tc_usage_err "$key is measured from the audio; use --force to change it"
+            fi
+            ;;
+    esac
+    if [ -n "$value" ]; then
+        case $key in
+            rating)
+                [[ $value =~ ^[0-5]$ ]] || tc_usage_err "rating must be 0..5, not '$value'" ;;
+            year|track_number)
+                [[ $value =~ ^[0-9]+$ ]] || tc_usage_err "$key must be an integer, not '$value'" ;;
+            bpm_tag)
+                [[ $value =~ ^[0-9]+(\.[0-9]+)?$ ]] || tc_usage_err "bpm_tag must be a number, not '$value'" ;;
+            date_added|release_date)
+                [[ $value =~ ^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$ ]] || tc_usage_err "$key must be an ISO 8601 date, not '$value'" ;;
+        esac
+    fi
+done
+
+tc_library
+tc_track "$track"
+dir=$tc_track_dir
+
+if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+    for a in "${assignments[@]}"; do
+        tc_say "would set ${a%%=*} of ${dir#"$tc_master"/}"
+    done
+    exit 0
+fi
+
+for a in "${assignments[@]}"; do
+    key=${a%%=*}
+    value=${a#*=}
+    if [ -z "$value" ]; then
+        tc_kv_unset "$dir/meta.txt" "$key"
+    else
+        tc_kv_set "$dir/meta.txt" "$key" "$value"
+    fi
+    tc_debug "set $key"
+done
+tc_kv_set "$dir/source.txt" origin.meta edited

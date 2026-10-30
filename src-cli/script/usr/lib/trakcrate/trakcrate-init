@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# trakcrate init [DIR]: create an empty library (TRAKCRATE-FORMAT.md section 2)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate init [options] [DIR]
+
+Create an empty library: track-master-copy/, pendrives/ and user-settings/.
+An existing library is left as it is. DIR defaults to the library (--library, $TRAKCRATE_HOME, ~/trakcrate).
+
+Options: -n/--dry-run, -q, -v, --format FORMAT'
+tc_help_or_summary "create an empty library" "$usage" "$@"
+
+dir=
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --) shift; break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *)
+            if [ -n "$dir" ]; then
+                tc_usage_err "only one directory"
+            fi
+            dir=$1
+            shift
+            ;;
+    esac
+done
+if [ $# -gt 0 ]; then
+    if [ -n "$dir" ] || [ $# -gt 1 ]; then
+        tc_usage_err "only one directory"
+    fi
+    dir=$1
+fi
+
+if [ -z "$dir" ]; then
+    dir=${TRAKCRATE_LIBRARY:-}
+fi
+if [ -z "$dir" ]; then
+    tc_usage_err "no library directory given"
+fi
+dir=$(readlink -m -- "$dir")
+
+status=created
+if [ -d "$dir/track-master-copy" ]; then
+    status=exists
+elif [ -e "$dir" ] && [ ! -d "$dir" ]; then
+    tc_die "$dir exists and is not a directory"
+fi
+
+if [ "$status" = created ]; then
+    if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+        status=would-create
+    else
+        mkdir -p -- "$dir/track-master-copy" "$dir/pendrives" "$dir/user-settings"
+    fi
+fi
+
+case ${TRAKCRATE_FORMAT:-text} in
+    json|jsonl)
+        printf '{"path":%s,"status":"%s"}\n' "$(tc_json_str "$dir")" "$status"
+        ;;
+    tsv)
+        printf 'path\tstatus\n%s\t%s\n' "$dir" "$status"
+        ;;
+    *)
+        printf '%s\n' "$dir"
+        ;;
+esac
+tc_say "library $dir: $status"

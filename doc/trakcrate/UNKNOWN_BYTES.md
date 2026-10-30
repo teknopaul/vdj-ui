@@ -42,7 +42,7 @@ Status: **Phase 7** (ANLZ, settings and artwork writers added; see the last sect
 | track row | strings 0-9, 13, 18 | unknown strings | copied from the template's first track (`""`, `"6"`, `"\x01"`, `"ON"` ...) | meaning unknown |
 | track row | string 15 | | the date added again | equals slot 10 in the template |
 | track row | end | padding | 40 zero bytes after the last string, then to a multiple of 4 | real rows end 38-70 bytes after their last string |
-| analyze path | - | Pxxx/yyyyyyyy | `P` + 3 hex digits and 8 hex digits from the audio's SHA-256, bumped until unique | real names are 3 + 8 hex digits; how rekordbox derives them is unknown |
+| analyze path | - | Pxxx/yyyyyyyy | partition + slot from rekordbox's path hash (`h*0x34F5501D + c*0x93B6`, mod 200003), `ANLZ<n>` counter on collision | solved, see usbanalz-hashing.md; awaiting a test on real decks |
 | artists, albums | - | far form | not used: names always start at offset 10 (artist) / 22 (album), any string kind | `pdb.c` reads a u8 offset |
 | static tables | - | colours (6), 16, 17, 18, 19 | the template's pages, row by row | fixed lists in every export seen |
 | keys (5), 9, 10, 11, 12, 14, 15 | - | | empty (index page + blank page) | empty in the 7 track export |
@@ -53,7 +53,8 @@ Status: **Phase 7** (ANLZ, settings and artwork writers added; see the last sect
 
 | File | Tag / offset | Name | What the writer does | Basis |
 |---|---|---|---|---|
-| ANLZ0000.DAT | PVBR body (1604 bytes) | VBR seek index | all zero | the real files are zero apart from 2 stray bytes; layout unknown. **A variable bitrate mp3 may seek badly** |
+| ANLZ0000.DAT | PVBR body (1604 bytes) | VBR seek index | **VBR mp3 only** (Xing header): 401 words, word i = byte offset from the first mpeg frame of frame `floor((i+1) x frames / 400) - 8` (i = 0..399), the last word = frames x samples per frame. Constant bitrate files stay all zero | decoded from a real rekordbox export of a 10564 frame file, all 401 words reproduced (`src/trakcrate/mp3_index.cpp`) |
+| cue entries, VBR mp3 | PCPT / PCP2 | seek position | PCPT tail words = time in 1/75 s, 0, byte offset of frame `floor(ms / frame length) - 8` (0 before that), 0; status 0, then 0x00010000; cues listed from the highest hot cue down; PCP2 entries are 88 bytes (colour word 0x00010000, loop end ffffffff when none, word 0000ff00 at 44, then zeros) | same real export (cues at 53, 1943, 3832 ms), `vbrCuesMatchARealRekordboxExport` |
 | ANLZ0000.DAT | PQTZ header word 2 | unknown2 | 0x00080000 | 12 of 14 real files; two have 0x0008ff1a and 0x0008ff5a |
 | ANLZ0000.EXT | PQT2 0x2c | per file value | 0 | differs in every real file (36285013, 69320672 ...); not derivable from count, tempo or length |
 | ANLZ0000.EXT | PWV4 body | colour preview, 1200 x 6 bytes | **approximated** from the detail waveform: byte0 = height x 127/31, byte1 = 255 - byte0, bytes 2,3 = byte0, bytes 4,5 = green and blue weight x 127/7 | `rekordbox-anlz-format.text` regression notes; the colour meaning is a guess. Can be left out |

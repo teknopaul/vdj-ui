@@ -338,3 +338,8 @@ add_executable(vdj-ui-trakcrate-export-test test_trakcrate_export.cpp)
 target_compile_definitions(vdj-ui-trakcrate-export-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
 target_link_libraries(vdj-ui-trakcrate-export-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-export-test COMMAND vdj-ui-trakcrate-export-test)
+
+add_executable(vdj-ui-level-meter-test test_level_meter.cpp)
+target_link_libraries(vdj-ui-level-meter-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-level-meter-test COMMAND vdj-ui-level-meter-test)
+set_tests_properties(vdj-ui-level-meter-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

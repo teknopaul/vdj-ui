@@ -1,0 +1,258 @@
+#!/bin/bash
+#
+# trakcrate import-rekordbox DRIVE: import a real rekordbox pendrive (doc/trakcrate/import-from-rekordbox.md)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate import-rekordbox [options] DRIVE
+
+Imports the tracks of a rekordbox export (the folder that holds PIONEER/ and Contents/) into the library. The drive is only read.
+Real data wins over anything we generate: title, artist ... from the database, the beat grid, cue points and loops, waveforms and
+artwork from the drive are marked "rekordbox" in source.txt, so "trakcrate analyse" leaves them alone (--force overrides). The original
+ANLZ files are kept byte for byte in <track>/anlz/. Tracks whose audio is not on the drive are skipped and listed.
+
+By default every playlist of the drive becomes a master folder named after it ("Folder - Playlist"); a track in several playlists is
+stored once, in the first (natural name order) playlist, and every playlist is also recreated in pendrives/. Audio already in the
+library (same SHA-256) is not stored again; it joins the playlists.
+
+  --folder NAME      the folder for tracks in no playlist (default "rekordbox")
+  --by-path          tracks in no playlist, and all tracks of a drive without playlists, go to a folder named after their place on the
+                     drive (Contents/A/B/x.mp3 -> "A - B") instead of one folder
+  --no-playlist-folders   every track goes to the --folder folder (or by --by-path)
+  --no-playlists     do not recreate the playlists in pendrives/
+  --link             symbolic links to the audio on the drive instead of copies
+  --no-dedupe        store audio again even if the library has it
+  --no-beatgrid --no-cues --no-waveform --no-artwork --no-anlz    leave a part out
+  --settings         also keep DEVSETTING.DAT and MYSETTING.DAT (CRC checked) in user-settings/
+  -n, --dry-run      count what would be imported, change nothing
+
+Output (--format tsv, json, jsonl): path, source, status (ok, skipped, failed), reason (duplicate, missing-audio, ...), message.
+Exit status 3 when some tracks failed. Options: --format FORMAT, --library DIR, -q, -v'
+tc_help_or_summary "import a real rekordbox pendrive" "$usage" "$@"
+
+drive= folder_opt=rekordbox by_path= pl_folders=1 playlists=1 mode=copy dedupe=1 settings=
+declare -a rbflags=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --folder|--folder=*) tc_opt_value --folder "$@"; folder_opt=$tc_value; shift "$tc_shift" ;;
+        --by-path) by_path=1; shift ;;
+        --no-playlist-folders) pl_folders=; shift ;;
+        --no-playlists) playlists=; shift ;;
+        --link) mode=link; shift ;;
+        --copy) mode=copy; shift ;;
+        --no-dedupe) dedupe=; shift ;;
+        --no-beatgrid|--no-cues|--no-waveform|--no-artwork|--no-anlz) rbflags+=("$1"); shift ;;
+        --settings) settings=1; shift ;;
+        --) shift; break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *)
+            [ -z "$drive" ] || tc_usage_err "only one drive"
+            drive=$1
+            shift
+            ;;
+    esac
+done
+if [ $# -gt 0 ]; then drive=${drive:-$1}; fi
+[ -n "$drive" ] || tc_usage_err "which drive? (trakcrate import-rekordbox DRIVE)"
+[ -f "$drive/PIONEER/rekordbox/export.pdb" ] || tc_die "not a rekordbox drive (no PIONEER/rekordbox/export.pdb): $drive"
+drive=$(readlink -f -- "$drive")
+drive_name=${drive##*/}
+
+tc_library
+tc_helper
+format=${TRAKCRATE_FORMAT:-text}
+dry=${TRAKCRATE_DRY_RUN:-}
+
+work=$(mktemp -d "${TMPDIR:-/tmp}/trakcrate-import-rb.XXXXXX")
+if [ -z "$dry" ]; then
+    tc_lock
+fi
+cleanup()
+{
+    rm -rf -- "$work"
+    if [ -z "$dry" ]; then tc_unlock; fi
+}
+trap cleanup EXIT
+
+"$TRAKCRATE_HELPER" rbdrive "$drive" > "$work/db" || tc_die "cannot read the database of $drive"
+
+declare -A file_of=() analyze_of=() pl_name=() folder_of=() dir_of=()
+declare -a track_ids=() pl_ids=()
+while IFS=$'\t' read -r kind a b c; do
+    case $kind in
+        T) track_ids+=("$a"); file_of[$a]=$b; analyze_of[$a]=$c ;;
+        P) pl_ids+=("$a"); pl_name[$a]=$(tc_sanitize_name "$b") ;;
+        E) printf '%s\n' "$b" >> "$work/pl.$a" ;;
+    esac
+done < "$work/db"
+
+# playlists in natural name order; the first one that holds a track owns its audio
+declare -a pl_sorted=()
+if [ "${#pl_ids[@]}" -gt 0 ]; then
+    while IFS= read -r -d '' line; do pl_sorted+=("${line#*$'\t'}"); done < <(
+        for id in "${pl_ids[@]}"; do printf '%s\t%s\0' "${pl_name[$id]}" "$id"; done | "$TRAKCRATE_HELPER" natsort -z)
+fi
+if [ -n "$pl_folders" ]; then
+    for id in "${pl_sorted[@]}"; do
+        [ -f "$work/pl.$id" ] || continue
+        while IFS= read -r tid; do
+            if [ -z "${folder_of[$tid]+x}" ]; then folder_of[$tid]=${pl_name[$id]}; fi
+        done < "$work/pl.$id"
+    done
+fi
+path_folders=$by_path
+if [ "${#pl_ids[@]}" -eq 0 ]; then path_folders=1; fi
+
+# audio already in the library
+: > "$work/index"
+if [ -n "$dedupe" ]; then
+    grep -r -H --include=meta.txt '^audio_sha256:' "$tc_master" 2>/dev/null |
+        sed -n 's|^\(.*\)/meta\.txt:audio_sha256:[[:space:]]*\([0-9a-f]\{64\}\).*$|\2 \1|p' | LC_ALL=C sort -k2 > "$work/index" || true
+fi
+
+now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+today=$(date +%Y-%m-%d)
+imported=0 dups=0 missing=0 failed=0 n_grid=0 n_cues=0 n_wave=0 n_art=0 n_anlz=0
+declare -a rec_path=() rec_src=() rec_status=() rec_reason=() rec_msg=()
+rec() { rec_path+=("$1"); rec_src+=("$2"); rec_status+=("$3"); rec_reason+=("$4"); rec_msg+=("$5"); }
+
+for tid in "${track_ids[@]}"; do
+    fp=${file_of[$tid]}
+    case /$fp/ in */../*) failed=$((failed + 1)); rec "" "$fp" failed unsafe-path "path leaves the drive"; continue ;; esac
+    f=$drive/${fp#/}
+    if [ ! -f "$f" ]; then
+        missing=$((missing + 1)); rec "" "$fp" skipped missing-audio "audio file is not on the drive"
+        continue
+    fi
+    hash=$(sha256sum -- "$f" | cut -d' ' -f1)
+    existing=
+    if [ -n "$dedupe" ]; then existing=$(grep -m1 "^$hash " "$work/index" | cut -d' ' -f2- || true); fi
+    if [ -n "$existing" ] && [ -d "$existing" ]; then
+        dir_of[$tid]=$existing; dups=$((dups + 1)); rec "$existing" "$fp" skipped duplicate "same audio as ${existing#"$tc_master"/}"
+        continue
+    fi
+    name=${f##*/}; ext=${name##*.}; ext=${ext,,}
+    stem=$(tc_sanitize_name "${name%.*}")
+    folder=${folder_of[$tid]:-}
+    if [ -z "$folder" ]; then
+        folder=$(tc_sanitize_name "$folder_opt")
+        if [ -n "$path_folders" ]; then
+            sub=${fp#/}; sub=${sub%/*}
+            if [ "$sub" != "${fp#/}" ]; then
+                IFS=/ read -r -a parts <<< "$sub"
+                if [ "${parts[0]^^}" = CONTENTS ]; then parts=("${parts[@]:1}"); fi
+                if [ "${#parts[@]}" -gt 0 ]; then
+                    folder=
+                    for part in "${parts[@]}"; do folder+="${folder:+ - }$(tc_sanitize_name "$part")"; done
+                fi
+            fi
+        fi
+    fi
+    if [ -n "$dry" ]; then
+        imported=$((imported + 1)); rec "$tc_master/$folder/$stem" "$fp" ok dry-run "would import"
+        continue
+    fi
+    rm -rf -- "$work/art"; mkdir -p -- "$work/art"
+    if ! "$TRAKCRATE_HELPER" probe "$f" --artwork-dir "$work/art" > "$work/probe" 2> "$work/probe.err"; then
+        msg=$(head -n 1 "$work/probe.err")
+        failed=$((failed + 1)); rec "" "$fp" failed unreadable "${msg:-cannot read the audio}"
+        tc_say "failed: $fp: ${msg:-cannot read the audio}"
+        continue
+    fi
+    mkdir -p -- "$tc_master/$folder"
+    track=$stem; n=2
+    while [ -e "$tc_master/$folder/$track" ]; do track="$stem $n"; n=$((n + 1)); done
+    final=$tc_master/$folder/$track
+    tmp=$tc_master/$folder/.import.$$.$imported
+    rm -rf -- "$tmp"; mkdir -p -- "$tmp"
+    if [ "$mode" = link ]; then ln -s -- "$f" "$tmp/track.$ext"; else cp -- "$f" "$tmp/track.$ext"; fi
+    cp -- "$work/probe" "$tmp/meta.txt"
+    tc_kv_set "$tmp/meta.txt" original_filename "$name"
+    tc_kv_set "$tmp/meta.txt" audio_sha256 "$hash"
+    tc_kv_set "$tmp/meta.txt" file_size "$(stat -L -c %s -- "$f")"
+    tc_kv_set "$tmp/meta.txt" date_added "$today"
+    for art in "$work"/art/artwork.*; do [ -f "$art" ] && mv -- "$art" "$tmp/"; done
+    {
+        printf '# trakcrate source\n'
+        for g in meta beatgrid cues waveform artwork; do printf 'origin.%s: generated\n' "$g"; done
+    } > "$tmp/source.txt"
+    tc_kv_set "$tmp/source.txt" imported_from "$drive_name:$fp"
+    tc_kv_set "$tmp/source.txt" imported_at "$now"
+    if ! res=$("$TRAKCRATE_HELPER" rbtrack "$drive" "$tid" "$tmp" "${rbflags[@]}" 2> "$work/rb.err"); then
+        msg=$(head -n 1 "$work/rb.err")
+        rm -rf -- "$tmp"
+        failed=$((failed + 1)); rec "" "$fp" failed unreadable "${msg:-cannot read the database row}"
+        continue
+    fi
+    if [ -s "$work/rb.err" ]; then while IFS= read -r line; do tc_say "${line#warning: }"; done < "$work/rb.err"; fi
+    IFS=$'\t' read -r g c w a z <<< "$res"
+    n_grid=$((n_grid + g)); n_cues=$((n_cues + c)); n_wave=$((n_wave + w)); n_art=$((n_art + a)); n_anlz=$((n_anlz + z))
+    mv -- "$tmp" "$final"
+    printf '%s %s\n' "$hash" "$final" >> "$work/index"
+    dir_of[$tid]=$final
+    imported=$((imported + 1)); rec "$final" "$fp" ok "" ""
+    tc_debug "imported $fp as $folder/$track"
+done
+
+# the playlists
+made=0
+if [ -n "$playlists" ] && [ -z "$dry" ]; then
+    for id in "${pl_sorted[@]}"; do
+        [ -f "$work/pl.$id" ] || continue
+        pname=${pl_name[$id]}
+        declare -a names=() links=()
+        names=(); links=()
+        while IFS= read -r tid; do
+            d=${dir_of[$tid]:-}
+            [ -n "$d" ] || continue
+            names+=("${d##*/}"); links+=("$(tc_track_link "$d")")
+        done < "$work/pl.$id"
+        [ "${#names[@]}" -gt 0 ] || continue
+        if [ -z "$pname" ] || ! tc_safe_name "$pname"; then tc_say "playlist skipped, bad name: $pname"; continue; fi
+        if [ -d "$tc_lib/pendrives/$pname" ]; then tc_say "playlist \"$pname\" already exists, left as it was"; continue; fi
+        mkdir -p -- "$tc_lib/pendrives/$pname"
+        tc_playlist_write "$tc_lib/pendrives/$pname" names links
+        made=$((made + 1))
+    done
+fi
+if [ -n "$settings" ] && [ -z "$dry" ]; then
+    mkdir -p -- "$tc_lib/user-settings"
+    for s in DEVSETTING.DAT MYSETTING.DAT; do
+        if [ -f "$drive/PIONEER/$s" ]; then
+            cp -- "$drive/PIONEER/$s" "$work/$s"
+            if "$TRAKCRATE_HELPER" settings-check "$work/$s" >/dev/null 2>&1; then cp -- "$work/$s" "$tc_lib/user-settings/$s"; else tc_say "$s not copied: it fails its CRC check"; fi
+        fi
+    done
+fi
+
+case $format in
+    tsv) printf 'path\tsource\tstatus\treason\tmessage\n' ;;
+    json) printf '[' ;;
+esac
+for i in "${!rec_src[@]}"; do
+    case $format in
+        tsv) printf '%s\t%s\t%s\t%s\t%s\n' "${rec_path[$i]}" "${rec_src[$i]}" "${rec_status[$i]}" "${rec_reason[$i]}" "${rec_msg[$i]}" ;;
+        json|jsonl)
+            r='{"path":'$(tc_json_str "${rec_path[$i]}")',"source":'$(tc_json_str "${rec_src[$i]}")',"status":"'${rec_status[$i]}'"'
+            if [ -n "${rec_reason[$i]}" ]; then r+=',"reason":"'${rec_reason[$i]}'"'; fi
+            if [ -n "${rec_msg[$i]}" ]; then r+=',"message":'$(tc_json_str "${rec_msg[$i]}"); fi
+            r+='}'
+            if [ "$format" = json ]; then printf '%s%s' "$([ "$i" = 0 ] || echo ,)" "$r"; else printf '%s\n' "$r"; fi ;;
+    esac
+done
+case $format in
+    json) printf ']\n' ;;
+    tsv|jsonl) ;;
+    *)
+        printf 'tracks on the drive %d: imported %d, duplicates %d, audio missing %d, failed %d\n' "${#track_ids[@]}" "$imported" "$dups" "$missing" "$failed"
+        printf 'from rekordbox: %d beat grids, %d cue lists, %d waveforms, %d artworks, %d ANLZ sets; playlists made: %d\n' "$n_grid" "$n_cues" "$n_wave" "$n_art" "$n_anlz" "$made" ;;
+esac
+if [ "$failed" -gt 0 ]; then
+    if [ "$((imported + dups))" -gt 0 ]; then exit 3; fi
+    exit 1
+fi

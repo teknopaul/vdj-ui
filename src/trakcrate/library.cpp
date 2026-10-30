@@ -492,4 +492,46 @@ bool Library::forgetTracks(const std::vector<fs::path>& trackDirs, std::string* 
     return ok;
 }
 
+uint64_t Library::estimateTrackBytes(const fs::path& trackDir)
+{
+    const fs::path audio = audioFileOf(trackDir);
+    if (audio.empty()) return 0;
+    std::error_code ec;
+    const auto n = fs::file_size(audio, ec);
+    if (ec) return 0;
+    return uint64_t(n) + 150000;                                    // ANLZ .DAT/.EXT, two artwork sizes, the database rows
+}
+
+uint64_t Library::estimateBytes(const std::vector<fs::path>& trackDirs)
+{
+    std::set<std::string> seen;
+    uint64_t n = 0;
+    for (const fs::path& d : trackDirs) {
+        std::error_code ec;
+        fs::path key = fs::weakly_canonical(d, ec);
+        if (ec) key = d;
+        if (seen.insert(key.string()).second) n += estimateTrackBytes(d);
+    }
+    return n > 0 ? n + 300000 : 0;                                  // export.pdb, settings, directory pages
+}
+
+std::string formatFolderSize(uint64_t bytes)
+{
+    // round half up on the hundredths in integers, so 23.335 is not at the mercy of binary floating point
+    const uint64_t hundredths = (bytes / 10000000u) + ((bytes % 10000000u) >= 5000000u ? 1 : 0);
+    char buf[48];
+    std::snprintf(buf, sizeof buf, "%llu.%02lluGb", (unsigned long long)(hundredths / 100), (unsigned long long)(hundredths % 100));
+    return buf;
+}
+
+uint64_t pendriveGigabytes(uint64_t bytes)
+{
+    return (bytes + 999999999u) / 1000000000u;
+}
+
+std::string formatPendriveSize(uint64_t bytes)
+{
+    return std::to_string((unsigned long long)pendriveGigabytes(bytes)) + "Gb";
+}
+
 } // namespace trakcrate

@@ -11,6 +11,7 @@
 class QComboBox;
 class QHBoxLayout;
 class QLabel;
+class QScrollBar;
 class QListWidget;
 class QLineEdit;
 class QPushButton;
@@ -55,6 +56,7 @@ public:
     bool setCuemarkLabel(int index, const QString& label);
     int cuemarkCount() const;
     WaveformWidget* waveform() const { return wave_; }
+    QScrollBar* waveScrollBar() const { return waveScroll_; }
     QListWidget* cuemarkList() const { return markList_; }
     QPushButton* editMarksButton() const { return editMarks_; }
     QComboBox* snapBox() const { return snapBox_; }
@@ -96,6 +98,7 @@ private:
     void showMarks();
     bool writeMeta(const QString& dir, const QString& key, const QString& value);     // the single place that touches the disk
     void showFacts();
+    void syncWaveScroll();
     void reload();
 
     QString dir_;
@@ -107,6 +110,8 @@ private:
     QLabel* facts_;
     StarRatingWidget* stars_;
     QLineEdit* comment_;
+    QScrollBar* waveScroll_ = nullptr;               // pans the zoomed waveform; the range is the track in ms
+    bool syncingScroll_ = false;
     QPushButton* gridEdit_;
     QLabel* gridReadout_;
     trakcrate::BeatGrid sessionGrid_;              // the grid as loaded, for Revert

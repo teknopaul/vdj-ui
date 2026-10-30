@@ -1,0 +1,401 @@
+#!/bin/bash
+#
+# trakcrate: the command line front end for trakcrate libraries (doc/trakcrate/cli.md)
+#
+#   trakcrate [global options] <command> [command options] [args]
+#
+# Finds an executable trakcrate-<command> and exec's it. The commands do the work.
+# Stdin, stdout, stderr and the exit status of the command pass straight through.
+#
+set -eu
+
+# filled in by src-cli/deploy/build-deb.sh; run from the source tree the version comes from ./version
+TRAKCRATE_VERSION='@VERSION@'
+version_marker='@'VERSION'@'
+api_version=1
+
+die_usage()
+{
+    printf 'trakcrate: %s\n' "$*" >&2
+    exit 2
+}
+
+die()
+{
+    printf 'trakcrate: %s\n' "$*" >&2
+    exit 1
+}
+
+#
+# Where we are installed: /usr/bin/trakcrate gives /usr/lib/trakcrate and /etc/trakcrate.
+# The same arithmetic works in the source tree (src-cli/script/usr/bin/trakcrate).
+#
+self=$(readlink -f -- "$0")
+bin_dir=${self%/*}
+root_dir=$(readlink -f -- "$bin_dir/..")
+libexec_dir=$root_dir/lib/trakcrate
+data_dir=$root_dir/share/trakcrate
+sysconf_file=$(readlink -m -- "$root_dir/../etc/trakcrate/trakcrate.conf")
+# the administrator's own commands; TRAKCRATE_LOCAL_DIR is for tests
+local_dir=${TRAKCRATE_LOCAL_DIR-/usr/local/lib/trakcrate}
+
+version=$TRAKCRATE_VERSION
+if [ "$version" = "$version_marker" ]; then
+    version=dev
+    version_file=$root_dir/../../../version
+    if [ -r "$version_file" ]; then
+        v=$(sed -n 's/^VERSION=//p' "$version_file" | head -n 1)
+        if [ -n "$v" ]; then
+            version=$v
+        fi
+    fi
+fi
+
+usage()
+{
+    cat <<'EOF'
+Usage: trakcrate [global options] <command> [command options] [args]
+
+Global options (before the command):
+  --library DIR      the library (default: $TRAKCRATE_LIBRARY, $TRAKCRATE_HOME, config, ~/trakcrate)
+  --config FILE      user configuration file (default: ${XDG_CONFIG_HOME:-~/.config}/trakcrate/config)
+  -j, --jobs N       parallel jobs (default: number of CPUs)
+  --format FORMAT    text, tsv, json, jsonl or paths (default: text)
+  -q, --quiet        only errors on stderr
+  -v, --verbose      more on stderr (repeatable)
+  -n, --dry-run      write nothing, say what would happen
+  --yes              do not ask before destructive steps
+  --color WHEN       auto, always or never
+  -h, --help         this text, or 'trakcrate help <command>'
+  -V, --version      print the version
+  --list-commands    list the commands with their directory (TAB separated)
+EOF
+}
+
+#
+# Configuration: key=value lines, comments with #. Later files override earlier ones.
+# Keys: library, format, jobs, color. Never sourced, never evaluated.
+#
+conf_library=
+conf_format=
+conf_jobs=
+conf_color=
+
+read_conf()
+{
+    local file=$1 line key value
+    if [ ! -r "$file" ]; then
+        return 0
+    fi
+    while IFS= read -r line || [ -n "$line" ]; do
+        line=${line#"${line%%[![:space:]]*}"}
+        case $line in
+            ''|'#'*) continue ;;
+            *=*) ;;
+            *) continue ;;
+        esac
+        key=${line%%=*}
+        value=${line#*=}
+        key=${key%"${key##*[![:space:]]}"}
+        value=${value#"${value%%[![:space:]]*}"}
+        value=${value%"${value##*[![:space:]]}"}
+        case $value in
+            '~/'*) value=${HOME:-}/${value#'~/'} ;;
+        esac
+        case $key in
+            library) conf_library=$value ;;
+            format) conf_format=$value ;;
+            jobs) conf_jobs=$value ;;
+            color) conf_color=$value ;;
+        esac
+    done < "$file"
+}
+
+#
+# Command search: $TRAKCRATE_PATH (tests and development), the administrator's directory, the package.
+# Never $PATH and never anything under $HOME.
+#
+search_dirs=()
+if [ -n "${TRAKCRATE_PATH:-}" ]; then
+    IFS=: read -r -a path_dirs <<< "$TRAKCRATE_PATH"
+    for d in "${path_dirs[@]}"; do
+        if [ -n "$d" ]; then
+            search_dirs+=("$d")
+        fi
+    done
+fi
+if [ -n "$local_dir" ]; then
+    search_dirs+=("$local_dir")
+fi
+search_dirs+=("$libexec_dir")
+
+valid_name()
+{
+    [[ $1 =~ ^[a-z0-9][a-z0-9-]*$ ]]
+}
+
+# trakcrate-help would be shadowed by the built in help; trakcrate-helper is the compiled helper, not a command
+reserved_name()
+{
+    [ "$1" = help ] || [ "$1" = helper ]
+}
+
+# prints the path of the first executable trakcrate-<name>, status 1 when there is none
+find_command()
+{
+    local name=$1 dir
+    for dir in "${search_dirs[@]}"; do
+        if [ -f "$dir/trakcrate-$name" ] && [ -x "$dir/trakcrate-$name" ]; then
+            printf '%s\n' "$dir/trakcrate-$name"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# name<TAB>directory[<TAB>shadows <directory>], sorted by name, the winner first
+list_commands()
+{
+    local dir f name other shadows
+    for dir in "${search_dirs[@]}"; do
+        for f in "$dir"/trakcrate-*; do
+            if [ ! -f "$f" ] || [ ! -x "$f" ]; then
+                continue
+            fi
+            name=${f##*/trakcrate-}
+            if ! valid_name "$name" || reserved_name "$name"; then
+                continue
+            fi
+            if [ "$(find_command "$name")" != "$f" ]; then
+                continue
+            fi
+            shadows=
+            for other in "${search_dirs[@]}"; do
+                if [ "$other" != "$dir" ] && [ -f "$other/trakcrate-$name" ] && [ -x "$other/trakcrate-$name" ]; then
+                    shadows="shadows $other"
+                    break
+                fi
+            done
+            if [ -n "$shadows" ]; then
+                printf '%s\t%s\t%s\n' "$name" "$dir" "$shadows"
+            else
+                printf '%s\t%s\n' "$name" "$dir"
+            fi
+        done
+    done | LC_ALL=C sort -t "$(printf '\t')" -s -k1,1 -u
+}
+
+# edit distance, for "did you mean"
+distance()
+{
+    local a=$1 b=$2 i j cost del ins sub best
+    local -a prev curr
+    for ((j = 0; j <= ${#b}; j++)); do
+        prev[j]=$j
+    done
+    for ((i = 1; i <= ${#a}; i++)); do
+        curr[0]=$i
+        for ((j = 1; j <= ${#b}; j++)); do
+            cost=1
+            if [ "${a:i-1:1}" = "${b:j-1:1}" ]; then
+                cost=0
+            fi
+            del=$((prev[j] + 1))
+            ins=$((curr[j-1] + 1))
+            sub=$((prev[j-1] + cost))
+            best=$del
+            if [ "$ins" -lt "$best" ]; then best=$ins; fi
+            if [ "$sub" -lt "$best" ]; then best=$sub; fi
+            curr[j]=$best
+        done
+        prev=("${curr[@]}")
+    done
+    printf '%s\n' "${prev[${#b}]}"
+}
+
+unknown_command()
+{
+    local want=$1 name rest dist
+    local -a similar=()
+    printf "trakcrate: '%s' is not a trakcrate command. See 'trakcrate --list-commands'.\n" "$want" >&2
+    while IFS=$'\t' read -r name rest; do
+        dist=$(distance "$want" "$name")
+        if [ "$dist" -le 2 ] || [[ $name == "$want"* ]] || [[ $want == "$name"* ]]; then
+            similar+=("$name")
+        fi
+    done < <(list_commands)
+    if [ "${#similar[@]}" -gt 0 ]; then
+        printf '\nThe most similar commands are\n' >&2
+        printf '    %s\n' "${similar[@]}" >&2
+    fi
+    exit 2
+}
+
+#
+# Global options
+#
+opt_library=
+opt_config=
+opt_jobs=
+opt_format=
+opt_color=
+opt_quiet=
+opt_verbose=0
+opt_dry_run=
+opt_yes=
+want_help=
+want_version=
+want_list=
+
+# the value of an option: --opt=value or --opt value; sets option_value and option_shift
+option_value()
+{
+    local name=$1
+    shift
+    case $1 in
+        "$name"=*)
+            option_value=${1#*=}
+            option_shift=1
+            ;;
+        *)
+            if [ $# -lt 2 ]; then
+                die_usage "option $name needs a value"
+            fi
+            option_value=$2
+            option_shift=2
+            ;;
+    esac
+}
+
+command_name=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --library|--library=*) option_value --library "$@"; opt_library=$option_value; shift "$option_shift" ;;
+        --config|--config=*) option_value --config "$@"; opt_config=$option_value; shift "$option_shift" ;;
+        --jobs|--jobs=*) option_value --jobs "$@"; opt_jobs=$option_value; shift "$option_shift" ;;
+        -j) option_value -j "$@"; opt_jobs=$option_value; shift "$option_shift" ;;
+        -j[0-9]*) opt_jobs=${1#-j}; shift ;;
+        --format|--format=*) option_value --format "$@"; opt_format=$option_value; shift "$option_shift" ;;
+        --color|--color=*) option_value --color "$@"; opt_color=$option_value; shift "$option_shift" ;;
+        -q|--quiet) opt_quiet=1; shift ;;
+        -v|--verbose) opt_verbose=$((opt_verbose + 1)); shift ;;
+        -vv) opt_verbose=$((opt_verbose + 2)); shift ;;
+        -n|--dry-run) opt_dry_run=1; shift ;;
+        --yes) opt_yes=1; shift ;;
+        -h|--help) want_help=1; shift ;;
+        -V|--version) want_version=1; shift ;;
+        --list-commands) want_list=1; shift ;;
+        --) shift; break ;;
+        -*) die_usage "unknown option '$1' (global options go before the command, see 'trakcrate --help')" ;;
+        *) break ;;
+    esac
+done
+
+if [ -n "$want_version" ]; then
+    printf 'trakcrate %s (api %s)\n' "$version" "$api_version"
+    exit 0
+fi
+if [ -n "$want_help" ] && [ $# -eq 0 ]; then
+    usage
+    exit 0
+fi
+
+# user configuration: --config replaces the default user file
+user_conf=${opt_config:-${XDG_CONFIG_HOME:-${HOME:-}/.config}/trakcrate/config}
+read_conf "$sysconf_file"
+read_conf "$user_conf"
+
+#
+# Resolve the settings: command line, then environment, then configuration, then the default
+#
+library=${opt_library:-${TRAKCRATE_LIBRARY:-${TRAKCRATE_HOME:-$conf_library}}}
+if [ -z "$library" ]; then
+    if [ -z "${HOME:-}" ]; then
+        die_usage "no library: give --library DIR, or set TRAKCRATE_LIBRARY"
+    fi
+    library=$HOME/trakcrate
+fi
+library=$(readlink -m -- "$library")
+
+format=${opt_format:-${TRAKCRATE_FORMAT:-${conf_format:-text}}}
+case $format in
+    text|tsv|json|jsonl|paths) ;;
+    *) die_usage "bad format '$format' (text, tsv, json, jsonl or paths)" ;;
+esac
+
+color=${opt_color:-${TRAKCRATE_COLOR:-${conf_color:-auto}}}
+case $color in
+    auto|always|never) ;;
+    *) die_usage "bad color '$color' (auto, always or never)" ;;
+esac
+
+jobs=${opt_jobs:-${TRAKCRATE_JOBS:-$conf_jobs}}
+if [ -z "$jobs" ]; then
+    jobs=$(nproc 2>/dev/null || echo 1)
+fi
+if ! [[ $jobs =~ ^[1-9][0-9]*$ ]]; then
+    die_usage "bad number of jobs '$jobs'"
+fi
+
+verbose=$((opt_verbose + ${TRAKCRATE_VERBOSE:-0}))
+
+export TRAKCRATE_BIN=$self
+export TRAKCRATE_LIBEXEC=$libexec_dir
+export TRAKCRATE_DATA=${TRAKCRATE_DATA:-$data_dir}                            # the template database ...
+export TRAKCRATE_HELPER=${TRAKCRATE_HELPER:-$libexec_dir/trakcrate-helper}     # preset by tests and development builds
+export TRAKCRATE_LIBRARY=$library
+export TRAKCRATE_FORMAT=$format
+export TRAKCRATE_COLOR=$color
+export TRAKCRATE_JOBS=$jobs
+export TRAKCRATE_VERBOSE=$verbose
+export TRAKCRATE_CONFIG=$user_conf
+export TRAKCRATE_API=$api_version
+if [ -n "$opt_quiet" ] || [ -n "${TRAKCRATE_QUIET:-}" ]; then
+    export TRAKCRATE_QUIET=1
+fi
+if [ -n "$opt_dry_run" ] || [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+    export TRAKCRATE_DRY_RUN=1
+fi
+if [ -n "$opt_yes" ] || [ -n "${TRAKCRATE_YES:-}" ]; then
+    export TRAKCRATE_YES=1
+fi
+
+if [ -n "$want_list" ]; then
+    list_commands
+    exit 0
+fi
+
+if [ $# -eq 0 ]; then
+    usage >&2
+    exit 2
+fi
+
+command_name=$1
+shift
+
+# trakcrate help [command]
+if [ "$command_name" = help ]; then
+    if [ $# -eq 0 ]; then
+        usage
+        printf '\nCommands:\n'
+        while IFS=$'\t' read -r name rest; do
+            summary=$("$(find_command "$name")" --summary 2>/dev/null </dev/null | head -n 1 || true)
+            printf '  %-14s %s\n' "$name" "$summary"
+        done < <(list_commands)
+        exit 0
+    fi
+    command_name=$1
+    shift
+    set -- --help
+elif [ -n "$want_help" ]; then
+    set -- --help "$@"
+fi
+
+if ! valid_name "$command_name" || reserved_name "$command_name"; then
+    unknown_command "$command_name"
+fi
+if ! command_path=$(find_command "$command_name"); then
+    unknown_command "$command_name"
+fi
+
+exec "$command_path" "$@"

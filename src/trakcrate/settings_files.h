@@ -22,6 +22,15 @@ bool fixSettingsCrc(std::string* bytes);
 const std::string& defaultDevSetting();
 const std::string& defaultMySetting();
 
+// The other three files a player expects next to the settings, copied verbatim from a real drive (data/trakcrate/user-settings/) and compiled
+// in, so an export always has them: PIONEER/djprofile.nxs, PIONEER/rekordbox/RBFLTR.DAT and PIONEER/rekordbox/exportExt.pdb.
+const std::string& defaultDjprofile();
+const std::string& defaultRbfltr();
+const std::string& defaultExportExt();
+// PIONEER/USBANLZ/USBMNG.DAT of a drive with no path collisions: the 56 byte PMNG/PTBL header and a zeroed table of 200003 16 bit slots, which is
+// what rekordbox writes (400058 bytes). A copy from another drive carries that drive's entries, so it is not used.
+std::string emptyUsbmng();
+
 // Reads a settings file a user provided as the template (for example from their own drive) and refuses a damaged one.
 bool loadSettingsFile(const std::string& path, std::string* out, std::string* err = nullptr);
 

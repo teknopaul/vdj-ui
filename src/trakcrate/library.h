@@ -102,6 +102,13 @@ public:
     // Removes every link to these track folders from all playlists and pendrives (and renumbers them). Call before deleting the folders.
     bool forgetTracks(const std::vector<fs::path>& trackDirs, std::string* err = nullptr) const;
 
+    // ---- disk usage (an estimate) ----
+    // What a track folder takes on a pendrive: its audio file plus a fixed allowance for the analysis files and artwork the exporter adds.
+    // The audio is what counts; a folder without audio is 0 (nothing is exported for it).
+    static uint64_t estimateTrackBytes(const fs::path& trackDir);
+    // The sum over the distinct track folders (a track on two playlists is exported once). Adds the database and settings allowance when non empty.
+    static uint64_t estimateBytes(const std::vector<fs::path>& trackDirs);
+
 private:
     fs::path symlinksDir(const std::string& name) const { return pendrivesDir() / name / "symlinks"; }
     std::vector<std::string> playlistEntries(const std::string& name) const;       // link names in play order
@@ -109,6 +116,14 @@ private:
 
     fs::path root_;
 };
+
+// "23.34Gb": decimal gigabytes (as drives are sold), two decimals, for the total of the folders.
+std::string formatFolderSize(uint64_t bytes);
+// Whole gigabytes, rounded UP (1.000001Gb needs a 2Gb drive): a pendrive's real capacity is imprecise, one byte over does not fit, and the
+// player writes to the drive when it is inserted. 0 for 0 bytes.
+uint64_t pendriveGigabytes(uint64_t bytes);
+// "2Gb"
+std::string formatPendriveSize(uint64_t bytes);
 
 } // namespace trakcrate
 

@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# trakcrate verify TARGET: check a rekordbox format drive (one made by export, or a real rekordbox export)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate verify [options] TARGET
+
+Checks the drive in TARGET (the folder that holds PIONEER/ and Contents/): export.pdb parses and is consistent, every track has its
+audio file, both analysis files (which must parse and name the right audio file) and its artwork, the settings files have a good CRC,
+and SHA256SUMS agrees with the files when present. libcdj'"'"'s readers do the reading. Read only; works on a real rekordbox drive too.
+
+Output (--format tsv, json, jsonl): where (path inside TARGET), severity (error, warning), code, message.
+Exit status 1 when there is an error.
+
+Options: --format FORMAT, -q, -v'
+tc_help_or_summary "check a rekordbox format drive" "$usage" "$@"
+
+declare -a args=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --) shift; args+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) args+=("$1"); shift ;;
+    esac
+done
+if [ "${#args[@]}" -ne 1 ]; then
+    tc_usage_err "usage: trakcrate verify TARGET"
+fi
+target=${args[0]}
+if [ ! -d "$target" ]; then
+    tc_die "$target is not a folder"
+fi
+format=${TRAKCRATE_FORMAT:-text}
+
+work=$(mktemp -d "${TMPDIR:-/tmp}/trakcrate-verify.XXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+rc=0
+"$TRAKCRATE_HELPER" verify "$target" > "$work/out" 2> "$work/err" || rc=$?
+if [ "$rc" -gt 1 ]; then
+    tc_die "verify failed (status $rc): $(head -n 1 "$work/err")"
+fi
+
+errors=0
+first=1
+if [ "$format" = tsv ]; then
+    printf 'where\tseverity\tcode\tmessage\n'
+elif [ "$format" = json ]; then
+    printf '['
+fi
+while IFS=$'\t' read -r where severity code message; do
+    if [ "$severity" = error ]; then errors=$((errors + 1)); fi
+    case $format in
+        tsv) printf '%s\t%s\t%s\t%s\n' "$where" "$severity" "$code" "$message" ;;
+        jsonl) printf '{"where":%s,"severity":"%s","code":"%s","message":%s}\n' "$(tc_json_str "$where")" "$severity" "$code" "$(tc_json_str "$message")" ;;
+        json)
+            printf '%s{"where":%s,"severity":"%s","code":"%s","message":%s}' "$([ "$first" = 1 ] || echo ,)" "$(tc_json_str "$where")" "$severity" "$code" "$(tc_json_str "$message")"
+            first=0
+            ;;
+        *) printf '%s %s %s: %s\n' "$severity" "$code" "$where" "$message" ;;
+    esac
+done < "$work/out"
+tc_say "$(tail -n 1 "$work/err")"
+if [ "$format" = json ]; then
+    printf ']\n'
+fi
+if [ "$errors" -gt 0 ]; then
+    exit 1
+fi
+exit 0

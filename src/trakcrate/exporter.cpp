@@ -2,6 +2,7 @@
 
 #include "analysis.h"
 #include "anlz_writer.h"
+#include "mp3_index.h"
 #include "artwork_paths.h"
 #include "natsort.h"
 #include "pdb_build.h"
@@ -48,6 +49,23 @@ std::string fatSafeName(const std::string& name)
     return s;
 }
 
+std::string rekordboxFolderName(const std::string& name, const char* fallback)
+{
+    std::string s;
+    for (unsigned char c : name) s += (c < 0x20 || c == 0x7f || std::strchr("<>:\"/\\|?*", c)) ? '_' : char(c);
+    size_t cut = 0, points = 0;
+    while (cut < s.size() && points < 48) {                      // 48 code points, never in the middle of a UTF-8 sequence
+        ++cut;
+        while (cut < s.size() && (static_cast<unsigned char>(s[cut]) & 0xC0) == 0x80) ++cut;
+        ++points;
+    }
+    s.resize(cut);
+    while (!s.empty() && s.back() == ' ') s.pop_back();
+    if (!s.empty() && s.back() == '.') s.back() = '_';
+    if (s.empty()) return fallback;
+    return fatSafeName(s);                                       // reserved device names, leading spaces
+}
+
 namespace {
 
 std::string lower(std::string s)
@@ -90,6 +108,7 @@ Gathered gather(const Library& lib, const ExportOptions& o)
     Gathered g;
     std::map<std::string, size_t> index;                       // canonical track dir -> track number
     std::set<std::string> usedPaths;                           // lower case Contents paths (FAT is case insensitive)
+    std::map<std::string, std::string> artistDirs, albumDirs;  // lower case -> the first spelling used: FAT folders are case insensitive, rekordbox reuses it
     std::error_code ec;
     if (o.playlists.empty() && o.lists.empty()) g.problems.push_back("no playlist chosen");
     std::vector<ExportList> sources;
@@ -135,9 +154,12 @@ Gathered gather(const Library& lib, const ExportOptions& o)
                 p.dateAdded = imported.size() >= 10 ? imported.substr(0, 10) : today();
                 t.grid = beatGridFrom(t.track.grid);
                 p.bpmX100 = t.grid.empty() ? uint32_t(m.getDouble("bpm_tag", 0) * 100 + 0.5) : uint32_t(t.grid.bpm * 100 + 0.5);
-                const std::string folder = d.parent_path().filename().string();
+                // The layout is rekordbox's: Contents/<artist>/<album>/<file>, from the track's tags. The library's own folders are not used here.
                 std::string ext = lower(t.audio.extension().string());
-                std::string rel = "/Contents/" + fatSafeName(folder) + "/" + fatSafeName(stem);
+                const std::string artistDir = artistDirs.emplace(lower(rekordboxFolderName(p.artist, "UnknownArtist")), rekordboxFolderName(p.artist, "UnknownArtist")).first->second;
+                const std::string albumRaw = rekordboxFolderName(p.album, "UnknownAlbum");
+                const std::string albumDir = albumDirs.emplace(lower(artistDir) + "/" + lower(albumRaw), albumRaw).first->second;
+                std::string rel = "/Contents/" + artistDir + "/" + albumDir + "/" + fatSafeName(stem);
                 std::string full = rel + ext;
                 for (int n = 2; !usedPaths.insert(lower(full)).second; ++n) full = rel + " (" + std::to_string(n) + ")" + ext;
                 p.filePath = full;
@@ -148,7 +170,11 @@ Gathered gather(const Library& lib, const ExportOptions& o)
                     if (c.hot < 'A' || c.hot > 'C') continue;
                     AnlzCue a;
                     a.hotCue = c.hot - 'A' + 1;
-                    a.timeMs = uint32_t(std::max(0.0, c.ms) + 0.5);
+                    if (!std::isfinite(c.ms)) { g.problems.push_back("cuemark " + std::string(1, c.hot) + " has no time: " + stem); continue; }
+                    // never negative (an imported cue can sit a hair before 0) and never past the end of the audio
+                    double at = std::max(0.0, c.ms);
+                    if (t.durationMs > 0) at = std::min(at, t.durationMs);
+                    a.timeMs = uint32_t(at + 0.5);
                     t.hot.push_back(a);
                 }
                 std::sort(t.hot.begin(), t.hot.end(), [](const AnlzCue& a, const AnlzCue& b) { return a.hotCue < b.hotCue; });
@@ -192,7 +218,7 @@ Gathered gather(const Library& lib, const ExportOptions& o)
 
 uint64_t estimateMetadata(const Gathered& g)
 {
-    uint64_t n = 300000;                                            // database, settings, pages
+    uint64_t n = 400000;                                            // database, settings, support files, pages
     for (const GTrack& t : g.tracks) {
         const uint64_t cols = t.haveWave ? t.wave.columns() : uint64_t(t.durationMs * 0.15 + 1);
         n += cols * 3 + 7200 + 2000 + 16384 + (t.grid.empty() ? 0 : uint64_t(t.durationMs / 400.0) * 10) + (t.artSource.empty() ? 0 : 40000);
@@ -241,6 +267,7 @@ bool copyOne(const fs::path& dest, OutFile& f, const std::atomic<bool>* cancel, 
     const fs::path out = dest / f.rel;
     std::error_code ec;
     fs::create_directories(out.parent_path(), ec);
+    if (ec) { *err = "cannot create folder " + out.parent_path().string() + ": " + ec.message(); return false; }
     int fd = ::open(out.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
     if (fd < 0) { *err = "cannot create " + out.string() + ": " + std::strerror(errno); return false; }
     Sha256 sha;
@@ -303,6 +330,21 @@ ExportSummary summariseExport(const Library& lib, const ExportOptions& opts)
     return s;
 }
 
+static const char* const kTopLevel[] = {"Contents", "PIONEER", "SHA256SUMS", "trakcrate-manifest.txt"};
+
+std::vector<std::string> exportConflicts(const fs::path& dest)
+{
+    std::vector<std::string> found;
+    std::error_code ec;
+    for (const fs::directory_entry& e : fs::directory_iterator(dest, ec)) {
+        const std::string name = e.path().filename().string();
+        for (const char* mine : kTopLevel)
+            if (lower(name) == lower(mine)) { found.push_back(name); break; }
+    }
+    std::sort(found.begin(), found.end());
+    return found;
+}
+
 ExportResult exportDrive(const Library& lib, const ExportOptions& o, const ExportProgress& progress, const std::atomic<bool>* cancel)
 {
     ExportResult res;
@@ -314,7 +356,12 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
     const bool destExisted = fs::exists(o.dest, ec);
     if (destExisted) {
         if (!fs::is_directory(o.dest, ec)) return fail("the destination is not a folder: " + o.dest.string());
-        if (!fs::is_empty(o.dest, ec)) return fail("the destination folder is not empty: " + o.dest.string());
+        const std::vector<std::string> clash = exportConflicts(o.dest);
+        if (!clash.empty()) {
+            std::string names;
+            for (const std::string& n : clash) names += (names.empty() ? "" : ", ") + n;
+            return fail("the destination already has " + names + " (an earlier export?), remove it or choose another folder: " + o.dest.string());
+        }
     }
     Gathered g = gather(lib, o);
     if (!g.problems.empty()) {
@@ -384,6 +431,13 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
         }
         d.beats = beatsFromGrid(t.grid, t.durationMs, &d.beatSubUs);
         d.hotCues = t.hot;
+        if (lower(t.audio.extension().string()) == ".mp3") {     // a VBR mp3 carries its seek index in the PVBR tag and in every cue
+            const Mp3Index ix = indexMp3(t.audio);
+            if (ix.ok && ix.vbr) {
+                d.pvbr = ix.pvbr();
+                for (AnlzCue& c : d.hotCues) { c.seek = true; c.bytePos = ix.offsetAtMs(c.timeMs); }
+            }
+        }
         AnlzFiles f;
         if (!buildAnlz(d, &f, &err)) return fail("analysis files for " + t.plan.title + ": " + err);
         std::string base = built.analyzePaths[i].substr(1);     // PIONEER/USBANLZ/Pxxx/yyyyyyyy/ANLZ0000.DAT
@@ -406,6 +460,11 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
     if (o.includeSettings) {
         if (!writeStaged(stage.dir, "PIONEER/DEVSETTING.DAT", o.devSetting.empty() ? defaultDevSetting() : o.devSetting, &err) ||
             !writeStaged(stage.dir, "PIONEER/MYSETTING.DAT", o.mySetting.empty() ? defaultMySetting() : o.mySetting, &err))
+            return fail("staging: " + err);
+        if (!writeStaged(stage.dir, "PIONEER/djprofile.nxs", o.djprofile.empty() ? defaultDjprofile() : o.djprofile, &err) ||
+            !writeStaged(stage.dir, "PIONEER/rekordbox/RBFLTR.DAT", o.rbfltr.empty() ? defaultRbfltr() : o.rbfltr, &err) ||
+            !writeStaged(stage.dir, "PIONEER/rekordbox/exportExt.pdb", o.exportExt.empty() ? defaultExportExt() : o.exportExt, &err) ||
+            !writeStaged(stage.dir, "PIONEER/USBANLZ/USBMNG.DAT", emptyUsbmng(), &err))
             return fail("staging: " + err);
     }
     std::vector<std::string> variant;
@@ -484,7 +543,7 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& o, const Expor
     if (!destExisted) fs::create_directories(o.dest, ec);
     auto cleanup = [&]() {
         std::error_code e2;
-        for (const fs::directory_entry& e : fs::directory_iterator(o.dest, e2)) fs::remove_all(e.path(), e2);
+        for (const char* mine : kTopLevel) fs::remove_all(o.dest / mine, e2);          // only what this export wrote: the stick may hold other files
         if (!destExisted) fs::remove(o.dest, e2);
     };
     auto step = [&](OutFile& f) {

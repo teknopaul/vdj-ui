@@ -338,16 +338,30 @@ bool buildPdb(const ExportPlan& plan, const std::string& templateBytes, BuiltPdb
 
         std::string path = t.analyzePath;
         if (path.empty()) {
-            // The real names look like P00C/0000D1E2: 3 and 8 hex digits. The rule is not known; derive both from a digest of the audio.
-            const std::string hex = t.audioHash.empty() ? sha256Hex(t.filePath) : t.audioHash;
-            unsigned a = 0, b = 0;
-            std::sscanf(hex.substr(0, 3).c_str(), "%x", &a);
-            std::sscanf(hex.substr(3, 8).c_str(), "%x", &b);
+            // The deck recomputes this folder from the track's path, so it must be rekordbox's own rule (doc/trakcrate/usbanalz-hashing.md):
+            // slot = H mod 200003 with H = h*0x34f5501d + c*0x93b6 (wrapping 32 bit) over the UTF-16 code units of the path; the partition is seven
+            // bits of the slot. Tracks that share a slot share the folder and are told apart by the ANLZ%04X counter.
+            uint32_t h = 0;
+            for (size_t k = 0; k < t.filePath.size();) {
+                const unsigned char c0 = static_cast<unsigned char>(t.filePath[k]);
+                uint32_t cp = c0; size_t n = 1;
+                if (c0 >= 0xF0 && k + 3 < t.filePath.size()) { cp = (c0 & 7u) << 18; n = 4; }
+                else if (c0 >= 0xE0 && k + 2 < t.filePath.size()) { cp = (c0 & 15u) << 12; n = 3; }
+                else if (c0 >= 0xC0 && k + 1 < t.filePath.size()) { cp = (c0 & 31u) << 6; n = 2; }
+                for (size_t j = 1; j < n; ++j) cp |= (static_cast<unsigned char>(t.filePath[k + j]) & 63u) << (6 * (n - 1 - j));
+                k += n;
+                uint32_t units[2] = {cp, 0}; int cnt = 1;
+                if (cp >= 0x10000) { cp -= 0x10000; units[0] = 0xD800 + (cp >> 10); units[1] = 0xDC00 + (cp & 0x3FF); cnt = 2; }
+                for (int u = 0; u < cnt; ++u) h = h * 0x34f5501du + units[u] * 0x93b6u;
+            }
+            const uint32_t slot = h % 200003u;
+            static const int kBits[7] = {0, 2, 6, 7, 9, 13, 16};
+            unsigned part = 0;
+            for (int k = 0; k < 7; ++k) part |= ((slot >> kBits[k]) & 1u) << k;
             char buf[96];
-            for (;;) {
-                std::snprintf(buf, sizeof buf, "/PIONEER/USBANLZ/P%03X/%08X/ANLZ0000.DAT", a & 0xFFF, b);
+            for (unsigned n = 0;; ++n) {
+                std::snprintf(buf, sizeof buf, "/PIONEER/USBANLZ/P%03X/%08X/ANLZ%04X.DAT", part, slot, n);
                 if (usedAnalyze.insert(buf).second) break;
-                ++b;                                                       // two tracks hashed alike: step to a free name
             }
             path = buf;
         } else {

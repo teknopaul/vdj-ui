@@ -26,6 +26,10 @@ struct AnlzCue {
     uint32_t loopTimeMs = 0;         // end of the loop
     uint32_t marker = 1000;          // 3 bytes; 150 on the first cue of the second sample drive, 1000 on the others
     uint16_t loopNum = 0, loopDen = 0;       // loop length in beats = num / den (PCO2 only)
+    // A cue of a variable bitrate mp3: where rekordbox says to seek (see mp3_index.h). Such cues are written the way a current rekordbox writes them
+    // (status words, descending order, the 88 byte PCP2 entry, time in 1/75 s and the byte offset), the others as the older sample files have them.
+    bool seek = false;
+    uint32_t bytePos = 0;
 };
 
 struct AnlzTrackData {
@@ -39,6 +43,7 @@ struct AnlzTrackData {
     std::vector<uint8_t> pwv4;                   // 1200 x 6 bytes; empty = no PWV4 tag
     std::vector<AnlzCue> hotCues;                // the .DAT lists the first three, the .EXT all of them
     std::vector<AnlzCue> memoryCues;
+    std::vector<uint32_t> pvbr;                  // the 401 words of a VBR mp3 (Mp3Index::pvbr()); empty = zeros, which is what a constant bitrate file has
     bool includePvbr = true;                     // compatibility testing: leave the PVBR / PWV5 tags out
     bool includePwv5 = true;
 };

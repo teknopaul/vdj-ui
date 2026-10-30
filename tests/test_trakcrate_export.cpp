@@ -81,6 +81,58 @@ private:
     bool contains(const std::vector<std::string>& v, const std::string& s) { return std::find(v.begin(), v.end(), s) != v.end(); }
 
 private slots:
+    void rekordboxFolderNames()
+    {
+        auto n = [](const char* s, const char* f = "UnknownArtist") { return QString::fromStdString(rekordboxFolderName(s, f)); };
+        QCOMPARE(n(""), QString("UnknownArtist"));
+        QCOMPARE(n("", "UnknownAlbum"), QString("UnknownAlbum"));
+        QCOMPARE(n("Intapol"), QString("Intapol"));
+        QCOMPARE(n("\"XY\""), QString("_XY_"));                                      // the cases measured on a real export
+        QCOMPARE(n("K.O."), QString("K.O_"));
+        QCOMPARE(n("M.I.A."), QString("M.I.A_"));
+        QCOMPARE(n("I Don't Usually Like MC's But..."), QString("I Don't Usually Like MC's But.._"));
+        QCOMPARE(n("Hijack: The Remixes"), QString("Hijack_ The Remixes"));
+        QCOMPARE(n("Joy Squad / Shellshock - VTSS & Dubyshkin Remixes"), QString("Joy Squad _ Shellshock - VTSS & Dubyshkin Remixe"));      // 48 characters
+        QCOMPARE(n("Black Panther The Album Music From And Inspired By"), QString("Black Panther The Album Music From And Inspired"));    // trailing space dropped
+        QCOMPARE(n("Martin's"), QString("Martin's"));
+        QCOMPARE(n("1OO1O, DNZA"), QString("1OO1O, DNZA"));
+        QCOMPARE(n("CON"), QString("CON_"));
+        QVERIFY(rekordboxFolderName(std::string(60, '\xC3').substr(0, 0) + "\xC3\x9F\xC3\x9F\xC3\x9F", "x").size() == 6);            // UTF-8 kept whole
+    }
+
+    void sizeLabels()
+    {
+        QCOMPARE(QString::fromStdString(formatFolderSize(0)), QString("0.00Gb"));
+        QCOMPARE(QString::fromStdString(formatFolderSize(23340000000ull)), QString("23.34Gb"));
+        QCOMPARE(QString::fromStdString(formatFolderSize(23344999999ull)), QString("23.34Gb"));
+        QCOMPARE(QString::fromStdString(formatFolderSize(23345000000ull)), QString("23.35Gb"));
+        QCOMPARE(QString::fromStdString(formatFolderSize(1000000000000ull)), QString("1000.00Gb"));
+        QCOMPARE(pendriveGigabytes(0), uint64_t(0));
+        QCOMPARE(pendriveGigabytes(1), uint64_t(1));
+        QCOMPARE(pendriveGigabytes(1000000000ull), uint64_t(1));
+        QCOMPARE(pendriveGigabytes(1000000001ull), uint64_t(2));   // one byte over does not fit
+        QCOMPARE(QString::fromStdString(formatPendriveSize(1000001000ull)), QString("2Gb"));
+        QCOMPARE(QString::fromStdString(formatPendriveSize(31000000000ull)), QString("31Gb"));
+    }
+
+    void estimateCountsEachTrackOnce()
+    {
+        fs::path root = makeTempDir("trakcrate-size");
+        QVERIFY(!root.empty());
+        const fs::path a = root / "a", b = root / "b", none = root / "none";
+        for (const fs::path& d : {a, b, none}) fs::create_directories(d);
+        { std::ofstream(a / "a.mp3") << "x"; std::ofstream(b / "b.mp3") << "x"; }
+        std::error_code ec;
+        fs::resize_file(a / "a.mp3", 1000000, ec);
+        fs::resize_file(b / "b.mp3", 2000000, ec);
+        QCOMPARE(Library::estimateTrackBytes(none), uint64_t(0));
+        QCOMPARE(Library::estimateTrackBytes(a), uint64_t(1150000));
+        QCOMPARE(Library::estimateBytes({}), uint64_t(0));
+        QCOMPARE(Library::estimateBytes({none}), uint64_t(0));
+        QCOMPARE(Library::estimateBytes({a, b, a}), uint64_t(1150000 + 2150000 + 300000));
+        fs::remove_all(root, ec);
+    }
+
     void init()
     {
         tmp_ = makeTempDir("trakcrate-export");
@@ -100,6 +152,7 @@ private slots:
     void unanalysedTracks();
     void variantSwitches();
     void optionalFilesFromAnotherDrive();
+    void supportFilesAreAlwaysThere();
     void failureLeavesNothingBehind();
     void cancelLeavesNothingBehind();
     void notEnoughSpaceIsRefusedUpFront();
@@ -178,7 +231,7 @@ void TestTrakcrateExport::exportsAWholeDrive()
             if (p.find(title) != std::string::npos) { QVERIFY(slurp(usb / p.substr(1)) == want); found = true; }
         QVERIFY2(found, title.c_str());
     }
-    QVERIFY(seen.paths[0].rfind("/Contents/Set/", 0) == 0);
+    QVERIFY(seen.paths[0].rfind("/Contents/UnknownArtist/UnknownAlbum/", 0) == 0);        // rekordbox's layout: Contents/<artist>/<album>/, not the library folder
 }
 
 void TestTrakcrateExport::writeOrderAudioFirstDatabaseLast()
@@ -266,10 +319,18 @@ void TestTrakcrateExport::destinationRules()
     fs::create_directories(tmp_ / "full");
     std::ofstream(tmp_ / "full" / "keep.txt") << "x";
     ExportResult r = exportDrive(lib_, options("Set", "full"));
-    QVERIFY(!r.ok);
-    QVERIFY(r.error.find("not empty") != std::string::npos);
+    QVERIFY(r.ok);                                                                         // other files do not matter
     QVERIFY(fs::exists(tmp_ / "full" / "keep.txt"));
-    QCOMPARE(filesUnder(tmp_ / "full").size(), size_t(1));                                // untouched
+    QVERIFY(fs::exists(tmp_ / "full" / "PIONEER/rekordbox/export.pdb"));
+    // but a name the export writes does, and nothing is touched
+    r = exportDrive(lib_, options("Set", "full"));
+    QVERIFY(!r.ok);
+    QVERIFY(r.error.find("already has") != std::string::npos);
+    QVERIFY(r.error.find("PIONEER") != std::string::npos);
+    QVERIFY(fs::exists(tmp_ / "full" / "keep.txt"));
+    fs::create_directories(tmp_ / "lower" / "contents");                                   // FAT does not tell the cases apart
+    QCOMPARE(exportConflicts(tmp_ / "lower").size(), size_t(1));
+    QVERIFY(exportConflicts(tmp_ / "nothing-here").empty());
     std::ofstream(tmp_ / "afile") << "x";
     QVERIFY(!exportDrive(lib_, options("Set", "afile")).ok);
     fs::create_directories(tmp_ / "emptydir");
@@ -354,6 +415,29 @@ void TestTrakcrateExport::variantSwitches()
     QVERIFY(!fs::exists(tmp_ / "usb-bad"));
 }
 
+void TestTrakcrateExport::supportFilesAreAlwaysThere()
+{
+    importSet("Set", {{"a", 120}});
+    QVERIFY(!defaultExportExt().empty() && !defaultRbfltr().empty() && !defaultDjprofile().empty());
+    QCOMPARE(defaultExportExt().size(), size_t(73728));                                    // the real drive's file, byte for byte
+    QCOMPARE(defaultRbfltr().size(), size_t(232));
+    QCOMPARE(defaultDjprofile().size(), size_t(160));
+    ExportResult r = exportDrive(lib_, options("Set", "usb"));
+    QVERIFY2(r.ok, r.error.c_str());
+    QCOMPARE(slurp(tmp_ / "usb/PIONEER/djprofile.nxs"), defaultDjprofile());
+    QCOMPARE(slurp(tmp_ / "usb/PIONEER/rekordbox/RBFLTR.DAT"), defaultRbfltr());
+    QCOMPARE(slurp(tmp_ / "usb/PIONEER/rekordbox/exportExt.pdb"), defaultExportExt());
+    QVERIFY(verifySettingsFile(slurp(tmp_ / "usb/PIONEER/DEVSETTING.DAT")) && verifySettingsFile(slurp(tmp_ / "usb/PIONEER/MYSETTING.DAT")));
+    ExportOptions o = options("Set", "usb2");                                              // the library's own copies win
+    o.rbfltr = "mine";
+    QVERIFY(exportDrive(lib_, o).ok);
+    QCOMPARE(slurp(tmp_ / "usb2/PIONEER/rekordbox/RBFLTR.DAT"), std::string("mine"));
+    ExportOptions n = options("Set", "usb3");
+    n.includeSettings = false;
+    QVERIFY(exportDrive(lib_, n).ok);
+    QVERIFY(!fs::exists(tmp_ / "usb3/PIONEER/djprofile.nxs"));
+}
+
 void TestTrakcrateExport::optionalFilesFromAnotherDrive()
 {
     importSet("Set", {{"a", 120}});
@@ -370,7 +454,7 @@ void TestTrakcrateExport::optionalFilesFromAnotherDrive()
     QVERIFY2(r.ok, r.error.c_str());
     QCOMPARE(slurp(tmp_ / "usb/PIONEER/rekordbox/RBFLTR.DAT"), std::string("RBFLTR-bytes"));
     QCOMPARE(slurp(tmp_ / "usb/PIONEER/rekordbox/exportExt.pdb"), std::string("ext-bytes"));
-    QVERIFY(!fs::exists(tmp_ / "usb/PIONEER/djprofile.nxs"));
+    QCOMPARE(slurp(tmp_ / "usb/PIONEER/djprofile.nxs"), defaultDjprofile());               // not asked for from the other drive: the built in one
     QVERIFY(slurp(tmp_ / "usb/trakcrate-manifest.txt").find("copied from another drive: PIONEER/rekordbox/RBFLTR.DAT") != std::string::npos);
     ExportOptions m = options("Set", "usb2");                                              // a file that is not there refuses the export before writing
     m.optionalFilesFrom = other;

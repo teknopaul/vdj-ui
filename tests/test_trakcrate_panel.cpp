@@ -155,6 +155,32 @@ void TestTrakcratePanel::modelShowsFoldersAndPlaylists()
     QVERIFY(!m.data(m.index(0, TrakcrateTrackModel::Flags)).toString().contains("no audio"));
     QCOMPARE(m.data(m.index(0, TrakcrateTrackModel::Time)).toString(), QStringLiteral("0:00"));      // 0.2 s
     QVERIFY(m.trackDir(1).endsWith("Bravo") || m.trackDir(1).endsWith("b"));
+    // the rating column: always five stars, and editing it rewrites meta.txt
+    QCOMPARE(m.data(m.index(0, TrakcrateTrackModel::Rating)).toString(), QString::fromUtf8("\u2606\u2606\u2606\u2606\u2606"));
+    QSignalSpy written(&m, &TrakcrateTrackModel::ratingWritten);
+    QVERIFY(m.setData(m.index(0, 0), 3, TrakcrateTrackModel::RatingRole));
+    QCOMPARE(written.count(), 1);
+    QCOMPARE(m.data(m.index(0, TrakcrateTrackModel::Rating)).toString(), QString::fromUtf8("\u2605\u2605\u2605\u2606\u2606"));
+    QCOMPARE(m.data(m.index(0, TrakcrateTrackModel::Rating), TrakcrateTrackModel::SortRole).toInt(), 3);
+    {
+        tc::Track r;
+        QVERIFY(tc::loadTrack(m.trackDir(0).toStdString(), &r));
+        QCOMPARE(r.rating(), 3);
+        QCOMPARE(QString::fromStdString(tc::origin(r.source, "meta")), QStringLiteral("edited"));
+    }
+    // the comment column: editable text that is written to meta.txt
+    QVERIFY(m.flags(m.index(0, TrakcrateTrackModel::Comment)) & Qt::ItemIsEditable);
+    QVERIFY(!(m.flags(m.index(0, TrakcrateTrackModel::Title)) & Qt::ItemIsEditable));
+    QVERIFY(m.setData(m.index(0, TrakcrateTrackModel::Comment), QStringLiteral("  warm up  "), Qt::EditRole));
+    QCOMPARE(m.data(m.index(0, TrakcrateTrackModel::Comment)).toString(), QStringLiteral("warm up"));
+    {
+        tc::Track r;
+        QVERIFY(tc::loadTrack(m.trackDir(0).toStdString(), &r));
+        QCOMPARE(QString::fromStdString(r.comment()), QStringLiteral("warm up"));
+        QCOMPARE(r.rating(), 3);                                                                  // the rest of meta.txt is kept
+    }
+    QVERIFY(m.setData(m.index(0, 0), 9, TrakcrateTrackModel::RatingRole));                                 // clamped
+    QCOMPARE(m.data(m.index(0, 0), TrakcrateTrackModel::RatingRole).toInt(), 5);
     tc::Track t;
     QVERIFY(m.track(1, &t));
     QCOMPARE(QString::fromStdString(t.meta.get("title")), QStringLiteral("Bravo"));
@@ -385,7 +411,7 @@ void TestTrakcratePanel::panelExportsAPlaylist()
     QVERIFY(p.waitForJob(20000));
     QCOMPARE(done.count(), 2);
     QVERIFY(!done.last().at(1).toBool());
-    QVERIFY(done.last().at(0).toString().contains("not empty"));
+    QVERIFY(done.last().at(0).toString().contains("already has"));
     QCOMPARE(reg.count(), 1);
     QVERIFY(tc::fs::exists(tmp_ / "stick/PIONEER/rekordbox/export.pdb"));                // the earlier export is untouched
 }

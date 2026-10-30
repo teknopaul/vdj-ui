@@ -36,14 +36,16 @@ The biggest unknown is **what a player minimally requires**. We can only find ou
     rekordbox/export.pdb        main DB, 4096-byte pages
     rekordbox/exportExt.pdb     extended DB (tags, etc.), 73 KB in the 7-track sample
     rekordbox/RBFLTR.DAT        232 bytes
-    USBANLZ/Pxxx/yyyyyyyy/ANLZ0000.DAT|.EXT   one dir per track; xxx = 3 hex hash, y = 8 hex
+    USBANLZ/Pxxx/yyyyyyyy/ANLZ0000.DAT|.EXT   one dir per track; xxx = partition (3 hex), y = slot (8 hex), see usbanalz-hashing.md
     USBANLZ/USBMNG.DAT          400 KB in the sample
     Artwork/NNNNN/aID.jpg       optional
     DEVSETTING.DAT, MYSETTING.DAT, djprofile.nxs   settings, ~140-160 bytes each
   Contents/<artist>/<album>/file.mp3
 ```
 
-The track row stores `file_path` (e.g. `/Contents/Intapol/UK Dembow/x.mp3`) and `analyze_path` (`/PIONEER/USBANLZ/P004/00028148/ANLZ0000.DAT`). The ANLZ dir name is a function of the track; to be reverse engineered (looks like a hash of the path, `Pxxx`, plus a counter).
+**Layout is rekordbox's, always (implemented).** An export writes `Contents/<artist>/<album>/<file>` from the track's tags, whatever the library's own folders are called (the library is never changed; there is no other layout for Pioneer drives). Names follow rekordbox, measured on the 2195 tracks of a real export (2184 exact, the rest differ only in letter case, where rekordbox reuses the first spelling because FAT folders are case insensitive): `\ / : * ? " < > |` become `_`, at most 48 characters, trailing spaces dropped, a final `.` becomes `_` (`K.O.` is `K.O_`), no artist or album is `UnknownArtist` / `UnknownAlbum`. `rekordboxFolderName` (C++) and `tc_rb_folder_name` (C). The `Pxxx` number of the analysis folder is at most 0x7F and the 8 digit number below 200003 in every real track; ours are computed with rekordbox's own rule (`usbanalz-hashing.md`: slot = hash of the path mod 200003, partition = seven slot bits) and `USBANLZ/USBMNG.DAT` is written empty, as rekordbox does when no paths collide.
+
+The track row stores `file_path` (e.g. `/Contents/Intapol/UK Dembow/x.mp3`) and `analyze_path` (`/PIONEER/USBANLZ/P004/00028148/ANLZ0000.DAT`). The ANLZ dir name is a function of the `file_path` string alone: slot = `h mod 200003` with `h = h*0x34F5501D + c*0x93B6` (32 bit, UTF-16 units, start 0), partition = slot bits 0,2,6,7,9,13,16, `ANLZ<n>` = collision counter. The decks recompute it, so it must be exact (`usbanalz-hashing.md`).
 
 ## `export.pdb` as understood
 
@@ -92,7 +94,7 @@ The player-side concern is the one in the prompt: rekordbox does many small writ
 
 ## Implemented (Phase 8): the staged export
 
-`src/trakcrate/exporter.cpp`, driven from the trakcrate pane (**Export...** button, `src/ui/trakcrate_export_dialog.cpp`). The destination must be an empty folder.
+`src/trakcrate/exporter.cpp`, driven from the trakcrate pane (**Export...** button, `src/ui/trakcrate_export_dialog.cpp`). The destination is a folder; other files on it (photos, `.Trash-1000`) are left alone, but it must not already have any of the four names an export writes (`Contents`, `PIONEER`, `SHA256SUMS`, `trakcrate-manifest.txt`, any case), and a failed export removes only those.
 
 1. The playlists are gathered (a track in several playlists goes on the drive once); every track needs its audio, and its analysis unless "allow tracks that are not analysed" is set.
 2. In a staging directory (`/dev/shm`, else `$XDG_RUNTIME_DIR`, else the system temp) the database, the ANLZ files, artwork and settings are built, then **checked there**: the database is read back with libcdj and compared with the plan, every ANLZ file must parse and name the right audio, the settings files must pass their CRC.

@@ -5,12 +5,13 @@
 
 class QComboBox;
 class QLabel;
-class QProgressBar;
+class QCheckBox;
 class QPushButton;
 
 namespace vdj {
 
 class AudioRecorder;
+class LevelMeterWidget;
 
 class RecordingPanel : public QWidget {
     Q_OBJECT
@@ -23,10 +24,16 @@ public:
 private slots:
     void onRecordStop();
     void onSplit();
-    void onLevelChanged(float rms);
+    void onLevels(float peakL, float peakR, float rmsL, float rmsR);
+    void restartMonitor();
+    void onMonitorFailed(const QString& msg);
     void onRecordingStarted(const QString& path);
     void onRecordingStopped(const QString& path);
     void onError(const QString& msg);
+
+protected:
+    void showEvent(QShowEvent*) override;
+    void hideEvent(QHideEvent*) override;
 
 private:
     AudioRecorder* recorder_;
@@ -34,7 +41,9 @@ private:
     QPushButton*   recordBtn_;
     QPushButton*   splitBtn_;
     QLabel*        fileLabel_;
-    QProgressBar*  vuMeter_;
+    LevelMeterWidget* meter_;
+    QCheckBox*     monitorBox_;
+    QLabel*        adviceLabel_;
 };
 
 } // namespace vdj

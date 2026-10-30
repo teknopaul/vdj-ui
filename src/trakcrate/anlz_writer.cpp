@@ -89,6 +89,20 @@ void cueEntryPcpt(std::string& e, const AnlzCue& c)
     be32(e, 0x1c);
     be32(e, 0x38);
     be32(e, uint32_t(c.hotCue));
+    if (c.seek) {                                    // as written for a VBR mp3 by a current rekordbox
+        be32(e, 0);
+        be32(e, 0x00010000);
+        be32(e, 0xffffffff);
+        e += char(c.isLoop ? 2 : 1);
+        e += char((c.marker >> 16) & 0xFF); e += char((c.marker >> 8) & 0xFF); e += char(c.marker & 0xFF);
+        be32(e, c.timeMs);
+        be32(e, c.isLoop ? c.loopTimeMs : 0xffffffff);
+        be32(e, uint32_t(uint64_t(c.timeMs) * 75 / 1000));
+        be32(e, 0);
+        be32(e, c.bytePos);
+        be32(e, 0);
+        return;
+    }
     be32(e, 1);                                      // status: 1 in every sample
     be32(e, 0);
     be32(e, 0xffffffff);
@@ -108,17 +122,28 @@ void cueEntryPcp2(std::string& e, const AnlzCue& c)
 {
     e.append("PCP2", 4);
     be32(e, 0x10);
-    be32(e, 0x2c);
+    be32(e, c.seek ? 0x58 : 0x2c);
     be32(e, uint32_t(c.hotCue));
     e += char(c.isLoop ? 2 : 1);
     e += char((c.marker >> 16) & 0xFF); e += char((c.marker >> 8) & 0xFF); e += char(c.marker & 0xFF);
     be32(e, c.timeMs);
-    be32(e, c.isLoop ? c.loopTimeMs : 0);
-    be32(e, 0);                                      // 0x1c colour id and bytes: none
+    be32(e, c.isLoop ? c.loopTimeMs : (c.seek ? 0xffffffff : 0));
+    be32(e, c.seek ? 0x00010000 : 0);                // 0x1c colour id and bytes: none
     be32(e, 0);
     be16(e, c.isLoop ? c.loopNum : 0);
     be16(e, c.isLoop ? c.loopDen : 0);
     be32(e, 0);                                      // comment length: no comment
+    if (c.seek) {                                    // the current entry is 44 bytes longer: a word 0000ff00, then zeros
+        be32(e, 0x0000ff00);
+        e.append(40, '\0');
+    }
+}
+
+// A current rekordbox lists the cues of a VBR mp3 from the highest hot cue down; the older sample files list them in order.
+std::vector<AnlzCue> inRekordboxOrder(std::vector<AnlzCue> cues)
+{
+    if (!cues.empty() && cues.front().seek) std::stable_sort(cues.begin(), cues.end(), [](const AnlzCue& a, const AnlzCue& b) { return a.hotCue > b.hotCue; });
+    return cues;
 }
 
 void pcob(std::string& out, int listType, const std::vector<AnlzCue>& cues)
@@ -129,7 +154,7 @@ void pcob(std::string& out, int listType, const std::vector<AnlzCue>& cues)
     be16(hb, uint16_t(cues.size()));
     be32(hb, 0xffffffff);
     std::string body;
-    for (const AnlzCue& c : cues) cueEntryPcpt(body, c);
+    for (const AnlzCue& c : inRekordboxOrder(cues)) cueEntryPcpt(body, c);
     tag(out, "PCOB", hb, body);
 }
 
@@ -140,7 +165,7 @@ void pco2(std::string& out, int listType, const std::vector<AnlzCue>& cues)
     be16(hb, uint16_t(cues.size()));
     be16(hb, 0);
     std::string body;
-    for (const AnlzCue& c : cues) cueEntryPcp2(body, c);
+    for (const AnlzCue& c : inRekordboxOrder(cues)) cueEntryPcp2(body, c);
     tag(out, "PCO2", hb, body);
 }
 
@@ -162,10 +187,12 @@ bool buildAnlz(const AnlzTrackData& d, AnlzFiles* out, std::string* err)
     dat.append("PMAI", 4);
     be32(dat, 0x1c); be32(dat, 0); be32(dat, 0); be32(dat, 0x00010000); be32(dat, 0x00010000); be32(dat, 0);
     ppth(dat, d.audioPath);
-    if (d.includePvbr) {   // PVBR: the seek index of variable bitrate files. Layout unknown; all zero is what a constant bitrate file looks like.
+    if (d.includePvbr) {   // PVBR: the seek index of variable bitrate files. All zero is what a constant bitrate file has; a VBR mp3 gets its frame offsets (mp3_index.h).
         std::string hb;
         be32(hb, 0);
-        tag(dat, "PVBR", hb, std::string(1604, '\0'));
+        std::string body(1604, '\0');
+        if (d.pvbr.size() == 401) { body.clear(); for (uint32_t w : d.pvbr) be32(body, w); }
+        tag(dat, "PVBR", hb, body);
     }
     pqtz(dat, d.beats);
     {
@@ -222,6 +249,7 @@ std::vector<AnlzBeat> beatsFromGrid(const BeatGrid& grid, double durationMs, std
     for (size_t i = 0;; ++i) {
         const double us = double(grid.firstBeatUs) + double(i) * periodUs;
         if (us / 1000.0 > durationMs || beats.size() >= 65535) break;
+        if (us < 0) continue;                        // a beat before the start of the audio has no time in an unsigned field
         const long long t = std::llround(us);
         AnlzBeat b;
         b.number = uint16_t(i % 4 + 1);

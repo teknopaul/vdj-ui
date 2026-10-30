@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QIcon>
 #include <QStringList>
 #include "ui/main_window.h"
 #include "debug/packet_logger.h"
@@ -9,6 +10,14 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("vdj-ui");
+    // The window / taskbar icon, also when run from the build tree: the icons are compiled in. The desktop file name is how Wayland and GNOME
+    // match the window to data/vdj-ui.desktop (and its installed hicolor icons, see `make install-icons`).
+    {
+        QIcon icon;
+        for (int sz : {16, 22, 24, 32, 64, 128, 256, 512}) icon.addFile(QStringLiteral(":/img/vdj-%1x%1.png").arg(sz), QSize(sz, sz));
+        app.setWindowIcon(icon);
+        QGuiApplication::setDesktopFileName(QStringLiteral("vdj-ui"));
+    }
     app.setApplicationVersion(QStringLiteral(VDJ_UI_VERSION));
 
     const QStringList args = app.arguments();

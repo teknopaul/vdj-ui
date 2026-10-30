@@ -1,5 +1,48 @@
-![VDJ](img/vdj-64x64.png)
-# A QT based GUI for vdj  
+# ![VDJ](img/vdj-64x64.png) A QT based GUI for vdj  
+
+### A Linux PIONEER <span style="color:#cc0000">rekor<span style="color:#eeeeee">db</span>ox</span> alternative
+
+Built from the ground up in C/C++. Provides many of the features of <span style="color:#cc0000">rekor<span style="color:#eeeeee">db</span>ox</span> and quite a few extras.
+
+![screenshot trakcrate](img/screenshot-trakcrate.png) 
+
+## Features
+
+- **Local music management**
+  - Prepare playlists and rekordbox metadata
+    - Preview audio and cue points
+    - Generate Beat grids
+    - Generate Waverforms
+    - Store and copy CDJ/XDJ settings files
+  - Prepare "Virtual Pendrives" for rekordbox export
+    - Pre-prepare pendrives before export, balancing the size in Gigabyte to the drives you own.
+    - Export to physical Pendrives in rekordbox format for playing on Nexus CDJ/XDJ
+    - Make multiple clones of pendrives, i.e. for bringing spare pendrives to gigs
+  - Import
+    - Import tracks and metadata from physical pendrives
+- **Sync to running CDJ/XDJ**
+  - Appear as a virtual deck to real CDJ/XDJ decks
+  - Beat mix midi hardware, e.g. ability to sync a 909 to playing CDJ/XDJ decks, with auto sync and manual nudge.
+  - Become MASTER and control BPM the mix
+  - Export 1 or more pendrives connected to the computer, so real CDJ/XDJ can play tracks from a Linux PC.
+  - Export folders of music on the PC, as if it was a pendrive, but without pendrive hardware.
+  - Read remote pendrives on playing CDJ/XDJ decks
+  - Control the MIDI hardware with a gaming controller, midi controller or spare XDJ deck in midi controller mode
+- **DJ Tools**
+  - Output audio to a DJ mixer from
+    - PC soundcard
+    - XDJ which can act as a USB sound cards
+    - USB to external audio mixers
+  - Add extra kicks
+  - Add stabs
+  - Play one-shot samples
+  - Play loops
+  - DR-6S - simple 4/4 drum machine
+  - LADSAP FX for all DJ Tools, inc Allen & Heath like Xone filter.
+
+N.B. while you can play music off the PC on physical decks, VDJ does not have a Traktor like player for DJing audio on the PC
+This software is a companion to real CDJ/XDJ decks, not an alternative.
+For Linux DJ software for mixing audio see [Mixxx](https://github.com/mixxxdj/mixxx)
 
 ## Building
 
@@ -13,6 +56,20 @@ Run the unit and integration tests:
 ```sh
 ctest --test-dir build
 ```
+
+## Running vdj-ui
+
+Running vdj-ui requires a port mapper on port 111, which requires root, after each build of the binary run
+
+```
+sudo setcap cap_net_bind_service=+ep build/src/vdj-ui
+```
+
+this also works `sudo sysctl -w net.ipv4.ip_unprivileged_port_start=111`
+
+You also need AutoIP, the UI can handle this for you.  You can also set this up permanently if you have a network card dedicated for accessing the CDJ/XDJs
+
+See [Linux netowrking](LINUX_NETWORKING.md) for details and options.
 
 ## Usage
 
@@ -30,7 +87,7 @@ ctest --test-dir build
 - Play/pause, sync to master, become master, copy BPM, and pitch nudge have
   configurable shortcuts for low-light operation
 
-### Difflock (the VDJ's ALSA sequencer follows a deck)
+### Sync aka Difflock (the VDJ's ALSA sequencer follows a deck)
 
 The VDJ deck owns an ALSA sequencer (client `vdj-ui`, port `MIDI clock`; connect drum machines to it with
 `aconnect`). Its Play button starts and stops the MIDI clock. Click **Sync** on another deck to *difflock* the
@@ -43,7 +100,13 @@ spinner (default 0 ms). Same idea as `adj`'s difflock.
   target moves with the nudge so the lock keeps the new alignment
 - Keys (as in adj): `Shift+U I O P` lock to deck 1-4, `Esc Esc` off, `Shift+M` follow master, `<` `>` change the offset
 
-### Network
+### Master mode
+
+The vdj-ui can act as the timekeeping master for up to 3 other physical Pioneer CDJ/XDJ.  
+Pressing sync on the physical decks will make them follow the BPM of the vdj-ui's ALSA sequencer.
+
+
+### ![connect](img/connect-22.png) Network 
 
 Select a network interface to connect to the ProLink network. The application
 lists connected decks, shows the master, BPM with two decimal places, and
@@ -60,11 +123,13 @@ whoever assigned it). When AutoIP gets no address in time and NetworkManager is 
 see [LINUX_NETWORKING.md](LINUX_NETWORKING.md)
 
 
-### DJ Tools ([sanename](https://sanename.org): djtoolz)
+### DJ Tools
 
 *View > DJ Tools* shows the live DJ Tools. It plays in time with the VDJ sequencer (the clock the decks follow), so it is silent while the
 sequencer is stopped. Hiding the panel does not stop it. Samples are `.wav` files; *Sample folder...* chooses the folder shown in the tree
-(double click a file to hear it). *Add tool* adds any number of:
+(double click a file to hear it). 
+
+*Add tool* adds any number of:
 
 - **Bombomatic**: the sample on every beat (a kick to keep the beat through a breakdown). *1 bar* plays one bar of it.
 - **Dembomatik**: the dembow kick. The bar is cut into 16 equal parts and the sample plays on `X . . X . . X . X . . . . X . .` (parts 1, 4, 7, 9
@@ -102,7 +167,7 @@ sequencer is stopped. Hiding the panel does not stop it. Samples are `.wav` file
   *fader* lists of the tool (default the plugin's first and second, i.e. Freq and Wild), with the usual pickup.
 
 Every tool has a name, an on/off switch and an **offset** of +/- 80 ms to the beat. The arrows next to a sample name step to the previous /
-next `.wav` of the same folder (ASCIIbetical); the new sample is used from the tool's next hit, so you can flick through kicks live.
+next `.wav` of the same folder (ascibetical); the new sample is used from the tool's next hit, so you can flick through kicks live.
 *Preset* saves and loads the whole set-up (tools, settings, folder, volume) as JSON in the config folder (`djtoolz-presets/`); the
 working state is kept in `djtoolz-current.json` and comes back at the next start.
 
@@ -146,7 +211,7 @@ Network > *Export the Loaded Database as a LINK Player* makes vdj-ui serve the r
 other decks like a player with a USB stick in it: they browse it, load tracks and play them. It needs UDP port 111, a privileged port.
 See `doc/link-export.md` and `doc/privileged-port-111.md`. (`doc/joining-the-link.md` explains how the virtual player joins the link without the decks complaining.)
 
-#### Virtual pendrives, USB STOP and Insert
+#### PC Laoded pendrives, USB STOP and Insert
 
 The drive viewer has a tool bar with a list of your virtual pendrives (named folders, managed in Network > *Exported Pendrive* > *Manage Virtual Pendrives...*) and the
 pendrives plugged into the PC, and the buttons **USB STOP** and **Insert**. Choosing a pendrive only shows it in the viewer; *Insert* exports it to the decks and *USB STOP*
@@ -159,7 +224,20 @@ follow the switching when vdj-ui announces itself like an XDJ-700. See `doc/link
 cmake -B build
 cmake --build build
 make -C build deb        # produces vdj-ui_<version>_<arch>.deb in build/
-````
+```
+
+### Note for packagers
+
+Pioneer uses AutoIP for networking `169.254.0.0` and NFS v1 for sharing files and portmapper to find nfs mounts.  
+I had to build a ground up portmapper and nfs v1 implementation to connect to as a virtual CDJ.
+portmapper requires port 111, which requires root. There are tricks to avoid this.
+Linux built in portmapper can be made to work. Modern Linux built in NFS can not.
+
+I run vdj-ui Ubuntu 24.04 LTS from source, [libcdj](https://github.com/teknopaul/libcdj) works on other platform such as the raspberry pi,  I have not bothered with packaging it yet.
+
+See [Linux netowrking](LINUX_NETWORKING.md) for details and options or how to setup NICs for Prolink access.
+
+vdj-ui is not going to work in flatpack or snap or other Linux container technologies. It requires access to USB drives and Network cards, and sometimes need to escalate privs to root.
 
 ## Man page
 
@@ -167,5 +245,106 @@ make -C build deb        # produces vdj-ui_<version>_<arch>.deb in build/
 man -l doc/vdj-ui.1
 ```
 
+# Trakcrate
+
+![Trakcrate](img/trakcrate-128x128.png)
+
+Trakcrate is a Linux alternative to the rekordbox database on a PC or Mac. 
+
+It supports most of the important features of rekordbox such as creating waveforms and Beat grid analysis and preparing playlists and exporting them to pendrives.
+
+
+### trakcrate db format
+
+The database backing trakcrate is an open format so its hackable. You can create and manage trakcrate dbs with vdj-ui or there it a command line tool `trakcrate`
+that can also be used to manage the database, e.g over ssh.  
+The database is basically base directory containing sub-directories with audios files and their associate, artwork, beat grids, metadata, and waveforms.
+These are all available on the file system so you can edit meta data with `vim` or write you own artwork editors, edit artwork in `gimp` or other graphics tools.
+You can use vdj-ui's built in waveform and beat grid analyzers, the cli versions, use files exported from real pioneer rekordbox databases, or write your own.
+
+vdj-ui support track and database scripts that can be written in any language for managing the trakcrate database.
+
+Text data is stored as text files so you can search with `grep` and edit with `sed` for writing mass updates, e.g removing that annoying "(Original Mix)" suffix that Beatport add on to all tracks.
+
+The ordering of a playlists is important, in trakcrate it is simply numbered symbolic links, so you can drag n drop in the GUI or use standard Linux cli tools to modify them.
+
+### trakcrate virtual pendrives
+
+![virtual pendrives](img/pendrive-128x128.png)
+
+Trakcrate also supports "virtual pendrives" these are pre-prepared lists of playlist and metadata for export to one or more physical pendrives.  
+I always take 3 copies of my pendrives to a gig because Pioneer decks kills them eventually with lots of little writes the SDs do not like.
+
+Naturally, virtual pendrives can be exported to Pioneers rekordbox format.
+
+It is a good idea to start a trakcrate database by importing a pendrive, then you get your preferred deck settings that are also stored in the rekordbox database.
+Currently trakcrate has no editor for CDJ settings files, because I don't use that feature.
+
+
+
+[trakcrate database spec](TRAKCRATE-FORMAT.md)
+
+## VDJ-UI Screenshot
+
+vdj-ui connected to the Prolink Network syncing ALSA Midi sequencer to a physical XDJ.
 
 ![screeshot](img/screenshot-2026-10-25.png)
+
+
+## Trakcrate
+
+Screenshot of the Trakcrate database UI, showing Folders and editable Playlists.
+
+![screeshot trakcrate](img/screenshot-trakcrate.png) 
+
+## Home setup
+
+1 x Xone mixer for mixing audio.
+
+2 x XDJ-700 used to play tracks from plugged in pendrives, or from the Laptop via plugged in pendrive, or rekordbox folders stored on the Laptop.  
+
+1 x Korg nanaKONTROL used to control the DJ Tools in vdj-ui.  
+
+1 x Roland TR-6S Drum machine that, via VDJ-U, is controlled by an XDJ-700.
+
+Main laptop screen has vdj-ui syncing the MIDI devices and playing audio.
+
+Second screen has Trakcrate loaded for preparing playlist and creating pendrives for use on CDJs.
+
+![deck setup](img/vdj-ui-deck-setup.jpg)
+
+
+# License
+
+Copywrite [teknopaul 2026](http://teknopaul.com).
+
+This software is licensed un [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)  
+Images and artwork under [Creative Commons 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
+
+Basically these mean free to use, copy, and modify, but you must attribute the authors and cannot sell direct copies.
+
+There is no Pioneer IP in this software and there was no reverse engineering of Pioneer software done to write it.
+As stated at the top, it is a ground up rewrite.
+
+Props to [Deepseek community](https://djl-analysis.deepsymmetry.org/djl-analysis/packets.html) for Prolink analysis.
+
+Rekordbox was the only Windows application I had left, so I wrote this tool to finally be free of closed source software and operating systems.
+
+
+I have only replicated network traffic from XDJ-700 and XDJ-1000 since that is the only hardware I have.  
+I don't have a paid for license of rekordbox, just the free version 4.0 for Windows so there are no network features like when decks connect to a PC as rekordbox.  
+vdj-ui connects as a player since I can see what players do using a port mirroring switch.
+Since I don't have any pcap tcpdump files of real rekordbox CDJ/XDJ interactions I cant write that part.  
+If you can send pcaps of the TCP and UDP communication between software rekordbox and physical decks, I can can give it a try.
+
+I have replicated pendrive features just by reading them and seeing what they do.  Its a binary format but its readable,  there are however some features of rekordbox db that I don't understand and thus cannot replicate.
+This repo has lots of documentation if you want to contribute knowledge to the writing of rekordbox DBs.
+
+# Contributing
+
+I'm happy to receive bug reports and feature ideas.
+
+Keen to get pcap dumps from other Pioneer hardware interactions. You need a port mirroring switch for this, e.g TEROW DJA-SG2005 cloud managed switch that costs 35 bucks.
+
+Happy to get midi maps for other midi controllers.  and module for other joysticks and gaming controllers
+

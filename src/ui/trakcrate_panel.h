@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "trakcrate/analysis.h"
@@ -113,6 +114,7 @@ public:
 signals:
     void status(const QString& message);
     void libraryChanged(const QString& path);
+    void ratingEdited(const QString& trackDir);           // a rating was changed in the table: meta.txt was rewritten
     void importFinished(const QString& summary, bool ok);
     void analysisFinished(const QString& summary, bool ok);
     void bpmFinished(const QString& summary, bool ok);
@@ -141,12 +143,14 @@ private slots:
 
 private:
     void rebuildTree(bool selectionSignals = true);
+    uint64_t estimateBytes(const std::vector<trakcrate::fs::path>& trackDirs);   // distinct tracks, audio sizes cached between tree rebuilds
     void liveRefresh();                        // folders, playlists and the open list while an import is still running
     void showDetails(const QModelIndex& proxyIndex);
     void updateWatches();
     void setBusyUi(bool busy);
     void rememberLibrary(const QString& path);
 
+    std::unordered_map<std::string, uint64_t> sizeCache_;    // track folder -> estimated bytes (only tracks that have audio)
     ConfigManager* config_;
     trakcrate::Library lib_;
     QString shownList_;                                   // which tree item the table last showed (to select its first track once)

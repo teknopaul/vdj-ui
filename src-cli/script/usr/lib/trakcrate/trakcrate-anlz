@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# trakcrate anlz dump|diff: look into an ANLZ file (.DAT, .EXT, .2EX)
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate anlz dump FILE [options]
+       trakcrate anlz diff A B
+
+dump prints the content of an ANLZ file (.DAT, .EXT, .2EX) as TSV (one line per row or tag, the first column says what it is), read only,
+on libcdj'"'"'s readers. diff compares the dumps of two files: it prints the differing lines like diff(1) and exits 1 when
+there are any, 0 when the files say the same (bytes that are not decoded are not compared; use cmp for that).
+
+  dump FILE --tag NAME   only that tag (PPTH PQTZ PQT2 PCOB PCO2 PWAV PWV2 PWV3 PWV4 PWV5 ...)
+  dump FILE --raw --tag NAME the header words and the body of the tag as hex
+  dump FILE --beats          every beat of the grid'
+tc_help_or_summary "dump or compare an ANLZ file (.DAT, .EXT, .2EX)" "$usage" "$@"
+
+tc_helper
+sub=${1:-}
+[ -n "$sub" ] || tc_usage_err "which subcommand? (dump, diff)"
+shift
+case $sub in
+    dump)
+        declare -a args=()
+        for a in "$@"; do
+            case $a in
+                -q|--quiet|-v|--verbose) ;;
+                *) args+=("$a") ;;
+            esac
+        done
+        [ "${#args[@]}" -ge 1 ] || tc_usage_err "usage: trakcrate anlz dump FILE"
+        exec "$TRAKCRATE_HELPER" anlz "${args[@]}"
+        ;;
+    diff)
+        declare -a files=() opts=()
+        for a in "$@"; do
+            case $a in
+                -q|--quiet|-v|--verbose) ;;
+                --*) opts+=("$a") ;;
+                *) files+=("$a") ;;
+            esac
+        done
+        [ "${#files[@]}" -eq 2 ] || tc_usage_err "usage: trakcrate anlz diff A B"
+        a=$(mktemp); b=$(mktemp)
+        trap 'rm -f -- "$a" "$b"' EXIT
+        "$TRAKCRATE_HELPER" anlz "${files[0]}" "${opts[@]}" > "$a" || exit 1
+        "$TRAKCRATE_HELPER" anlz "${files[1]}" "${opts[@]}" > "$b" || exit 1
+        # the file size and name lines differ by nature; the rest is what counts
+        if diff -u --label "${files[0]}" --label "${files[1]}" "$a" "$b"; then exit 0; fi
+        exit 1
+        ;;
+    *) tc_usage_err "unknown subcommand '$sub' (dump, diff)" ;;
+esac

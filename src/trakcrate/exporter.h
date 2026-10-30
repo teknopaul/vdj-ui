@@ -35,12 +35,13 @@ struct ExportOptions {
     uint64_t minFreeBytes = 1u << 20;        // space that must remain free on the destination
 
     // compatibility testing: which optional pieces to include (all on by default)
-    bool includeSettings = true;             // PIONEER/DEVSETTING.DAT and MYSETTING.DAT
+    bool includeSettings = true;             // PIONEER/DEVSETTING.DAT, MYSETTING.DAT, djprofile.nxs and rekordbox/RBFLTR.DAT, exportExt.pdb: players need them all
     bool includeArtwork = true;
     bool includePvbr = true, includePwv4 = true, includePwv5 = true;
     CuemarkRenderOptions cuemarks;           // the spikes drawn into the exported waveforms (never into the master)
     bool writeManifest = true;               // SHA256SUMS and trakcrate-manifest.txt in the root of the drive
     std::string devSetting, mySetting;       // replacement settings files (bytes); empty = the built in ones
+    std::string djprofile, rbfltr, exportExt;   // replacements for PIONEER/djprofile.nxs, rekordbox/RBFLTR.DAT, rekordbox/exportExt.pdb; empty = the built in ones
     // Files copied from a real drive (a folder holding PIONEER/): other tracks' data, only to find out which files a player needs.
     fs::path optionalFilesFrom;
     bool copyExportExt = false, copyRbfltr = false, copyUsbmng = false, copyDjprofile = false;
@@ -75,8 +76,18 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& opts, const Ex
 // What an export of these playlists would involve, without writing anything.
 ExportSummary summariseExport(const Library& lib, const ExportOptions& opts);
 
+// An export writes four names at the top of the destination: Contents, PIONEER, SHA256SUMS and trakcrate-manifest.txt. Anything else on a stick
+// (photos, a .Trash-1000 folder) is none of its business and is left alone. These are the ones of the four that already exist in `dest`
+// (compared without regard to case, as on FAT), which an export refuses to write over; empty when dest does not exist.
+std::vector<std::string> exportConflicts(const fs::path& dest);
+
 // A file name safe on FAT/exFAT: characters Windows forbids replaced by '_', no trailing dots or spaces, reserved device names avoided.
 std::string fatSafeName(const std::string& name);
+
+// The folder name rekordbox gives an artist or album under Contents/ (measured on the 2195 tracks of a real export, 2184 match exactly and the rest
+// differ only in letter case, see rekordboxLayoutPath): characters Windows forbids become '_', at most 48 characters (code points) are kept,
+// trailing spaces go, a final '.' becomes '_' ("K.O." is "K.O_"), and nothing at all is `fallback` ("UnknownArtist", "UnknownAlbum").
+std::string rekordboxFolderName(const std::string& name, const char* fallback);
 
 } // namespace trakcrate
 

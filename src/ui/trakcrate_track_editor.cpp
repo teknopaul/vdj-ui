@@ -13,6 +13,9 @@
 #include <QPushButton>
 #include <QUndoCommand>
 #include <QUndoStack>
+#include <QScrollBar>
+#include <algorithm>
+#include <cmath>
 #include <QVBoxLayout>
 
 #include "artwork_view.h"
@@ -109,7 +112,7 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     facts_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     stars_ = new StarRatingWidget;
     comment_ = new QLineEdit;
-    comment_->setPlaceholderText(QStringLiteral("Comment"));
+    comment_->setPlaceholderText(QStringLiteral("shown on the decks when the track is selected"));
     wave_ = new WaveformWidget;
     wave_->setInteractive(true);
     wave_->setMinimumHeight(90);
@@ -146,8 +149,22 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     auto* col = new QVBoxLayout(this);
     col->addLayout(top);
     col->addLayout(ratingRow);
-    col->addWidget(comment_);
+    {
+        auto* commentRow = new QHBoxLayout;
+        commentRow->addWidget(new QLabel(QStringLiteral("Comment")));
+        commentRow->addWidget(comment_, 1);
+        col->addLayout(commentRow);
+    }
     col->addWidget(wave_, 1);
+    waveScroll_ = new QScrollBar(Qt::Horizontal);
+    waveScroll_->setToolTip(QStringLiteral("Scroll the zoomed waveform; drag the handle to the far left for the start of the track"));
+    col->addWidget(waveScroll_);
+    connect(wave_, &WaveformWidget::viewChanged, this, &TrakcrateTrackEditor::syncWaveScroll);
+    connect(waveScroll_, &QScrollBar::valueChanged, this, [this](int v) {
+        if (syncingScroll_) return;
+        const double len = wave_->analysis().lengthMs();
+        wave_->setView(v, wave_->viewSpan() > 0 ? wave_->viewSpan() : len);
+    });
     auto* markRow = new QHBoxLayout;
     markRow->addWidget(editMarks_);
     markRow->addWidget(snapBox_);
@@ -294,6 +311,20 @@ void TrakcrateTrackEditor::reload()
         showGrid();
     }
     if (art_->trackDir() != dir_) art_->setTrack(dir_);        // a meta edit does not reload the picture
+}
+
+void TrakcrateTrackEditor::syncWaveScroll()
+{
+    const double len = wave_->analysis().lengthMs();
+    const double span = wave_->viewSpan() > 0 ? wave_->viewSpan() : len;
+    const double start = wave_->viewSpan() > 0 ? wave_->viewStart() : 0.0;
+    syncingScroll_ = true;
+    waveScroll_->setRange(0, int(std::max(0.0, std::floor(len - span))));
+    waveScroll_->setPageStep(int(std::max(1.0, span)));
+    waveScroll_->setSingleStep(int(std::max(1.0, span / 10)));
+    waveScroll_->setValue(int(std::lround(start)));
+    waveScroll_->setEnabled(len > span);
+    syncingScroll_ = false;
 }
 
 void TrakcrateTrackEditor::showFacts()

@@ -1,0 +1,376 @@
+#!/bin/bash
+#
+# trakcrate import DIR: a folder of bare audio files into the master storage and an auto playlist
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate import [options] DIR
+
+Every .mp3 and .wav in DIR becomes track-master-copy/<folder>/<track>/ (audio, meta.txt from the tags, the embedded
+artwork, source.txt) and, unless --no-playlist, an ordered playlist pendrives/<NAME>/ is made of them.
+A file whose audio_sha256 is already in the library is not copied again (the existing track goes into the playlist).
+Running it twice changes nothing.
+
+Options:
+  --folder NAME      master folder (default: the name of DIR)
+  --playlist NAME    playlist name (default: the name of DIR); --no-playlist for none
+  --order ORDER      name (natural, case-insensitive; default), mtime, title or none (the order files are found in)
+  --reverse          reverse the order
+  --append           the playlist exists: add at its end;  --replace: replace it (asks unless --yes)
+  -r, --recursive    include subfolders (each becomes a master folder "<folder> - <sub path>", one playlist)
+  --copy (default) | --move | --link     how the audio is taken; the source is only changed with --move
+  --no-dedupe        do not look for the same audio already in the library
+  --analyse          then analyse the new tracks (beat grid, waveform, loudness: "trakcrate analyse"); needs the library lock again,
+                     so the import is finished (and its lock released) first
+  -n/--dry-run, --yes, --format FORMAT, --library DIR, -q, -v
+
+Output: a summary (text), or one record per file (tsv, json, jsonl): path source status reason message playlist position.
+Exit status: 0, 3 when some files failed and others were imported, 1 when all failed.'
+tc_help_or_summary "import a folder of audio files and make a playlist of it" "$usage" "$@"
+
+folder_opt=
+playlist_opt=
+want_playlist=1
+order=name
+reverse=
+mode=copy
+append=
+replace=
+recursive=
+dedupe=1
+analyse=
+src=
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --folder|--folder=*) tc_opt_value --folder "$@"; folder_opt=$tc_value; shift "$tc_shift" ;;
+        --playlist|--playlist=*) tc_opt_value --playlist "$@"; playlist_opt=$tc_value; shift "$tc_shift" ;;
+        --no-playlist) want_playlist=; shift ;;
+        --order|--order=*)
+            tc_opt_value --order "$@"
+            case $tc_value in
+                name|mtime|title|none) order=$tc_value ;;
+                *) tc_usage_err "bad --order '$tc_value' (name, mtime, title, none)" ;;
+            esac
+            shift "$tc_shift"
+            ;;
+        --reverse) reverse=1; shift ;;
+        --append) append=1; shift ;;
+        --replace) replace=1; shift ;;
+        -r|--recursive) recursive=1; shift ;;
+        --copy) mode=copy; shift ;;
+        --move) mode=move; shift ;;
+        --link) mode=link; shift ;;
+        --no-dedupe) dedupe=; shift ;;
+        --analyse|--analyze) analyse=1; shift ;;
+        --) shift; break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *)
+            if [ -n "$src" ]; then
+                tc_usage_err "only one directory"
+            fi
+            src=$1
+            shift
+            ;;
+    esac
+done
+if [ $# -gt 0 ]; then
+    if [ -n "$src" ] || [ $# -gt 1 ]; then
+        tc_usage_err "only one directory"
+    fi
+    src=$1
+fi
+if [ -z "$src" ]; then
+    tc_usage_err "which directory? (trakcrate import DIR)"
+fi
+if [ -n "$append" ] && [ -n "$replace" ]; then
+    tc_usage_err "--append and --replace exclude each other"
+fi
+if [ ! -d "$src" ]; then
+    tc_die "not a directory: $src"
+fi
+src=$(readlink -f -- "$src")
+
+tc_library
+tc_helper
+
+base=$(basename -- "$src")
+folder_base=$(tc_sanitize_name "${folder_opt:-$base}")
+playlist=
+playlist_dir=
+if [ -n "$want_playlist" ]; then
+    playlist=${playlist_opt:-$base}
+    if ! tc_safe_name "$playlist"; then
+        tc_usage_err "bad playlist name '$playlist'"
+    fi
+    playlist_dir=$tc_lib/pendrives/$playlist
+    if [ -d "$playlist_dir/symlinks" ] && [ -z "$append$replace" ]; then
+        tc_die "playlist '$playlist' exists: use --append or --replace (or --playlist NAME / --no-playlist)"
+    fi
+fi
+
+tc_lock
+work=$(mktemp -d "${TMPDIR:-/tmp}/trakcrate-import.XXXXXX")
+cleanup()
+{
+    rm -rf -- "$work"
+    tc_unlock
+}
+trap cleanup EXIT
+
+# the audio files, and how many other files were skipped
+find_args=(-type f)
+if [ -z "$recursive" ]; then
+    find_args=(-maxdepth 1 -type f)
+fi
+audio_filter=(\( -iname '*.mp3' -o -iname '*.wav' \))
+unsupported=$(find "$src" "${find_args[@]}" -not "${audio_filter[@]}" -not -name '.*' | wc -l)
+if [ "$order" = none ]; then
+    find "$src" "${find_args[@]}" "${audio_filter[@]}" -print0 > "$work/files"
+else
+    find "$src" "${find_args[@]}" "${audio_filter[@]}" -print0 | "$TRAKCRATE_HELPER" natsort -z > "$work/files"
+fi
+
+# audio already in the library: "<sha256> <track dir>"
+: > "$work/index"
+if [ -n "$dedupe" ]; then
+    grep -r -H --include=meta.txt '^audio_sha256:' "$tc_master" 2>/dev/null |
+        sed -n 's|^\(.*\)/meta\.txt:audio_sha256:[[:space:]]*\([0-9a-f]\{64\}\).*$|\2 \1|p' | LC_ALL=C sort -k2 > "$work/index" || true
+fi
+
+declare -a rec_path=() rec_src=() rec_status=() rec_reason=() rec_msg=()
+declare -a order_dirs=() order_keys=() new_dirs=()
+declare -A track_pos=()
+new=0
+dups=0
+failed=0
+now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+today=${now%%T*}
+
+# the sort key of a track for --order mtime and title (name and none use the path of the file)
+order_key()
+{
+    local f=$1 rel=$2 dir=$3 key
+    case $order in
+        mtime) stat -L -c %Y -- "$f" ;;
+        title)
+            key=$(tc_kv_get "$dir/meta.txt" title || true)
+            printf '%s\n' "${key:-${dir##*/}}"
+            ;;
+        *) printf '%s\n' "$rel" ;;
+    esac
+}
+
+while IFS= read -r -d '' f; do
+    rel=${f#"$src"/}
+    folder=$folder_base
+    if [ -n "$recursive" ] && [[ $rel == */* ]]; then
+        sub=${rel%/*}
+        folder="$folder_base"
+        IFS=/ read -r -a parts <<< "$sub"
+        for part in "${parts[@]}"; do
+            folder="$folder - $(tc_sanitize_name "$part")"
+        done
+    fi
+    name=${f##*/}
+    ext=${name##*.}
+    ext=${ext,,}
+    stem=$(tc_sanitize_name "${name%.*}")
+
+    hash=$(sha256sum -- "$f" | cut -d' ' -f1)
+    existing=
+    if [ -n "$dedupe" ]; then
+        existing=$(grep -m1 "^$hash " "$work/index" | cut -d' ' -f2- || true)
+    fi
+    if [ -n "$existing" ] && [ -d "$existing" ]; then
+        rec_path+=("$existing"); rec_src+=("$f"); rec_status+=(skipped); rec_reason+=(duplicate); rec_msg+=("same audio as ${existing#"$tc_master"/}")
+        dups=$((dups + 1))
+        order_dirs+=("$existing"); order_keys+=("$(order_key "$f" "$rel" "$existing")")
+        continue
+    fi
+
+    if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+        rec_path+=("$tc_master/$folder/$stem"); rec_src+=("$f"); rec_status+=(ok); rec_reason+=(dry-run); rec_msg+=("would import")
+        new=$((new + 1))
+        continue
+    fi
+
+    rm -rf -- "$work/art"
+    mkdir -p -- "$work/art"
+    if ! "$TRAKCRATE_HELPER" probe "$f" --artwork-dir "$work/art" > "$work/probe" 2> "$work/probe.err"; then
+        msg=$(head -n 1 "$work/probe.err")
+        rec_path+=(""); rec_src+=("$f"); rec_status+=(failed); rec_reason+=(unreadable); rec_msg+=("${msg:-cannot read the audio}")
+        failed=$((failed + 1))
+        tc_say "failed: $rel: ${msg:-cannot read the audio}"
+        continue
+    fi
+
+    # a free track directory name: "name", "name 2", ...
+    mkdir -p -- "$tc_master/$folder"
+    track=$stem
+    n=2
+    while [ -e "$tc_master/$folder/$track" ]; do
+        track="$stem $n"
+        n=$((n + 1))
+    done
+    final=$tc_master/$folder/$track
+    tmp=$tc_master/$folder/.import.$$.$new
+
+    rm -rf -- "$tmp"
+    mkdir -p -- "$tmp"
+    case $mode in
+        copy|move) cp -- "$f" "$tmp/track.$ext" ;;
+        link) ln -s -- "$f" "$tmp/track.$ext" ;;
+    esac
+    cp -- "$work/probe" "$tmp/meta.txt"
+    tc_kv_set "$tmp/meta.txt" original_filename "$name"
+    tc_kv_set "$tmp/meta.txt" audio_sha256 "$hash"
+    tc_kv_set "$tmp/meta.txt" file_size "$(stat -L -c %s -- "$f")"
+    tc_kv_set "$tmp/meta.txt" date_added "$today"
+    for art in "$work"/art/artwork.*; do
+        if [ -f "$art" ]; then
+            mv -- "$art" "$tmp/"
+        fi
+    done
+    {
+        printf '# trakcrate source\n'
+        for g in meta beatgrid cues waveform artwork; do
+            printf 'origin.%s: generated\n' "$g"
+        done
+    } > "$tmp/source.txt"
+    tc_kv_set "$tmp/source.txt" imported_from "$f"
+    tc_kv_set "$tmp/source.txt" imported_at "$now"
+    mv -- "$tmp" "$final"
+    if [ "$mode" = move ]; then
+        rm -f -- "$f"
+    fi
+    printf '%s %s\n' "$hash" "$final" >> "$work/index"
+    new_dirs+=("$final")
+
+    rec_path+=("$final"); rec_src+=("$f"); rec_status+=(ok); rec_reason+=(""); rec_msg+=("")
+    new=$((new + 1))
+    tc_debug "imported $rel as $folder/$track"
+    order_dirs+=("$final"); order_keys+=("$(order_key "$f" "$rel" "$final")")
+done < "$work/files"
+
+# the playlist
+playlist_note=
+if [ -n "$want_playlist" ] && [ "${#order_dirs[@]}" -gt 0 ]; then
+    # the order of the new entries
+    declare -a sorted=()
+    case $order in
+        name|none)
+            sorted=("${order_dirs[@]}")
+            ;;
+        mtime)
+            while IFS= read -r line; do sorted+=("${line#*$'\t'}"); done < <(
+                for i in "${!order_dirs[@]}"; do
+                    printf '%s\t%s\n' "${order_keys[$i]}" "${order_dirs[$i]}"
+                done | LC_ALL=C sort -t "$(printf '\t')" -s -k1,1n)
+            ;;
+        title)
+            while IFS= read -r -d '' line; do sorted+=("${line#*$'\t'}"); done < <(
+                for i in "${!order_dirs[@]}"; do
+                    printf '%s\t%s\0' "${order_keys[$i]}" "${order_dirs[$i]}"
+                done | "$TRAKCRATE_HELPER" natsort -z)
+            ;;
+    esac
+    if [ -n "$reverse" ]; then
+        declare -a rev=()
+        for ((i = ${#sorted[@]} - 1; i >= 0; i--)); do
+            rev+=("${sorted[$i]}")
+        done
+        sorted=("${rev[@]}")
+    fi
+
+    declare -a names=() links=() have=()
+    if [ -d "$playlist_dir/symlinks" ]; then
+        if [ -n "$replace" ]; then
+            if ! tc_confirm "Replace the playlist '$playlist'?"; then
+                tc_die "playlist not replaced; the tracks are imported"
+            fi
+        else
+            tc_playlist_load "$playlist_dir" names links
+            tc_playlist_dirs "$playlist_dir" have
+        fi
+    else
+        mkdir -p -- "$playlist_dir"
+    fi
+    if [ -z "${TRAKCRATE_DRY_RUN:-}" ]; then
+        for d in "${sorted[@]}"; do
+            present=
+            for h in "${have[@]}"; do
+                if [ "$h" = "$d" ]; then
+                    present=1
+                fi
+            done
+            if [ -z "$present" ]; then
+                names+=("${d##*/}")
+                links+=("$(tc_track_link "$d")")
+                have+=("$d")
+            fi
+        done
+        tc_playlist_write "$playlist_dir" names links
+    fi
+    for i in "${!have[@]}"; do
+        track_pos[${have[$i]}]=$i
+    done
+    playlist_note=$playlist
+fi
+
+# the result
+case ${TRAKCRATE_FORMAT:-text} in
+    tsv) printf 'path\tsource\tstatus\treason\tmessage\tplaylist\tposition\n' ;;
+    json) printf '[' ;;
+esac
+for i in "${!rec_src[@]}"; do
+    pos=
+    if [ -n "${rec_path[$i]}" ]; then
+        pos=${track_pos[${rec_path[$i]}]:-}
+    fi
+    case ${TRAKCRATE_FORMAT:-text} in
+        tsv) printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${rec_path[$i]}" "${rec_src[$i]}" "${rec_status[$i]}" "${rec_reason[$i]}" "${rec_msg[$i]}" "$playlist_note" "$pos" ;;
+        json|jsonl)
+            rec='{"path":'$(tc_json_str "${rec_path[$i]}")',"source":'$(tc_json_str "${rec_src[$i]}")',"status":"'${rec_status[$i]}'"'
+            if [ -n "${rec_reason[$i]}" ]; then rec+=',"reason":"'${rec_reason[$i]}'"'; fi
+            if [ -n "${rec_msg[$i]}" ]; then rec+=',"message":'$(tc_json_str "${rec_msg[$i]}"); fi
+            if [ -n "$playlist_note" ] && [ -n "$pos" ]; then rec+=',"playlist":'$(tc_json_str "$playlist_note")',"position":'$pos; fi
+            rec+='}'
+            if [ "${TRAKCRATE_FORMAT}" = json ]; then
+                printf '%s%s' "$([ "$i" = 0 ] || echo ,)" "$rec"
+            else
+                printf '%s\n' "$rec"
+            fi
+            ;;
+    esac
+done
+case ${TRAKCRATE_FORMAT:-text} in
+    json) printf ']\n' ;;
+    tsv|jsonl) ;;
+    *)
+        printf 'imported %d, duplicates %d, unsupported files %d, failed %d\n' "$new" "$dups" "$unsupported" "$failed"
+        printf 'folder: %s\n' "$folder_base"
+        if [ -n "$playlist_note" ]; then
+            printf 'playlist: %s (%s)\n' "$playlist_note" "$playlist_dir"
+        fi
+        ;;
+esac
+
+# analysis of the new tracks: the lock is released first, analyse takes it itself. Its records go to stderr.
+if [ -n "$analyse" ] && [ "${#new_dirs[@]}" -gt 0 ]; then
+    tc_unlock
+    if ! "$TRAKCRATE_BIN" --library "$tc_lib" --format text analyse "${new_dirs[@]}" >&2; then
+        failed=$((failed + 1))
+    fi
+fi
+
+if [ "$failed" -gt 0 ]; then
+    if [ "$((new + dups))" -gt 0 ]; then
+        exit 3
+    fi
+    exit 1
+fi

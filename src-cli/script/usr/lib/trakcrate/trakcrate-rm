@@ -1,0 +1,124 @@
+#!/bin/bash
+#
+# trakcrate rm TRACK...: remove tracks from the library
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate rm [options] TRACK...
+
+Moves the track directories to <library>/.trash/<time>/<folder>/<track> (restore by moving them back) and removes
+their links from every playlist and pendrive entry, renumbering those. A track that is in playlists needs --yes (the
+affected playlists are listed). The audio files that were imported with --link are only links: the originals are never touched.
+
+Options: --purge (delete instead of moving to .trash/), --yes, -n/--dry-run, --format FORMAT, --library DIR, -q, -v'
+tc_help_or_summary "remove tracks from the library" "$usage" "$@"
+
+purge=
+declare -a tracks=()
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --purge) purge=1; shift ;;
+        --) shift; tracks+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) tracks+=("$1"); shift ;;
+    esac
+done
+if [ "${#tracks[@]}" -eq 0 ]; then
+    tc_usage_err "which tracks? (trakcrate rm TRACK...)"
+fi
+
+tc_library
+tc_lock
+
+# resolve everything first: nothing is removed when one of the names is wrong
+declare -a dirs=()
+for t in "${tracks[@]}"; do
+    tc_track "$t"
+    dirs+=("$tc_track_dir")
+done
+
+# the links that point at these tracks
+declare -a playlists=()
+affected=0
+while IFS= read -r pl; do
+    declare -a pdirs=()
+    tc_playlist_dirs "$pl" pdirs
+    hit=
+    for pd in "${pdirs[@]}"; do
+        for d in "${dirs[@]}"; do
+            if [ "$pd" = "$d" ]; then
+                hit=1
+                affected=$((affected + 1))
+            fi
+        done
+    done
+    if [ -n "$hit" ]; then
+        playlists+=("$pl")
+    fi
+done < <(tc_all_playlist_dirs)
+
+if [ "${#playlists[@]}" -gt 0 ]; then
+    tc_say "$affected link(s) in these playlists will be removed:"
+    for pl in "${playlists[@]}"; do
+        tc_say "  ${pl#"$tc_lib"/}"
+    done
+fi
+
+if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
+    for d in "${dirs[@]}"; do
+        tc_say "would remove ${d#"$tc_master"/}"
+    done
+    exit 0
+fi
+
+if [ "${#playlists[@]}" -gt 0 ] || [ -n "$purge" ]; then
+    if ! tc_confirm "Remove ${#dirs[@]} track(s)${purge:+ for good}?"; then
+        tc_die "nothing removed"
+    fi
+fi
+
+# the links first, renumbering the playlists
+for pl in "${playlists[@]}"; do
+    declare -a names=() links=() pdirs=() keep_names=() keep_links=()
+    tc_playlist_load "$pl" names links
+    tc_playlist_dirs "$pl" pdirs
+    keep_names=()
+    keep_links=()
+    for i in "${!pdirs[@]}"; do
+        drop=
+        for d in "${dirs[@]}"; do
+            if [ "${pdirs[$i]}" = "$d" ]; then
+                drop=1
+            fi
+        done
+        if [ -z "$drop" ]; then
+            keep_names+=("${names[$i]}")
+            keep_links+=("${links[$i]}")
+        fi
+    done
+    tc_playlist_write "$pl" keep_names keep_links
+done
+
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+for d in "${dirs[@]}"; do
+    rel=${d#"$tc_master"/}
+    if [ -n "$purge" ]; then
+        rm -rf -- "$d"
+        where=
+    else
+        where=$tc_lib/.trash/$stamp/$rel
+        mkdir -p -- "$(dirname -- "$where")"
+        mv -- "$d" "$where"
+    fi
+    case ${TRAKCRATE_FORMAT:-text} in
+        json|jsonl) printf '{"path":%s,"status":"ok","trash":%s}\n' "$(tc_json_str "$d")" "$(tc_json_str "$where")" ;;
+        tsv) printf '%s\tok\t%s\n' "$d" "$where" ;;
+        *) printf '%s\n' "$rel" ;;
+    esac
+    tc_debug "removed $rel"
+done

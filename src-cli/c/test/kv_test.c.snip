@@ -1,0 +1,187 @@
+#define _GNU_SOURCE
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include "../lib/fsutil.h"
+#include "../lib/kv.h"
+
+//SNIP_FILE SNIP_fsutil ../lib/fsutil.c
+//SNIP_FILE SNIP_kv ../lib/kv.c
+
+#include "snip_core.h"
+
+static void check_print(const char *msg, const char *value, const char *expected)
+{
+    char buf[256];
+    FILE *f = tmpfile();
+    size_t n;
+
+    tc_kv_print(f, "key", value);
+    fflush(f);
+    n = (size_t)ftell(f);
+    rewind(f);
+    n = fread(buf, 1, n < sizeof buf - 1 ? n : sizeof buf - 1, f);
+    buf[n] = 0;
+    fclose(f);
+    if (strcmp(buf, expected) != 0) {
+        char m[600];
+        errors++;
+        snprintf(m, sizeof m, "%s: expected [%s] got [%s]", msg, expected, buf);
+        snip_error(m);
+    }
+}
+
+static void check_roundtrip(const char *msg, const char *text)
+{
+    tc_kvdoc *d = tc_kv_parse(text, strlen(text));
+    char *out = tc_kv_serialise(d, NULL);
+    char m[300];
+
+    snprintf(m, sizeof m, "roundtrip: %s", msg);
+    snip_assert(m, strcmp(out, text) == 0);
+    free(out);
+    tc_kv_free(d);
+}
+
+static void test_print(void)
+{
+    check_print("plain", "hello", "key: hello\n");
+    check_print("empty", "", "key: \n");
+    check_print("backslash", "a\\b", "key: a\\\\b\n");
+    check_print("newline", "two\nlines", "key: two\\nlines\n");
+    check_print("both", "\\\n", "key: \\\\\\n\n");
+    check_print("carriage return dropped", "a\r\nb", "key: a\\nb\n");
+    check_print("tab kept", "a\tb", "key: a\tb\n");
+    check_print("utf8", "caf\xc3\xa9", "key: caf\xc3\xa9\n");
+}
+
+static void test_parse_get(void)
+{
+    const char *text = "# a comment\n\n  title :  Hello  \nrating: 4\nrating: 5\nweird line\nnote: a\\nb \\\\ c\nempty:\n  # indented comment\nx-tool: 1\nurl: http://a:b\n";
+    tc_kvdoc *d = tc_kv_parse(text, strlen(text));
+
+    snip_assert("get: trims key and value", strcmp(tc_kv_get(d, "title"), "Hello") == 0);
+    snip_assert("get: the last of a repeated key wins", strcmp(tc_kv_get(d, "rating"), "5") == 0);
+    snip_equals("get_int", 5, (int)tc_kv_get_int(d, "rating", 0));
+    snip_equals("get_int: default", 9, (int)tc_kv_get_int(d, "nothing", 9));
+    snip_equals("get_int: not a number gives the default", 7, (int)tc_kv_get_int(d, "title", 7));
+    snip_assert("get: escapes are undone", strcmp(tc_kv_get(d, "note"), "a\nb \\ c") == 0);
+    snip_assert("get: an empty value", tc_kv_get(d, "empty") != NULL && tc_kv_get(d, "empty")[0] == 0);
+    snip_assert("get: only the first colon splits", strcmp(tc_kv_get(d, "url"), "http://a:b") == 0);
+    snip_assert("get: a missing key", tc_kv_get(d, "nope") == NULL);
+    snip_assert("get: comments and malformed lines are not keys", tc_kv_get(d, "weird line") == NULL && tc_kv_get(d, "# a comment") == NULL);
+    snip_equals("count: lines with keys", 7, (int)tc_kv_count(d));
+    {
+        char *out = tc_kv_serialise(d, NULL);
+        snip_assert("an untouched document is written back byte for byte", strcmp(out, text) == 0);
+        free(out);
+    }
+    tc_kv_free(d);
+}
+
+static void test_edit(void)
+{
+    const char *text = "# keep\ntitle: One\nrating: 4\nrating: 5\nzzz: last\n";
+    tc_kvdoc *d = tc_kv_parse(text, strlen(text));
+    char *out;
+
+    tc_kv_set(d, "rating", "3");
+    out = tc_kv_serialise(d, NULL);
+    snip_assert("set: replaces the last line of the key in place", strcmp(out, "# keep\ntitle: One\nrating: 4\nrating: 3\nzzz: last\n") == 0);
+    free(out);
+
+    tc_kv_set(d, "comment", "two\nlines \\ here");
+    out = tc_kv_serialise(d, NULL);
+    snip_assert("set: a new key is appended, escaped", strstr(out, "zzz: last\ncomment: two\\nlines \\\\ here\n") != NULL);
+    free(out);
+
+    tc_kv_set_int(d, "year", 2020);
+    snip_equals("set_int", 2020, (int)tc_kv_get_int(d, "year", 0));
+
+    tc_kv_remove(d, "rating");
+    out = tc_kv_serialise(d, NULL);
+    snip_assert("remove: every line of the key", strstr(out, "rating") == NULL && strstr(out, "# keep\ntitle: One\nzzz: last\n") != NULL);
+    free(out);
+    snip_assert("remove: a missing key is fine", (tc_kv_remove(d, "nope"), 1));
+    tc_kv_free(d);
+
+    d = tc_kv_parse("", 0);
+    snip_equals("empty document", 0, (int)tc_kv_count(d));
+    tc_kv_set(d, "a", "1");
+    out = tc_kv_serialise(d, NULL);
+    snip_assert("set on an empty document", strcmp(out, "a: 1\n") == 0);
+    free(out);
+    tc_kv_free(d);
+}
+
+static void test_roundtrips(void)
+{
+    check_roundtrip("empty", "");
+    check_roundtrip("blank lines", "\n\n");
+    check_roundtrip("odd spacing", "a:1\n  b  :   2   \n\t# x\n");
+    check_roundtrip("a colon only", ":\n");
+    check_roundtrip("a trailing line without newline is completed", "a: 1\n");
+    {
+        tc_kvdoc *d = tc_kv_parse("a: 1\r\nb: 2\r\n", 12);
+        char *out = tc_kv_serialise(d, NULL);
+        snip_assert("CRLF input is read; written with LF", strcmp(out, "a: 1\nb: 2\n") == 0);
+        snip_assert("CRLF: values have no CR", strcmp(tc_kv_get(d, "a"), "1") == 0);
+        free(out);
+        tc_kv_free(d);
+    }
+    {
+        tc_kvdoc *d = tc_kv_parse("a: 1", 4);
+        char *out = tc_kv_serialise(d, NULL);
+        snip_assert("no final newline: added", strcmp(out, "a: 1\n") == 0);
+        free(out);
+        tc_kv_free(d);
+    }
+}
+
+static void test_files(void)
+{
+    char dir[] = "/tmp/tc_kv_test_XXXXXX";
+    char path[300];
+    tc_kvdoc *d;
+    int existed = 7;
+
+    snip_assert("mkdtemp", mkdtemp(dir) != NULL);
+    snprintf(path, sizeof path, "%s/meta.txt", dir);
+    snip_equals("load: missing file", 0, tc_kv_load(path, &d, &existed));
+    snip_equals("load: missing file is an empty document", 0, existed);
+    snip_equals("load: no keys", 0, (int)tc_kv_count(d));
+    tc_kv_set(d, "title", "Hi");
+    snip_equals("save", 0, tc_kv_save(d, path));
+    tc_kv_free(d);
+    snip_equals("load", 0, tc_kv_load(path, &d, &existed));
+    snip_equals("load: existed", 1, existed);
+    snip_assert("saved and loaded", strcmp(tc_kv_get(d, "title"), "Hi") == 0);
+    tc_kv_free(d);
+    {
+        char cmd[400];
+        snprintf(cmd, sizeof cmd, "rm -rf %s", dir);
+        if (system(cmd)) { }
+    }
+}
+
+int main(void)
+{
+    test_print();
+    test_parse_get();
+    test_edit();
+    test_roundtrips();
+    test_files();
+    if (errors) { printf("%d errors\n", errors); return 1; }
+    printf("kv: all ok\n");
+    return 0;
+}

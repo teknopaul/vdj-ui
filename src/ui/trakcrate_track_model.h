@@ -16,9 +16,14 @@ namespace vdj {
 class TrakcrateTrackModel : public QAbstractTableModel {
     Q_OBJECT
 
+signals:
+    void ratingWritten(const QString& trackDir, int stars);
+    void ratingFailed(const QString& message);
+    void commentWritten(const QString& trackDir, const QString& text);
+
 public:
-    enum Column { Title, Artist, Album, Bpm, Time, Wave, Origin, Flags, ColumnCount };
-    enum { SortRole = Qt::UserRole + 1 };
+    enum Column { Title, Artist, Album, Comment, Bpm, Time, Rating, Wave, Origin, Flags, ColumnCount };
+    enum { SortRole = Qt::UserRole + 1, RatingRole = Qt::UserRole + 2 };      // RatingRole: 0..5 stars, writable (rewrites the track's meta.txt)
 
     explicit TrakcrateTrackModel(QObject* parent = nullptr);
 
@@ -35,6 +40,9 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+    bool setComment(const QModelIndex& index, const QString& text);
+    static QString starsText(int stars);                           // "★★☆☆☆": always five
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
 private:
@@ -43,8 +51,9 @@ private:
         mutable bool loaded = false;
         mutable trakcrate::Track track;
         mutable bool hasAudio = false;
-        mutable QString bpm, time, origin, flags;
+        mutable QString comment, bpm, time, origin, flags;
         mutable double bpmValue = 0, seconds = 0;
+        mutable int rating = 0;
         mutable QPixmap wave;                 // mini waveform, null until the track has been analysed
     };
     void load(const Row& r) const;

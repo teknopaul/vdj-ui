@@ -4,6 +4,8 @@ build-debug/
 build-asan/
 .idea
 *.iml
+*.o
+*.so
 .git/
 .bzr/
 references/
@@ -11,6 +13,8 @@ references/
 .sstignore
 .qt/
 CMakeFiles/
+_CPack_Packages/
+*.deb
 
 # CMake in-source build leftovers (the real build dir is build/)
 *_autogen/

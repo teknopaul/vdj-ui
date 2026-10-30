@@ -12,10 +12,11 @@
 
 set(CPACK_BUILD_SOURCE_DIRS "/home/teknopaul/bzr_workspace/vdj-ui;/home/teknopaul/bzr_workspace/vdj-ui")
 set(CPACK_CMAKE_GENERATOR "Unix Makefiles")
+set(CPACK_COMPONENTS_ALL "Unspecified;icons")
 set(CPACK_COMPONENT_UNSPECIFIED_HIDDEN "TRUE")
 set(CPACK_COMPONENT_UNSPECIFIED_REQUIRED "TRUE")
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "/home/teknopaul/bzr_workspace/vdj-ui/data/debian/postinst")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev, libcdj, libvdj, fonts-liberation, libcap2-bin")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev, libcdj, fonts-liberation, libcap2-bin")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "VDJ")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
 set(CPACK_DEFAULT_PACKAGE_DESCRIPTION_FILE "/usr/share/cmake-3.28/Templates/CPack.GenericDescription.txt")

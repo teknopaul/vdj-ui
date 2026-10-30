@@ -1,0 +1,104 @@
+#!/bin/bash
+#
+# trakcrate check: verify the library against TRAKCRATE-FORMAT.md section 15
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate check [options]
+
+Reports problems of the library: more than one audio file in a track, playlist entries without or with
+repeated numeric prefixes, dangling links, a waveform.bin that is not "TCWV" version 1. Everything else
+(unknown files, missing optional files) is tolerated. Read only.
+
+Output (--format tsv, json, jsonl): where, severity (error, warning), code, message. Exit status 1 when there is an error.
+
+Options: --format FORMAT, --library DIR, -q, -v'
+tc_help_or_summary "verify the library" "$usage" "$@"
+
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    tc_usage_err "unexpected argument '$1'"
+done
+
+tc_library
+format=${TRAKCRATE_FORMAT:-text}
+errors=0
+warnings=0
+first=1
+
+# finding WHERE SEVERITY CODE MESSAGE
+finding()
+{
+    case $2 in
+        error) errors=$((errors + 1)) ;;
+        *) warnings=$((warnings + 1)) ;;
+    esac
+    case $format in
+        tsv) printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" ;;
+        jsonl) printf '{"where":%s,"severity":"%s","code":"%s","message":%s}\n' "$(tc_json_str "$1")" "$2" "$3" "$(tc_json_str "$4")" ;;
+        json)
+            printf '%s{"where":%s,"severity":"%s","code":"%s","message":%s}' "$([ "$first" = 1 ] || echo ,)" "$(tc_json_str "$1")" "$2" "$3" "$(tc_json_str "$4")"
+            first=0
+            ;;
+        *) printf '%s %s %s: %s\n' "$2" "$3" "$1" "$4" ;;
+    esac
+}
+
+if [ "$format" = tsv ]; then
+    printf 'where\tseverity\tcode\tmessage\n'
+elif [ "$format" = json ]; then
+    printf '['
+fi
+
+shopt -s nullglob nocaseglob
+for track in "$tc_master"/*/*/; do
+    track=${track%/}
+    rel=${track#"$tc_master"/}
+    audio=("$track"/*.mp3 "$track"/*.wav)
+    if [ "${#audio[@]}" -gt 1 ]; then
+        finding "$rel" error multiple-audio "${#audio[@]} audio files (a track has exactly one .mp3 or .wav)"
+    elif [ "${#audio[@]}" -eq 0 ]; then
+        finding "$rel" warning no-audio "no .mp3 or .wav file"
+    fi
+    wf=$track/waveform.bin
+    if [ -e "$wf" ]; then
+        header=$(head -c 8 -- "$wf" | od -An -tx1 | tr -d ' \n')
+        if [ "$header" != "5443575601000000" ]; then
+            finding "$rel/waveform.bin" error bad-waveform "does not start with TCWV version 1"
+        fi
+    fi
+done
+shopt -u nocaseglob
+
+while IFS= read -r pl; do
+    rel=${pl#"$tc_lib"/}
+    declare -A seen=()
+    for link in "$pl"/symlinks/*; do
+        n=${link##*/}
+        if [[ $n =~ ^([0-9]+)_ ]]; then
+            p=$((10#${BASH_REMATCH[1]}))
+            if [ -n "${seen[$p]:-}" ]; then
+                finding "$rel/symlinks/$n" error duplicate-prefix "prefix $p is also used by ${seen[$p]}; the order is undefined"
+            fi
+            seen[$p]=$n
+        else
+            finding "$rel/symlinks/$n" error bad-prefix "no numeric prefix (NNN_name): the order is undefined"
+        fi
+        if [ -L "$link" ] && [ ! -e "$link" ]; then
+            finding "$rel/symlinks/$n" warning dangling-link "points to $(readlink -- "$link"), which does not exist"
+        fi
+    done
+    unset seen
+done < <(tc_all_playlist_dirs)
+
+if [ "$format" = json ]; then
+    printf ']\n'
+fi
+tc_say "$errors error(s), $warnings warning(s)"
+if [ "$errors" -gt 0 ]; then
+    exit 1
+fi

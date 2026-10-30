@@ -34,7 +34,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
         it->setCheckState(Qt::Unchecked);
     }
     dest_ = new QLineEdit;
-    dest_->setPlaceholderText(QStringLiteral("an empty folder, or a mounted stick"));
+    dest_->setPlaceholderText(QStringLiteral("a folder, or a mounted stick (other files on it are left alone)"));
     auto* browse = new QPushButton(QStringLiteral("Browse..."));
     browse_ = browse;
     drives_ = new QComboBox;
@@ -212,9 +212,14 @@ void TrakcrateExportDialog::refreshSummary()
             while (!fi.exists() && !fi.isRoot() && fi.absoluteDir().exists() == false) fi = QFileInfo(fi.absolutePath());
             QDir existing(fi.exists() ? (fi.isDir() ? fi.absoluteFilePath() : fi.absolutePath()) : fi.absolutePath());
             if (QFileInfo(path).exists() && !QFileInfo(path).isDir()) { good = false; html += QStringLiteral("<span style='color:#c00'>The destination is not a folder.</span><br>"); }
-            else if (QDir(path).exists() && !QDir(path).isEmpty(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System)) {
-                good = false;
-                html += QStringLiteral("<span style='color:#c00'>The destination folder is not empty.</span><br>");
+            else if (QDir(path).exists()) {
+                const std::vector<std::string> clash = trakcrate::exportConflicts(o.dest);      // other files on a stick are fine
+                if (!clash.empty()) {
+                    QStringList names;
+                    for (const std::string& n : clash) names << QString::fromStdString(n);
+                    good = false;
+                    html += QStringLiteral("<span style='color:#c00'>The destination already has %1 (an earlier export?).</span><br>").arg(names.join(QStringLiteral(", ")).toHtmlEscaped());
+                }
             }
             const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(existing.exists() ? existing.absolutePath().toStdString() : std::string());
             if (usb.found) html += QStringLiteral("Connected as %1.<br>").arg(QString::fromStdString(usb.label).toHtmlEscaped());

@@ -121,6 +121,7 @@ add_library(vdj-cdj STATIC
     ui/trakcrate_pendrive_dialog.cpp
     ui/trakcrate_analysis.cpp
     ui/star_rating_widget.cpp
+    ui/level_meter_widget.cpp
     ui/trakcrate_track_editor.cpp
     ui/artwork_view.cpp
     ui/trakcrate_scripts.cpp
@@ -212,14 +213,21 @@ add_library(vdj-trakcrate STATIC
     trakcrate/pdb_writer.cpp
     trakcrate/pdb_build.cpp
     trakcrate/anlz_writer.cpp
+    trakcrate/mp3_index.cpp
     trakcrate/settings_files.cpp
     trakcrate/settings_defaults.cpp
+    trakcrate/default_files.cpp
     trakcrate/artwork_paths.cpp
     trakcrate/exporter.cpp
     trakcrate/rb_import.cpp
     trakcrate/usb_speed.cpp
 )
 set_target_properties(vdj-trakcrate PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# the player's support files, compiled in with .incbin (default_files.cpp); a change to them rebuilds it
+set(TC_USER_SETTINGS_DIR ${CMAKE_SOURCE_DIR}/data/trakcrate/user-settings)
+set_source_files_properties(trakcrate/default_files.cpp PROPERTIES
+    COMPILE_DEFINITIONS "TC_USER_SETTINGS_DIR=\"${TC_USER_SETTINGS_DIR}\""
+    OBJECT_DEPENDS "${TC_USER_SETTINGS_DIR}/djprofile.nxs;${TC_USER_SETTINGS_DIR}/RBFLTR.DAT;${TC_USER_SETTINGS_DIR}/exportExt.pdb")
 target_include_directories(vdj-trakcrate PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 pkg_check_modules(TC_FFMPEG REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswresample)
 pkg_check_modules(TC_AUBIO IMPORTED_TARGET aubio)       # libaubio-dev: BPM detection for the "Detect BPM" action

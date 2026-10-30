@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# trakcrate pdb dump|diff: look into an export.pdb
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate pdb dump FILE [options]
+       trakcrate pdb diff A B
+
+dump prints the content of an export.pdb as TSV (one line per row or tag, the first column says what it is), read only,
+on libcdj'"'"'s readers. diff compares the dumps of two files: it prints the differing lines like diff(1) and exits 1 when
+there are any, 0 when the files say the same (bytes that are not decoded are not compared; use cmp for that).
+
+  dump FILE --table tracks   one table (tracks artists albums genres labels artwork playlists entries)
+  dump FILE --pages          the page list: which table, chain, flags, rows (to see how a writer laid the file out)'
+tc_help_or_summary "dump or compare an export.pdb" "$usage" "$@"
+
+tc_helper
+sub=${1:-}
+[ -n "$sub" ] || tc_usage_err "which subcommand? (dump, diff)"
+shift
+case $sub in
+    dump)
+        declare -a args=()
+        for a in "$@"; do
+            case $a in
+                -q|--quiet|-v|--verbose) ;;
+                *) args+=("$a") ;;
+            esac
+        done
+        [ "${#args[@]}" -ge 1 ] || tc_usage_err "usage: trakcrate pdb dump FILE"
+        exec "$TRAKCRATE_HELPER" pdb "${args[@]}"
+        ;;
+    diff)
+        declare -a files=() opts=()
+        for a in "$@"; do
+            case $a in
+                -q|--quiet|-v|--verbose) ;;
+                --*) opts+=("$a") ;;
+                *) files+=("$a") ;;
+            esac
+        done
+        [ "${#files[@]}" -eq 2 ] || tc_usage_err "usage: trakcrate pdb diff A B"
+        a=$(mktemp); b=$(mktemp)
+        trap 'rm -f -- "$a" "$b"' EXIT
+        "$TRAKCRATE_HELPER" pdb "${files[0]}" "${opts[@]}" > "$a" || exit 1
+        "$TRAKCRATE_HELPER" pdb "${files[1]}" "${opts[@]}" > "$b" || exit 1
+        # the file size and name lines differ by nature; the rest is what counts
+        if diff -u --label "${files[0]}" --label "${files[1]}" "$a" "$b"; then exit 0; fi
+        exit 1
+        ;;
+    *) tc_usage_err "unknown subcommand '$sub' (dump, diff)" ;;
+esac
