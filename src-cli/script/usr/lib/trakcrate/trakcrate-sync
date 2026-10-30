@@ -17,7 +17,7 @@ an old one is removed, trakcrate-manifest.txt is updated. "trakcrate verify TARG
   --delete-orphans   remove from Contents/ and PIONEER/ what the playlists no longer need; the list is shown and confirmed (--yes skips)
   -n, --dry-run      show what would be copied and removed (rsync itemized), change nothing
   --tmpdir DIR       where the work folder goes (default $TMPDIR or /tmp)
-  --exclude-art, --allow-unanalysed, --settings-from DIR, --template FILE, --no-cuemarks, --cuemark-width N, --cuemark-green,
+  --exclude-art, --raise-limits, --allow-unanalysed, --settings-from DIR, --template FILE, --no-cuemarks, --cuemark-width N, --cuemark-green,
   --cuemark-hot, --progress-fd N                                                     as for "trakcrate export"
 
 Output (--format tsv, json, jsonl): dest, playlists, tracks, files (copied), bytes (copied), removed, status.
@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
             hflags+=("$name" "$tc_value")
             shift "$tc_shift"
             ;;
-        --allow-unanalysed|--no-cuemarks|--cuemark-green|--cuemark-hot) hflags+=("$1"); shift ;;
+        --raise-limits|--allow-unanalysed|--no-cuemarks|--cuemark-green|--cuemark-hot) hflags+=("$1"); shift ;;
         --exclude-art|--no-artwork) hflags+=(--no-artwork); shift ;;
         --progress-fd|--progress-fd=*)
             tc_opt_value --progress-fd "$@"

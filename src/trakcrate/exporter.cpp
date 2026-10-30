@@ -68,6 +68,39 @@ std::string rekordboxFolderName(const std::string& name, const char* fallback)
     return fatSafeName(s);                                       // reserved device names, leading spaces
 }
 
+DeckLimits deckLimits(bool raised)
+{
+    DeckLimits l;
+    if (raised) { l.tracks = 20000; l.artists = 16000; l.albums = 16000; }
+    else { l.tracks = 10000; l.artists = 10000; l.albums = 10000; }
+    return l;
+}
+
+std::vector<std::string> checkDeckLimits(int tracks, int artists, int albums, bool raised, bool* overDefault, bool* overRaised)
+{
+    const DeckLimits low = deckLimits(false), high = deckLimits(true);
+    const DeckLimits use = raised ? high : low;
+    if (overDefault) *overDefault = tracks > low.tracks || artists > low.artists || albums > low.albums;
+    if (overRaised) *overRaised = tracks > high.tracks || artists > high.artists || albums > high.albums;
+    std::vector<std::string> out;
+    auto one = [&](const char* what, int have, int limit) {
+        if (have > limit)
+            out.push_back("too many " + std::string(what) + " for a pendrive: " + std::to_string(have) + ", the limit is " + std::to_string(limit) +
+                          (raised ? " (newer decks)" : " (older decks)"));
+    };
+    one("tracks", tracks, use.tracks);
+    one("artists", artists, use.artists);
+    one("albums", albums, use.albums);
+    if (!out.empty()) {
+        const bool onlyDefault = !raised && !(tracks > high.tracks || artists > high.artists || albums > high.albums);
+        out.push_back("Decks run out of memory above these numbers, so the pendrive is not written (trakcrate's own library has no limit). Older decks hold " +
+                      std::to_string(low.tracks) + " tracks, " + std::to_string(low.artists) + " artists and " + std::to_string(low.albums) + " albums; newer decks " +
+                      std::to_string(high.tracks) + ", " + std::to_string(high.artists) + " and " + std::to_string(high.albums) + ". Remove tracks from this pendrive's lists in trakcrate" +
+                      (onlyDefault ? ", or, if your decks are newer, apply the modern deck limits (not tested on every deck)." : "."));
+    }
+    return out;
+}
+
 namespace {
 
 std::string lower(std::string s)
@@ -93,6 +126,8 @@ struct Gathered {
     std::vector<GTrack> tracks;
     ExportPlan plan;
     std::vector<std::string> problems;
+    int artists = 0, albums = 0;                               // distinct, counted the way buildPdb numbers them
+    bool overDefault = false, overRaised = false;
 };
 
 std::string today()
@@ -203,6 +238,18 @@ Gathered gather(const Library& lib, const ExportOptions& o)
             t.plan.artworkPath = artworkPath(it->second);
         }
         g.plan.tracks.push_back(t.plan);
+    }
+    {   // the limits of the decks: tracks, artists and albums as the database will count them (an album is an artist and a name)
+        std::set<std::string> artists;
+        std::set<std::pair<std::string, std::string>> albums;
+        for (const PlanTrack& t : g.plan.tracks) {
+            if (!t.artist.empty()) artists.insert(t.artist);
+            if (!t.album.empty()) albums.insert({t.artist, t.album});
+        }
+        g.artists = int(artists.size());
+        g.albums = int(albums.size());
+        const std::vector<std::string> over = checkDeckLimits(int(g.tracks.size()), g.artists, g.albums, o.raiseLimits, &g.overDefault, &g.overRaised);
+        g.problems.insert(g.problems.begin(), over.begin(), over.end());
     }
     // optional files from another drive must exist
     auto need = [&](bool wanted, const char* rel) {
@@ -412,6 +459,10 @@ ExportSummary summariseExport(const Library& lib, const ExportOptions& optsIn)
     for (const GTrack& t : g.tracks) s.audioBytes += t.audioBytes;
     s.metadataBytes = estimateMetadata(g);
     s.problems = g.problems;
+    s.artists = g.artists;
+    s.albums = g.albums;
+    s.overDefaultLimits = g.overDefault;
+    s.overRaisedLimits = g.overRaised;
     return s;
 }
 

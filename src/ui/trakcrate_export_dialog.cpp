@@ -23,6 +23,7 @@
 
 #include "trakcrate/settings_sets.h"
 #include "trakcrate/usb_speed.h"
+#include <QSignalBlocker>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -94,6 +95,9 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
         resize(width(), on ? sizeHint().height() : minimumSizeHint().height());
     });
 
+    raiseLimits_ = new QCheckBox(QStringLiteral("Apply modern deck limits (up to 20000 tracks, 16000 artists and albums; newer decks only, YMMV)"));
+    raiseLimits_->setToolTip(QStringLiteral("Older decks run out of memory above 10000 tracks, artists or albums. Tick this only if all your decks are newer models."));
+    raiseLimits_->hide();
     update_ = new QCheckBox(QStringLiteral("Update the drive (only changed files are written; the old export.pdb is kept as export.pdb.bak, up to 3 backups)"));
     update_->hide();
     register_ = new QCheckBox(QStringLiteral("Register the folder as an HD pendrive copy afterwards (to serve it to the decks)"));
@@ -140,6 +144,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     auto* layout = new QVBoxLayout(this);
     layout->addLayout(form, 1);
     layout->addWidget(summary_);
+    layout->addWidget(raiseLimits_);
     layout->addWidget(update_);
     layout->addWidget(register_);
     {
@@ -184,6 +189,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     connect(dest_, &QLineEdit::textChanged, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(playlists_, &QListWidget::itemChanged, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(update_, &QCheckBox::toggled, refreshTimer_, QOverload<>::of(&QTimer::start));
+    connect(raiseLimits_, &QCheckBox::toggled, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(unanalysed_, &QCheckBox::toggled, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -211,6 +217,10 @@ void TrakcrateExportDialog::setPendrive(const QString& drive, bool physical)
     }
     refreshSummary();
 }
+
+bool TrakcrateExportDialog::raiseLimits() const { return raiseLimits_->isChecked(); }
+void TrakcrateExportDialog::setRaiseLimits(bool on) { raiseLimits_->setChecked(on); }
+bool TrakcrateExportDialog::raiseLimitsVisible() const { return !raiseLimits_->isHidden(); }
 
 QString TrakcrateExportDialog::settingsSet() const { return settingsSet_->currentData().toString(); }
 bool TrakcrateExportDialog::replaceSettings() const { return replace_->isChecked(); }
@@ -272,6 +282,7 @@ trakcrate::ExportOptions TrakcrateExportDialog::options() const
     }
     o.dest = dest_->text().trimmed().toStdString();
     o.allowUnanalysed = unanalysed_->isChecked();
+    o.raiseLimits = raiseLimits_->isChecked();
     if (settingsSet() == builtInSettingsKey()) o.settingsBuiltIn = true;
     else o.settingsSet = settingsSet().toStdString();
     o.settingsPolicy = replace_->isChecked() ? trakcrate::ExportOptions::SettingsPolicy::Replace : trakcrate::ExportOptions::SettingsPolicy::AddMissing;
@@ -310,10 +321,13 @@ void TrakcrateExportDialog::refreshSummary()
     QString html;
     const bool haveLists = !o.playlists.empty() || !o.lists.empty();
     bool good = haveLists && !o.dest.empty();
+    if (!haveLists) raiseLimits_->setVisible(false);
     if (!haveLists) html += QStringLiteral("Tick the playlists to put on the drive.<br>");
     if (haveLists) {
         const trakcrate::ExportSummary s = trakcrate::summariseExport(lib_, o);
         html += QStringLiteral("%1 track(s), %2 of audio.<br>").arg(s.tracks).arg(QLocale().formattedDataSize(qint64(s.audioBytes)));
+        raiseLimits_->setVisible(s.overDefaultLimits);                    // the offer appears only when the lower limits are hit
+        if (!s.overDefaultLimits && raiseLimits_->isChecked()) { QSignalBlocker b(raiseLimits_); raiseLimits_->setChecked(false); }
         for (const std::string& p : s.problems) { good = false; html += QStringLiteral("<span style='color:#c00'>%1</span><br>").arg(QString::fromStdString(p).toHtmlEscaped()); }
         if (!o.dest.empty()) {
             QString path = QString::fromStdString(o.dest.string());

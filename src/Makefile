@@ -2789,6 +2789,54 @@ trakcrate/settings_files.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_files.cpp.s
 .PHONY : trakcrate/settings_files.cpp.s
 
+trakcrate/settings_sets.o: trakcrate/settings_sets.cpp.o
+.PHONY : trakcrate/settings_sets.o
+
+# target to build an object file
+trakcrate/settings_sets.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_sets.cpp.o
+.PHONY : trakcrate/settings_sets.cpp.o
+
+trakcrate/settings_sets.i: trakcrate/settings_sets.cpp.i
+.PHONY : trakcrate/settings_sets.i
+
+# target to preprocess a source file
+trakcrate/settings_sets.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_sets.cpp.i
+.PHONY : trakcrate/settings_sets.cpp.i
+
+trakcrate/settings_sets.s: trakcrate/settings_sets.cpp.s
+.PHONY : trakcrate/settings_sets.s
+
+# target to generate assembly for a file
+trakcrate/settings_sets.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_sets.cpp.s
+.PHONY : trakcrate/settings_sets.cpp.s
+
+trakcrate/settings_view.o: trakcrate/settings_view.cpp.o
+.PHONY : trakcrate/settings_view.o
+
+# target to build an object file
+trakcrate/settings_view.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_view.cpp.o
+.PHONY : trakcrate/settings_view.cpp.o
+
+trakcrate/settings_view.i: trakcrate/settings_view.cpp.i
+.PHONY : trakcrate/settings_view.i
+
+# target to preprocess a source file
+trakcrate/settings_view.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_view.cpp.i
+.PHONY : trakcrate/settings_view.cpp.i
+
+trakcrate/settings_view.s: trakcrate/settings_view.cpp.s
+.PHONY : trakcrate/settings_view.s
+
+# target to generate assembly for a file
+trakcrate/settings_view.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/settings_view.cpp.s
+.PHONY : trakcrate/settings_view.cpp.s
+
 trakcrate/sha256.o: trakcrate/sha256.cpp.o
 .PHONY : trakcrate/sha256.o
 
@@ -4133,6 +4181,54 @@ ui/trakcrate_scripts.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_scripts.cpp.s
 .PHONY : ui/trakcrate_scripts.cpp.s
 
+ui/trakcrate_settings_dialogs.o: ui/trakcrate_settings_dialogs.cpp.o
+.PHONY : ui/trakcrate_settings_dialogs.o
+
+# target to build an object file
+ui/trakcrate_settings_dialogs.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_settings_dialogs.cpp.o
+.PHONY : ui/trakcrate_settings_dialogs.cpp.o
+
+ui/trakcrate_settings_dialogs.i: ui/trakcrate_settings_dialogs.cpp.i
+.PHONY : ui/trakcrate_settings_dialogs.i
+
+# target to preprocess a source file
+ui/trakcrate_settings_dialogs.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_settings_dialogs.cpp.i
+.PHONY : ui/trakcrate_settings_dialogs.cpp.i
+
+ui/trakcrate_settings_dialogs.s: ui/trakcrate_settings_dialogs.cpp.s
+.PHONY : ui/trakcrate_settings_dialogs.s
+
+# target to generate assembly for a file
+ui/trakcrate_settings_dialogs.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_settings_dialogs.cpp.s
+.PHONY : ui/trakcrate_settings_dialogs.cpp.s
+
+ui/trakcrate_settings_viewer.o: ui/trakcrate_settings_viewer.cpp.o
+.PHONY : ui/trakcrate_settings_viewer.o
+
+# target to build an object file
+ui/trakcrate_settings_viewer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_settings_viewer.cpp.o
+.PHONY : ui/trakcrate_settings_viewer.cpp.o
+
+ui/trakcrate_settings_viewer.i: ui/trakcrate_settings_viewer.cpp.i
+.PHONY : ui/trakcrate_settings_viewer.i
+
+# target to preprocess a source file
+ui/trakcrate_settings_viewer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_settings_viewer.cpp.i
+.PHONY : ui/trakcrate_settings_viewer.cpp.i
+
+ui/trakcrate_settings_viewer.s: ui/trakcrate_settings_viewer.cpp.s
+.PHONY : ui/trakcrate_settings_viewer.s
+
+# target to generate assembly for a file
+ui/trakcrate_settings_viewer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_settings_viewer.cpp.s
+.PHONY : ui/trakcrate_settings_viewer.cpp.s
+
 ui/trakcrate_track_editor.o: ui/trakcrate_track_editor.cpp.o
 .PHONY : ui/trakcrate_track_editor.o
 
@@ -4180,6 +4276,30 @@ ui/trakcrate_track_model.s: ui/trakcrate_track_model.cpp.s
 ui/trakcrate_track_model.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_track_model.cpp.s
 .PHONY : ui/trakcrate_track_model.cpp.s
+
+ui/trakcrate_window.o: ui/trakcrate_window.cpp.o
+.PHONY : ui/trakcrate_window.o
+
+# target to build an object file
+ui/trakcrate_window.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_window.cpp.o
+.PHONY : ui/trakcrate_window.cpp.o
+
+ui/trakcrate_window.i: ui/trakcrate_window.cpp.i
+.PHONY : ui/trakcrate_window.i
+
+# target to preprocess a source file
+ui/trakcrate_window.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_window.cpp.i
+.PHONY : ui/trakcrate_window.cpp.i
+
+ui/trakcrate_window.s: ui/trakcrate_window.cpp.s
+.PHONY : ui/trakcrate_window.s
+
+# target to generate assembly for a file
+ui/trakcrate_window.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_window.cpp.s
+.PHONY : ui/trakcrate_window.cpp.s
 
 ui/usb_config_dialog.o: ui/usb_config_dialog.cpp.o
 .PHONY : ui/usb_config_dialog.o
@@ -4865,6 +4985,12 @@ help:
 	@echo "... trakcrate/settings_files.o"
 	@echo "... trakcrate/settings_files.i"
 	@echo "... trakcrate/settings_files.s"
+	@echo "... trakcrate/settings_sets.o"
+	@echo "... trakcrate/settings_sets.i"
+	@echo "... trakcrate/settings_sets.s"
+	@echo "... trakcrate/settings_view.o"
+	@echo "... trakcrate/settings_view.i"
+	@echo "... trakcrate/settings_view.s"
 	@echo "... trakcrate/sha256.o"
 	@echo "... trakcrate/sha256.i"
 	@echo "... trakcrate/sha256.s"
@@ -5033,12 +5159,21 @@ help:
 	@echo "... ui/trakcrate_scripts.o"
 	@echo "... ui/trakcrate_scripts.i"
 	@echo "... ui/trakcrate_scripts.s"
+	@echo "... ui/trakcrate_settings_dialogs.o"
+	@echo "... ui/trakcrate_settings_dialogs.i"
+	@echo "... ui/trakcrate_settings_dialogs.s"
+	@echo "... ui/trakcrate_settings_viewer.o"
+	@echo "... ui/trakcrate_settings_viewer.i"
+	@echo "... ui/trakcrate_settings_viewer.s"
 	@echo "... ui/trakcrate_track_editor.o"
 	@echo "... ui/trakcrate_track_editor.i"
 	@echo "... ui/trakcrate_track_editor.s"
 	@echo "... ui/trakcrate_track_model.o"
 	@echo "... ui/trakcrate_track_model.i"
 	@echo "... ui/trakcrate_track_model.s"
+	@echo "... ui/trakcrate_window.o"
+	@echo "... ui/trakcrate_window.i"
+	@echo "... ui/trakcrate_window.s"
 	@echo "... ui/usb_config_dialog.o"
 	@echo "... ui/usb_config_dialog.i"
 	@echo "... ui/usb_config_dialog.s"

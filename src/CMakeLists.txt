@@ -137,6 +137,7 @@ add_library(vdj-cdj STATIC
     ui/midi_monitor_dialog.cpp
     ui/controller_dialog.cpp
     ui/main_window.cpp
+    ui/trakcrate_window.cpp
     network/beat_tempo.cpp
     network/network_manager.cpp
     network/link_export.cpp

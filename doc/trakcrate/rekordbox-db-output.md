@@ -85,6 +85,31 @@ The player-side concern is the one in the prompt: rekordbox does many small writ
 4. Only then test physical pendrives, with the single-write copy.
 5. Determine which of `exportExt.pdb`, `RBFLTR.DAT`, `USBMNG.DAT`, `*SETTING.DAT`, `djprofile.nxs` are required by bisecting on a deck.
 
+## Deck limits (implemented)
+
+A deck loads the whole `export.pdb` into memory, so a pendrive with too many rows makes it run out of memory and misbehave. The limits come from the DJ community's experience with the players, not from a measurement of ours; **which deck model supports which limit is not known**, so the lower ones are the default.
+
+| Rows of the database | Older decks (default) | Newer decks (`--raise-limits`, "Apply modern deck limits") |
+|----------------------|-----------------------|------------------------------------------------------------|
+| Tracks               | 10000                 | 20000                                                      |
+| Artists              | 10000                 | 16000                                                      |
+| Albums               | 10000                 | 16000                                                      |
+
+What is counted is what the database will contain, as `buildPdb` numbers it:
+
+- **Tracks:** distinct tracks over all the playlists of the export (a track on two playlists is one row).
+- **Artists:** distinct non empty artist names (exact text). A track without an artist adds none.
+- **Albums:** distinct (artist, album name) pairs with a non empty album name, so the same album name under two artists is two rows. A track without an album adds none.
+
+Rules:
+
+- The limits apply to **pendrive exports only**. The trakcrate library has no limits, however many tracks it holds.
+- An export above the limit in force is **refused before anything is staged or written**, with the numbers and the way out: shorten the pendrive's lists in trakcrate (remove tracks, entries or whole playlists) and export again. At exactly the limit the export is allowed.
+- The refusal comes first in the list of problems, so it is not hidden when many tracks have other problems.
+- Above the *lower* limits but within the higher ones, the message adds that the modern limits could be applied. GUI: the export dialog shows the checkbox **Apply modern deck limits (...YMMV)** only when the lower limits are exceeded; ticking it raises the limits for that export. CLI: `trakcrate export --raise-limits` (also accepted by `trakcrate sync`). Above the higher limits nothing helps and the message does not offer it.
+- Summary (`summariseExport`, used by the dialog) reports the counts and whether the lower and higher limits are exceeded; an update of an existing drive is checked the same way, against the whole database it would write.
+- Code: `deckLimits`/`checkDeckLimits` in `src/trakcrate/exporter.cpp`, `lib/rblimits.c` in `src-cli/c/` (the same numbers and counting rule; both are tested).
+
 ## Risks and open questions
 
 - Bad PDBs on a deck can show an unreadable-drive message; decks may also cache per-drive state. Keep the working pendrive and the known-good export as a baseline.

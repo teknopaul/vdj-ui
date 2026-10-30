@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=trakcrate
+GenericName=DJ Music Library
+Comment=Organise tracks and make rekordbox pendrives for Pioneer decks
+Exec=vdj-ui --trakcrate
+Icon=trakcrate-ui
+Type=Application
+Categories=AudioVideo;Audio;
+Keywords=dj;pendrive;rekordbox;pioneer;playlist;
+StartupNotify=true
+StartupWMClass=trakcrate-ui

@@ -10,6 +10,9 @@
 
 #include "ui/trakcrate_job.h"
 #include "ui/trakcrate_panel.h"
+#include "ui/trakcrate_window.h"
+#include <QMenuBar>
+#include <QSplitter>
 #include "ui/trakcrate_settings_viewer.h"
 #include "ui/trakcrate_export_dialog.h"
 #include "ui/trakcrate_preview_player.h"
@@ -86,6 +89,7 @@ private slots:
     void panelPendrives();
     void panelSettingsSets();
     void settingsViewer();
+    void trakcrateOnlyWindow();
     void pendriveSettingsLinkAndExportDialog();
     void panelPreviewPlayer();
     void panelReordersPlaylists();
@@ -752,6 +756,29 @@ void TestTrakcratePanel::panelSettingsSets()
     QCOMPARE(group()->childCount(), 3);
 }
 
+void TestTrakcratePanel::trakcrateOnlyWindow()
+{
+    TrakcrateWindow w;
+    QCOMPARE(w.windowTitle(), QString::fromUtf8("\xF0\x9F\x93\xA6 trakcrate"));
+    // only File and Config, with only what the trakcrate view offers
+    QStringList menus, file, config;
+    for (QAction* a : w.menuBar()->actions()) menus << a->text();
+    QCOMPARE(menus, (QStringList{QStringLiteral("&File"), QStringLiteral("&Config")}));
+    for (QAction* a : w.menuBar()->actions()) {
+        QStringList& into = a->text() == QLatin1String("&File") ? file : config;
+        for (QAction* x : a->menu()->actions()) if (!x->isSeparator()) into << x->text();
+    }
+    QCOMPARE(file, (QStringList{QStringLiteral("&Clone Pendrive..."), QStringLiteral("&Quit")}));
+    QCOMPARE(config, (QStringList{QStringLiteral("&Quantize"), QStringLiteral("&Quit")}));
+    QVERIFY(w.panel());
+    QCOMPARE(w.centralWidget(), static_cast<QWidget*>(w.panel()));
+    // the tree starts at twice the width of the dock in vdj-ui (170)
+    w.show();
+    QSplitter* sp = w.panel()->findChild<QSplitter*>();
+    QVERIFY(sp);
+    QTRY_VERIFY(sp->sizes().first() >= 300);
+}
+
 void TestTrakcratePanel::settingsViewer()
 {
     TrakcratePanel p;
@@ -802,6 +829,11 @@ void TestTrakcratePanel::pendriveSettingsLinkAndExportDialog()
     dlg.setPendrive(QStringLiteral("Fri"), false);
     dlg.setDestination(QString::fromStdString((tmp_ / "out").string()));
     QCOMPARE(dlg.settingsSet(), QStringLiteral("Club"));                                // preselected from the link
+    QVERIFY(!dlg.raiseLimitsVisible());                                                 // the modern limits are only offered above the lower ones
+    QVERIFY(!dlg.options().raiseLimits);
+    dlg.setRaiseLimits(true);
+    QVERIFY(dlg.options().raiseLimits);
+    dlg.setRaiseLimits(false);
     tc::ExportOptions o = dlg.options();
     QCOMPARE(o.settingsSet, std::string("Club"));
     QVERIFY(!o.settingsBuiltIn);

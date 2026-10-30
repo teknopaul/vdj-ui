@@ -9,6 +9,7 @@
  *   --settings-from DIR  DEVSETTING.DAT and MYSETTING.DAT of a real drive (DIR/PIONEER/... or DIR/...) instead of the built in ones
  *   --no-verify          do not read the destination back
  *   --no-artwork  --no-settings  --no-pvbr  --no-pwv4  --no-pwv5  --no-manifest   leave a piece out (compatibility testing)
+ *   --raise-limits       apply the limits of newer decks (20000 tracks, 16000 artists and albums) instead of 10000 of each
  *   --allow-unanalysed   tracks without waveform get a flat one and no beat grid instead of refusing the export
  *   --no-cuemarks  --cuemark-width N  --cuemark-green  --cuemark-hot    how cuemarks are drawn into the exported waveforms
  *   --link-audio         audio files are symbolic links to the master copy, no SHA256SUMS, no read back (the input of `trakcrate sync`)
@@ -207,6 +208,8 @@ int cmd_export(int argc, char **argv)
             o.include_pwv5 = 0;
         } else if (strcmp(s, "--no-manifest") == 0) {
             o.write_manifest = 0;
+        } else if (strcmp(s, "--raise-limits") == 0) {
+            o.raise_limits = 1;
         } else if (strcmp(s, "--allow-unanalysed") == 0) {
             o.allow_unanalysed = 1;
         } else if (strcmp(s, "--no-cuemarks") == 0) {

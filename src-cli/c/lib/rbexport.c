@@ -26,6 +26,7 @@
 #include "kv.h"
 #include "rbanlz.h"
 #include "rbdb.h"
+#include "rblimits.h"
 #include "rbpdb.h"
 #include "rbsettings.h"
 #include "sha256.h"
@@ -569,6 +570,55 @@ static int gather(const struct tc_export_list *lists, size_t nlists, const struc
         g->lists[g->nlists].ntracks = cnt;
         g->list_tracks[g->nlists] = idx;
         g->nlists++;
+    }
+    /* the limits of the decks, reported first so that they are never cut off the list of problems */
+    {
+        const char **ar = calloc(g->ntracks ? g->ntracks : 1, sizeof *ar), **al = calloc(g->ntracks ? g->ntracks : 1, sizeof *al);
+        size_t na = 0, nb = 0;
+        char msg[2048], *line, *nl;
+        int count;
+
+        if (ar == NULL || al == NULL) {
+            free(ar);
+            free(al);
+            return -1;
+        }
+        for (i = 0; i < g->ntracks; i++) {
+            ar[i] = g->tracks[i].artist;
+            al[i] = g->tracks[i].album;
+        }
+        if (tc_count_artists_albums(ar, al, g->ntracks, &na, &nb) != 0) {
+            free(ar);
+            free(al);
+            return -1;
+        }
+        free(ar);
+        free(al);
+        count = tc_check_deck_limits(g->ntracks, na, nb, o->raise_limits, msg, sizeof msg, NULL, NULL);
+        if (count > 0) {
+            size_t k;
+            char *keep[4];
+            size_t nkeep = 0;
+
+            for (line = msg; line != NULL && nkeep < 4; line = nl != NULL ? nl + 1 : NULL) {
+                nl = strchr(line, '\n');
+                if (nl != NULL) {
+                    *nl = '\0';
+                }
+                keep[nkeep++] = line;
+            }
+            for (k = nkeep; k-- > 0;) {                      /* each goes to the front, so the list ends up in order */
+                if (sl_add(&g->problems, keep[k]) != 0) {
+                    return -1;
+                }
+                {
+                    char *last = g->problems.v[g->problems.n - 1];
+
+                    memmove(g->problems.v + 1, g->problems.v, (g->problems.n - 1) * sizeof *g->problems.v);
+                    g->problems.v[0] = last;
+                }
+            }
+        }
     }
     /* artwork ids in the order the database builder gives them: first seen */
     {

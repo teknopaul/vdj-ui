@@ -8,6 +8,9 @@ case "$1" in
         if [ -n "$BIN" ] && [ -x "$BIN" ] && command -v setcap >/dev/null 2>&1; then
             setcap cap_net_bind_service=+ep "$BIN" || echo "vdj-ui: setcap failed, port 111 needs root (see doc/privileged-port-111.md)" >&2
         fi
+        # the launcher and the dock find the icons of vdj-ui and trakcrate-ui (data/trakcrate-ui.desktop) through these caches
+        command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
+        command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q /usr/share/applications 2>/dev/null || true
         ;;
 esac
 exit 0

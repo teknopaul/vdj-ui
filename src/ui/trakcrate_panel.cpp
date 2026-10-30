@@ -571,6 +571,14 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
     else onTreeSelection();
 }
 
+void TrakcratePanel::setSidebarWidth(int pixels)
+{
+    auto* splitter = findChild<QSplitter*>();
+    if (!splitter || splitter->count() < 3) return;
+    const int total = std::max(splitter->width(), pixels + 400);
+    splitter->setSizes({pixels, std::max(300, (total - pixels) * 3 / 4), std::max(150, (total - pixels) / 4)});
+}
+
 void TrakcratePanel::liveRefresh()
 {
     if (!lib_.isOpen()) return;
@@ -1186,7 +1194,7 @@ void TrakcratePanel::tableContextMenu(const QPoint& pos)
     QAction* detect = menu.addAction(trakcrate::bpmDetectAvailable() ? QStringLiteral("Detect BPM...")
                                                                        : QStringLiteral("Detect BPM... (needs libaubio-dev)"));
     detect->setEnabled(dirs.size() == 1 && !jobs_->busy() && trakcrate::bpmDetectAvailable());
-    QAction* load = menu.addAction(QStringLiteral("Load into player"));
+    QAction* load = menu.addAction(loadText_);
     load->setEnabled(dirs.size() == 1);
     QAction* playHere = menu.addAction(QStringLiteral("Play the list from here"));
     playHere->setEnabled(under.isValid() && currentListKey() != QString() && currentListKey() != QLatin1String("folder"));

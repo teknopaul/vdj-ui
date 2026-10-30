@@ -54,7 +54,11 @@ TrakcrateSettingsViewer::TrakcrateSettingsViewer(const trakcrate::Library& lib, 
     top->addWidget(table_, 3);
     hex_ = new QPlainTextEdit;
     hex_->setReadOnly(true);
-    hex_->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);       // only the hex dump is fixed width
+    mono.setStyleHint(QFont::Monospace);
+    mono.setFixedPitch(true);
+    hex_->setFont(mono);
+    hex_->setStyleSheet(QStringLiteral("QPlainTextEdit { font-family: 'DejaVu Sans Mono', 'Liberation Mono', monospace; }"));      // the app stylesheet sets a proportional family on every QWidget, which beats setFont
     hex_->setLineWrapMode(QPlainTextEdit::NoWrap);
     top->addWidget(hex_, 2);
     status_ = new QLabel;
@@ -160,7 +164,6 @@ void TrakcrateSettingsViewer::reload()
     table_->setHorizontalHeaderLabels(heads);
     table_->setRowCount(int(rows.size()));
     const QBrush diff(QColor(255, 200, 80, 90)), unknown(QColor(128, 128, 128, 40));
-    const QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     for (size_t i = 0; i < rows.size(); ++i) {
         const trakcrate::SettingsRow& r = rows[i];
         int col = 0;
@@ -175,9 +178,7 @@ void TrakcrateSettingsViewer::reload()
         }
         items << cell(QString::fromStdString(r.note));
         if (differs) ++differing_;
-        for (int c = 0; c < items.size(); ++c) {
-            QTableWidgetItem* it = items[c];
-            if (c >= 1 && c < (cmp ? 3 : 2)) it->setFont(mono);                  // the values (hex, bytes, names) line up in a fixed width font
+        for (auto* it : items) {
             if (differs) it->setBackground(diff);
             else if (!r.known) it->setBackground(unknown);
         }

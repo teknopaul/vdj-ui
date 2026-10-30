@@ -18,6 +18,8 @@ trakcrate-manifest.txt are written in the root of the drive. Every track must be
   --no-verify           do not read DEST back
   --exclude-art         no artwork on the drive
   --settings-from DIR   take DEVSETTING.DAT and MYSETTING.DAT from a real drive (DIR/PIONEER/ or DIR) instead of the built in ones
+  --raise-limits        apply the limits of newer decks (20000 tracks, 16000 artists, 16000 albums) instead of 10000 of each; above them the
+                        export is refused and the playlists must be shortened
   --allow-unanalysed    tracks without analysis get a flat waveform and no beat grid instead of refusing the export
   --no-cuemarks         do not draw cuemarks as spikes into the exported waveforms; --cuemark-width N, --cuemark-green, --cuemark-hot
   --template FILE       another template export.pdb (default $TRAKCRATE_DATA/template-export.pdb)
@@ -43,7 +45,7 @@ while [ $# -gt 0 ]; do
             hflags+=("$name" "$tc_value")
             shift "$tc_shift"
             ;;
-        --no-verify|--allow-unanalysed|--no-cuemarks|--cuemark-green|--cuemark-hot|--no-settings|--no-pvbr|--no-pwv4|--no-pwv5|--no-manifest)
+        --no-verify|--raise-limits|--allow-unanalysed|--no-cuemarks|--cuemark-green|--cuemark-hot|--no-settings|--no-pvbr|--no-pwv4|--no-pwv5|--no-manifest)
             hflags+=("$1"); shift ;;
         --exclude-art|--no-artwork) hflags+=(--no-artwork); shift ;;
         --progress-fd|--progress-fd=*)

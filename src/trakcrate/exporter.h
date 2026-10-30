@@ -50,6 +50,7 @@ struct ExportOptions {
     // Replace overwrites them with these. A fresh destination gets all five either way. USBMNG.DAT is always only added when missing.
     enum class SettingsPolicy { AddMissing, Replace };
     SettingsPolicy settingsPolicy = SettingsPolicy::AddMissing;
+    bool raiseLimits = false;                // apply the track/artist/album limits of newer decks instead of the lower ones of older decks
     bool includeArtwork = true;
     bool includePvbr = true, includePwv4 = true, includePwv5 = true;
     CuemarkRenderOptions cuemarks;           // the spikes drawn into the exported waveforms (never into the master)
@@ -87,8 +88,21 @@ struct ExportResult {
     std::string backup;                      // update: the backup made of the old export.pdb (relative to the destination), empty if none
 };
 
+// How many tracks, artists and albums a deck can hold in a pendrive's database before it runs out of memory (doc/trakcrate/rekordbox-db-output.md).
+// Only pendrive exports are limited, never the trakcrate library. The lower limits are the default; the higher ones are for newer decks.
+struct DeckLimits {
+    int tracks = 0, artists = 0, albums = 0;
+};
+DeckLimits deckLimits(bool raised);
+// Why a pendrive with this many tracks, artists and albums is refused (empty = fine). overDefault / overRaised say whether it is above the lower /
+// the higher limits. The text names the numbers and tells the user to fix the lists in trakcrate, or to raise the limits when only the lower ones are hit.
+std::vector<std::string> checkDeckLimits(int tracks, int artists, int albums, bool raised, bool* overDefault = nullptr, bool* overRaised = nullptr);
+
 struct ExportSummary {
     int tracks = 0;
+    int artists = 0, albums = 0;             // distinct, as the database will hold them
+    bool overDefaultLimits = false;          // above the limits of older decks (refused unless raiseLimits)
+    bool overRaisedLimits = false;           // above the limits of newer decks too (always refused)
     uint64_t audioBytes = 0, metadataBytes = 0;   // metadata is an estimate
     std::vector<std::string> problems;       // would refuse the export: missing audio, tracks not analysed ...
 };

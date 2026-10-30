@@ -161,6 +161,8 @@ private slots:
     void notEnoughSpaceIsRefusedUpFront();
     void updateKeepsBackupsAndSkipsUnchanged();
     void updateCancelKeepsOldDatabase();
+    void deckLimitArithmetic();
+    void tooManyTracksAreRefused();
     void freshExportHasFiveFilesFromTheDefaultSet();
     void chosenSetLandsOnTheDrive();
     void unknownOrDamagedSetIsRefused();
@@ -630,6 +632,65 @@ void TestTrakcrateExport::updateCancelKeepsOldDatabase()
 
 static const char* const kFive[] = {"PIONEER/DEVSETTING.DAT", "PIONEER/MYSETTING.DAT", "PIONEER/djprofile.nxs", "PIONEER/rekordbox/RBFLTR.DAT",
                                     "PIONEER/rekordbox/exportExt.pdb"};
+
+void TestTrakcrateExport::deckLimitArithmetic()
+{
+    QCOMPARE(deckLimits(false).tracks, 10000);
+    QCOMPARE(deckLimits(false).artists, 10000);
+    QCOMPARE(deckLimits(false).albums, 10000);
+    QCOMPARE(deckLimits(true).tracks, 20000);
+    QCOMPARE(deckLimits(true).artists, 16000);
+    QCOMPARE(deckLimits(true).albums, 16000);
+    bool low = false, high = false;
+    QVERIFY(checkDeckLimits(10000, 10000, 10000, false, &low, &high).empty());             // at the limit is fine
+    QVERIFY(!low && !high);
+    auto p = checkDeckLimits(10001, 5, 5, false, &low, &high);
+    QVERIFY(low && !high);
+    QVERIFY(p.size() >= 2);                                                                // the count, and what to do about it
+    QVERIFY(p.front().find("tracks") != std::string::npos && p.front().find("10000") != std::string::npos);
+    QVERIFY(p.back().find("modern deck limits") != std::string::npos);                     // offered, since the raised limits would do
+    QVERIFY(checkDeckLimits(10001, 5, 5, true).empty());
+    p = checkDeckLimits(1, 16001, 16001, true, &low, &high);
+    QVERIFY(low && high);
+    QCOMPARE(p.size(), size_t(3));                                                         // artists, albums and the advice
+    QVERIFY(p.back().find("modern deck limits") == std::string::npos);                     // nothing to raise any more
+    QVERIFY(!checkDeckLimits(20001, 0, 0, true).empty());
+}
+
+void TestTrakcrateExport::tooManyTracksAreRefused()
+{
+    // 10001 tiny tracks with their own artist: no audio is decoded, the limit check comes before anything is written
+    const int n = 10001;
+    std::vector<fs::path> dirs;
+    for (int i = 0; i < n; ++i) {
+        const fs::path d = lib_.masterDir() / "Big" / ("t" + std::to_string(i));
+        fs::create_directories(d);
+        { std::ofstream(d / "track.wav") << "RIFF"; }
+        { std::ofstream(d / "meta.txt") << "title: T" << i << "\nartist: A" << i << "\nalbum: B\n"; }
+        dirs.push_back(d);
+    }
+    QVERIFY(lib_.createPlaylist("Huge"));
+    QVERIFY(lib_.addTracksToPlaylist("Huge", dirs));
+    ExportOptions o = options("Huge", "usb");
+    o.allowUnanalysed = true;
+    ExportSummary s = summariseExport(lib_, o);
+    QCOMPARE(s.tracks, n);
+    QCOMPARE(s.artists, n);
+    QCOMPARE(s.albums, n);                                                                  // album "B" of 10001 different artists
+    QVERIFY(s.overDefaultLimits);
+    QVERIFY(!s.overRaisedLimits);
+    QVERIFY(s.problems.front().find("too many") != std::string::npos);
+    ExportResult r = exportDrive(lib_, o);
+    QVERIFY(!r.ok);
+    QVERIFY2(r.error.find("too many tracks") != std::string::npos && r.error.find("10000") != std::string::npos, r.error.c_str());
+    QVERIFY2(r.error.find("modern deck limits") != std::string::npos, r.error.c_str());
+    QVERIFY(!fs::exists(tmp_ / "usb"));                                                     // nothing written
+    // raised: the count is fine, so the only thing left to complain about is that these dummy files are not real audio
+    o.raiseLimits = true;
+    s = summariseExport(lib_, o);
+    QVERIFY(s.overDefaultLimits);                                                           // still reported, so the dialog keeps offering the box
+    for (const std::string& p : s.problems) QVERIFY2(p.find("too many") == std::string::npos, p.c_str());
+}
 
 void TestTrakcrateExport::freshExportHasFiveFilesFromTheDefaultSet()
 {

@@ -30,6 +30,7 @@ struct tc_export_opts {
     int allow_unanalysed;           /* tracks without analysis get a flat waveform and no beat grid instead of refusing the export */
     int include_settings, include_artwork, include_pvbr, include_pwv4, include_pwv5, write_manifest;
     struct tc_cuerender cue;        /* the spikes drawn into the exported waveforms (never into the master) */
+    int raise_limits;               /* the track/artist/album limits of newer decks instead of the lower ones of older decks (rblimits.h) */
     int dry_run;                    /* gather and check, write nothing (also no staging) */
     int link_audio;                 /* audio files become symbolic links to the master copy, no SHA256SUMS, no read back: the tree is
                                      * the input of an rsync that follows links (trakcrate sync) */

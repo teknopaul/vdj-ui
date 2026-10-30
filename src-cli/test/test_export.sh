@@ -152,6 +152,29 @@ test_export_refuses_tracks_that_are_not_analysed()
     assert_status "the drive is still valid" 0
 }
 
+test_export_refuses_more_tracks_than_a_deck_holds()
+{
+    setup
+    local i n=10001 big=$LIB/track-master-copy/Big
+    mkdir -p "$big" "$LIB/pendrives/Huge/symlinks"
+    for ((i = 0; i < n; i++)); do
+        mkdir "$big/b$i"
+        printf 'RIFF' >"$big/b$i/track.wav"
+        printf 'title: B%s\nartist: Artist %s\nalbum: Same\n' "$i" "$i" >"$big/b$i/meta.txt"
+        ln -s "../../../track-master-copy/Big/b$i" "$LIB/pendrives/Huge/symlinks/$(printf %05d "$i")_b$i"
+    done
+    run tc export --allow-unanalysed -n Huge "$D"
+    assert_status "refused" 1
+    assert_contains "says what is too many" "too many tracks for a pendrive: 10001, the limit is 10000" "$err"
+    assert_contains "artists too" "too many artists for a pendrive: 10001" "$err"
+    assert_contains "albums are artist and name" "too many albums for a pendrive: 10001" "$err"
+    assert_contains "points at the way out" "--raise-limits" "$err"
+    assert_no_file "nothing was created" "$D"
+    run tc export --raise-limits --allow-unanalysed -n Huge "$D"
+    assert_status "the higher limits accept it" 0
+    assert_contains "report" "would export 10001 tracks" "$out"
+}
+
 test_export_dry_run_writes_nothing()
 {
     setup

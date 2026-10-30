@@ -45,6 +45,16 @@ foreach(size 16x16 22x22 24x24 32x32 64x64 128x128 256x256 512x512)
 endforeach()
 install(FILES img/vdj.svg DESTINATION share/icons/hicolor/scalable/apps RENAME vdj-ui.svg COMPONENT icons)
 install(FILES data/vdj-ui.desktop DESTINATION share/applications COMPONENT icons)
+# trakcrate-ui: the trakcrate-only window. The same binary started through a symlink of that name (main.cpp looks at argv[0]); its own
+# desktop file and icon give it its own place in the taskbar.
+foreach(size 22x22 32x32 48x48 64x64 128x128)
+    install(FILES img/trakcrate-${size}.png DESTINATION share/icons/hicolor/${size}/apps RENAME trakcrate-ui.png COMPONENT icons)
+endforeach()
+install(FILES data/trakcrate-ui.desktop DESTINATION share/applications COMPONENT icons)
+install(CODE "
+    file(MAKE_DIRECTORY \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin\")
+    file(CREATE_LINK vdj-ui \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/trakcrate-ui\" SYMBOLIC)
+")
 install(CODE "
     if(NOT DEFINED ENV{DESTDIR} OR \"\$ENV{DESTDIR}\" STREQUAL \"\")
         find_program(_icon_cache gtk-update-icon-cache)

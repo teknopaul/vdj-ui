@@ -37,6 +37,9 @@ public:
     // The settings set chosen for the player files: "" = the library's default set, kBuiltInSettings = the compiled in files.
     QString settingsSet() const;
     void setSettingsSet(const QString& name);
+    bool raiseLimits() const;
+    void setRaiseLimits(bool on);
+    bool raiseLimitsVisible() const;                  // offered only when the pendrive is above the limits of older decks
     bool replaceSettings() const;
     void setReplaceSettings(bool on);
     static QString builtInSettingsKey() { return QStringLiteral("\x01builtin"); }
@@ -58,6 +61,7 @@ private:
     QComboBox* settingsSet_;
     QRadioButton *addMissing_, *replace_;
     QLabel* summary_;
+    QCheckBox* raiseLimits_;
     QGroupBox* advanced_;
     QCheckBox *settings_, *artwork_, *pvbr_, *pwv4_, *pwv5_, *manifest_, *verify_, *unanalysed_;
     QLineEdit* realDrive_;

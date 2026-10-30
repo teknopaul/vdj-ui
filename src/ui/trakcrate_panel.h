@@ -68,6 +68,10 @@ public:
     bool moveEntry(const QString& drive, int from, int insertBefore, QString* err = nullptr);
     bool startPreview(int proxyRow = -1, QString* err = nullptr);     // plays the shown playlist / entry, or all entries of the chosen pendrive
     ScriptManager* scripts() const { return scripts_; }          // the library's scripts (doc/trakcrate/scripts.md)
+    // The width of the folder / playlist tree (pixels, the rest of the window goes to the table and details).
+    void setSidebarWidth(int pixels);
+    // The text of the table's "Load into player" action (the double click does the same): the trakcrate-only window edits the track instead.
+    void setLoadActionText(const QString& text) { loadText_ = text; }
     bool hasLibrary() const { return lib_.isOpen(); }
     const trakcrate::Library& library() const { return lib_; }
 
@@ -161,6 +165,7 @@ private slots:
     void rekordboxImportDialog();
 
 private:
+    QString loadText_ = QStringLiteral("Load into player");
     void rebuildTree(bool selectionSignals = true);
     uint64_t estimateBytes(const std::vector<trakcrate::fs::path>& trackDirs);   // distinct tracks, audio sizes cached between tree rebuilds
     void liveRefresh();                        // folders, playlists and the open list while an import is still running

@@ -65,6 +65,16 @@ Left: folders of `track-master-copy` and the playlists (`pendrives/*`). Centre: 
 - **Virtual pendrives:** right-click > **Settings** links the pendrive to a set (or "Follow the default settings").
 - **Export dialog:** a *Player settings* box with a drop down (Default, each set, Built in files) and a choice between keeping the settings files already on the drive (add the missing) and updating them. The result line reports how many were written and kept.
 
+### trakcrate only window (implemented)
+- `trakcrate-ui` (a symlink to `vdj-ui`, installed by the deb in `/usr/bin`) or `vdj-ui --trakcrate` opens just the library, in a window of its own: title "📦 trakcrate", the trakcrate icon in the taskbar (`trakcrate-ui.desktop`), no deck, network, MIDI or audio sequencer code running. It shares `~/.config/vdj-ui` with vdj-ui, so the same library is opened.
+- Menus: **File** has Clone Pendrive and Quit; **Config** has Quantize and Quit. No Connect button, no Network or View menus. The menus are built only in `TrakcrateWindow::setupMenus()` (`src/ui/trakcrate_window.cpp`): that is the one place to change them.
+- The folder and playlist tree starts at 340 pixels instead of 170.
+- There is no player: the table's "Load into player" becomes **Edit track** (also the double click) and opens the track editor in a dock at the bottom.
+
+### Deck limits (implemented)
+- A pendrive export is refused, with the numbers, when it holds more than an older deck can take (10000 tracks, 10000 artists, 10000 albums); nothing is written. The library itself has no limit. The red message in the export dialog says what to shorten.
+- Only then the dialog offers **Apply modern deck limits (...YMMV)**: ticking it allows 20000 tracks and 16000 artists and albums, for newer decks. Details in `rekordbox-db-output.md`.
+
 ### Provenance and unknown bytes
 - Origin per field group is visible and filterable; a "Regenerate" action changes it to generated after a confirmation.
 - A view of `UNKNOWN_BYTES.txt` entries and which are filled from real imports, so contributors see what is still invented.

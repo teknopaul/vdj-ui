@@ -117,6 +117,37 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/22x22/apps" TYPE FILE RENAME "trakcrate-ui.png" FILES "/home/teknopaul/bzr_workspace/vdj-ui/img/trakcrate-22x22.png")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/32x32/apps" TYPE FILE RENAME "trakcrate-ui.png" FILES "/home/teknopaul/bzr_workspace/vdj-ui/img/trakcrate-32x32.png")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/48x48/apps" TYPE FILE RENAME "trakcrate-ui.png" FILES "/home/teknopaul/bzr_workspace/vdj-ui/img/trakcrate-48x48.png")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/64x64/apps" TYPE FILE RENAME "trakcrate-ui.png" FILES "/home/teknopaul/bzr_workspace/vdj-ui/img/trakcrate-64x64.png")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/128x128/apps" TYPE FILE RENAME "trakcrate-ui.png" FILES "/home/teknopaul/bzr_workspace/vdj-ui/img/trakcrate-128x128.png")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications" TYPE FILE FILES "/home/teknopaul/bzr_workspace/vdj-ui/data/trakcrate-ui.desktop")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  
+    file(MAKE_DIRECTORY "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin")
+    file(CREATE_LINK vdj-ui "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/trakcrate-ui" SYMBOLIC)
+
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "icons" OR NOT CMAKE_INSTALL_COMPONENT)
   
     if(NOT DEFINED ENV{DESTDIR} OR "$ENV{DESTDIR}" STREQUAL "")
         find_program(_icon_cache gtk-update-icon-cache)
