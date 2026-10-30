@@ -4,7 +4,7 @@
 
 Built from the ground up in C/C++. Provides many of the features of <span style="color:#cc0000">rekor<span style="color:#eeeeee">db</span>ox</span> and quite a few extras.
 
-![screenshot trakcrate](img/screenshot-trakcrate.png) 
+![screenshot trakcrate](img/screenshot-trakcrate-ui.png) 
 
 ## Features
 

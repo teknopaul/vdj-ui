@@ -27,9 +27,10 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=0
-FILE_NAME_0=847;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Ftrakcrate-only-view.prompt.md;0;4
+current_page=2
+FILE_NAME_0=959;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Ftrakcrate-only-view.prompt.md;0;4
 FILE_NAME_1=551;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fgithub-downloadable.prompt.md;0;4
+FILE_NAME_2=391;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2FREADME.md;0;2
 
 [VTE]
 last_dir=/home/teknopaul
