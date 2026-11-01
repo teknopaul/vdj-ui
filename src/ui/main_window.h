@@ -108,7 +108,15 @@ private:
     bool setVdjBpm(double bpm);                  // user changes: refused while synced to a real deck
     bool applyVdjBpm(double bpm);                // the one place the tempo is applied (clock, link, rows)
     int bpmLockedTo() const;                     // the deck whose BPM we must follow (difflock), 0 = free
-    void followLockedBpm(bool beatTick = false); // adopt the followed deck's BPM (one glide step per beat after a master change)
+    void followLockedBpm(bool beatTick = false);
+    // The BPM to sync to for a deck: with "Calculated BPM" on and a measurement, that; else (and while the two disagree by
+    // more than 0.5, i.e. the deck's tempo is moving) the BPM it reports.
+    double syncReferenceBpm(int pid) const;
+    bool calculatedBpm_ = false;
+public:
+    void setCalculatedBpm(bool on);
+    bool calculatedBpm() const { return calculatedBpm_; }
+private: // adopt the followed deck's BPM (one glide step per beat after a master change)
     void setVdjPlaying(bool playing);
     void vdjRestart(bool quantize);                 // MIDI stop / start at the bar start; quantized: on the sync deck's next downbeat
     void cancelPendingRestart();

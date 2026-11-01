@@ -9,7 +9,7 @@
 | 5 | UI wiring: toggle and master changes | complete |
 | 6 | Beat alignment on Sync | complete |
 | 7 | DJ Tools latency | complete |
-| 8 | Sync to calculated BPM | pending |
+| 8 | Sync to calculated BPM | complete |
 | 9 | Cadence for changing BPM (gated) | pending |
 | 10 | Drift trim, nudge heuristic, docs (gated) | pending |
 
@@ -95,3 +95,13 @@ Files for review:
 Files for review:
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/audio/djtoolz_scheduler.cpp`
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/djtoolz_panel.cpp`
+
+### Phase 8 — Sync to calculated BPM
+
+⚠ STOP after this phase: the user tests calculated vs reported BPM and the telemetry before phases 9 and 10 are started
+
+⚠ build-dev had been deleted; it was recreated with cmake -S/-B
+
+Files for review:
+- `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/main_window.cpp`
+- `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/diff_lock_bar.cpp`

@@ -344,7 +344,7 @@ MainWindow::MainWindow(QWidget* parent)
                 const SyncController::Phase before = syncController_.phase();
                 syncController_.onBeat(pid);
                 if (syncController_.phase() != before || pid == difflock_.player()) refreshDiffLock();
-                if (pid == bpmLockedTo() && syncController_.glideActive()) followLockedBpm(true);
+                if (pid == bpmLockedTo() && (syncController_.glideActive() || calculatedBpm_)) followLockedBpm(true);
             }
         }
         if (telemetry_.active()) {
@@ -1519,6 +1519,9 @@ void MainWindow::setupDemoDecks()
         bar->setTargetMs(difflock_.targetMs());
         connect(bar, &DiffLockBar::targetChanged, this, [this](int ms) { difflock_.setTargetMs(ms); });
         connect(bar, &DiffLockBar::followMasterToggled, this, &MainWindow::setDiffLockFollowMaster);
+        connect(bar, &DiffLockBar::calculatedBpmToggled, this, &MainWindow::setCalculatedBpm);
+        calculatedBpm_ = config_->loadValue(QStringLiteral("dj"), QStringLiteral("sync_calculated_bpm")) == QLatin1String("1");
+        bar->setCalculatedBpm(calculatedBpm_);
         connect(bar, &DiffLockBar::offClicked, this, &MainWindow::diffLockOff);
         connect(bar, &DiffLockBar::captureClicked, this, &MainWindow::captureDiffLockTarget);
         connect(bar, &DiffLockBar::nudgeClicked, this, &MainWindow::nudgeSequencer);
@@ -1996,15 +1999,39 @@ bool MainWindow::applyVdjBpm(double bpm)
 }
 
 // Synced to a real deck: the sequencer and the link tempo are that deck's BPM, whatever it does.
+double MainWindow::syncReferenceBpm(int pid) const
+{
+    DeckWidget* d = deckAt(pid);
+    const double reported = d ? d->bpm() : 0.0;
+    if (!calculatedBpm_ || !(reported > 0.0))
+        return reported;
+    const auto it = beatTempo_.find(pid);
+    if (it == beatTempo_.end() || !it->second.valid())
+        return reported;
+    const double measured = it->second.bpm();
+    return (measured > 0.0 && std::abs(measured - reported) <= 0.5) ? measured : reported;
+}
+
+void MainWindow::setCalculatedBpm(bool on)
+{
+    calculatedBpm_ = on;
+    config_->saveValue(QStringLiteral("dj"), QStringLiteral("sync_calculated_bpm"), on ? QStringLiteral("1") : QStringLiteral("0"));
+    if (auto* bar = vdjDiffLockBar()) bar->setCalculatedBpm(on);
+    telemetryEvent(on ? QStringLiteral("bpm source calculated") : QStringLiteral("bpm source reported"));
+    followLockedBpm();
+}
+
 void MainWindow::followLockedBpm(bool beatTick)
 {
     const int locked = bpmLockedTo();
     if (!locked) return;
     DeckWidget* src = deckAt(locked);
     if (!src || isVdjRow(src)) return;
-    double bpm = src->bpm();
+    double bpm = syncReferenceBpm(locked);
     if (!(bpm > 0.0)) return;
-    if (clock_ && std::abs(clock_->bpm() - bpm) < 0.004) {
+    // the measured BPM wobbles with the fit: the queue is only retuned when it moved by more than 0.01
+    const double hysteresis = calculatedBpm_ ? 0.01 : 0.004;
+    if (clock_ && std::abs(clock_->bpm() - bpm) < hysteresis) {
         syncController_.glideDone();
         return;
     }

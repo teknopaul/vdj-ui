@@ -41,6 +41,11 @@ DiffLockBar::DiffLockBar(QWidget* parent)
     followMaster_->setToolTip(QStringLiteral("Lock to whichever deck is the master"));
     layout->addWidget(followMaster_);
 
+    calculated_ = new QCheckBox(QStringLiteral("Calculated BPM"), this);
+    calculated_->setToolTip(QStringLiteral("Sync to the BPM measured from the deck's beat packets (needs 8 beats) instead of the BPM it reports. "
+                                           "Falls back to the reported BPM until there is a measurement, and while the deck's tempo is changing."));
+    layout->addWidget(calculated_);
+
     off_ = new QPushButton(QStringLiteral("Off"), this);
     off_->setToolTip(QStringLiteral("Stop locking to a deck"));
     layout->addWidget(off_);
@@ -60,6 +65,7 @@ DiffLockBar::DiffLockBar(QWidget* parent)
 
     connect(target_, QOverload<int>::of(&QSpinBox::valueChanged), this, &DiffLockBar::targetChanged);
     connect(followMaster_, &QCheckBox::toggled, this, &DiffLockBar::followMasterToggled);
+    connect(calculated_, &QCheckBox::toggled, this, &DiffLockBar::calculatedBpmToggled);
     connect(off_, &QPushButton::clicked, this, &DiffLockBar::offClicked);
     connect(capture_, &QPushButton::clicked, this, &DiffLockBar::captureClicked);
 }
@@ -70,6 +76,14 @@ void DiffLockBar::setTargetMs(int ms)
 {
     QSignalBlocker block(target_);
     target_->setValue(ms);
+}
+
+bool DiffLockBar::calculatedBpm() const { return calculated_->isChecked(); }
+
+void DiffLockBar::setCalculatedBpm(bool on)
+{
+    QSignalBlocker block(calculated_);
+    calculated_->setChecked(on);
 }
 
 bool DiffLockBar::followMaster() const { return followMaster_->isChecked(); }

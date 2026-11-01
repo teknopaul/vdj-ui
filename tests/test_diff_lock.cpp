@@ -42,6 +42,7 @@ private slots:
     void deckBeatsNudgeTheSequencer();
     void syncIsAStickyModeAcrossMasterChanges();
     void bpmRampMovesTheClock();
+    void calculatedBpmOptionToggles();
     void phaseShiftMovesThePositionExactly();
 };
 
@@ -299,6 +300,23 @@ void TestDiffLock::phaseShiftMovesThePositionExactly()
         const double expected = double(t2 - t1) / 1e6 / 500.0 - shift / 500.0;
         QVERIFY2(std::abs((p2 - p1) - expected) < 0.01, qPrintable(QStringLiteral("%1 vs %2").arg(p2 - p1).arg(expected)));
     }
+}
+
+void TestDiffLock::calculatedBpmOptionToggles()
+{
+    MainWindow window;
+    window.show();
+    window.addDemoDecks();
+    auto* area = window.findChild<DeckArea*>();
+    DiffLockBar* bar = nullptr;
+    for (int i = 0; i < area->deckCount(); ++i)
+        if (area->deckAt(i)->playerId() == 5) bar = area->deckAt(i)->diffLockBar();
+    QVERIFY(bar);
+    const bool before = window.calculatedBpm();
+    bar->calculatedBpmBox()->setChecked(!before);
+    QCOMPARE(window.calculatedBpm(), !before);
+    bar->calculatedBpmBox()->setChecked(before);           // leave the user's config as it was
+    QCOMPARE(window.calculatedBpm(), before);
 }
 
 void TestDiffLock::bpmRampMovesTheClock()

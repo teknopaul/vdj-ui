@@ -23,6 +23,9 @@ public:
 
     int targetMs() const;
     void setTargetMs(int ms);                    // does not emit targetChanged
+    bool calculatedBpm() const;
+    void setCalculatedBpm(bool on);              // does not emit calculatedBpmToggled
+    QCheckBox* calculatedBpmBox() const { return calculated_; }
     bool followMaster() const;
     void setFollowMaster(bool on);               // does not emit followMasterToggled
     void setStatus(const QString& text);
@@ -40,6 +43,7 @@ public:
 signals:
     void targetChanged(int ms);
     void followMasterToggled(bool on);
+    void calculatedBpmToggled(bool on);
     void offClicked();
     void captureClicked();
     void nudgeClicked(int ms);                   // + makes the sequencer's next beat longer (later), - shorter
@@ -49,6 +53,7 @@ private:
     QLabel* followers_;
     QSpinBox* target_;
     QCheckBox* followMaster_;
+    QCheckBox* calculated_;
     QPushButton* off_;
     QPushButton* capture_;
     QList<QPushButton*> nudges_;
