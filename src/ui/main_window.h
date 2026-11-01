@@ -11,6 +11,7 @@
 #include "network/beat_tempo.h"
 #include "network/beat_phase.h"
 #include "midi/diff_lock.h"
+#include "midi/bpm_change_detector.h"
 #include "midi/sync_aligner.h"
 #include "midi/sync_controller.h"
 #include "midi/sync_telemetry.h"
@@ -251,6 +252,7 @@ private: // adopt the followed deck's BPM (one glide step per beat after a maste
     QElapsedTimer followersClock_;       // throttles the ALSA subscriber query
     QStringList followerNames_;
     std::map<int, BeatPhase> beatPhase_;   // per deck: beat phase / period fitted knowing the deck sends beats on a timer tick
+    std::map<int, BpmChangeDetector> bpmChange_;   // per deck: when its reported BPM last moved (the difflock corrects every beat then)
     std::map<int, BeatTempo> beatTempo_;   // per deck: tempo measured from the beat packets
     MidiMapInput* midiIn_ = nullptr;
     JoystickSeqBridge* joystick_ = nullptr;

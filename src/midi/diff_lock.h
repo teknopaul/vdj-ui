@@ -14,6 +14,12 @@ class DiffLock {
 public:
     static constexpr int kAvgSize = 4;          // beats in the rolling average (AVG_SIZE)
     static constexpr int kLimitMs = 20;         // largest single nudge (DIFF_LIMIT)
+    // While the followed deck's BPM is changing (BpmChangeDetector) the offset is corrected on every beat in small steps: the mean of the
+    // last two beats, half of it, at most kFastLimitMs. The numbers come from the fader runs of 2026-11-01 (doc/sync.md): the offset sat
+    // +3 to +4 ms high for several beats in a rise when only the last beat of the bar corrected; half a step on every beat keeps a
+    // drift of 2 ms per beat under about 4 ms in a simulation (doc test), and a 5 ms step is not audible.
+    static constexpr int kFastLimitMs = 5;
+    static constexpr double kFastGain = 0.5;
     static constexpr int kMaxPlayers = 32;
     static constexpr double kMaxDiffMs = 250.0; // offsets beyond this are noise (vdj_time_diff)
 
@@ -29,6 +35,8 @@ public:
     void rebase(int player);
     void suspend() { player_ = 0; hold_ = false; }
     void setHold(bool hold) { hold_ = hold; }
+    void setFast(bool fast) { fast_ = fast; }   // the followed deck's BPM is changing: correct every beat, in small steps
+    bool fast() const { return fast_; }
     bool holding() const { return hold_; }
     int player() const { return player_; }      // 0 = not locked
     bool locked() const { return player_ != 0; }
@@ -57,6 +65,7 @@ private:
     int master_ = 0;
     bool followMaster_ = false;
     bool hold_ = false;
+    bool fast_ = false;
     int targetMs_ = 0;
     double last_[kMaxPlayers];
     double set_[kMaxPlayers][kAvgSize];

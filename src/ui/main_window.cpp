@@ -337,6 +337,10 @@ MainWindow::MainWindow(QWidget* parent)
                     if (est.valid && !est.resonant)
                         diffUsed = beat.offsetMs - (double(steadyNs) / 1e6 - est.equivalentArrivalMs());
                 }
+                if (pid == difflock_.player()) {
+                    bpmChange_[pid].onBeat(beat.bpm);
+                    difflock_.setFast(bpmChange_[pid].recentlyChanged());
+                }
                 nudgeApplied = difflock_.onBeat(pid, beat.barPos, diffUsed);
                 if (nudgeApplied) clock_->nudgeMillis(nudgeApplied);
                 if (alignState_ != AlignState::None && clock_->bpm() > 0.0)
@@ -1594,6 +1598,11 @@ void MainWindow::startDemoClocks()
 
 void MainWindow::connectToNetwork()
 {
+    if (network_->isConnected() || network_->isJoining()) {        // already on the link: reconnecting would only drop it and rejoin
+        statusBar()->showMessage(network_->isConnected() ? QStringLiteral("Already connected to the link")
+                                                         : QStringLiteral("Already joining the link..."), 3000);
+        return;
+    }
     if (rbPanel_ && rbPanel_->isRunning()) {
         QMessageBox::information(this, QStringLiteral("Connect"),
             QStringLiteral("Rekordbox PC mode is running and uses the same UDP ports. Stop it first."));

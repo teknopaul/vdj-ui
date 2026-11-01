@@ -100,6 +100,8 @@ spinner (default 0 ms). Same idea as `adj`'s difflock.
   target moves with the nudge so the lock keeps the new alignment
 - Keys (as in adj): `Shift+U I O P` lock to deck 1-4, `Esc Esc` off, `Shift+M` follow master, `<` `>` change the offset
 
+Sync is a mode: it stays on across master changes and follows the next master; the details, button states and options are in `doc/sync.md`.
+
 ### Master mode
 
 The vdj-ui can act as the timekeeping master for up to 3 other physical Pioneer CDJ/XDJ.  

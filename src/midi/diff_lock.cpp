@@ -94,6 +94,13 @@ int DiffLock::onBeat(int player, int barPos, double diffMs)
     pos_[i] = (pos_[i] + 1) % kAvgSize;
     ++count_[i];
 
+    if (fast_ && player == player_ && !hold_ && count_[i] >= 2) {
+        const int prev = (pos_[i] + kAvgSize - 2) % kAvgSize;       // the beat before this one
+        const double mean = (diffMs + set_[i][prev]) / 2.0;
+        const int n = int(std::lround(kFastGain * (mean - targetMs_)));
+        return std::clamp(n, -kFastLimitMs, kFastLimitMs);
+    }
+
     // auto nudge on the last beat of the bar, so the next downbeat should then be in time
     if (player != player_ || barPos != 4 || hold_ || !hasAverage(player))
         return 0;

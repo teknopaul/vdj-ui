@@ -10,8 +10,8 @@
 | 6 | Beat alignment on Sync | complete |
 | 7 | DJ Tools latency | complete |
 | 8 | Sync to calculated BPM | complete |
-| 9 | Cadence for changing BPM (gated) | pending |
-| 10 | Drift trim, nudge heuristic, docs (gated) | pending |
+| 9 | Cadence for changing BPM (gated) | complete |
+| 10 | Drift trim, nudge heuristic, docs (gated) | complete |
 
 ## Review notes
 
@@ -105,3 +105,18 @@ Files for review:
 Files for review:
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/main_window.cpp`
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/diff_lock_bar.cpp`
+
+### Phase 9 — Cadence for changing BPM (gated)
+
+⚠ constants (5 ms, gain 0.5, 8 beats) come from the 2026-11-01 fader run and a simulation, recorded in doc/sync.md; not yet heard on a deck
+
+Files for review:
+- `/home/teknopaul/bzr_workspace/vdj-ui/src/midi/diff_lock.cpp`
+- `/home/teknopaul/bzr_workspace/vdj-ui/src/midi/bpm_change_detector.h`
+
+### Phase 10 — Drift trim, nudge heuristic, docs (gated)
+
+⚠ DriftTrim and the micro-BPM-on-nudge heuristic were deliberately NOT built: the telemetry shows no drift or audible nudging (phase 10 gate); only doc/sync.md and the README pointer were done
+
+Files for review:
+- `/home/teknopaul/bzr_workspace/vdj-ui/doc/sync.md`

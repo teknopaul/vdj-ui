@@ -4,6 +4,7 @@
 #include <QSpinBox>
 #include <chrono>
 #include "midi/alsa_clock.h"
+#include "midi/bpm_change_detector.h"
 #include "midi/diff_lock.h"
 #include "ui/bpm_ramp_widget.h"
 #include "ui/deck_area.h"
@@ -44,6 +45,8 @@ private slots:
     void bpmRampMovesTheClock();
     void calculatedBpmOptionToggles();
     void phaseShiftMovesThePositionExactly();
+    void fastCorrectionKeepsAChangingTempoClose();
+    void changeDetectorHoldsForTwoBars();
 };
 
 static int feedBar(DiffLock& d, int player, double diff)
@@ -278,6 +281,57 @@ void TestDiffLock::nudgeButtonsMoveTheTargetWhileLocked()
     QCOMPARE(bar->targetMs(), -9);
     clock->stop();
     window.close();
+}
+
+// A deck whose beat drifts 2 ms further from ours every beat (its BPM is being moved): worst offset with the correction on the last beat
+// of the bar only, and on every beat in small steps.
+static double worstOffset(bool fast, double driftPerBeat)
+{
+    DiffLock d;
+    d.lock(1);
+    d.setFast(fast);
+    double diff = 0.0, worst = 0.0;
+    for (int b = 1; b <= 24; ++b) {
+        diff += driftPerBeat;
+        worst = std::max(worst, std::abs(diff));
+        diff -= d.onBeat(1, (b - 1) % 4 + 1, diff);       // a nudge moves the sequencer, so the next offset shrinks by it
+    }
+    return worst;
+}
+
+void TestDiffLock::fastCorrectionKeepsAChangingTempoClose()
+{
+    const double slow = worstOffset(false, 2.0);
+    const double fast = worstOffset(true, 2.0);
+    QVERIFY2(slow > 8.0, qPrintable(QString::number(slow)));      // why the code exists
+    QVERIFY2(fast < 5.5, qPrintable(QString::number(fast)));
+    // a steady deck is not touched in fast mode
+    DiffLock d;
+    d.lock(1);
+    d.setFast(true);
+    for (int b = 1; b <= 8; ++b)
+        QCOMPARE(d.onBeat(1, (b - 1) % 4 + 1, 0.4), 0);
+    // and no step is bigger than the fast limit
+    DiffLock e;
+    e.lock(1);
+    e.setFast(true);
+    e.onBeat(1, 1, 90.0);
+    QCOMPARE(e.onBeat(1, 2, 90.0), DiffLock::kFastLimitMs);
+}
+
+void TestDiffLock::changeDetectorHoldsForTwoBars()
+{
+    BpmChangeDetector det;
+    for (int i = 0; i < 4; ++i) det.onBeat(124.00);
+    QVERIFY(!det.recentlyChanged());
+    det.onBeat(124.30);                                   // the fader moved
+    QVERIFY(det.recentlyChanged());
+    for (int i = 0; i < BpmChangeDetector::kHoldBeats - 1; ++i) det.onBeat(124.30);
+    QVERIFY(det.recentlyChanged());
+    det.onBeat(124.30);
+    QVERIFY(!det.recentlyChanged());
+    det.onBeat(124.302);                                  // rounding is not a change
+    QVERIFY(!det.recentlyChanged());
 }
 
 void TestDiffLock::phaseShiftMovesThePositionExactly()
