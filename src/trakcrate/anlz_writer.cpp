@@ -177,7 +177,7 @@ bool buildAnlz(const AnlzTrackData& d, AnlzFiles* out, std::string* err)
     if (d.beats.size() > 65535) return fail("too many beats");
     if (d.pwav.size() != 400) return fail("PWAV needs 400 columns");
     if (d.pwv2.size() != 100) return fail("PWV2 needs 100 columns");
-    if (d.includePwv5 && d.pwv5.size() != d.pwv3.size()) return fail("PWV3 and PWV5 need the same number of columns");
+    if (d.includePwv5 && d.pwv5.size() < d.pwv3.size()) return fail("PWV5 needs at least as many columns as PWV3");
     if (!d.pwv4.empty() && d.pwv4.size() != 1200 * 6) return fail("PWV4 needs 1200 columns of 6 bytes");
     if (!d.beatSubUs.empty() && d.beatSubUs.size() != d.beats.size()) return fail("one microsecond fraction per beat is needed");
 
@@ -271,7 +271,7 @@ void setWaveforms(AnlzTrackData* d, const Waveform& w, bool includePwv4)
     if (!includePwv4) return;
     // PWV4 approximation (layout only partly understood): byte 0 the height 0..127, byte 1 about 255 minus it, bytes 2 and 3 follow the
     // loudness, bytes 4 and 5 the green and blue weights. Built from the detail waveform, 1200 columns over the whole track.
-    const size_t cols = w.pwv5.size();
+    const size_t cols = std::min(w.pwv3.size(), w.pwv5.size());       // the columns of PWV3; a longer PWV5 keeps its extra entries only in its own tag
     d->pwv4.assign(1200 * 6, 0);
     if (cols == 0) {
         for (size_t i = 0; i < 1200; ++i) d->pwv4[i * 6 + 1] = 255;

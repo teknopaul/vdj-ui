@@ -19,7 +19,7 @@ static bool fail(std::string* err, const std::string& msg)
 bool Library::create(const fs::path& root, std::string* err)
 {
     std::error_code ec;
-    for (const char* sub : {"track-master-copy", "pendrives", "user-settings", "drives"}) {
+    for (const char* sub : {"track-master-copy", "playlists", "user-settings", "drives"}) {
         fs::create_directories(root / sub, ec);
         if (ec) return fail(err, "cannot create " + (root / sub).string() + ": " + ec.message());
     }
@@ -74,19 +74,19 @@ fs::path Library::createTrackDir(const std::string& folder, const std::string& n
 
 // ---- playlists ----------------------------------------------------------------------------------------------------------------------
 
-std::vector<std::string> Library::listPlaylists() const { return listDirs(pendrivesDir()); }
+std::vector<std::string> Library::listPlaylists() const { return listDirs(playlistsDir()); }
 
 bool Library::hasPlaylist(const std::string& name) const
 {
     std::error_code ec;
-    return isSafeName(name) && fs::is_directory(pendrivesDir() / name, ec);
+    return isSafeName(name) && fs::is_directory(playlistsDir() / name, ec);
 }
 
 bool Library::createPlaylist(const std::string& name, std::string* err) const
 {
     if (!isSafeName(name)) return fail(err, "bad playlist name: " + name);
     std::error_code ec;
-    if (fs::exists(pendrivesDir() / name, ec)) return fail(err, "playlist exists: " + name);
+    if (fs::exists(playlistsDir() / name, ec)) return fail(err, "playlist exists: " + name);
     fs::create_directories(symlinksDir(name), ec);
     if (ec) return fail(err, "cannot create playlist " + name + ": " + ec.message());
     return true;
@@ -96,7 +96,7 @@ bool Library::deletePlaylist(const std::string& name, std::string* err) const
 {
     if (!hasPlaylist(name)) return fail(err, "no such playlist: " + name);
     std::error_code ec;
-    fs::remove_all(pendrivesDir() / name, ec);                       // removes the links, never their targets
+    fs::remove_all(playlistsDir() / name, ec);                       // removes the links, never their targets
     if (ec) return fail(err, "cannot delete playlist " + name + ": " + ec.message());
     return true;
 }
@@ -270,7 +270,7 @@ bool Library::createDrive(const std::string& name, std::string* err) const
     if (!isSafeName(name)) return fail(err, "bad pendrive name: " + name);
     std::error_code ec;
     if (fs::exists(drivesDir() / name, ec)) return fail(err, "pendrive exists: " + name);
-    fs::create_directories(drivesDir() / name / "pendrives", ec);
+    fs::create_directories(drivesDir() / name / "playlists", ec);
     if (ec) return fail(err, "cannot create pendrive " + name + ": " + ec.message());
     return true;
 }
@@ -325,7 +325,7 @@ std::vector<Library::DriveEntry> Library::driveEntries(const std::string& drive)
         e.dir = n;
         e.name = withoutPrefix(n);
         std::string text;
-        if (readFile(d.pendrivesDir() / n / "entry.txt", &text)) {
+        if (readFile(d.playlistsDir() / n / "entry.txt", &text)) {
             KvDoc kv = KvDoc::parse(text);
             e.kind = kv.get("kind");
             e.source = kv.get("source");
@@ -349,12 +349,12 @@ static bool renumberEntries(const Library& d, const std::vector<std::string>& or
     }
     for (size_t i = 0; i < order.size(); ++i) {
         if (order[i] == finals[i]) continue;
-        fs::rename(d.pendrivesDir() / order[i], d.pendrivesDir() / (".r" + std::to_string(i)), ec);
+        fs::rename(d.playlistsDir() / order[i], d.playlistsDir() / (".r" + std::to_string(i)), ec);
         if (ec) return fail(err, "cannot rename " + order[i] + ": " + ec.message());
     }
     for (size_t i = 0; i < order.size(); ++i) {
         if (order[i] == finals[i]) continue;
-        fs::rename(d.pendrivesDir() / (".r" + std::to_string(i)), d.pendrivesDir() / finals[i], ec);
+        fs::rename(d.playlistsDir() / (".r" + std::to_string(i)), d.playlistsDir() / finals[i], ec);
         if (ec) return fail(err, "cannot rename to " + finals[i] + ": " + ec.message());
     }
     return true;
@@ -382,9 +382,9 @@ bool Library::addDriveEntry(const std::string& drive, const std::string& nameIn,
     kv.addComment("trakcrate pendrive entry");
     kv.set("kind", kind);
     kv.set("source", source);
-    if (!atomicWrite(d.pendrivesDir() / dirName / "entry.txt", kv.serialise(), err) || !d.addTracksToPlaylist(dirName, tracks, -1, err)) {
+    if (!atomicWrite(d.playlistsDir() / dirName / "entry.txt", kv.serialise(), err) || !d.addTracksToPlaylist(dirName, tracks, -1, err)) {
         std::error_code ec;
-        fs::remove_all(d.pendrivesDir() / dirName, ec);
+        fs::remove_all(d.playlistsDir() / dirName, ec);
         return false;
     }
     return true;

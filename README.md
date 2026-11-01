@@ -38,7 +38,7 @@ Built from the ground up in C/C++. Provides many of the features of <span style=
   - Play one-shot samples
   - Play loops
   - DR-6S - simple 4/4 drum machine
-  - LADSAP FX for all DJ Tools, inc Allen & Heath like Xone filter.
+  - LADSPA FX for all DJ Tools, inc Allen & Heath like Xone filter.
 
 N.B. while you can play music off the PC on physical decks, VDJ does not have a Traktor like player for DJing audio on the PC
 This software is a companion to real CDJ/XDJ decks, not an alternative.

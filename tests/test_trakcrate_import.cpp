@@ -154,7 +154,7 @@ void TestTrakcrateImport::importAlphabetical()
     std::vector<std::string> want = {"A track", "b track", "tiny", "track2", "track10"};   // natural, case-insensitive
     QCOMPARE(names.size(), want.size());
     for (size_t i = 0; i < want.size(); ++i) QCOMPARE(names[i], want[i]);
-    QVERIFY(fs::exists(lib_.pendrivesDir() / "Acid Loops" / "symlinks" / "000_A track"));
+    QVERIFY(fs::exists(lib_.playlistsDir() / "Acid Loops" / "symlinks" / "000_A track"));
     QCOMPARE(sha256Hex(slurp(src_ / "track2.WAV")), before);         // the source is untouched
     QVERIFY(fs::exists(src_ / "A track.wav"));
     for (const std::string& n : names) QVERIFY(!audioFileOf(lib_.trackDir("Acid Loops", n)).empty());

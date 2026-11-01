@@ -110,7 +110,7 @@ bool saveBeatGrid(const Track& t, std::string* err = nullptr);
 bool saveCuemarks(const Track& t, std::string* err = nullptr);
 bool saveVocals(const Track& t, std::string* err = nullptr);
 
-// The audio file of a track folder (the first .mp3 or .wav, case-insensitive), empty path if none.
+// The audio file of a track folder (the first .mp3, .wav or .flac, case-insensitive), empty path if none.
 fs::path audioFileOf(const fs::path& trackDir);
 
 } // namespace trakcrate

@@ -15,7 +15,7 @@ trakcrate/
 │   └── crate-script-backup.sh
 ├── user-settings/
 ├── track-master-copy/
-└── pendrives/
+└── playlists/
 ```
 
 - **`track-script-*`**: runs on one track (the one loaded in the selected deck or selected in the trakcrate pane).

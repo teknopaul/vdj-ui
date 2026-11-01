@@ -35,8 +35,9 @@ struct tc_anlz_track {
     const uint8_t *pwav;                    /* 400 */
     const uint8_t *pwv2;                    /* 100 */
     const uint8_t *pwv3;                    /* columns */
-    const uint16_t *pwv5;                   /* columns */
+    const uint16_t *pwv5;                   /* columns + pwv5_extra */
     size_t columns;
+    size_t pwv5_extra;                      /* PWV5 entries beyond columns, written as given */
     const uint8_t *pwv4;                    /* 1200 x 6 bytes; NULL = no PWV4 tag */
     const struct tc_anlz_cue *hot_cues;     /* the .DAT lists the first three, the .EXT all of them */
     size_t nhot;

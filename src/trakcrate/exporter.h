@@ -25,7 +25,7 @@ struct ExportList {
 };
 
 struct ExportOptions {
-    std::vector<std::string> playlists;      // the playlists (library "pendrives") to put on the drive, in this order
+    std::vector<std::string> playlists;      // the playlists (library "playlists") to put on the drive, in this order
     std::vector<ExportList> lists;           // further lists, after the playlists (see Library::driveEntries)
     fs::path dest;                           // an empty directory, or one that does not exist yet (or, with `update`, a drive written by an earlier export)
     // Update a drive that already holds an export: audio and small files are only written when they differ (each through a temporary name and a

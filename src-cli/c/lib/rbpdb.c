@@ -779,6 +779,26 @@ out:
     return ok;
 }
 
+/* the file type word of a track row (offset 90), as in real exports: 1 mp3, 5 flac, 11 wav; -1 = keep the template's */
+static int file_type_of(const char *name)
+{
+    const char *dot = name != NULL ? strrchr(name, '.') : NULL;
+
+    if (dot == NULL) {
+        return -1;
+    }
+    if (strcasecmp(dot, ".mp3") == 0) {
+        return 1;
+    }
+    if (strcasecmp(dot, ".flac") == 0) {
+        return 5;
+    }
+    if (strcasecmp(dot, ".wav") == 0) {
+        return 11;
+    }
+    return -1;
+}
+
 static uint8_t *track_row(const struct track_template *tpl, const struct tc_plan_track *t, uint32_t id, uint32_t genre_id, uint32_t album_id,
                           uint32_t artist_id, uint32_t label_id, uint32_t artwork_id, const char *analyze_path, size_t *len)
 {
@@ -812,6 +832,9 @@ static uint8_t *track_row(const struct track_template *tpl, const struct tc_plan
     tc_set_le16(fixed + 84, t->duration_secs);
     fixed[88] = t->color_id;
     fixed[89] = t->rating;
+    if (file_type_of(t->file_name) >= 0) {
+        tc_set_le16(fixed + 90, (unsigned)file_type_of(t->file_name));
+    }
 
     for (i = 0; i < K_TRACK_SLOTS; i++) {
         s[i] = tpl->strings[i];

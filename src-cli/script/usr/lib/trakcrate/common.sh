@@ -481,7 +481,7 @@ tc_playlist_dirs()
 tc_all_playlist_dirs()
 {
     local d
-    for d in "$tc_lib"/pendrives/*/ "$tc_lib"/drives/*/pendrives/*/; do
+    for d in "$tc_lib"/playlists/*/ "$tc_lib"/drives/*/playlists/*/; do
         if [ -d "${d}symlinks" ]; then
             printf '%s\n' "${d%/}"
         fi

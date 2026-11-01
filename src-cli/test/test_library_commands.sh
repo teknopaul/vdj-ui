@@ -24,7 +24,7 @@ test_init()
     assert_status "init" 0
     assert_eq "stdout is the library" "$LIB" "$out"
     assert_file "track-master-copy" "$LIB/track-master-copy"
-    assert_file "pendrives" "$LIB/pendrives"
+    assert_file "playlists" "$LIB/playlists"
     assert_file "user-settings" "$LIB/user-settings"
     : > "$LIB/track-master-copy/keep"
     run tc init
@@ -183,19 +183,19 @@ test_pendrive()
     setup_library
     run tc pendrive new gig
     assert_status "new" 0
-    assert_file "playlist created" "$LIB/pendrives/gig/symlinks"
+    assert_file "playlist created" "$LIB/playlists/gig/symlinks"
     run tc pendrive new "a/b"
     assert_status "bad playlist name" 2
     run tc pendrive add gig "Track One" t1
     assert_status "add" 0
     assert_eq "numbered links, relative" "$(printf '000_Track One -> ../../../track-master-copy/House/Track One\n001_t1 -> ../../../track-master-copy/Acid/t1')" \
-        "$(cd "$LIB/pendrives/gig/symlinks" && for l in *; do printf '%s -> %s\n' "$l" "$(readlink "$l")"; done)"
+        "$(cd "$LIB/playlists/gig/symlinks" && for l in *; do printf '%s -> %s\n' "$l" "$(readlink "$l")"; done)"
     run tc pendrive add --at 0 gig "Track 10"
     run tc pendrive ls gig
     assert_eq "inserted at the front, renumbered" "$(printf '000_Track 10\tHouse/Track 10\n001_Track One\tHouse/Track One\n002_t1\tAcid/t1')" "$out"
     run tc pendrive add gig t1
     assert_contains "a duplicate is skipped" "already in gig" "$err"
-    assert_eq "still three" "3" "$(ls "$LIB/pendrives/gig/symlinks" | wc -l)"
+    assert_eq "still three" "3" "$(ls "$LIB/playlists/gig/symlinks" | wc -l)"
     run tc pendrive add nonesuch t1
     assert_status "no such playlist" 1
     run tc pendrive add gig nonesuch
@@ -205,14 +205,14 @@ test_pendrive()
     assert_contains "jsonl" '"position":1,"path":"'"$LIB"'/track-master-copy/House/Track One","link":"001_Track One","dangling":false' "$out"
     run tc pendrive ls
     assert_eq "without a name: the playlists" "$(printf 'gig\t3')" "$out"
-    assert_eq "no temporary folders left" "" "$(find "$LIB/pendrives" -name '.*')"
+    assert_eq "no temporary folders left" "" "$(find "$LIB/playlists" -name '.*')"
 }
 
 test_pendrive_order_rules()
 {
     setup_library
     tc pendrive new p >/dev/null 2>&1
-    local s=$LIB/pendrives/p/symlinks
+    local s=$LIB/playlists/p/symlinks
     ln -s ../../../track-master-copy/Acid/t1 "$s/005_t1"
     ln -s ../../../track-master-copy/House/Track\ One "$s/2_one"
     ln -s ../../../track-master-copy/House/Track\ 10 "$s/unnumbered"

@@ -119,7 +119,7 @@ bool parseWaveform(const std::string& s, Waveform* out)
             for (size_t i = 0; i < body.size(); i += 2) w.pwv5.push_back(uint16_t((uint8_t(body[i]) << 8) | uint8_t(body[i + 1])));
         }                                                         // unknown sections are skipped
     }
-    if (w.pwv3.size() != get32(s, 8) || w.pwv5.size() != w.pwv3.size()) return false;
+    if (w.pwv3.size() != get32(s, 8) || w.pwv5.size() < w.pwv3.size()) return false;      // a PWV5 longer than PWV3 is kept as rekordbox wrote it
     *out = w;
     return true;
 }

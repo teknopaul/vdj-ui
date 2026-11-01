@@ -45,7 +45,7 @@ struct ImportReport {
 // done, total, current file. Called from the importing thread.
 using ImportProgress = std::function<void(int done, int total, const std::string& current)>;
 
-// Imports the .mp3 / .wav files of dir into the library and builds an alphabetical playlist (natural, case-insensitive order of the
+// Imports the .mp3 / .wav / .flac files of dir into the library and builds an alphabetical playlist (natural, case-insensitive order of the
 // relative path). Never modifies the source files unless mode is Move. cancel may be null; it is checked between files.
 ImportReport importFolder(const Library& lib, const fs::path& dir, const ImportOptions& opts, const ImportProgress& progress = nullptr,
                           const std::atomic<bool>* cancel = nullptr);

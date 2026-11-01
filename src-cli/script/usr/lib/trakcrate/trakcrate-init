@@ -7,7 +7,7 @@ set -eu
 
 usage='Usage: trakcrate init [options] [DIR]
 
-Create an empty library: track-master-copy/, pendrives/ and user-settings/.
+Create an empty library: track-master-copy/, playlists/ and user-settings/.
 An existing library is left as it is. DIR defaults to the library (--library, $TRAKCRATE_HOME, ~/trakcrate).
 
 Options: -n/--dry-run, -q, -v, --format FORMAT'
@@ -57,7 +57,7 @@ if [ "$status" = created ]; then
     if [ -n "${TRAKCRATE_DRY_RUN:-}" ]; then
         status=would-create
     else
-        mkdir -p -- "$dir/track-master-copy" "$dir/pendrives" "$dir/user-settings"
+        mkdir -p -- "$dir/track-master-copy" "$dir/playlists" "$dir/user-settings"
     fi
 fi
 

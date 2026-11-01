@@ -28,7 +28,7 @@ The words MUST, SHOULD and MAY are used as in RFC 2119.
 ├── track-master-copy/
 │   └── <folder>/                       a folder name: any name that is a legal single path component
 │       └── <track>/                    one directory per track
-│           ├── track.mp3 | track.wav   the audio: exactly one .mp3 or .wav (case-insensitive). May be a symlink.
+│           ├── track.mp3 | .wav | .flac the audio: exactly one .mp3, .wav or .flac (case-insensitive). May be a symlink.
 │           ├── meta.txt                metadata                     (section 4)
 │           ├── source.txt              provenance                   (section 7)
 │           ├── beatgrid.txt            beat grid                    (section 5)
@@ -37,14 +37,14 @@ The words MUST, SHOULD and MAY are used as in RFC 2119.
 │           ├── waveform.bin            waveforms                    (section 9)
 │           ├── artwork.jpg | .png      cover image
 │           └── anlz/                   optional: original rekordbox analysis files, byte for byte (section 11)
-├── pendrives/                          the library's playlists (the directory keeps its historic name)
+├── playlists/                          the library's playlists
 │   └── <playlist>/
 │       └── symlinks/
 │           └── 000_<track>             symlinks to track directories; the numeric prefix is the play order
 └── drives/                             user defined pendrives (section 2.4)
     └── <pendrive>/
         ├── drive.txt                   optional: settings: <set>, the settings set this pendrive is exported with (section 2.4)
-        └── pendrives/
+        └── playlists/
             └── 000_<entry>/            one entry = one playlist on the exported drive; the prefix is the entry order
                 ├── entry.txt           kind: folder|playlist, source: the folder or playlist it was made from
                 └── symlinks/000_<track>
@@ -66,7 +66,7 @@ the source folder (a subfolder of the source becomes `<folder> - <sub path>`). I
 
 ### 2.3 Playlists
 
-A playlist is a directory `pendrives/<name>/` holding `symlinks/`. Each entry in `symlinks/` is a symbolic link to a track directory, named `<prefix>_<track name>`.
+A playlist is a directory `playlists/<name>/` holding `symlinks/`. Each entry in `symlinks/` is a symbolic link to a track directory, named `<prefix>_<track name>`.
 
 - The prefix is a decimal number, zero padded to at least 3 digits (more when the playlist has more than 999 entries), and defines the order: `000_`, `001_`, ...
 - Writers SHOULD create relative links, so the library can be moved or synchronised.
@@ -76,7 +76,7 @@ A playlist is a directory `pendrives/<name>/` holding `symlinks/`. Each entry in
 
 ### 2.4 Pendrives
 
-`drives/<name>/` describes what goes onto one pendrive. It is a small library of its own: its `pendrives/` directory holds the **entries**, numbered `000_`, `001_`, ... in the order they appear on the drive.
+`drives/<name>/` describes what goes onto one pendrive. It is a small library of its own: its `playlists/` directory holds the **entries**, numbered `000_`, `001_`, ... in the order they appear on the drive.
 An entry is a snapshot, taken when it was added, of a master folder (`kind: folder`, tracks in natural name order) or of a playlist (`kind: playlist`, its order), made of the same
 `symlinks/NNN_<track>` links as a playlist. Reordering or removing tracks or entries of a pendrive never changes the library's folders and playlists, and deleting a pendrive removes only links.
 `drives/<name>/drive.txt` is an optional key/value file (section 3). The key `settings` names the settings set (section 10) the pendrive is exported with; no file, no key or a name that no longer exists means the library's default set. Unknown keys MUST be kept when the file is rewritten. A set that a pendrive links to MUST NOT be deleted, and renaming a set updates the links.
@@ -107,7 +107,7 @@ Free-form key/value metadata. The keys below are defined; others are kept untouc
 | `bpm_tag`                                                                                       | the BPM found in the file's own tags (decimal). A hint only; the beat grid decides.                        |
 | `date_added`, `release_date`                                                                    | ISO 8601 date                                                                                              |
 | `duration_ms`, `sample_rate`, `bit_depth`, `bitrate` (bits per second), `channels`, `file_size` | integers describing the audio                                                                              |
-| `container`                                                                                     | `mp3`, `wav`                                                                                               |
+| `container`                                                                                     | `mp3`, `wav`, `flac`                                                                                               |
 | `original_filename`                                                                             | the file name before import                                                                                |
 | `audio_sha256`                                                                                  | lower case hex SHA-256 of the audio file. The identity of a track: the same hash means the same audio.     |
 | `peak_dbfs`, `rms_dbfs`                                                                         | measured loudness, one decimal. Waveform heights are NOT normalised with these: they are information only. |
@@ -265,7 +265,7 @@ The export order is: playlists chosen by the user, each in its symlink order; a 
 
 A library is valid when:
 - `track-master-copy/` exists;
-- every track directory has at most one audio file with extension `.mp3` or `.wav`;
+- every track directory has at most one audio file with extension `.mp3`, `.wav` or `.flac`;
 - every playlist entry's prefix is numeric and unique within its playlist (otherwise the order is undefined);
 - `waveform.bin`, if present, starts with `TCWV` version 1 and its `PWV3`/`PWV5` lengths agree.
 

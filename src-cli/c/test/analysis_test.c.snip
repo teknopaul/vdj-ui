@@ -109,6 +109,26 @@ static void test_waveform(void)
         && memcmp(back.pwv5, w.pwv5, w.columns * 2) == 0 && memcmp(back.pwav, w.pwav, 400) == 0 && memcmp(back.pwv2, w.pwv2, 100) == 0);
     tc_waveform_free(&back);
 
+    /* a rekordbox track with one PWV5 column more than PWV3 is kept as imported */
+    {
+        struct tc_waveform lw = w;
+        uint8_t *lb;
+        size_t llen;
+
+        lw.pwv5 = malloc((w.columns + 1) * 2);
+        memcpy(lw.pwv5, w.pwv5, w.columns * 2);
+        lw.pwv5[w.columns] = 0x1234;
+        lw.pwv5_extra = 1;
+        lb = tc_waveform_serialise(&lw, &llen);
+        snip_assert("wave: longer PWV5 serialised", lb != NULL && llen == len + 2);
+        snip_equals("wave: longer PWV5 parses", 0, tc_waveform_parse(lb, llen, &back));
+        snip_assert("wave: longer PWV5 kept", back.columns == w.columns && back.pwv5_extra == 1 && back.pwv5[w.columns] == 0x1234
+            && memcmp(back.pwv5, w.pwv5, w.columns * 2) == 0);
+        tc_waveform_free(&back);
+        free(lb);
+        free(lw.pwv5);
+    }
+
     /* damaged files are refused */
     snip_assert("wave: truncated", tc_waveform_parse(bytes, len - 5, &back) != 0);
     snip_assert("wave: too short", tc_waveform_parse(bytes, 8, &back) != 0);

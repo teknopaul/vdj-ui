@@ -846,6 +846,26 @@ void TestTrakcratePanel::pendriveSettingsLinkAndExportDialog()
     dlg.setSettingsSet(QString());
     QVERIFY(dlg.options().settingsSet.empty());                                         // the default set
 
+    // an async dialog opens at once with "Loading...", Export disabled, and fills in from a worker thread
+    {
+        TrakcrateExportDialog adlg(p.library(), nullptr, true);
+        adlg.setPendrive(QStringLiteral("Fri"), false);
+        adlg.setDestination(QString::fromStdString((tmp_ / "out_async").string()));
+        QPushButton* exportButton = nullptr;
+        for (QPushButton* b : adlg.findChildren<QPushButton*>()) if (b->text() == QLatin1String("Export")) exportButton = b;
+        QVERIFY(exportButton);
+        QVERIFY(!exportButton->isEnabled());
+        auto summaryText = [&adlg] {
+            QString all;
+            for (QLabel* l : adlg.findChildren<QLabel*>()) all += l->text();
+            return all;
+        };
+        QVERIFY(summaryText().contains(QStringLiteral("Loading...")));
+        QTRY_VERIFY_WITH_TIMEOUT(summaryText().contains(QStringLiteral("track(s)")), 10000);       // entries read, summary made
+        QVERIFY(!summaryText().contains(QStringLiteral("Loading...")));
+        QCOMPARE(adlg.options().lists.size(), size_t(1));                                         // the entries are ticked
+    }
+
     // exporting the linked pendrive puts that set's profile on the drive
     dlg.setSettingsSet(QStringLiteral("Club"));
     dlg.setReplaceSettings(false);

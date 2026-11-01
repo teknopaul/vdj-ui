@@ -156,12 +156,12 @@ test_export_refuses_more_tracks_than_a_deck_holds()
 {
     setup
     local i n=10001 big=$LIB/track-master-copy/Big
-    mkdir -p "$big" "$LIB/pendrives/Huge/symlinks"
+    mkdir -p "$big" "$LIB/playlists/Huge/symlinks"
     for ((i = 0; i < n; i++)); do
         mkdir "$big/b$i"
         printf 'RIFF' >"$big/b$i/track.wav"
         printf 'title: B%s\nartist: Artist %s\nalbum: Same\n' "$i" "$i" >"$big/b$i/meta.txt"
-        ln -s "../../../track-master-copy/Big/b$i" "$LIB/pendrives/Huge/symlinks/$(printf %05d "$i")_b$i"
+        ln -s "../../../track-master-copy/Big/b$i" "$LIB/playlists/Huge/symlinks/$(printf %05d "$i")_b$i"
     done
     run tc export --allow-unanalysed -n Huge "$D"
     assert_status "refused" 1

@@ -370,7 +370,7 @@ fs::path audioFileOf(const fs::path& trackDir)
         if (!e.is_regular_file(ec)) continue;
         std::string ext = e.path().extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return char(std::tolower(c)); });
-        if (ext == ".mp3" || ext == ".wav") found.push_back(e.path());
+        if (ext == ".mp3" || ext == ".wav" || ext == ".flac") found.push_back(e.path());
     }
     if (found.empty()) return fs::path();
     std::sort(found.begin(), found.end());

@@ -3,6 +3,10 @@
 
 #include <QDialog>
 
+#include <atomic>
+#include <memory>
+#include <vector>
+
 #include "trakcrate/exporter.h"
 #include "trakcrate/library.h"
 
@@ -23,7 +27,10 @@ class TrakcrateExportDialog : public QDialog {
     Q_OBJECT
 
 public:
-    TrakcrateExportDialog(const trakcrate::Library& lib, QWidget* parent = nullptr);
+    // async: the slow parts (the drives list, the pendrive's entries, the analysis behind the summary) run on a worker thread: the dialog opens at
+    // once showing "Loading..." with Export disabled, and Export is enabled when the checks are done and found nothing wrong.
+    TrakcrateExportDialog(const trakcrate::Library& lib, QWidget* parent = nullptr, bool async = false);
+    ~TrakcrateExportDialog() override;
 
     // The options chosen. The caller adds the template database and the artwork encoder.
     trakcrate::ExportOptions options() const;
@@ -51,6 +58,17 @@ private slots:
     void refreshSummary();
 
 private:
+    struct SummaryData;
+    trakcrate::ExportOptions baseOptions(std::vector<int>* entryIdx) const;     // the widgets as options; a pendrive's entries as indexes into entries_
+    void fillEntries();
+    void setLoading();
+    void applySummary(const SummaryData& d, const trakcrate::ExportOptions& o);
+
+    bool async_ = false;
+    bool loadingEntries_ = false;
+    std::shared_ptr<std::atomic<bool>> alive_ = std::make_shared<std::atomic<bool>>(true);
+    quint64 summaryGen_ = 0, drivesGen_ = 0;
+    std::vector<trakcrate::Library::DriveEntry> entries_;
     trakcrate::Library lib_;
     QListWidget* playlists_;
     QString pendrive_;

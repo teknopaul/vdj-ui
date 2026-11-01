@@ -20,7 +20,7 @@ One folder per track under `track-master-copy/<folder>/<track>/`:
 
 ```
 <track>/
-├── track.mp3|wav          copied from Contents/
+├── track.mp3|wav|flac          copied from Contents/
 ├── meta.txt               title, artist, album, genre, label, key, bpm, year, rating, colour, comment, ...
 ├── artwork.jpg            from PIONEER/Artwork (the full-size file)
 ├── beatgrid.txt           beats from PQTZ + PQT2 (ms and us)
@@ -33,7 +33,7 @@ One folder per track under `track-master-copy/<folder>/<track>/`:
 
 - The original ANLZ files are kept verbatim. Re-export copies them unchanged, which is the safest path: bytes we do not understand (PQT2 `0x2c`, PVBR, PVB2, PCP2 `0x1d-0x1f`) are preserved exactly, and each such file is a free sample for `UNKNOWN_BYTES.txt`.
 - Likewise keep the track's original **PDB row bytes** (`pdb-row.bin`) if the row writer needs unknown fields; we then regenerate only the fields we understand.
-- Playlists: each rekordbox playlist becomes a folder in `pendrives/<name>/` of `000_` prefixed symlinks, in the exported order. Folder playlists keep their nesting.
+- Playlists: each rekordbox playlist becomes a folder in `playlists/<name>/` of `000_` prefixed symlinks, in the exported order. Folder playlists keep their nesting.
 - Folder placement in `track-master-copy`: derive from the `Contents/` path (e.g. `Contents/Intapol/UK Dembow/x.mp3` becomes `Intapol/UK Dembow`).
 
 ## Provenance and precedence
@@ -92,7 +92,7 @@ What it takes from the drive (read only):
 | PWAV, PWV2, PWV3, PWV5 waveforms | `waveform.bin` (PWV4 is still approximated at export) | `waveform=rekordbox` |
 | `PIONEER/Artwork/.../a<id>.jpg` (80x80), else the picture inside the audio | `artwork.jpg` | `artwork=rekordbox` |
 | the original `ANLZ0000.DAT/.EXT/.2EX` | `anlz/` byte for byte | n/a |
-| playlists | `pendrives/<Folder - Playlist>/` in the drive's order; an existing playlist keeps its tracks and order, tracks it lacks are appended | n/a |
+| playlists | `playlists/<Folder - Playlist>/` in the drive's order; an existing playlist keeps its tracks and order, tracks it lacks are appended | n/a |
 | `DEVSETTING.DAT`, `MYSETTING.DAT` (option, CRC checked) | a new settings set `user-settings/<set>/` (default name `rekordbox`, made unique), chosen when exporting | n/a |
 | `RBFLTR.DAT`, `exportExt.pdb`, `djprofile.nxs` (separate options, on by default in the GUI) | the same set | n/a |
 | `USBMNG.DAT` | not kept: it describes that drive's files only | n/a |

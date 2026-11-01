@@ -75,9 +75,9 @@ for f in "$dir"/*; do
 done
 
 printf '\n[playlists]\n'
-for p in "$tc_lib"/pendrives/*/symlinks/*; do
+for p in "$tc_lib"/playlists/*/symlinks/*; do
     if [ -L "$p" ] && [ "$(readlink -f -- "$p")" = "$dir" ]; then
-        rest=${p#"$tc_lib"/pendrives/}
+        rest=${p#"$tc_lib"/playlists/}
         printf '%s\t%s\n' "${rest%%/*}" "${p##*/}"
     fi
 done

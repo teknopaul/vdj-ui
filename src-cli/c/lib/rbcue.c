@@ -39,13 +39,13 @@ int tc_cuerender(const struct tc_waveform *w, const struct tc_cuemarks *cm, doub
     out->pwv5 = NULL;
     if (w->columns > 0) {
         out->pwv3 = malloc(w->columns);
-        out->pwv5 = malloc(w->columns * sizeof *out->pwv5);
+        out->pwv5 = malloc((w->columns + w->pwv5_extra) * sizeof *out->pwv5);
         if (out->pwv3 == NULL || out->pwv5 == NULL) {
             tc_waveform_free(out);
             return -1;
         }
         memcpy(out->pwv3, w->pwv3, w->columns);
-        memcpy(out->pwv5, w->pwv5, w->columns * sizeof *out->pwv5);
+        memcpy(out->pwv5, w->pwv5, (w->columns + w->pwv5_extra) * sizeof *out->pwv5);
     }
     if (!o->enabled) {
         return 0;

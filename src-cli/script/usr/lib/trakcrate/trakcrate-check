@@ -58,11 +58,11 @@ shopt -s nullglob nocaseglob
 for track in "$tc_master"/*/*/; do
     track=${track%/}
     rel=${track#"$tc_master"/}
-    audio=("$track"/*.mp3 "$track"/*.wav)
+    audio=("$track"/*.mp3 "$track"/*.wav "$track"/*.flac)
     if [ "${#audio[@]}" -gt 1 ]; then
-        finding "$rel" error multiple-audio "${#audio[@]} audio files (a track has exactly one .mp3 or .wav)"
+        finding "$rel" error multiple-audio "${#audio[@]} audio files (a track has exactly one .mp3, .wav or .flac)"
     elif [ "${#audio[@]}" -eq 0 ]; then
-        finding "$rel" warning no-audio "no .mp3 or .wav file"
+        finding "$rel" warning no-audio "no .mp3, .wav or .flac file"
     fi
     wf=$track/waveform.bin
     if [ -e "$wf" ]; then

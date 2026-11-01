@@ -1,6 +1,10 @@
 #include "trakcrate_export_dialog.h"
 
 #include <QAbstractItemView>
+#include <QApplication>
+#include <QMetaObject>
+#include <functional>
+#include <thread>
 #include <QSizePolicy>
 #include <QCheckBox>
 #include <QComboBox>
@@ -31,7 +35,16 @@
 
 namespace vdj {
 
-TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWidget* parent) : QDialog(parent), lib_(lib)
+// Runs work on a thread of its own; the function it returns runs afterwards in the GUI thread, unless the dialog is gone by then.
+static void spawn(const std::shared_ptr<std::atomic<bool>>& alive, std::function<std::function<void()>()> work)
+{
+    std::thread([alive, work = std::move(work)] {
+        std::function<void()> done = work();
+        QMetaObject::invokeMethod(qApp, [alive, done = std::move(done)] { if (alive->load()) done(); }, Qt::QueuedConnection);
+    }).detach();
+}
+
+TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWidget* parent, bool async) : QDialog(parent), async_(async), lib_(lib)
 {
     setWindowTitle(QStringLiteral("Export to a rekordbox drive"));
     playlists_ = new QListWidget;
@@ -196,24 +209,54 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     refreshSummary();
 }
 
+TrakcrateExportDialog::~TrakcrateExportDialog() { alive_->store(false); }
+
 void TrakcrateExportDialog::setPendrive(const QString& drive, bool physical)
 {
     pendrive_ = drive;
     setWindowTitle(physical ? QStringLiteral("Write pendrive \"%1\" to a physical device").arg(drive)
                             : QStringLiteral("Write pendrive \"%1\" as a rekordbox folder").arg(drive));
     setSettingsSet(QString::fromStdString(trakcrate::effectiveDriveSettingsSet(lib_, drive.toStdString())));      // the set the pendrive is linked to
+    entries_.clear();
     playlists_->clear();
-    const auto entries = lib_.driveEntries(drive.toStdString());
-    for (size_t i = 0; i < entries.size(); ++i) {
-        auto* it = new QListWidgetItem(QStringLiteral("%1  (%2 tracks)").arg(QString::fromStdString(entries[i].name)).arg(entries[i].tracks), playlists_);
-        it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
-        it->setCheckState(Qt::Checked);
-        it->setData(Qt::UserRole, int(i));
-    }
     if (physical) {
         dest_->setReadOnly(true);
         dest_->setPlaceholderText(QStringLiteral("choose a mounted stick from the list below"));
         if (browse_) browse_->setVisible(false);
+    }
+    if (!async_) {
+        entries_ = lib_.driveEntries(drive.toStdString());
+        fillEntries();
+        return;
+    }
+    auto* wait = new QListWidgetItem(QStringLiteral("Loading..."), playlists_);      // reading every entry's links can take a while on a big pendrive
+    wait->setFlags(Qt::NoItemFlags);
+    loadingEntries_ = true;
+    refreshSummary();
+    const trakcrate::Library lib = lib_;
+    const std::string name = drive.toStdString();
+    spawn(alive_, [this, lib, name] {
+        auto es = lib.driveEntries(name);
+        return std::function<void()>([this, es = std::move(es)]() mutable {
+            entries_ = std::move(es);
+            loadingEntries_ = false;
+            fillEntries();
+        });
+    });
+}
+
+// The pendrive's entries in the list, all ticked; then the summary.
+void TrakcrateExportDialog::fillEntries()
+{
+    {
+        QSignalBlocker b(playlists_);
+        playlists_->clear();
+        for (size_t i = 0; i < entries_.size(); ++i) {
+            auto* it = new QListWidgetItem(QStringLiteral("%1  (%2 tracks)").arg(QString::fromStdString(entries_[i].name)).arg(entries_[i].tracks), playlists_);
+            it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
+            it->setCheckState(Qt::Checked);
+            it->setData(Qt::UserRole, int(i));
+        }
     }
     refreshSummary();
 }
@@ -247,18 +290,45 @@ void TrakcrateExportDialog::browse()
     if (!dir.isEmpty()) setDestination(dir);
 }
 
+namespace {
+struct DriveRow {
+    QString text, mountPoint;
+};
+
+std::vector<DriveRow> scanDriveRows()
+{
+    std::vector<DriveRow> rows;
+    for (const PhysicalPendrive& d : PendriveRegistry::scanPhysical()) {
+        const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(d.mountPoint.toStdString());
+        rows.push_back({QStringLiteral("%1  (%2 free%3)").arg(d.name).arg(QLocale().formattedDataSize(d.freeBytes))
+                            .arg(!usb.found ? QString() : QStringLiteral(", ") + QString::fromStdString(usb.label) + (usb.downgraded() ? QStringLiteral(" - supports USB 3") : QString())),
+                        d.mountPoint});
+    }
+    return rows;
+}
+} // namespace
+
 void TrakcrateExportDialog::rescanDrives()
 {
     const QString chosen = drives_->currentIndex() > 0 ? drives_->currentData().toString() : QString();
-    drives_->clear();
-    drives_->addItem(QStringLiteral("Mounted drives..."));
-    for (const PhysicalPendrive& d : PendriveRegistry::scanPhysical()) {
-        const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(d.mountPoint.toStdString());
-        drives_->addItem(QStringLiteral("%1  (%2 free%3)").arg(d.name).arg(QLocale().formattedDataSize(d.freeBytes))
-                             .arg(!usb.found ? QString() : QStringLiteral(", ") + QString::fromStdString(usb.label) + (usb.downgraded() ? QStringLiteral(" - supports USB 3") : QString())), d.mountPoint);
+    auto show = [this, chosen](const std::vector<DriveRow>& rows) {
+        drives_->clear();
+        drives_->addItem(QStringLiteral("Mounted drives..."));
+        for (const DriveRow& r : rows) drives_->addItem(r.text, r.mountPoint);
+        const int again = chosen.isEmpty() ? -1 : drives_->findData(chosen);
+        if (again > 0) drives_->setCurrentIndex(again);
+    };
+    if (!async_) {
+        show(scanDriveRows());
+        return;
     }
-    const int again = chosen.isEmpty() ? -1 : drives_->findData(chosen);
-    if (again > 0) drives_->setCurrentIndex(again);
+    drives_->clear();
+    drives_->addItem(QStringLiteral("Looking for drives..."));
+    const quint64 gen = ++drivesGen_;
+    spawn(alive_, [this, gen, show] {
+        auto rows = scanDriveRows();
+        return std::function<void()>([this, gen, show, rows = std::move(rows)] { if (gen == drivesGen_) show(rows); });
+    });
 }
 
 void TrakcrateExportDialog::detectedChosen(int index)
@@ -266,19 +336,30 @@ void TrakcrateExportDialog::detectedChosen(int index)
     if (index > 0) setDestination(drives_->itemData(index).toString());     // the chosen drive stays shown in the combo
 }
 
+// A ticked entry of the pendrive: its tracks, in the order set on the pendrive (reads every link: not for the GUI thread of a big pendrive).
+static void resolveEntries(const trakcrate::Library& lib, const std::string& pendrive, const std::vector<trakcrate::Library::DriveEntry>& entries,
+                           const std::vector<int>& idx, trakcrate::ExportOptions* o)
+{
+    for (int entry : idx)
+        if (entry >= 0 && size_t(entry) < entries.size())
+            o->lists.push_back({entries[size_t(entry)].name, lib.driveLibrary(pendrive).playlistTracks(entries[size_t(entry)].dir)});
+}
+
 trakcrate::ExportOptions TrakcrateExportDialog::options() const
+{
+    std::vector<int> idx;
+    trakcrate::ExportOptions o = baseOptions(&idx);
+    resolveEntries(lib_, pendrive_.toStdString(), entries_, idx, &o);
+    return o;
+}
+
+trakcrate::ExportOptions TrakcrateExportDialog::baseOptions(std::vector<int>* entryIdx) const
 {
     trakcrate::ExportOptions o;
     for (int i = 0; i < playlists_->count(); ++i) {
         if (playlists_->item(i)->checkState() != Qt::Checked) continue;
-        if (pendrive_.isEmpty()) {
-            o.playlists.push_back(playlists_->item(i)->text().toStdString());
-        } else {                                                   // an entry of the pendrive: its tracks, in the order set on the pendrive
-            const int entry = playlists_->item(i)->data(Qt::UserRole).toInt();
-            const auto entries = lib_.driveEntries(pendrive_.toStdString());
-            if (entry >= 0 && size_t(entry) < entries.size())
-                o.lists.push_back({entries[size_t(entry)].name, lib_.driveLibrary(pendrive_.toStdString()).playlistTracks(entries[size_t(entry)].dir)});
-        }
+        if (pendrive_.isEmpty()) o.playlists.push_back(playlists_->item(i)->text().toStdString());
+        else entryIdx->push_back(playlists_->item(i)->data(Qt::UserRole).toInt());
     }
     o.dest = dest_->text().trimmed().toStdString();
     o.allowUnanalysed = unanalysed_->isChecked();
@@ -315,32 +396,88 @@ QString TrakcrateExportDialog::virtualPendriveName() const
     return QFileInfo(QString::fromStdString(o.dest.string())).fileName();
 }
 
+// What the checks found out about the export and the destination; made off the GUI thread when the dialog is async.
+struct TrakcrateExportDialog::SummaryData {
+    bool haveLists = false;
+    trakcrate::ExportSummary s;
+    bool pathExists = false, pathIsDir = false;
+    std::vector<std::string> clash;
+    bool usbFound = false, usbDowngraded = false;
+    std::string usbLabel;
+    QString storageName;
+    qint64 avail = 0;
+};
+
+void TrakcrateExportDialog::setLoading()
+{
+    summary_->setText(QStringLiteral("<i>Loading...</i>"));
+    ok_->setEnabled(false);
+}
+
 void TrakcrateExportDialog::refreshSummary()
 {
-    const trakcrate::ExportOptions o = options();
+    std::vector<int> idx;
+    trakcrate::ExportOptions o = baseOptions(&idx);
+    auto compute = [](const trakcrate::Library& lib, const trakcrate::ExportOptions& opts) {
+        SummaryData d;
+        d.haveLists = !opts.playlists.empty() || !opts.lists.empty();
+        if (!d.haveLists) return d;
+        d.s = trakcrate::summariseExport(lib, opts);
+        if (opts.dest.empty()) return d;
+        const QString path = QString::fromStdString(opts.dest.string());
+        QFileInfo fi(path);
+        while (!fi.exists() && !fi.isRoot() && fi.absoluteDir().exists() == false) fi = QFileInfo(fi.absolutePath());
+        QDir existing(fi.exists() ? (fi.isDir() ? fi.absoluteFilePath() : fi.absolutePath()) : fi.absolutePath());
+        d.pathExists = QFileInfo(path).exists();
+        d.pathIsDir = QDir(path).exists();
+        if (d.pathExists && d.pathIsDir) d.clash = trakcrate::exportConflicts(opts.dest);      // other files on a stick are fine
+        const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(existing.exists() ? existing.absolutePath().toStdString() : std::string());
+        d.usbFound = usb.found;
+        d.usbLabel = usb.label;
+        d.usbDowngraded = usb.downgraded();
+        QStorageInfo st(existing.exists() ? existing.absolutePath() : QDir::homePath());
+        d.storageName = st.displayName();
+        d.avail = st.bytesAvailable();
+        return d;
+    };
+    if (!async_) {
+        resolveEntries(lib_, pendrive_.toStdString(), entries_, idx, &o);
+        applySummary(compute(lib_, o), o);
+        return;
+    }
+    setLoading();
+    const quint64 gen = ++summaryGen_;
+    if (loadingEntries_) return;                                   // the entries arriving ask again
+    const trakcrate::Library lib = lib_;
+    const std::string pendrive = pendrive_.toStdString();
+    const auto entries = entries_;
+    spawn(alive_, [this, gen, lib, pendrive, entries, idx, o, compute]() mutable {
+        resolveEntries(lib, pendrive, entries, idx, &o);
+        SummaryData d = compute(lib, o);
+        return std::function<void()>([this, gen, d = std::move(d), o = std::move(o)] { if (gen == summaryGen_) applySummary(d, o); });
+    });
+}
+
+void TrakcrateExportDialog::applySummary(const SummaryData& d, const trakcrate::ExportOptions& o)
+{
     QString html;
-    const bool haveLists = !o.playlists.empty() || !o.lists.empty();
+    const bool haveLists = d.haveLists;
     bool good = haveLists && !o.dest.empty();
     if (!haveLists) raiseLimits_->setVisible(false);
     if (!haveLists) html += QStringLiteral("Tick the playlists to put on the drive.<br>");
     if (haveLists) {
-        const trakcrate::ExportSummary s = trakcrate::summariseExport(lib_, o);
+        const trakcrate::ExportSummary& s = d.s;
         html += QStringLiteral("%1 track(s), %2 of audio.<br>").arg(s.tracks).arg(QLocale().formattedDataSize(qint64(s.audioBytes)));
         raiseLimits_->setVisible(s.overDefaultLimits);                    // the offer appears only when the lower limits are hit
         if (!s.overDefaultLimits && raiseLimits_->isChecked()) { QSignalBlocker b(raiseLimits_); raiseLimits_->setChecked(false); }
         for (const std::string& p : s.problems) { good = false; html += QStringLiteral("<span style='color:#c00'>%1</span><br>").arg(QString::fromStdString(p).toHtmlEscaped()); }
         if (!o.dest.empty()) {
-            QString path = QString::fromStdString(o.dest.string());
-            QFileInfo fi(path);
-            while (!fi.exists() && !fi.isRoot() && fi.absoluteDir().exists() == false) fi = QFileInfo(fi.absolutePath());
-            QDir existing(fi.exists() ? (fi.isDir() ? fi.absoluteFilePath() : fi.absolutePath()) : fi.absolutePath());
-            if (QFileInfo(path).exists() && !QFileInfo(path).isDir()) { good = false; html += QStringLiteral("<span style='color:#c00'>The destination is not a folder.</span><br>"); }
-            else if (QDir(path).exists()) {
-                const std::vector<std::string> clash = trakcrate::exportConflicts(o.dest);      // other files on a stick are fine
-                update_->setVisible(!clash.empty());
-                if (!clash.empty()) {
+            if (d.pathExists && !d.pathIsDir) { good = false; html += QStringLiteral("<span style='color:#c00'>The destination is not a folder.</span><br>"); }
+            else if (d.pathIsDir) {
+                update_->setVisible(!d.clash.empty());
+                if (!d.clash.empty()) {
                     QStringList names;
-                    for (const std::string& n : clash) names << QString::fromStdString(n);
+                    for (const std::string& n : d.clash) names << QString::fromStdString(n);
                     if (o.update) {
                         html += QStringLiteral("Updating the earlier export on the drive (%1): nothing is deleted.<br>").arg(names.join(QStringLiteral(", ")).toHtmlEscaped());
                     } else {
@@ -349,19 +486,17 @@ void TrakcrateExportDialog::refreshSummary()
                     }
                 }
             }
-            const trakcrate::UsbLink usb = trakcrate::usbLinkOfPath(existing.exists() ? existing.absolutePath().toStdString() : std::string());
-            if (usb.found) html += QStringLiteral("Connected as %1.<br>").arg(QString::fromStdString(usb.label).toHtmlEscaped());
-            if (usb.downgraded())
+            if (d.usbFound) html += QStringLiteral("Connected as %1.<br>").arg(QString::fromStdString(d.usbLabel).toHtmlEscaped());
+            if (d.usbDowngraded)
                 html += QStringLiteral("<span style='color:#b71c1c'><b>&#9888; This drive supports USB 3 but is connected as %1.</b> The socket, the cable or the "
                                        "drive's USB 3 contacts are not working: unplug it and plug it in again, or try another socket, before exporting.</span><br>")
-                            .arg(QString::fromStdString(usb.label).toHtmlEscaped());
-            QStorageInfo st(existing.exists() ? existing.absolutePath() : QDir::homePath());
+                            .arg(QString::fromStdString(d.usbLabel).toHtmlEscaped());
             const qint64 need = qint64(s.audioBytes + s.metadataBytes);
-            html += QStringLiteral("Free on %1: %2 (needs about %3)<br>").arg(st.displayName().toHtmlEscaped(), QLocale().formattedDataSize(st.bytesAvailable()), QLocale().formattedDataSize(need));
-            if (st.bytesAvailable() < need) { good = false; html += QStringLiteral("<span style='color:#c00'>Not enough space.</span><br>"); }
+            html += QStringLiteral("Free on %1: %2 (needs about %3)<br>").arg(d.storageName.toHtmlEscaped(), QLocale().formattedDataSize(d.avail), QLocale().formattedDataSize(need));
+            if (d.avail < need) { good = false; html += QStringLiteral("<span style='color:#c00'>Not enough space.</span><br>"); }
         }
     }
-    if (o.dest.empty() || !QDir(QString::fromStdString(o.dest.string())).exists()) update_->setVisible(false);
+    if (o.dest.empty() || !d.pathIsDir) update_->setVisible(false);
     summary_->setText(html);
     ok_->setEnabled(good);
 }

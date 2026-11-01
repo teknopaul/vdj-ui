@@ -6,14 +6,14 @@ Dembomatik, DR-6S. Never say "module" or "sampler" (see sanename.org rules; the 
 
 ## Layout
 
-| Part | Where |
-|---|---|
-| Tool model: settings, beat planning, JSON | `src/audio/djtoolz_tool.{h,cpp}` (`DjtoolzTool`, `ToolSettings`, one subclass per type) |
-| Scheduler (looks ~100 ms ahead of the VDJ clock) and engine (PulseAudio mixer) | `djtoolz_scheduler`, `djtoolz_engine` |
-| Presets, working state | `djtoolz_presets` (`<configDir>/djtoolz-presets/*.json`, `djtoolz-current.json`) |
-| Panel (tree, tools, presets, master) and one widget per tool | `src/ui/djtoolz_panel`, `djtoolz_tool_widget` |
-| MIDI controller (strips, faders, pickup) | `src/midi/djtoolz_midi_control`, `djtoolz_ctl_map`, `src/ui/djtoolz_controller` |
-| Tests | `tests/test_djtoolz_*.cpp` (UI: `test_djtoolz_ui`) |
+| Part                                                                           | Where                                                                                   |
+|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| Tool model: settings, beat planning, JSON                                      | `src/audio/djtoolz_tool.{h,cpp}` (`DjtoolzTool`, `ToolSettings`, one subclass per type) |
+| Scheduler (looks ~100 ms ahead of the VDJ clock) and engine (PulseAudio mixer) | `djtoolz_scheduler`, `djtoolz_engine`                                                   |
+| Presets, working state                                                         | `djtoolz_presets` (`<configDir>/djtoolz-presets/*.json`, `djtoolz-current.json`)        |
+| Panel (tree, tools, presets, master) and one widget per tool                   | `src/ui/djtoolz_panel`, `djtoolz_tool_widget`                                           |
+| MIDI controller (strips, faders, pickup)                                       | `src/midi/djtoolz_midi_control`, `djtoolz_ctl_map`, `src/ui/djtoolz_controller`         |
+| Tests                                                                          | `tests/test_djtoolz_*.cpp` (UI: `test_djtoolz_ui`)                                      |
 
 ## Adding a tool type
 

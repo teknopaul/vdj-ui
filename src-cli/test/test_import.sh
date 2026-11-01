@@ -88,7 +88,7 @@ test_import_options()
     assert_file "--folder" "$(M Mixes/a2)/track.wav"
 
     run tc import --no-dedupe --no-playlist --folder Other "$SRC"
-    assert_no_file "--no-playlist" "$LIB/pendrives/Gig"
+    assert_no_file "--no-playlist" "$LIB/playlists/Gig"
     assert_eq "tracks still imported" "2" "$(ls "$(M Other)" | wc -l)"
 
     run tc import --playlist bytitle --order title "$SRC"
@@ -125,7 +125,7 @@ test_import_modes_and_dry_run()
     setup
     run tc -n import "$SRC"
     assert_no_file "dry run: no track" "$(M Gig)"
-    assert_no_file "dry run: no playlist" "$LIB/pendrives/Gig"
+    assert_no_file "dry run: no playlist" "$LIB/playlists/Gig"
     assert_no_file "dry run: no lock left" "$LIB/.trakcrate-lock"
 
     tc import --link --no-playlist "$SRC" >/dev/null 2>&1
@@ -187,7 +187,7 @@ test_rm()
 
     run tc rm a10
     assert_status "in playlists: needs --yes" 1
-    assert_contains "lists the playlists" "pendrives/second" "$err"
+    assert_contains "lists the playlists" "playlists/second" "$err"
     run tc --yes rm a10
     assert_status "rm" 0
     assert_no_file "removed from the library" "$(M Gig/a10)"
@@ -225,9 +225,9 @@ test_check()
 
     cp "$(M Gig/a2)/track.wav" "$(M Gig/a2)/second.MP3"
     printf 'nonsense' > "$(M Gig/a10)/waveform.bin"
-    ln -s ../../../track-master-copy/Gig/a2 "$LIB/pendrives/Gig/symlinks/000_dup"
-    ln -s ../../../track-master-copy/Gig/a2 "$LIB/pendrives/Gig/symlinks/noprefix"
-    ln -s ../../../track-master-copy/Gone/x "$LIB/pendrives/Gig/symlinks/009_gone"
+    ln -s ../../../track-master-copy/Gig/a2 "$LIB/playlists/Gig/symlinks/000_dup"
+    ln -s ../../../track-master-copy/Gig/a2 "$LIB/playlists/Gig/symlinks/noprefix"
+    ln -s ../../../track-master-copy/Gone/x "$LIB/playlists/Gig/symlinks/009_gone"
     mkdir -p "$(M Gig/empty)"
     run tc --format tsv check
     assert_status "errors found" 1
@@ -244,7 +244,7 @@ test_check()
     assert_eq "json array" "[" "${out:0:1}"
 
     printf 'TCWV\001\000\000\000' > "$(M Gig/a10)/waveform.bin"
-    rm -rf "$(M Gig/a2)/second.MP3" "$LIB/pendrives/Gig/symlinks/000_dup" "$LIB/pendrives/Gig/symlinks/noprefix"
+    rm -rf "$(M Gig/a2)/second.MP3" "$LIB/playlists/Gig/symlinks/000_dup" "$LIB/playlists/Gig/symlinks/noprefix"
     run tc check
     assert_status "only warnings left" 0
 }

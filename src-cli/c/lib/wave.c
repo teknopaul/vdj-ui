@@ -146,7 +146,7 @@ static uint32_t get32(const uint8_t *p)
 
 uint8_t *tc_waveform_serialise(const struct tc_waveform *w, size_t *len)
 {
-    size_t total = 12 + (8 + TC_WAVE_PREVIEW_COLUMNS) + (8 + TC_WAVE_TINY_COLUMNS) + (8 + w->columns) + (8 + 2 * w->columns), i;
+    size_t total = 12 + (8 + TC_WAVE_PREVIEW_COLUMNS) + (8 + TC_WAVE_TINY_COLUMNS) + (8 + w->columns) + (8 + 2 * (w->columns + w->pwv5_extra)), i;
     uint8_t *out = malloc(total), *p;
 
     if (out == NULL) {
@@ -171,8 +171,8 @@ uint8_t *tc_waveform_serialise(const struct tc_waveform *w, size_t *len)
     }
     p += w->columns;
     memcpy(p, "PWV5", 4);
-    p = put32(p + 4, (uint32_t)(2 * w->columns));
-    for (i = 0; i < w->columns; i++) {
+    p = put32(p + 4, (uint32_t)(2 * (w->columns + w->pwv5_extra)));
+    for (i = 0; i < w->columns + w->pwv5_extra; i++) {
         *p++ = (uint8_t)(w->pwv5[i] >> 8);
         *p++ = (uint8_t)(w->pwv5[i] & 0xff);
     }
@@ -220,12 +220,13 @@ int tc_waveform_parse(const uint8_t *data, size_t len, struct tc_waveform *w)
     }
     (void)have_pwav;
     (void)have_pwv2;
-    if (pwv3 == NULL || pwv5 == NULL || pwv3_len != columns || pwv5_len != columns) {
+    if (pwv3 == NULL || pwv5 == NULL || pwv3_len != columns || pwv5_len < columns) {
         return -1;
     }
     w->columns = columns;
+    w->pwv5_extra = pwv5_len - columns;
     w->pwv3 = malloc(columns ? columns : 1);
-    w->pwv5 = malloc((columns ? columns : 1) * sizeof *w->pwv5);
+    w->pwv5 = malloc((pwv5_len ? pwv5_len : 1) * sizeof *w->pwv5);
     if (!w->pwv3 || !w->pwv5) {
         tc_waveform_free(w);
         return -1;
@@ -233,7 +234,7 @@ int tc_waveform_parse(const uint8_t *data, size_t len, struct tc_waveform *w)
     if (columns) {
         memcpy(w->pwv3, pwv3, columns);
     }
-    for (i = 0; i < columns; i++) {
+    for (i = 0; i < pwv5_len; i++) {
         w->pwv5[i] = (uint16_t)((pwv5[2 * i] << 8) | pwv5[2 * i + 1]);
     }
     return 0;

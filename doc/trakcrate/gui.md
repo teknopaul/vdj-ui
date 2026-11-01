@@ -25,7 +25,7 @@ vdj-ui builds its panels as `QDockWidget`s in `MainWindow` (Debug at the bottom,
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-Left: folders of `track-master-copy` and the playlists (`pendrives/*`). Centre: track table. Right: detail/editor for the selection. Bottom: background jobs and a message log.
+Left: folders of `track-master-copy` and the playlists (`playlists/*`). Centre: track table. Right: detail/editor for the selection. Bottom: background jobs and a message log.
 
 ## Functions
 

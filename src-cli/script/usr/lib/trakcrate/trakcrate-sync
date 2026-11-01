@@ -74,7 +74,7 @@ trap 'rm -rf -- "$work"' EXIT
 : > "$work/lists"
 for name in "${args[@]}"; do
     tc_safe_name "$name" || tc_usage_err "bad playlist name '$name'"
-    pdir=$tc_lib/pendrives/$name
+    pdir=$tc_lib/playlists/$name
     [ -d "$pdir" ] || tc_die "no such playlist: $name"
     declare -a dirs=()
     tc_playlist_dirs "$pdir" dirs

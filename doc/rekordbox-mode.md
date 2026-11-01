@@ -1,5 +1,8 @@
 # Rekordbox PC mode (experimental)
 
+
+**status** not working and crashes decks, we need pcap dumps from a session where real rekordbox connects to the network.
+
 vdj-ui can pretend to be a **rekordbox PC** on the Pro DJ Link network: it claims device number 17, announces itself as
 `rekordbox`, answers the decks' media-slot query and runs a **dbserver** (TCP 12523 for the port query, TCP 1051 for the
 database protocol) that answers the decks' browse and track-metadata requests from a local rekordbox export. It was built
@@ -51,12 +54,12 @@ told stays valid when the mode is restarted.
 
 ## Logs (in the log folder)
 
-| File | Content |
-|------|---------|
-| `dbserver-<ip>-<time>.log` | every connection: decoded requests and replies, raw hex of what was received |
-| `dbserver-<ip>-<time>.bin` | the exact inbound byte stream (ground truth for offline analysis) |
-| `unknown-requests.log` | one entry per request of unknown type: the answer to "what did the deck ask for?" |
-| `nfs-observer.log` | NFS observer events |
+| File                       | Content                                                                           |
+|----------------------------|-----------------------------------------------------------------------------------|
+| `dbserver-<ip>-<time>.log` | every connection: decoded requests and replies, raw hex of what was received      |
+| `dbserver-<ip>-<time>.bin` | the exact inbound byte stream (ground truth for offline analysis)                 |
+| `unknown-requests.log`     | one entry per request of unknown type: the answer to "what did the deck ask for?" |
+| `nfs-observer.log`         | NFS observer events                                                               |
 
 `grep -c . unknown-requests.log` is zero when the deck only used documented requests.
 

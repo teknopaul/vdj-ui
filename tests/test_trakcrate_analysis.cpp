@@ -182,6 +182,16 @@ void TestTrakcrateAnalysis::waveformFileRoundTrip()
     std::string bad = bytes;
     bad[0] = 'X';
     QVERIFY(!parseWaveform(bad, &back));
+    // a few rekordbox tracks have one PWV5 column more than PWV3: kept as imported
+    Waveform longer = w;
+    longer.pwv5.push_back(0x1234);
+    Waveform again;
+    QVERIFY(parseWaveform(serialiseWaveform(longer), &again));
+    QVERIFY(again == longer);
+    QCOMPARE(again.pwv5.size(), again.pwv3.size() + 1);
+    Waveform shorter = w;
+    shorter.pwv5.pop_back();
+    QVERIFY(!parseWaveform(serialiseWaveform(shorter), &back));                              // fewer PWV5 than PWV3 stays invalid
 }
 
 void TestTrakcrateAnalysis::loudnessValues()

@@ -1,9 +1,9 @@
 There is what seems to me to be an intrinsic problem with nudge.
 
-If one deck is playing at a reported BMP of 120.00, but is actually drifting a little (.0.0 is not very precices.
+If one deck is playing at a reported BMP of 120.00, but is actually drifting a little (.0.0 is not very precice).
 to keep another deck in sync 
 - first you have to set it to 120.00 bpm
-- then you ahve to sstart it at as close to the correct time as possible to start it in sync
+- then you have to start it at as close to the correct time as possible to start it in sync
 - then you ahve to nudge it into sync.
 
 bass drum beats often have a few milliseconds of attack befory they reach peak, to sync drum beart you need to sync the peaks not the sample start.

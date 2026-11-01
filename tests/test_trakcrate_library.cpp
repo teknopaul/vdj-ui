@@ -248,7 +248,7 @@ void TestTrakcrateLibrary::libraryLayout()
     Library lib = newLibrary();
     QVERIFY(lib.isOpen());
     QVERIFY(fs::is_directory(lib.masterDir()));
-    QVERIFY(fs::is_directory(lib.pendrivesDir()));
+    QVERIFY(fs::is_directory(lib.playlistsDir()));
     QVERIFY(fs::is_directory(lib.settingsDir()));
     Library again;
     QVERIFY(Library::create(lib.root()));                            // creating again is harmless
@@ -299,10 +299,10 @@ void TestTrakcrateLibrary::playlistOrderAndRenumber()
     QCOMPARE(order[0].filename().string(), std::string("three"));
     QCOMPARE(order[1].filename().string(), std::string("one"));
     QCOMPARE(order[2].filename().string(), std::string("two"));
-    QVERIFY(fs::exists(lib.pendrivesDir() / "mix" / "symlinks" / "000_three"));
-    QVERIFY(fs::exists(lib.pendrivesDir() / "mix" / "symlinks" / "001_one"));
-    QVERIFY(fs::exists(lib.pendrivesDir() / "mix" / "symlinks" / "002_two"));
-    QVERIFY(fs::read_symlink(lib.pendrivesDir() / "mix" / "symlinks" / "000_three").is_relative());   // library stays movable
+    QVERIFY(fs::exists(lib.playlistsDir() / "mix" / "symlinks" / "000_three"));
+    QVERIFY(fs::exists(lib.playlistsDir() / "mix" / "symlinks" / "001_one"));
+    QVERIFY(fs::exists(lib.playlistsDir() / "mix" / "symlinks" / "002_two"));
+    QVERIFY(fs::read_symlink(lib.playlistsDir() / "mix" / "symlinks" / "000_three").is_relative());   // library stays movable
     QVERIFY(lib.addToPlaylist("mix", t1, 1, &err));                  // the same track twice is allowed
     QCOMPARE(lib.playlistTracks("mix").size(), size_t(4));
     QVERIFY(lib.renumberPlaylist("mix", &err));
@@ -315,7 +315,7 @@ void TestTrakcrateLibrary::playlistWidthGrows()
     Library lib = newLibrary();
     QVERIFY(lib.createPlaylist("big"));
     fs::path t = lib.createTrackDir("F", "t");
-    fs::path links = lib.pendrivesDir() / "big" / "symlinks";
+    fs::path links = lib.playlistsDir() / "big" / "symlinks";
     // 1200 links created by hand with a 3 digit prefix, then renumbered
     for (int i = 0; i < 1200; ++i) {
         char name[32];
@@ -347,7 +347,7 @@ void TestTrakcrateLibrary::playlistRemoveAndDelete()
     std::vector<fs::path> order = lib.playlistTracks("p");
     QCOMPARE(order.size(), size_t(1));
     QCOMPARE(order[0].filename().string(), std::string("two"));
-    QVERIFY(fs::exists(lib.pendrivesDir() / "p" / "symlinks" / "000_two"));
+    QVERIFY(fs::exists(lib.playlistsDir() / "p" / "symlinks" / "000_two"));
     QVERIFY(fs::exists(t1));                                         // the track itself is untouched
     QVERIFY(!lib.removeFromPlaylist("p", 5, &err));
     QVERIFY(lib.deletePlaylist("p", &err));

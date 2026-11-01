@@ -13,9 +13,9 @@ namespace trakcrate {
 //
 //   <root>/user-settings/<set>/                       named sets of the player support files (settings_sets.h)
 //   <root>/track-master-copy/<folder>/<track>/        audio, meta.txt, source.txt, beatgrid.txt, cuemarks.txt, artwork.jpg ...
-//   <root>/pendrives/<name>/symlinks/000_<track>      symlinks to track folders; the numeric prefix is the order
+//   <root>/playlists/<name>/symlinks/000_<track>      symlinks to track folders; the numeric prefix is the order
 //
-// A playlist is a pendrives/<name> entry. Names given by callers are single path components (see isSafeName); anything else is refused.
+// A playlist is a playlists/<name> entry. Names given by callers are single path components (see isSafeName); anything else is refused.
 class Library {
 public:
     Library() = default;
@@ -28,7 +28,7 @@ public:
     bool isOpen() const { return !root_.empty(); }
     const fs::path& root() const { return root_; }
     fs::path masterDir() const { return root_ / "track-master-copy"; }
-    fs::path pendrivesDir() const { return root_ / "pendrives"; }
+    fs::path playlistsDir() const { return root_ / "playlists"; }
     fs::path settingsDir() const { return root_ / "user-settings"; }
     fs::path drivesDir() const { return root_ / "drives"; }
 
@@ -63,7 +63,7 @@ public:
     bool moveEntries(const std::string& name, const std::vector<int>& rows, int to, std::string* err = nullptr) const;
 
     // ---- user defined pendrives ----
-    // drives/<name>/ is a small library of its own (drives/<name>/pendrives/<NNN_entry>/symlinks/...): its "playlists" are the entries put on the
+    // drives/<name>/ is a small library of its own (drives/<name>/playlists/<NNN_entry>/symlinks/...): its "playlists" are the entries put on the
     // pendrive, in order. An entry is a snapshot of a master folder (kind "folder", tracks in name order) or of a playlist (kind "playlist", its order),
     // so reordering or removing tracks on a pendrive never changes the library's own folders and playlists. Entries become playlists when exported.
     struct DriveEntry {
@@ -110,7 +110,7 @@ public:
     static uint64_t estimateBytes(const std::vector<fs::path>& trackDirs);
 
 private:
-    fs::path symlinksDir(const std::string& name) const { return pendrivesDir() / name / "symlinks"; }
+    fs::path symlinksDir(const std::string& name) const { return playlistsDir() / name / "symlinks"; }
     std::vector<std::string> playlistEntries(const std::string& name) const;       // link names in play order
     bool writeOrder(const std::string& name, const std::vector<std::string>& entries, std::string* err) const;
 

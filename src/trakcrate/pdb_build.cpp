@@ -5,6 +5,7 @@
 #include <cdj/pdb.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <map>
@@ -217,6 +218,12 @@ std::string trackRow(const TrackTemplate& tpl, const PlanTrack& t, uint32_t id, 
     put16(fixed, 84, uint16_t(t.durationSecs));
     fixed[88] = char(t.colorId);
     fixed[89] = char(t.rating);
+    {
+        std::string ext = t.fileName.substr(t.fileName.find_last_of('.') == std::string::npos ? t.fileName.size() : t.fileName.find_last_of('.'));
+        for (char& c : ext) c = char(std::tolower(static_cast<unsigned char>(c)));
+        const int type = ext == ".mp3" ? 1 : ext == ".flac" ? 5 : ext == ".wav" ? 11 : -1;     // as in real exports; else the template's
+        if (type >= 0) put16(fixed, 90, uint16_t(type));
+    }
 
     const std::string date = t.dateAdded.empty() ? tpl.defaultDate : t.dateAdded;
     std::string s[kTrackSlots];

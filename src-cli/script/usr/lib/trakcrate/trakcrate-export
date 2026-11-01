@@ -8,7 +8,7 @@ set -eu
 usage='Usage: trakcrate export [options] PLAYLIST... DEST
 
 Builds a drive the CDJ/XDJ players read (PIONEER/ with export.pdb, analysis files, artwork, settings, and Contents/ with the
-audio) from the playlists (pendrives/NAME) of the library, in the order given. DEST is the last argument and must be an empty
+audio) from the playlists (playlists/NAME) of the library, in the order given. DEST is the last argument and must be an empty
 folder or not exist: nothing that is already there is ever changed. The metadata is built in a staging folder on tmpfs and checked
 with libcdj'"'"'s readers first; then each file is written to DEST once, audio first and export.pdb last, so an interrupted export
 leaves no database; then DEST is read back and compared by SHA-256 (--no-verify skips that). SHA256SUMS and
@@ -77,7 +77,7 @@ trap 'rm -rf -- "$work"' EXIT
 : > "$work/lists"
 for name in "${args[@]}"; do
     tc_safe_name "$name" || tc_usage_err "bad playlist name '$name'"
-    pdir=$tc_lib/pendrives/$name
+    pdir=$tc_lib/playlists/$name
     [ -d "$pdir" ] || tc_die "no such playlist: $name"
     declare -a dirs=()
     tc_playlist_dirs "$pdir" dirs

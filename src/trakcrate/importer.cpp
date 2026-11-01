@@ -26,7 +26,7 @@ static std::string lowerExt(const fs::path& p)
 static bool isAudio(const fs::path& p)
 {
     std::string e = lowerExt(p);
-    return e == ".mp3" || e == ".wav";
+    return e == ".mp3" || e == ".wav" || e == ".flac";
 }
 
 static bool hashFile(const fs::path& p, std::string* hex, uintmax_t* size, std::string* err)

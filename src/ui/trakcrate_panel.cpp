@@ -1051,7 +1051,7 @@ void TrakcratePanel::onJobFinished(const QString&, bool cancelled)
 void TrakcratePanel::exportDialog()
 {
     if (!lib_.isOpen()) return;
-    TrakcrateExportDialog dlg(lib_, this);
+    TrakcrateExportDialog dlg(lib_, this, true);
     const QStringList selected = tree_->currentItem() && tree_->currentItem()->data(0, KindRole).toString() == QLatin1String("playlist")
                                      ? QStringList(tree_->currentItem()->data(0, NameRole).toString()) : QStringList();
     for (const QString& n : selected) dlg.selectPlaylist(n);
@@ -1320,7 +1320,7 @@ void TrakcratePanel::deleteFolderDialog(const QString& folder)
 void TrakcratePanel::exportPendrive(const QString& drive, bool physical)
 {
     if (!lib_.isOpen()) return;
-    TrakcrateExportDialog dlg(lib_, this);
+    TrakcrateExportDialog dlg(lib_, this, true);
     dlg.setPendrive(drive, physical);
     bool dangling = false;
     trakcrate::effectiveDriveSettingsSet(lib_, drive.toStdString(), &dangling);
@@ -1688,9 +1688,9 @@ void TrakcratePanel::updateWatches()
     if (!watcher_->directories().isEmpty()) watcher_->removePaths(watcher_->directories());
     if (!lib_.isOpen()) return;
     QStringList dirs;
-    dirs << QString::fromStdString(lib_.masterDir().string()) << QString::fromStdString(lib_.pendrivesDir().string());
+    dirs << QString::fromStdString(lib_.masterDir().string()) << QString::fromStdString(lib_.playlistsDir().string());
     for (const std::string& f : lib_.listFolders()) dirs << QString::fromStdString((lib_.masterDir() / f).string());
-    for (const std::string& p : lib_.listPlaylists()) dirs << QString::fromStdString((lib_.pendrivesDir() / p / "symlinks").string());
+    for (const std::string& p : lib_.listPlaylists()) dirs << QString::fromStdString((lib_.playlistsDir() / p / "symlinks").string());
     watcher_->addPaths(dirs);
 }
 

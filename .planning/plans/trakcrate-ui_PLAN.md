@@ -77,7 +77,7 @@ Read: `doc/trakcrate/trakcrate-db-format.md`, `artwork.md`, `cuemarks.md`, `voca
    - `meta.txt`: `key: value` lines (title, artist, album, genre, label, key, bpm, year, track_number, rating 0-5, color, comment, remixer, mix_name, original_filename).
    - `source.txt`: `origin:` per field group (meta, beatgrid, cues, waveform, artwork: `generated|rekordbox|edited`), `imported_from`, `imported_at`.
    - `beatgrid.txt`: header (`bpm`, `first_beat_us`) + optional explicit beats; `cuemarks.txt` per `cuemarks.md`; `vocals.txt` parse-only (round trip, no analyser).
-3. `Library`: `open/create(dir)` (creates `track-master-copy/`, `pendrives/`, `user-settings/`), `listFolders()`, `listTracks(folder)`, `loadTrack(dir)`, `saveMeta/Source/…`, `createPlaylist(name)`, `playlistTracks(name)` (symlinks `000_`… sorted), `addToPlaylist(name, trackDir, position)`, `renumberPlaylist`. Prefix width from count (≥3 digits).
+3. `Library`: `open/create(dir)` (creates `track-master-copy/`, `playlists/`, `user-settings/`), `listFolders()`, `listTracks(folder)`, `loadTrack(dir)`, `saveMeta/Source/…`, `createPlaylist(name)`, `playlistTracks(name)` (symlinks `000_`… sorted), `addToPlaylist(name, trackDir, position)`, `renumberPlaylist`. Prefix width from count (≥3 digits).
 4. Tests (`tests/test_trakcrate_library.cpp`): round trip of every format incl. unknown keys and comments; atomic write leaves no temp on success; playlist ordering with 12 and 1200 entries; natural sort (`track2` < `track10`); path safety (no `..`, no separators in names, sanitise folder names).
 
 Done when: `make` clean, test passes, no UI changes.

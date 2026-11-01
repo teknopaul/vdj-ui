@@ -503,7 +503,7 @@ int cmd_rbtrack(int argc, char **argv)
             memset(&wf, 0, sizeof wf);
             if (anlz_track_waveform(at, ANLZ_WAVE_PREVIEW, &aw) == ANLZ_OK && aw.count == TC_WAVE_PREVIEW_COLUMNS && aw.entry_bytes == 1 &&
                 anlz_track_waveform(at, ANLZ_WAVE_DETAIL, &a3) == ANLZ_OK && a3.count > 0 && a3.entry_bytes == 1 &&
-                anlz_track_waveform(at, ANLZ_WAVE_COLOR_DETAIL, &a5) == ANLZ_OK && a5.count == a3.count && a5.entry_bytes == 2) {
+                anlz_track_waveform(at, ANLZ_WAVE_COLOR_DETAIL, &a5) == ANLZ_OK && a5.count >= a3.count && a5.entry_bytes == 2) {
                 uint32_t i;
                 size_t sl;
                 uint8_t *bytes;
@@ -513,8 +513,9 @@ int cmd_rbtrack(int argc, char **argv)
                     memcpy(wf.pwv2, aw.data, sizeof wf.pwv2);
                 }
                 wf.columns = a3.count;
+                wf.pwv5_extra = a5.count - a3.count;    /* kept as rekordbox wrote it (a few tracks have one more PWV5 column) */
                 wf.pwv3 = malloc(wf.columns);
-                wf.pwv5 = malloc(wf.columns * sizeof *wf.pwv5);
+                wf.pwv5 = malloc(a5.count * sizeof *wf.pwv5);
                 if (wf.pwv3 != NULL && wf.pwv5 != NULL) {
                     memcpy(wf.pwv3, a3.data, wf.columns);
                     for (i = 0; i < a5.count; i++) {

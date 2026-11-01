@@ -271,9 +271,9 @@ int tc_anlz_build(const struct tc_anlz_track *d, uint8_t **dat_out, size_t *dat_
         struct tc_buf hb = { NULL, 0, 0, 0 }, body = { NULL, 0, 0, 0 };
 
         tc_buf_be32(&hb, 2);
-        tc_buf_be32(&hb, (uint32_t)d->columns);
+        tc_buf_be32(&hb, (uint32_t)(d->columns + d->pwv5_extra));
         tc_buf_be32(&hb, 0x00960305);
-        for (i = 0; i < d->columns; i++) {
+        for (i = 0; i < d->columns + d->pwv5_extra; i++) {
             tc_buf_be16(&body, d->pwv5[i]);
         }
         tag(&ext, "PWV5", &hb, body.d, body.n);

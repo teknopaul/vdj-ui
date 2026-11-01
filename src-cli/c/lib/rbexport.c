@@ -1133,6 +1133,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
         d.pwv3 = have_rendered ? rendered.pwv3 : w.pwv3;
         d.pwv5 = have_rendered ? rendered.pwv5 : w.pwv5;
         d.columns = w.columns;
+        d.pwv5_extra = w.pwv5_extra;
         d.pwv4 = pwv4;
         d.hot_cues = t->hot;
         d.nhot = t->nhot;

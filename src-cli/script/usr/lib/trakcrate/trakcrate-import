@@ -7,8 +7,8 @@ set -eu
 
 usage='Usage: trakcrate import [options] DIR
 
-Every .mp3 and .wav in DIR becomes track-master-copy/<folder>/<track>/ (audio, meta.txt from the tags, the embedded
-artwork, source.txt) and, unless --no-playlist, an ordered playlist pendrives/<NAME>/ is made of them.
+Every .mp3, .wav and .flac in DIR becomes track-master-copy/<folder>/<track>/ (audio, meta.txt from the tags, the embedded
+artwork, source.txt) and, unless --no-playlist, an ordered playlist playlists/<NAME>/ is made of them.
 A file whose audio_sha256 is already in the library is not copied again (the existing track goes into the playlist).
 Running it twice changes nothing.
 
@@ -107,7 +107,7 @@ if [ -n "$want_playlist" ]; then
     if ! tc_safe_name "$playlist"; then
         tc_usage_err "bad playlist name '$playlist'"
     fi
-    playlist_dir=$tc_lib/pendrives/$playlist
+    playlist_dir=$tc_lib/playlists/$playlist
     if [ -d "$playlist_dir/symlinks" ] && [ -z "$append$replace" ]; then
         tc_die "playlist '$playlist' exists: use --append or --replace (or --playlist NAME / --no-playlist)"
     fi
@@ -127,7 +127,7 @@ find_args=(-type f)
 if [ -z "$recursive" ]; then
     find_args=(-maxdepth 1 -type f)
 fi
-audio_filter=(\( -iname '*.mp3' -o -iname '*.wav' \))
+audio_filter=(\( -iname '*.mp3' -o -iname '*.wav' -o -iname '*.flac' \))
 unsupported=$(find "$src" "${find_args[@]}" -not "${audio_filter[@]}" -not -name '.*' | wc -l)
 if [ "$order" = none ]; then
     find "$src" "${find_args[@]}" "${audio_filter[@]}" -print0 > "$work/files"

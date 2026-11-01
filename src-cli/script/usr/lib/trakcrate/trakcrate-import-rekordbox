@@ -13,14 +13,14 @@ artwork from the drive are marked "rekordbox" in source.txt, so "trakcrate analy
 ANLZ files are kept byte for byte in <track>/anlz/. Tracks whose audio is not on the drive are skipped and listed.
 
 By default every playlist of the drive becomes a master folder named after it ("Folder - Playlist"); a track in several playlists is
-stored once, in the first (natural name order) playlist, and every playlist is also recreated in pendrives/. Audio already in the
+stored once, in the first (natural name order) playlist, and every playlist is also recreated in playlists/. Audio already in the
 library (same SHA-256) is not stored again; it joins the playlists.
 
   --folder NAME      the folder for tracks in no playlist (default "rekordbox")
   --by-path          tracks in no playlist, and all tracks of a drive without playlists, go to a folder named after their place on the
                      drive (Contents/A/B/x.mp3 -> "A - B") instead of one folder
   --no-playlist-folders   every track goes to the --folder folder (or by --by-path)
-  --no-playlists     do not recreate the playlists in pendrives/
+  --no-playlists     do not recreate the playlists in playlists/
   --link             symbolic links to the audio on the drive instead of copies
   --no-dedupe        store audio again even if the library has it
   --no-beatgrid --no-cues --no-waveform --no-artwork --no-anlz    leave a part out
@@ -214,9 +214,9 @@ if [ -n "$playlists" ] && [ -z "$dry" ]; then
         done < "$work/pl.$id"
         [ "${#names[@]}" -gt 0 ] || continue
         if [ -z "$pname" ] || ! tc_safe_name "$pname"; then tc_say "playlist skipped, bad name: $pname"; continue; fi
-        if [ -d "$tc_lib/pendrives/$pname" ]; then tc_say "playlist \"$pname\" already exists, left as it was"; continue; fi
-        mkdir -p -- "$tc_lib/pendrives/$pname"
-        tc_playlist_write "$tc_lib/pendrives/$pname" names links
+        if [ -d "$tc_lib/playlists/$pname" ]; then tc_say "playlist \"$pname\" already exists, left as it was"; continue; fi
+        mkdir -p -- "$tc_lib/playlists/$pname"
+        tc_playlist_write "$tc_lib/playlists/$pname" names links
         made=$((made + 1))
     done
 fi

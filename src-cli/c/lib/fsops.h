@@ -5,7 +5,7 @@
 
 /* Directory operations the export needs. */
 
-/* the audio file of a track directory (the first .mp3 or .wav by name, case insensitive extension); 1 found, 0 none or too long */
+/* the audio file of a track directory (the first .mp3, .wav or .flac by name, case insensitive extension); 1 found, 0 none or too long */
 int tc_find_audio(const char *dir, char *out, size_t outsz);
 
 /* mkdir -p; 0, or -1 with errno set */

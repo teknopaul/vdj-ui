@@ -28,7 +28,7 @@ int tc_find_audio(const char *dir, char *out, size_t outsz)
         return 0;
     }
     while ((e = readdir(d)) != NULL) {
-        if ((has_ext(e->d_name, ".mp3") || has_ext(e->d_name, ".wav")) && (best[0] == '\0' || strcmp(e->d_name, best) < 0)) {
+        if ((has_ext(e->d_name, ".mp3") || has_ext(e->d_name, ".wav") || has_ext(e->d_name, ".flac")) && (best[0] == '\0' || strcmp(e->d_name, best) < 0)) {
             snprintf(best, sizeof best, "%s", e->d_name);
         }
     }

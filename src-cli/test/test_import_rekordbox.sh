@@ -42,7 +42,7 @@ test_import_a_real_drive()
     assert_contains "grid analyser" "analyser: rekordbox" "$(cat "$t/beatgrid.txt")"
     assert_eq "ANLZ kept byte for byte" "$(cksum < "$drive/PIONEER/USBANLZ/P004/00028148/ANLZ0000.DAT")" \
         "$(cksum < "$(grep -l 'Whistling Diesel\|diesel' "$LIB"/track-master-copy/*/*/meta.txt | head -n 1 | xargs dirname)/anlz/ANLZ0000.DAT")"
-    assert_eq "the playlist has seven entries" "7" "$(ls "$LIB"/pendrives/*/symlinks | wc -l)"
+    assert_eq "the playlist has seven entries" "7" "$(ls "$LIB"/playlists/*/symlinks | wc -l)"
     assert_eq "the drive is untouched" "" "$(find "$drive" -newer "$T" -type f 2>/dev/null | head -n 1)"
 }
 
@@ -72,7 +72,7 @@ test_dry_run_changes_nothing()
     assert_status "dry run" 0
     assert_contains "counted" "imported 7" "$out"
     assert_eq "no folders" "" "$(ls "$LIB/track-master-copy")"
-    assert_eq "no playlists" "" "$(ls "$LIB/pendrives")"
+    assert_eq "no playlists" "" "$(ls "$LIB/playlists")"
 }
 
 test_options()
@@ -81,7 +81,7 @@ test_options()
     run tc import-rekordbox --no-playlists --no-playlist-folders --folder Real --no-anlz --no-waveform --settings "$drive"
     assert_status "options" 0
     assert_file "own folder" "$LIB/track-master-copy/Real"
-    assert_eq "no playlists" "" "$(ls "$LIB/pendrives")"
+    assert_eq "no playlists" "" "$(ls "$LIB/playlists")"
     assert_no_file "no waveform" "$LIB/track-master-copy/Real/$(ls "$LIB/track-master-copy/Real" | head -n 1)/waveform.bin"
     assert_no_file "no ANLZ copy" "$LIB/track-master-copy/Real/$(ls "$LIB/track-master-copy/Real" | head -n 1)/anlz"
     assert_file "settings kept" "$LIB/user-settings/DEVSETTING.DAT"
@@ -94,7 +94,7 @@ test_import_then_export_is_a_valid_drive()
     setup
     tc import-rekordbox "$drive" >/dev/null 2>&1
     local pl
-    pl=$(ls "$LIB/pendrives" | head -n 1)
+    pl=$(ls "$LIB/playlists" | head -n 1)
     run tc export "$pl" "$T/out"
     assert_status "export of the imported library" 0
     run tc verify "$T/out"
@@ -116,7 +116,7 @@ test_pdb_dump_and_diff()
     assert_status "same file" 0
     setup
     tc import-rekordbox "$drive" >/dev/null 2>&1
-    tc export "$(ls "$LIB/pendrives" | head -n 1)" "$T/out" >/dev/null 2>&1
+    tc export "$(ls "$LIB/playlists" | head -n 1)" "$T/out" >/dev/null 2>&1
     run tc pdb diff "$pdb" "$T/out/PIONEER/rekordbox/export.pdb"
     assert_status "real and ours differ" 1
     assert_contains "the diff says where" "tracks" "$out"
