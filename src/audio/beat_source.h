@@ -28,8 +28,8 @@ public:
 };
 
 // The VDJ's own ALSA sequencer. The beat position is read from the queue and extrapolated with the tempo, so the map is
-// re-derived on every call (cheap: one snd_seq_get_queue_status). The queue counts whole ticks (96 per beat), so the
-// position is quantised to ~5 ms at 120 BPM; the DJ Tools's lookahead absorbs that.
+// re-derived on every call (cheap: one snd_seq_get_queue_status). The position is AlsaClock::positionBeatsExact(): the queue's
+// real time and tempo history, not its tick counter (whole ticks, ~5 ms at 120 BPM), so it is exact to microseconds.
 class AlsaClockBeatSource : public BeatSource {
 public:
     explicit AlsaClockBeatSource(const AlsaClock* clock) : clock_(clock) {}

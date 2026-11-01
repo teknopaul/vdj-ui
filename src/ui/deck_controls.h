@@ -50,9 +50,12 @@ public:
     bool jumpsVisible() const;
     bool copyBpmVisible() const;
     bool syncVisible() const;
-    // Mark the Sync button of the deck the VDJ is difflocked to.
-    void setSyncLocked(bool locked);
-    bool syncLocked() const { return syncLocked_; }
+    // What the Sync button shows (see SyncController): the deck followed, the VDJ row for "the master".
+    enum class SyncState { Off, Waiting, Syncing, Locked, Suspended };
+    void setSyncState(SyncState state);
+    SyncState syncState() const { return syncState_; }
+    void setSyncLocked(bool locked) { setSyncState(locked ? SyncState::Locked : SyncState::Off); }
+    bool syncLocked() const { return syncState_ == SyncState::Syncing || syncState_ == SyncState::Locked; }   // this row is being followed
 
 signals:
     void playPauseClicked(int playerId, bool play);
@@ -67,7 +70,7 @@ signals:
 private:
     int playerId_;
     bool remote_ = false;
-    bool syncLocked_ = false;
+    SyncState syncState_ = SyncState::Off;
     QPushButton* playPause_;
     QPushButton* quantize_;
     QPushButton* restart_;

@@ -3,6 +3,7 @@
 
 #include <QElapsedTimer>
 #include <QString>
+#include <QStringList>
 #include <QWidget>
 
 #include <functional>
@@ -38,6 +39,7 @@ class TrakcrateTreeWidget;
 class TrakcrateSettingsViewer;
 class TrakcratePreviewPlayer;
 class TrakcrateJobRunner;
+class TrakcrateJobsStrip;
 class TrakcrateTrackModel;
 
 // The trakcrate pane (doc/trakcrate/gui.md): folders and playlists on the left, the tracks of the selection in the middle, the selected
@@ -151,6 +153,8 @@ private slots:
     void onTrackSelection();
     void onJobProgress(int done, int total, const QString& current);
     void onJobFinished(const QString& title, bool cancelled);
+    void onExportProgress(int id, int done, int total, const QString& current);
+    void onExportFinished(int id);
     void fileSystemChanged();
     void tableContextMenu(const QPoint& pos);
     void exportDialog();
@@ -209,12 +213,29 @@ private:
     QTimer* watchTimer_;
     std::shared_ptr<trakcrate::ImportReport> report_;
     std::shared_ptr<std::vector<trakcrate::AnalyseResult>> analysis_;
-    std::shared_ptr<trakcrate::ExportResult> export_;
     std::shared_ptr<trakcrate::BpmDetection> bpm_;
     std::shared_ptr<trakcrate::RbImportReport> rb_;
     QString bpmDir_;
     BpmPrompt bpmPrompt_;
-    QString exportDest_, exportRegisterName_;
+    // Exports run beside each other, each on a runner of its own; the other jobs (import, analysis, BPM) run alone on jobs_ and exclude exports,
+    // as they change the library the exports read.
+    struct ExportJob {
+        int id = 0;
+        TrakcrateJobRunner* runner = nullptr;
+        std::shared_ptr<trakcrate::ExportResult> result;
+        QString dest, registerName;
+        int done = 0, total = 0;
+        bool writingDatabase = false;                      // the database write cannot be interrupted
+    };
+    std::vector<std::unique_ptr<ExportJob>> exports_;
+    int nextExportId_ = 1;
+    QString orphanDest_;
+    TrakcrateJobsStrip* jobsStrip_ = nullptr;
+    QStringList exportLog_;                               // what the last exports reported, newest last (the status line shows the newest)
+    bool anyBusy() const;
+    ExportJob* exportJob(int id);
+    void updateExportUi();
+    void cancelAllJobs();
     bool watchSuspended_ = false;
     QElapsedTimer liveTimer_;
 };

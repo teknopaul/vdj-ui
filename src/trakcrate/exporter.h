@@ -124,6 +124,12 @@ ExportSummary summariseExport(const Library& lib, const ExportOptions& opts);
 // (compared without regard to case, as on FAT), which an export refuses to write over; empty when dest does not exist.
 std::vector<std::string> exportConflicts(const fs::path& dest);
 
+// True when two export destinations are the same folder or one lies inside the other: two exports running at once must not overlap.
+bool destinationsOverlap(const fs::path& a, const fs::path& b);
+
+// True while some running export still holds staging space (for tests: it is false once every export has finished or failed).
+bool stagingReserved();
+
 // A file name safe on FAT/exFAT: characters Windows forbids replaced by '_', no trailing dots or spaces, reserved device names avoided.
 std::string fatSafeName(const std::string& name);
 

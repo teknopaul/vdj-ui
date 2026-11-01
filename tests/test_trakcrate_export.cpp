@@ -12,6 +12,7 @@
 #include "trakcrate/sha256.h"
 
 #include <fstream>
+#include <thread>
 #include <set>
 #include <sstream>
 
@@ -174,6 +175,8 @@ private slots:
     void summaryDoesNotWrite();
     void artworkIsExportedOncePerImage();
     void pendriveEntriesAreExportedAsPlaylists();
+    void destinationOverlap();
+    void concurrentExportsMatchSerialOnes();
 };
 
 void TestTrakcrateExport::fatNames()
@@ -325,6 +328,45 @@ void TestTrakcrateExport::drivesAreIdenticalAndStagingIsGone()
     QVERIFY(fs::is_empty(tmp_ / "staging"));                                              // the staging directory was removed
     QVERIFY(!r1.stagingUsed.empty());
     QVERIFY(!fs::exists(r1.stagingUsed));
+}
+
+void TestTrakcrateExport::destinationOverlap()
+{
+    QVERIFY(destinationsOverlap(tmp_ / "a", tmp_ / "a"));
+    QVERIFY(destinationsOverlap(tmp_ / "a", tmp_ / "a" / "b" / "c"));       // nested, neither exists
+    QVERIFY(destinationsOverlap(tmp_ / "a" / "b", tmp_ / "a"));
+    QVERIFY(destinationsOverlap(tmp_ / "a", tmp_ / "a" / "."));
+    QVERIFY(!destinationsOverlap(tmp_ / "a", tmp_ / "ab"));                  // a name prefix is not a parent
+    QVERIFY(!destinationsOverlap(tmp_ / "a", tmp_ / "b"));
+    fs::create_directories(tmp_ / "real");
+    fs::create_directory_symlink(tmp_ / "real", tmp_ / "link");
+    QVERIFY(destinationsOverlap(tmp_ / "link", tmp_ / "real"));              // the same folder by another name
+}
+
+void TestTrakcrateExport::concurrentExportsMatchSerialOnes()
+{
+    importSet("Set", {{"a", 120}, {"b", 125}, {"c", 131}});
+    ExportOptions s = options("Set", "serial");
+    QVERIFY(exportDrive(lib_, s).ok);
+    ExportResult r1, r2, r3;
+    {
+        ExportOptions o1 = options("Set", "p1"), o2 = options("Set", "p2"), o3 = options("Set", "p3");
+        std::thread t1([&] { r1 = exportDrive(lib_, o1); }), t2([&] { r2 = exportDrive(lib_, o2); }), t3([&] { r3 = exportDrive(lib_, o3); });
+        t1.join(); t2.join(); t3.join();
+    }
+    QVERIFY2(r1.ok, r1.error.c_str());
+    QVERIFY2(r2.ok, r2.error.c_str());
+    QVERIFY2(r3.ok, r3.error.c_str());
+    const std::vector<std::string> ref = filesUnder(tmp_ / "serial");
+    for (const char* d : {"p1", "p2", "p3"}) {
+        QCOMPARE(filesUnder(tmp_ / d), ref);
+        for (const std::string& f : ref) {
+            if (f == "trakcrate-manifest.txt") continue;
+            QVERIFY2(slurp(tmp_ / "serial" / f) == slurp(tmp_ / d / f), (std::string(d) + "/" + f).c_str());
+        }
+    }
+    QVERIFY(fs::is_empty(tmp_ / "staging"));
+    QVERIFY(!stagingReserved());                                             // every reservation was released
 }
 
 void TestTrakcrateExport::destinationRules()

@@ -48,6 +48,7 @@
 #include <chrono>
 
 #include <QMenuBar>
+#include <QStandardPaths>
 #include <QToolButton>
 #include <QIcon>
 #include <QFileDialog>
@@ -116,6 +117,7 @@ MainWindow::MainWindow(QWidget* parent)
     network_ = new NetworkManager(this);
     // time every deck beat against the sequencer's beat as the packet arrives (for difflock)
     network_->setBeatProbe([this](double* ms) { return clock_ && clock_->beatOffsetMs(ms); });
+    network_->setTickBeatProbe([this](double* ms) { return clock_ && clock_->beatOffsetTickMs(ms); });
     autoIp_ = new AutoIpManager(this);
     config_ = new ConfigManager(this);
     quantize_ = new QuantizeSettings(config_, this);
@@ -180,7 +182,8 @@ MainWindow::MainWindow(QWidget* parent)
         masterPid_ = -1;
         masterBpm_ = 0.0;
         setMasterStatus(-1);
-        difflock_.off();                       // also unlocks the BPM spinner
+        cancelAlign();
+        syncController_.off();                 // also unlocks the BPM spinner
         refreshDiffLock();
         for (DeckWidget* d : deckArea_->findChildren<DeckWidget*>())
             if (isVdjRow(d)) d->setMaster(false);
@@ -238,6 +241,8 @@ MainWindow::MainWindow(QWidget* parent)
     QObject::connect(network_, &NetworkManager::masterChanged, this, [this](int pid) {
         setMasterStatus(pid);
         masterPid_ = pid;
+        syncController_.masterChanged(pid, localVdjId());
+        refreshDiffLock();
         // statusUpdated only carries other players' packets, so the local deck's master state comes from here
         if (auto* local = deckAt(int(network_->localPlayerId())))
             local->setMaster(pid == int(network_->localPlayerId()));
@@ -251,6 +256,7 @@ MainWindow::MainWindow(QWidget* parent)
             deck->setPlaying(playing);
             if (!playing && !isVdjDeck(pid)) {       // a stopped deck sends no beats: do not leave a stale reading
                 beatTempo_[pid].reset();
+                beatPhase_[pid].reset();
                 deck->setMeasuredBpm(0.0);
             }
             deck->setMaster(masterState != 0);
@@ -263,19 +269,29 @@ MainWindow::MainWindow(QWidget* parent)
         updateDeckOverlays(pid, bpm, pitch, flags, masterState, active);
         if (pid == bpmLockedTo()) followLockedBpm();
         if (flags & CDJ_STAT_FLAG_MASTER) {
-            difflock_.masterChanged(pid);              // follows the master when that is on
+            if (pid != difflock_.master())
+                telemetryEvent(QStringLiteral("master is deck %1").arg(pid));
+            difflock_.masterChanged(pid);
+            syncController_.masterChanged(pid, localVdjId());
             refreshDiffLock();
         }
     });
     QObject::connect(network_, &NetworkManager::beatReceived, this,
                      [this](int pid, double bpm, int barPos, double sequencerOffsetMs) {
-        if (!std::isnan(sequencerOffsetMs) && !isVdjDeck(pid) && clock_ && clock_->running()) {
-            const int nudge = difflock_.onBeat(pid, barPos, sequencerOffsetMs);
-            if (nudge) clock_->nudgeMillis(nudge);
-            if (pid == difflock_.player()) refreshDiffLock();
+        if (!isVdjDeck(pid)) {
+            // the difflock is fed from beatTimed, which has the packet's arrival time; keep what this signal knows
+            beatStash_[pid] = { sequencerOffsetMs, bpm, barPos };
+            if (telemetry_.active() && !std::isnan(sequencerOffsetMs) && clock_ && clock_->running()) {
+                SyncTelemetry::Sample s = telemetryState();
+                s.pid = pid; s.barPos = barPos; s.reportedBpm = bpm;
+                s.diffMs = sequencerOffsetMs;
+                telemetryPending_[pid] = s;
+            }
         }
-        if (!isVdjDeck(pid))
+        if (!isVdjDeck(pid)) {
             deckPhase_.setBpm(pid, bpm);
+            beatPhase_[pid].setReportedBpm(bpm);        // a new tempo restarts the window
+        }
         for (int i = 0; i < deckArea_->deckCount(); ++i) {
             auto* deck = deckArea_->deckAt(i);
             if (deck && deck->playerId() == pid) {
@@ -290,11 +306,67 @@ MainWindow::MainWindow(QWidget* parent)
         }
         if (pid == bpmLockedTo()) followLockedBpm();
     });
+    QObject::connect(network_, &NetworkManager::beatRaw, this,
+                     [this](int pid, int trackBpmRaw, quint32 pitchRaw, quint32 nextBeatMs, quint32 beat8Ms, double tickOffsetMs) {
+        auto it = telemetryPending_.find(pid);
+        if (it == telemetryPending_.end()) return;      // telemetry off, or not a beat we log
+        it->second.trackBpmRaw = trackBpmRaw;
+        it->second.pitchRaw = pitchRaw;
+        it->second.nextBeatMs = nextBeatMs;
+        it->second.beat8Ms = beat8Ms;
+        it->second.diffTickMs = std::isnan(tickOffsetMs) ? 0.0 : tickOffsetMs;
+    });
     QObject::connect(network_, &NetworkManager::beatTimed, this, [this](int pid, int barPos, qint64 steadyNs) {
         if (isVdjDeck(pid)) return;                  // ours: the ALSA sequencer's tempo is shown instead
         deckPhase_.onBeat(pid, double(steadyNs) / 1e6, barPos);   // the packet's arrival, steady clock
         BeatTempo& tempo = beatTempo_[pid];
         tempo.addBeat(barPos, steadyNs);
+        BeatPhase& phase = beatPhase_[pid];
+        phase.addBeat(barPos, steadyNs);
+        int nudgeApplied = 0;
+        double diffUsed = 0.0;
+        if (auto st = beatStash_.find(pid); st != beatStash_.end()) {
+            const BeatStash beat = st->second;
+            beatStash_.erase(st);
+            if (!std::isnan(beat.offsetMs) && clock_ && clock_->running()) {
+                diffUsed = beat.offsetMs;
+                if (quantisedPhase_) {
+                    // the packet is up to a deck tick late: use where the beat probably was, shifted by half a tick (where a raw
+                    // arrival sits on average) so the difflock target keeps its meaning. Not while the estimate is unsure.
+                    const BeatPhase::Estimate est = phase.estimate();
+                    if (est.valid && !est.resonant)
+                        diffUsed = beat.offsetMs - (double(steadyNs) / 1e6 - est.equivalentArrivalMs());
+                }
+                nudgeApplied = difflock_.onBeat(pid, beat.barPos, diffUsed);
+                if (nudgeApplied) clock_->nudgeMillis(nudgeApplied);
+                if (alignState_ != AlignState::None && clock_->bpm() > 0.0)
+                    alignOnBeat(pid, 60000.0 / clock_->bpm());
+                const SyncController::Phase before = syncController_.phase();
+                syncController_.onBeat(pid);
+                if (syncController_.phase() != before || pid == difflock_.player()) refreshDiffLock();
+                if (pid == bpmLockedTo() && syncController_.glideActive()) followLockedBpm(true);
+            }
+        }
+        if (telemetry_.active()) {
+            auto it = telemetryPending_.find(pid);
+            if (it != telemetryPending_.end()) {
+                SyncTelemetry::Sample s = it->second;
+                telemetryPending_.erase(it);
+                s.steadyMs = double(steadyNs) / 1e6;
+                s.measuredBpm = tempo.bpm();
+                s.nudgeMs = nudgeApplied;
+                s.diffUsedMs = diffUsed;
+                s.avgDiffMs = difflock_.avgDiff(pid);
+                s.targetMs = difflock_.targetMs();
+                const BeatPhase::Estimate est = phase.estimate();
+                if (est.valid) {
+                    s.estPeriodMs = est.periodMs;
+                    s.estPhaseUncMs = est.phaseUncertaintyMs;
+                    s.estResonant = est.resonant ? 1 : 0;
+                }
+                telemetry_.beat(s);
+            }
+        }
         if (auto* deck = deckAt(pid))
             deck->setMeasuredBpm(tempo.bpm());
     });
@@ -312,8 +384,11 @@ MainWindow::MainWindow(QWidget* parent)
     });
     QObject::connect(network_, &NetworkManager::deckLeft, this, [this](int pid) {
         beatTempo_.erase(pid);
+        beatPhase_.erase(pid);
         deckArea_->removeDeck(pid);
-        if (difflock_.player() == pid) { difflock_.off(); }
+        beatStash_.erase(pid);
+        if (syncController_.deckLeft(pid))
+            statusBar()->showMessage(QStringLiteral("Sync off: deck %1 left").arg(pid), 4000);
         refreshDiffLock();
         statusDecks_->setText(QString("Decks: %1").arg(deckArea_->deckCount()));
         if (nfs_->isMounted(pid)) {
@@ -423,8 +498,7 @@ void MainWindow::connectDeckSignals()
         updateSequencerPlayhead();
     });
     QObject::connect(deckArea_, &DeckArea::syncClicked, this, [this](int pid) {
-        if (isVdjDeck(pid)) syncToMaster();
-        else lockDiffLockTo(pid);                      // Sync on another deck: difflock the sequencer to it
+        syncButtonPressed(pid);
     });
     QObject::connect(deckArea_, &DeckArea::setBpmClicked, this, [this](int pid, double bpm) {
         if (bpmLockedTo()) {                    // synced to a real deck: the tempo is theirs, put the spinner back
@@ -625,6 +699,25 @@ void MainWindow::setupMenus()
     connect(logPacketsAction, &QAction::toggled, this, [this](bool on) {
         PacketLogger::instance().setPacketLevel(on);
         config_->saveValue(QStringLiteral("debug"), QStringLiteral("log_packets"), on ? QStringLiteral("1") : QStringLiteral("0"));
+    });
+
+    QAction* syncTelemetryAction = view->addAction("Log &Sync Telemetry (CSV)");
+    syncTelemetryAction->setCheckable(true);
+    syncTelemetryAction->setToolTip("Write one CSV line per remote beat (reported and measured BPM, offset to the sequencer, nudges) and per sync event, "
+                                    "to a file in the cache directory. For testing sync against real decks.");
+    connect(syncTelemetryAction, &QAction::toggled, this, &MainWindow::setSyncTelemetry);
+
+    QAction* quantisedPhaseAction = view->addAction("Sync: use &Quantised Beat Phase (experimental)");
+    quantisedPhaseAction->setCheckable(true);
+    quantisedPhaseAction->setToolTip("The decks send beat packets on a timer tick (3 ms on the one measured), so a packet is up to a tick late. "
+                                     "On: the difflock is fed the estimated beat time instead of the raw arrival (BeatPhase), while the estimate is sure. "
+                                     "Off by default until it has been compared with the raw arrival on a real deck (see the telemetry).");
+    quantisedPhase_ = config_->loadValue(QStringLiteral("dj"), QStringLiteral("sync_quantised_phase")) == QLatin1String("1");
+    quantisedPhaseAction->setChecked(quantisedPhase_);
+    connect(quantisedPhaseAction, &QAction::toggled, this, [this](bool on) {
+        quantisedPhase_ = on;
+        config_->saveValue(QStringLiteral("dj"), QStringLiteral("sync_quantised_phase"), on ? QStringLiteral("1") : QStringLiteral("0"));
+        telemetryEvent(on ? QStringLiteral("quantised phase on") : QStringLiteral("quantised phase off"));
     });
 
     QMenu* network = menuBar()->addMenu("&Network");
@@ -872,32 +965,144 @@ DiffLockBar* MainWindow::vdjDiffLockBar() const
     return nullptr;
 }
 
+// The DJ's offset (from the bar) applies when Sync is first switched on; later changes of what we follow keep the position instead.
+void MainWindow::startSyncTargetFromBar()
+{
+    if (!syncController_.on())
+        if (auto* bar = vdjDiffLockBar())
+            difflock_.setTargetMs(bar->targetMs());
+}
+
+// Select this deck for Sync (it stays selected; the Sync button's toggle is syncButtonPressed()).
 void MainWindow::lockDiffLockTo(int playerId)
 {
     DeckWidget* deck = deckAt(playerId);
     if (!deck || isVdjRow(deck))
         return;
-    if (auto* bar = vdjDiffLockBar())
-        difflock_.setTargetMs(bar->targetMs());
-    difflock_.lock(playerId);
+    if (syncController_.selectedDeck() == playerId)
+        return;
+    startSyncTargetFromBar();
+    const bool wasOn = syncController_.on();
+    syncController_.press(playerId, false);
+    if (!wasOn) startAlign();
     refreshDiffLock();
-    statusBar()->showMessage(QStringLiteral("Difflock: sequencer locked to deck %1, %2 ms%3")
+    telemetryEvent(QStringLiteral("sync deck %1").arg(playerId));
+    statusBar()->showMessage(QStringLiteral("Sync: following deck %1, %2 ms%3")
         .arg(playerId).arg(difflock_.targetMs())
         .arg(clock_ && clock_->running() ? QString() : QStringLiteral(" (applies once the VDJ is playing)")), 4000);
 }
 
+void MainWindow::startMasterSync()
+{
+    if (syncController_.mode() == SyncController::Mode::Master)
+        return;
+    startSyncTargetFromBar();
+    const bool wasOn = syncController_.on();
+    syncController_.press(localVdjId(), true);
+    if (!wasOn) startAlign();
+    refreshDiffLock();
+    telemetryEvent(QStringLiteral("sync master"));
+    statusBar()->showMessage(syncController_.reference() ? QStringLiteral("Sync: following the master, deck %1").arg(syncController_.reference())
+                                                         : syncController_.phase() == SyncController::Phase::Suspended
+                                                             ? QStringLiteral("Sync on: we are the master, it follows the next master")
+                                                             : QStringLiteral("Sync on: waiting for a master"), 4000);
+}
+
+// A Sync button: select that deck (or, on the VDJ row, the master), or press again to stop.
+void MainWindow::syncButtonPressed(int pid)
+{
+    if (isVdjDeck(pid)) {
+        if (syncController_.on())      // the VDJ button shows Sync whatever it follows, so it stops it too
+            diffLockOff();
+        else
+            startMasterSync();
+        return;
+    }
+    if (syncController_.selectedDeck() == pid)
+        diffLockOff();
+    else
+        lockDiffLockTo(pid);
+}
+
+// First Sync press: hold the difflock's small nudges while the offset is measured and the sequencer is slewed onto the beat.
+void MainWindow::startAlign()
+{
+    cancelAlign();
+    if (syncController_.phase() != SyncController::Phase::Aligning)
+        return;                                  // nothing to follow yet (no master, or we are it): the difflock does the rest later
+    alignState_ = AlignState::Measuring;
+    difflock_.setHold(true);
+}
+
+void MainWindow::cancelAlign()
+{
+    if (alignState_ == AlignState::None)
+        return;
+    alignState_ = AlignState::None;
+    alignPlan_ = {};
+    difflock_.setHold(false);
+}
+
+// Called for every beat of the followed deck while the clock runs, after the difflock has seen it.
+void MainWindow::alignOnBeat(int pid, double beatLenMs)
+{
+    if (alignState_ == AlignState::None)
+        return;
+    if (syncController_.phase() != SyncController::Phase::Aligning || pid != syncController_.reference()) {
+        if (syncController_.phase() != SyncController::Phase::Aligning)
+            cancelAlign();                       // Sync went off or moved on
+        return;
+    }
+    switch (alignState_) {
+    case AlignState::Measuring:
+        if (!difflock_.hasAverage(pid)) return;
+        alignPlan_ = SyncAligner::plan(difflock_.avgDiff(pid), difflock_.targetMs(), beatLenMs);
+        alignStep_ = 0;
+        telemetryEvent(QStringLiteral("align %1 ms in %2 beats").arg(alignPlan_.shiftMs, 0, 'f', 1).arg(alignPlan_.beats));
+        alignState_ = alignPlan_.needed() ? AlignState::Shifting : AlignState::None;
+        if (!alignPlan_.needed()) {
+            difflock_.setHold(false);
+            return;
+        }
+        [[fallthrough]];
+    case AlignState::Shifting: {
+        const int ms = SyncAligner::step(alignPlan_, alignStep_++);
+        if (ms && clock_) clock_->phaseShiftMs(ms);
+        if (alignStep_ >= alignPlan_.beats) {
+            alignState_ = AlignState::Settling;
+            alignSettle_ = DiffLock::kAvgSize + 1;     // the average holds old offsets until it has seen new beats
+            statusBar()->showMessage(QStringLiteral("Sync: aligned, settling..."), 3000);
+        }
+        break;
+    }
+    case AlignState::Settling:
+        if (--alignSettle_ <= 0) {
+            alignState_ = AlignState::None;
+            difflock_.setHold(false);                  // the difflock trims what is left, and the controller can report Locked
+        }
+        break;
+    case AlignState::None:
+        break;
+    }
+}
+
 void MainWindow::diffLockOff()
 {
-    difflock_.off();
+    cancelAlign();
+    syncController_.off();
+    telemetryEvent(QStringLiteral("sync off"));
     refreshDiffLock();
-    statusBar()->showMessage(QStringLiteral("Difflock off"), 3000);
+    statusBar()->showMessage(QStringLiteral("Sync off"), 3000);
 }
 
 void MainWindow::setDiffLockFollowMaster(bool on)
 {
-    difflock_.setFollowMaster(on);
-    refreshDiffLock();
-    statusBar()->showMessage(on ? QStringLiteral("Difflock follows the master") : QStringLiteral("Difflock no longer follows the master"), 3000);
+    if (on)
+        startMasterSync();
+    else if (syncController_.mode() == SyncController::Mode::Master)
+        diffLockOff();
+    else
+        refreshDiffLock();
 }
 
 // adj_nudge_millis: the next beat is that much longer / shorter. While locked the target moves with the nudge,
@@ -911,6 +1116,7 @@ void MainWindow::nudgeSequencer(int ms)
     // Unlocked, the buttons move the playhead: - sets it back (a longer beat), + pushes it forward (a shorter one).
     // Locked, they keep adj's meaning (+ = the next beat is longer) and the target moves with them.
     clock_->nudgeMillis(difflock_.locked() ? ms : -ms);
+    telemetryEvent(QStringLiteral("manual nudge %1 ms").arg(ms));
     if (difflock_.locked()) {
         difflock_.nudgeTarget(-ms);
         if (auto* bar = vdjDiffLockBar()) bar->setTargetMs(difflock_.targetMs());
@@ -929,12 +1135,74 @@ void MainWindow::captureDiffLockTarget()
     refreshDiffLock();
 }
 
+SyncTelemetry::Sample MainWindow::telemetryState() const
+{
+    SyncTelemetry::Sample s;
+    s.alsaBpm = clock_ ? clock_->bpm() : 0.0;
+    s.targetMs = difflock_.targetMs();
+    s.masterPid = difflock_.master();
+    using Phase = SyncController::Phase;
+    switch (syncController_.phase()) {
+    case Phase::Idle:      s.syncState = syncController_.on() ? QStringLiteral("waiting") : QStringLiteral("off"); break;
+    case Phase::Aligning:  s.syncState = QStringLiteral("aligning"); break;
+    case Phase::Rebasing:  s.syncState = QStringLiteral("rebasing"); break;
+    case Phase::Suspended: s.syncState = QStringLiteral("suspended"); break;
+    case Phase::Locked:    s.syncState = syncController_.mode() == SyncController::Mode::Master ? QStringLiteral("follow-master") : QStringLiteral("locked"); break;
+    }
+    if (difflock_.locked()) {
+        s.pid = difflock_.player();
+        s.avgDiffMs = difflock_.avgDiff(s.pid);
+        s.diffMs = difflock_.lastDiff(s.pid);
+    }
+    return s;
+}
+
+void MainWindow::telemetryEvent(const QString& what)
+{
+    if (!telemetry_.active()) return;
+    const double nowMs = double(std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count()) / 1e6;
+    telemetry_.event(nowMs, what, telemetryState());
+}
+
+void MainWindow::setSyncTelemetry(bool on)
+{
+    if (!on) {
+        telemetryEvent(QStringLiteral("telemetry off"));
+        telemetry_.stop();
+        telemetryPending_.clear();
+        statusBar()->showMessage(QStringLiteral("Sync telemetry stopped"), 3000);
+        return;
+    }
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (!telemetry_.start(dir)) {
+        statusBar()->showMessage(QStringLiteral("Sync telemetry: cannot write in %1").arg(dir), 5000);
+        return;
+    }
+    telemetryEvent(QStringLiteral("telemetry on"));
+    statusBar()->showMessage(QStringLiteral("Sync telemetry: %1").arg(telemetry_.filePath()), 6000);
+}
+
 void MainWindow::refreshDiffLock()
 {
+    using Display = DeckControls::SyncState;
+    using Phase = SyncController::Phase;
+    const Phase phase = syncController_.phase();
+    const int ref = syncController_.reference();
+    auto engaged = [&]() { return phase == Phase::Locked ? Display::Locked : Display::Syncing; };   // Aligning / Rebasing: not there yet
     for (int i = 0; i < deckArea_->deckCount(); ++i) {
         DeckWidget* d = deckArea_->deckAt(i);
-        if (d && !isVdjRow(d))
-            d->controls()->setSyncLocked(difflock_.locked() && d->playerId() == difflock_.player());
+        if (!d) continue;
+        Display state = Display::Off;
+        if (isVdjRow(d)) {
+            if (syncController_.mode() == SyncController::Mode::Master)
+                state = phase == Phase::Idle ? Display::Waiting : phase == Phase::Suspended ? Display::Suspended : engaged();
+            else if (syncController_.on())
+                state = phase == Phase::Suspended ? Display::Suspended : engaged();   // following a chosen deck: the VDJ is the one being synced
+        } else if (ref != 0 && d->playerId() == ref) {
+            state = engaged();
+        }
+        d->controls()->setSyncState(state);
     }
     const int lockedTo = bpmLockedTo();
     for (int i = 0; i < deckArea_->deckCount(); ++i) {
@@ -945,17 +1213,24 @@ void MainWindow::refreshDiffLock()
     followLockedBpm();
     DiffLockBar* bar = vdjDiffLockBar();
     if (!bar) return;
-    bar->setFollowMaster(difflock_.followMaster());
+    bar->setFollowMaster(syncController_.mode() == SyncController::Mode::Master);
     if (bar->targetMs() != difflock_.targetMs()) bar->setTargetMs(difflock_.targetMs());
     QString text;
-    if (!difflock_.locked()) {
-        text = difflock_.followMaster() ? QStringLiteral("off, waiting for a master") : QStringLiteral("off");
+    if (!syncController_.on()) {
+        text = QStringLiteral("off");
+    } else if (ref == 0) {
+        text = phase == Phase::Suspended ? QStringLiteral("on, we are the master (follows the next master)")
+                                         : QStringLiteral("off, waiting for a master");
     } else {
-        const int p = difflock_.player();
-        text = QStringLiteral("%1 deck %2").arg(difflock_.followMaster() ? QStringLiteral("master") : QStringLiteral("locked to")).arg(p);
-        text += difflock_.hasAverage(p)
-            ? QStringLiteral("  %1 ms (avg %2)").arg(difflock_.lastDiff(p), 0, 'f', 0).arg(difflock_.avgDiff(p), 0, 'f', 1)
-            : QStringLiteral("  measuring...");
+        text = QStringLiteral("%1 deck %2").arg(syncController_.mode() == SyncController::Mode::Master ? QStringLiteral("master") : QStringLiteral("locked to")).arg(ref);
+        if (phase == Phase::Rebasing)
+            text += QStringLiteral("  holding, measuring the new offset...");
+        else if (phase == Phase::Aligning && !difflock_.hasAverage(ref))
+            text += QStringLiteral("  measuring...");
+        else if (difflock_.hasAverage(ref))
+            text += QStringLiteral("  %1 ms (avg %2)").arg(difflock_.lastDiff(ref), 0, 'f', 0).arg(difflock_.avgDiff(ref), 0, 'f', 1);
+        else
+            text += QStringLiteral("  measuring...");
         if (!clock_ || !clock_->running()) text += QStringLiteral("  (VDJ stopped)");
     }
     bar->setStatus(text);
@@ -1112,7 +1387,7 @@ void MainWindow::setupShortcuts()
     connect(shortcuts, &KeyboardShortcuts::diffLockPlayerRequested, this, &MainWindow::lockDiffLockTo);
     connect(shortcuts, &KeyboardShortcuts::diffLockOffRequested, this, &MainWindow::diffLockOff);
     connect(shortcuts, &KeyboardShortcuts::diffLockFollowMasterRequested, this,
-            [this]() { setDiffLockFollowMaster(!difflock_.followMaster()); });
+            [this]() { setDiffLockFollowMaster(syncController_.mode() != SyncController::Mode::Master); });
     connect(shortcuts, &KeyboardShortcuts::diffLockTargetNudgeRequested, this, [this](int d) {
         difflock_.nudgeTarget(d);
         refreshDiffLock();
@@ -1188,6 +1463,10 @@ void MainWindow::setupDemoDecks()
     djtoolzPanel_->drumKits()->setImportFolders(InstrumentManager::drumKitFolders(config_));
     djtoolzPanel_->drumKitsChanged();
     djtoolzPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("djtoolz")) == QLatin1String("1"));
+    djtoolzPanel_->setLatencyMs(config_->loadValue(QStringLiteral("dj"), QStringLiteral("djtoolz_latency_ms")).toInt());
+    connect(djtoolzPanel_, &DjtoolzPanel::latencyChanged, this, [this](int ms) {
+        config_->saveValue(QStringLiteral("dj"), QStringLiteral("djtoolz_latency_ms"), QString::number(ms));
+    });
     {
         bool ok = false;
         const double latency = config_->loadValue(QStringLiteral("djtoolz"), QStringLiteral("latency_ms")).toDouble(&ok);
@@ -1655,14 +1934,7 @@ void MainWindow::nudgeLocalBpm(double delta)
 
 void MainWindow::syncToMaster()
 {
-    int pid = activeDeckId();
-    if (!pid) return;
-    auto* deck = deckAt(pid);
-    if (!deck) return;
-    // set the local decks bpm to the master bpm (from status packets)
-    setVdjBpm(masterBpm_);
-    deck->setBpm(masterBpm_);
-    network_->broadcastBeat(masterBpm_, deck->controls() ? deck->controls()->barPos() : 0);
+    syncButtonPressed(localVdjId());
 }
 
 void MainWindow::copyBpmFromMaster(int playerId)
@@ -1701,7 +1973,7 @@ bool MainWindow::setVdjBpm(double bpm)
 
 int MainWindow::bpmLockedTo() const
 {
-    return difflock_.locked() ? difflock_.player() : 0;
+    return syncController_.bpmFollowActive() ? syncController_.reference() : 0;
 }
 
 // The one place the VDJ's tempo changes: the ProLink beats we send, the ALSA sequencer queue that drum machines
@@ -1712,6 +1984,7 @@ bool MainWindow::applyVdjBpm(double bpm)
         return false;
     network_->setLocalBpm(bpm);
     const bool clockOk = clock_ && clock_->setBpm(bpm);
+    telemetryEvent(QStringLiteral("vdj bpm %1").arg(bpm, 0, 'f', 3));
     // Every row that represents our VDJ: the one with our player id on a live link, and the "VDJ" row that was
     // there from the start (its id need not match the id the link assigned us).
     for (int i = 0; i < deckArea_->deckCount(); ++i) {
@@ -1723,14 +1996,23 @@ bool MainWindow::applyVdjBpm(double bpm)
 }
 
 // Synced to a real deck: the sequencer and the link tempo are that deck's BPM, whatever it does.
-void MainWindow::followLockedBpm()
+void MainWindow::followLockedBpm(bool beatTick)
 {
     const int locked = bpmLockedTo();
     if (!locked) return;
     DeckWidget* src = deckAt(locked);
     if (!src || isVdjRow(src)) return;
-    const double bpm = src->bpm();
-    if (!(bpm > 0.0) || (clock_ && std::abs(clock_->bpm() - bpm) < 0.004)) return;
+    double bpm = src->bpm();
+    if (!(bpm > 0.0)) return;
+    if (clock_ && std::abs(clock_->bpm() - bpm) < 0.004) {
+        syncController_.glideDone();
+        return;
+    }
+    if (syncController_.glideActive()) {
+        // after a master change the BPM is brought to the new master's in small steps, one per beat of that master
+        if (!beatTick || !clock_) return;
+        bpm = SyncController::glide(clock_->bpm(), bpm);
+    }
     applyVdjBpm(bpm);
 }
 
@@ -2204,6 +2486,10 @@ void MainWindow::updateRampEnabled()
 
 void MainWindow::startBpmRamp(double targetBpm, int bars)
 {
+    if (const int locked = bpmLockedTo()) {       // every step would be refused: say so instead of "Ramping" with nothing happening
+        statusBar()->showMessage(QStringLiteral("Cannot ramp: the BPM follows deck %1 (stop Sync, or Sync to the master and become master)").arg(locked), 6000);
+        return;
+    }
     auto* deck = deckAt(localVdjId());
     const double from = deck ? deck->bpm() : 128.0;
     if (!(from > 0.0) || bars < 1) return;
@@ -2222,11 +2508,13 @@ void MainWindow::startBpmRamp(double targetBpm, int bars)
             setVdjBpm(bpm);
             if (t >= 1.0) {
                 stopBpmRamp();
+                if (bpmRamp_) bpmRamp_->setStatusText(QStringLiteral("Done: %1").arg(bpm, 0, 'f', 2));
                 statusBar()->showMessage(QStringLiteral("BPM ramp finished at %1").arg(bpm, 0, 'f', 2), 4000);
             }
         });
     }
     rampTimer_->start();
+    bpmRamp_->setStatusText(QStringLiteral("Ramping…"));
     statusBar()->showMessage(QStringLiteral("Ramping %1 -> %2 BPM over %3 bars")
         .arg(from, 0, 'f', 2).arg(targetBpm, 0, 'f', 2).arg(bars), 4000);
 }
@@ -2234,6 +2522,7 @@ void MainWindow::startBpmRamp(double targetBpm, int bars)
 void MainWindow::stopBpmRamp()
 {
     if (rampTimer_) rampTimer_->stop();
+    if (bpmRamp_) bpmRamp_->setStatusText(QString());
 }
 
 } // namespace vdj

@@ -1949,6 +1949,30 @@ midi/seq_bar.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_bar.cpp.s
 .PHONY : midi/seq_bar.cpp.s
 
+midi/sync_telemetry.o: midi/sync_telemetry.cpp.o
+.PHONY : midi/sync_telemetry.o
+
+# target to build an object file
+midi/sync_telemetry.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_telemetry.cpp.o
+.PHONY : midi/sync_telemetry.cpp.o
+
+midi/sync_telemetry.i: midi/sync_telemetry.cpp.i
+.PHONY : midi/sync_telemetry.i
+
+# target to preprocess a source file
+midi/sync_telemetry.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_telemetry.cpp.i
+.PHONY : midi/sync_telemetry.cpp.i
+
+midi/sync_telemetry.s: midi/sync_telemetry.cpp.s
+.PHONY : midi/sync_telemetry.s
+
+# target to generate assembly for a file
+midi/sync_telemetry.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_telemetry.cpp.s
+.PHONY : midi/sync_telemetry.cpp.s
+
 network/auto_ip_manager.o: network/auto_ip_manager.cpp.o
 .PHONY : network/auto_ip_manager.o
 
@@ -4061,6 +4085,30 @@ ui/trakcrate_job.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_job.cpp.s
 .PHONY : ui/trakcrate_job.cpp.s
 
+ui/trakcrate_jobs_strip.o: ui/trakcrate_jobs_strip.cpp.o
+.PHONY : ui/trakcrate_jobs_strip.o
+
+# target to build an object file
+ui/trakcrate_jobs_strip.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_jobs_strip.cpp.o
+.PHONY : ui/trakcrate_jobs_strip.cpp.o
+
+ui/trakcrate_jobs_strip.i: ui/trakcrate_jobs_strip.cpp.i
+.PHONY : ui/trakcrate_jobs_strip.i
+
+# target to preprocess a source file
+ui/trakcrate_jobs_strip.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_jobs_strip.cpp.i
+.PHONY : ui/trakcrate_jobs_strip.cpp.i
+
+ui/trakcrate_jobs_strip.s: ui/trakcrate_jobs_strip.cpp.s
+.PHONY : ui/trakcrate_jobs_strip.s
+
+# target to generate assembly for a file
+ui/trakcrate_jobs_strip.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_jobs_strip.cpp.s
+.PHONY : ui/trakcrate_jobs_strip.cpp.s
+
 ui/trakcrate_panel.o: ui/trakcrate_panel.cpp.o
 .PHONY : ui/trakcrate_panel.o
 
@@ -4880,6 +4928,9 @@ help:
 	@echo "... midi/seq_bar.o"
 	@echo "... midi/seq_bar.i"
 	@echo "... midi/seq_bar.s"
+	@echo "... midi/sync_telemetry.o"
+	@echo "... midi/sync_telemetry.i"
+	@echo "... midi/sync_telemetry.s"
 	@echo "... network/auto_ip_manager.o"
 	@echo "... network/auto_ip_manager.i"
 	@echo "... network/auto_ip_manager.s"
@@ -5144,6 +5195,9 @@ help:
 	@echo "... ui/trakcrate_job.o"
 	@echo "... ui/trakcrate_job.i"
 	@echo "... ui/trakcrate_job.s"
+	@echo "... ui/trakcrate_jobs_strip.o"
+	@echo "... ui/trakcrate_jobs_strip.i"
+	@echo "... ui/trakcrate_jobs_strip.s"
 	@echo "... ui/trakcrate_panel.o"
 	@echo "... ui/trakcrate_panel.i"
 	@echo "... ui/trakcrate_panel.s"

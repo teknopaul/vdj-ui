@@ -24,6 +24,12 @@ public:
     // Lock to a deck (adj_vdj_difflock). Locking to a deck that is not the master ends "follow master".
     bool lock(int player);
     void off();                                 // adj_vdj_difflock_arff: unlock and forget the measurements
+    // Sync controller support. rebase: follow `player` from now, forgetting its measurements, and hold (no nudges) until setHold(false);
+    // suspend: follow nobody but keep the target and the follow-master flag. A hold only stops the nudges, the measuring goes on.
+    void rebase(int player);
+    void suspend() { player_ = 0; hold_ = false; }
+    void setHold(bool hold) { hold_ = hold; }
+    bool holding() const { return hold_; }
     int player() const { return player_; }      // 0 = not locked
     bool locked() const { return player_ != 0; }
 
@@ -50,6 +56,7 @@ private:
     int player_ = 0;
     int master_ = 0;
     bool followMaster_ = false;
+    bool hold_ = false;
     int targetMs_ = 0;
     double last_[kMaxPlayers];
     double set_[kMaxPlayers][kAvgSize];

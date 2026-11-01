@@ -7,6 +7,7 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
+#include "seq_phase_model.h"
 
 typedef struct _snd_seq snd_seq_t;
 
@@ -36,6 +37,13 @@ public:
     double bpm() const { return bpm_; }
     // Beats since the last start() as the sequencer queue counts them (fractional); -1 when not running.
     double positionBeats() const;
+    // The sequencer's beat position between ticks: the queue's real time and the tempo history (SeqPhaseModel) instead of the tick counter,
+    // so it is exact to microseconds, not 5 ms steps. -1 when not running. *steadyNs, when given, gets the std::chrono::steady_clock time (ns)
+    // the position belongs to (read right next to the queue's clock: both are CLOCK_MONOTONIC).
+    double positionBeatsExact(int64_t* steadyNs = nullptr) const;
+    // The same offset as beatOffsetMs() but from the tick counter (5 ms steps): kept to compare the two in the telemetry.
+    bool beatOffsetTickMs(double* ms) const;
+    int modelResyncs() const { return resyncs_; }   // times the model had to be reset from the tick counter (a missed anchor)
     double effectiveBpm() const;                 // the tempo the queue really has: ALSA keeps whole microseconds per beat
     double queueBpm() const;                      // read back from ALSA (what the devices actually follow)
 
@@ -43,6 +51,10 @@ public:
     // longer (the sequencer ends up n ms later), nudgeMillis(-n) shorter. nudgeBpm(m) runs one beat at bpm + 0.1 * m.
     // Only meaningful while running; a setBpm() cancels a nudge in progress.
     void nudgeMillis(int ms);
+    // A larger move than a nudge, exact: the next beat is stretched (or squeezed) so that the sequencer ends up `ms` later
+    // (earlier when negative). nudgeMillis(n) really moves n*beat/(beat+n); this solves for the tempo that gives `ms`.
+    // False when not running or beyond 0.75 of a beat. A setBpm() cancels it, as it does a nudge.
+    bool phaseShiftMs(int ms);
     void nudgeBpm(int multiplier);
 
     // Where "now" falls relative to the nearest beat of the sequencer, in ms: positive when the last beat was
@@ -78,6 +90,8 @@ public:
 private:
     void loop();
     bool applyTempo(double bpmValue, double extraMicros = 0.0);   // caller holds mutex_
+    int64_t queueRealNs() const;                                  // caller holds mutex_; -1 when unreadable
+    void anchorModel();                                           // caller holds mutex_; the queue has just been (re)started at tick 0
     void stopLocked();
 
     snd_seq_t* seq_ = nullptr;
@@ -93,6 +107,9 @@ private:
     mutable std::mutex mutex_;                    // the sequencer handle is shared by the GUI and the clock thread
     std::chrono::steady_clock::time_point nudgeEnd_{};   // when to restore the tempo; epoch = no nudge
     std::thread thread_;
+    mutable SeqPhaseModel model_;                 // guarded by mutex_
+    double lastMicros_ = 500000.0;                // the microseconds per beat last given to the queue
+    mutable std::atomic<int> resyncs_{ 0 };
 };
 
 } // namespace vdj

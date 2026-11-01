@@ -12,6 +12,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QElapsedTimer>
+#include <QFileInfo>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileSystemWatcher>
@@ -56,6 +57,7 @@
 #include "trakcrate_table_view.h"
 #include "trakcrate_tree_widget.h"
 #include "trakcrate_job.h"
+#include "trakcrate_jobs_strip.h"
 #include "trakcrate_track_model.h"
 
 namespace vdj {
@@ -262,9 +264,13 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     bottom->addWidget(progress_);
     bottom->addWidget(cancelButton_);
 
+    jobsStrip_ = new TrakcrateJobsStrip;
+    connect(jobsStrip_, &TrakcrateJobsStrip::cancelRequested, this, [this](int id) { if (ExportJob* j = exportJob(id)) j->runner->cancel(); });
+
     auto* layout = new QVBoxLayout(this);
     layout->addLayout(top);
     layout->addWidget(splitter, 1);
+    layout->addWidget(jobsStrip_);
     layout->addLayout(bottom);
 
     watcher_ = new QFileSystemWatcher(this);
@@ -279,7 +285,7 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     connect(rbImportButton_, &QPushButton::clicked, this, &TrakcratePanel::rekordboxImportDialog);
     connect(refreshButton_, &QPushButton::clicked, this, &TrakcratePanel::refresh);
     connect(exportButton_, &QPushButton::clicked, this, &TrakcratePanel::exportDialog);
-    connect(cancelButton_, &QPushButton::clicked, jobs_, &TrakcrateJobRunner::cancel);
+    connect(cancelButton_, &QPushButton::clicked, this, &TrakcratePanel::cancelAllJobs);
     connect(orphanButton_, &QPushButton::clicked, this, &TrakcratePanel::deleteOrphansDialog);
     // Qt only toggles ascending/descending; a third click on the same header goes back to the library's own (playlist) order.
     connect(table_->header(), &QHeaderView::sectionClicked, this, [this, last = std::make_shared<std::pair<int, Qt::SortOrder>>(-1, Qt::AscendingOrder)](int col) {
@@ -328,13 +334,27 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
 
 TrakcratePanel::~TrakcratePanel() = default;
 
-bool TrakcratePanel::busy() const { return jobs_->busy(); }
+bool TrakcratePanel::busy() const { return anyBusy(); }
+
+bool TrakcratePanel::anyBusy() const { return jobs_->busy() || !exports_.empty(); }
+
+void TrakcratePanel::cancelAllJobs()
+{
+    jobs_->cancel();
+    for (const auto& e : exports_) e->runner->cancel();
+}
+
+TrakcratePanel::ExportJob* TrakcratePanel::exportJob(int id)
+{
+    for (const auto& e : exports_) if (e->id == id) return e.get();
+    return nullptr;
+}
 
 bool TrakcratePanel::waitForJob(int timeoutMs)
 {
     QElapsedTimer t;
     t.start();
-    while (jobs_->busy()) {
+    while (anyBusy()) {
         if (t.elapsed() > timeoutMs) return false;
         QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
         QThread::msleep(5);
@@ -811,9 +831,9 @@ void TrakcratePanel::rekordboxImportDialog()
 
 bool TrakcratePanel::importRekordbox(const QString& driveRoot, const trakcrate::RbImportOptions& opts)
 {
-    if (!lib_.isOpen() || jobs_->busy()) return false;
+    if (!lib_.isOpen() || anyBusy()) return false;
     rb_ = std::make_shared<trakcrate::RbImportReport>();
-    report_.reset(); analysis_.reset(); bpm_.reset(); export_.reset();
+    report_.reset(); analysis_.reset(); bpm_.reset();
     std::shared_ptr<trakcrate::RbImportReport> rep = rb_;
     const trakcrate::Library lib = lib_;
     const trakcrate::fs::path root = driveRoot.toStdString();
@@ -840,10 +860,9 @@ void TrakcratePanel::importDialog()
 
 bool TrakcratePanel::importFolder(const QString& folder, const trakcrate::ImportOptions& opts)
 {
-    if (!lib_.isOpen() || jobs_->busy()) return false;
+    if (!lib_.isOpen() || anyBusy()) return false;
     report_ = std::make_shared<trakcrate::ImportReport>();
     analysis_.reset(); bpm_.reset(); rb_.reset();
-    export_.reset();
     std::shared_ptr<trakcrate::ImportReport> rep = report_;
     const trakcrate::Library lib = lib_;
     const trakcrate::fs::path dir = folder.toStdString();
@@ -861,7 +880,7 @@ bool TrakcratePanel::importFolder(const QString& folder, const trakcrate::Import
 
 void TrakcratePanel::deleteOrphansDialog()
 {
-    if (orphans_.empty() || jobs_->busy()) return;
+    if (orphans_.empty() || anyBusy()) return;
     uint64_t bytes = 0;
     QStringList list;
     for (const trakcrate::Orphan& o : orphans_) {
@@ -872,7 +891,7 @@ void TrakcratePanel::deleteOrphansDialog()
     box.setIcon(QMessageBox::Question);
     box.setWindowTitle(QStringLiteral("Orphaned files"));
     box.setText(QStringLiteral("%1 file(s), %2, on %3 are not used by the database any more (tracks, artwork and analysis files of earlier exports).\n\n"
-                               "Delete them to free space? This cannot be undone.").arg(orphans_.size()).arg(QLocale().formattedDataSize(qint64(bytes)), exportDest_));
+                               "Delete them to free space? This cannot be undone.").arg(orphans_.size()).arg(QLocale().formattedDataSize(qint64(bytes)), orphanDest_));
     box.setDetailedText(list.join(QLatin1Char('\n')));
     QPushButton* del = box.addButton(QStringLiteral("Delete orphans"), QMessageBox::DestructiveRole);
     QPushButton* keep = box.addButton(QStringLiteral("Keep"), QMessageBox::RejectRole);
@@ -880,7 +899,7 @@ void TrakcratePanel::deleteOrphansDialog()
     box.exec();
     if (box.clickedButton() != del) return;
     std::vector<std::string> failed;
-    const uint64_t freed = trakcrate::deleteOrphans(exportDest_.toStdString(), orphans_, &failed);
+    const uint64_t freed = trakcrate::deleteOrphans(orphanDest_.toStdString(), orphans_, &failed);
     orphans_.clear();
     orphanButton_->hide();
     QString msg = QStringLiteral("Deleted orphans, %1 freed").arg(QLocale().formattedDataSize(qint64(freed)));
@@ -905,13 +924,87 @@ void TrakcratePanel::onJobProgress(int done, int total, const QString& current)
     progress_->setRange(0, total > 0 ? total : 0);
     progress_->setValue(done);
     if (!current.isEmpty()) progressLabel_->setText(current);
-    // the database write cannot be interrupted (it must be whole to be of use)
-    if (export_ && current.endsWith(QStringLiteral("rekordbox/export.pdb"))) cancelButton_->setVisible(false);
     // an import fills the library as it goes: show the new folders, playlists and tracks every couple of seconds
     if ((report_ || rb_) && (!liveTimer_.isValid() || liveTimer_.elapsed() > 2000)) {
         liveTimer_.restart();
         liveRefresh();
     }
+}
+
+void TrakcratePanel::onExportFinished(int id)
+{
+    ExportJob* job = exportJob(id);
+    if (!job) return;
+    const std::shared_ptr<trakcrate::ExportResult> result = job->result;
+    const QString dest = job->dest, registerName = job->registerName;
+    job->runner->deleteLater();
+    jobsStrip_->removeJob(id);
+    exports_.erase(std::remove_if(exports_.begin(), exports_.end(), [id](const std::unique_ptr<ExportJob>& e) { return e->id == id; }), exports_.end());
+    updateExportUi();
+    refresh();
+    QString summary;
+    bool ok = false;
+    QString detail;
+    const trakcrate::ExportResult& r = *result;
+    ok = r.ok;
+    if (r.ok) {
+        summary = QStringLiteral("Exported %1 track(s) in %2 playlist(s) to %3 (%4 files, %5 MiB%6)")
+                      .arg(r.tracks).arg(r.playlists).arg(dest).arg(r.files).arg(qint64(r.bytesWritten >> 20))
+                      .arg(r.verified ? QStringLiteral(", verified") : QString());
+        if (r.skipped > 0) summary += QStringLiteral("; %1 unchanged file(s) skipped").arg(r.skipped);
+        if (!r.settingsWritten.empty() || !r.settingsKept.empty())
+            summary += QStringLiteral("; settings: %1 written, %2 kept").arg(r.settingsWritten.size()).arg(r.settingsKept.size());
+        if (!r.backup.empty()) summary += QStringLiteral("; old database kept as %1").arg(QString::fromStdString(r.backup));
+        if (!r.orphans.empty()) {
+            uint64_t bytes = 0;
+            for (const trakcrate::Orphan& o : r.orphans) bytes += o.size;
+            orphans_ = r.orphans;
+            orphanDest_ = dest;
+            summary += QStringLiteral("; %1 orphaned file(s) on the drive (%2)").arg(r.orphans.size()).arg(QLocale().formattedDataSize(qint64(bytes)));
+            orphanButton_->setText(QStringLiteral("Orphans (%1)...").arg(r.orphans.size()));
+            orphanButton_->setToolTip(QStringLiteral("Tracks, artwork and analysis files from earlier exports that the database no longer uses"));
+            orphanButton_->show();
+        }
+    } else {
+        summary = r.cancelled ? QStringLiteral("Export cancelled") : QStringLiteral("Export failed: %1").arg(QString::fromStdString(r.error));
+    }
+    for (const std::string& w : r.warnings) detail += QString::fromStdString(w) + QLatin1Char('\n');
+    exportLog_ << summary;
+    while (exportLog_.size() > 20) exportLog_.removeFirst();
+    progressLabel_->setText(summary);
+    progressLabel_->setToolTip(exportLog_.size() > 1 ? detail + QLatin1Char('\n') + exportLog_.join(QLatin1Char('\n')) : detail);
+    emit exportFinished(summary, ok, dest);
+    if (ok && !registerName.isEmpty()) emit registerPendriveRequested(registerName, dest);
+}
+
+void TrakcratePanel::onExportProgress(int id, int done, int total, const QString& current)
+{
+    ExportJob* job = exportJob(id);
+    if (!job) return;
+    job->done = done;
+    job->total = total;
+    // the database write cannot be interrupted (it must be whole to be of use)
+    if (current.endsWith(QStringLiteral("rekordbox/export.pdb")) && !job->writingDatabase) {
+        job->writingDatabase = true;
+        jobsStrip_->setCancellable(id, false);
+    }
+    jobsStrip_->setProgress(id, done, total, current);
+}
+
+// The buttons while exports run: each export has its own row (progress and Cancel) in the jobs strip. The exclusive jobs keep their own handling
+// in setBusyUi.
+void TrakcratePanel::updateExportUi()
+{
+    if (jobs_->busy()) return;
+    const bool running = !exports_.empty();
+    progressLabel_->setText(running ? (exports_.size() == 1 ? QStringLiteral("Exporting to %1").arg(exports_.front()->dest)
+                                                             : QStringLiteral("Exporting to %1 drives").arg(exports_.size()))
+                                    : progressLabel_->text());
+    if (running) { orphanButton_->hide(); orphans_.clear(); }
+    importButton_->setEnabled(!running && lib_.isOpen());
+    rbImportButton_->setEnabled(!running && lib_.isOpen());
+    newPendriveButton_->setEnabled(!running && lib_.isOpen());
+    exportButton_->setEnabled(lib_.isOpen());                      // another export may start beside the running ones
 }
 
 void TrakcratePanel::onJobFinished(const QString&, bool cancelled)
@@ -922,36 +1015,6 @@ void TrakcratePanel::onJobFinished(const QString&, bool cancelled)
     QString summary;
     bool ok = false;
     QString detail;
-    if (export_) {
-        const trakcrate::ExportResult& r = *export_;
-        ok = r.ok;
-        if (r.ok) {
-            summary = QStringLiteral("Exported %1 track(s) in %2 playlist(s) to %3 (%4 files, %5 MiB%6)")
-                          .arg(r.tracks).arg(r.playlists).arg(exportDest_).arg(r.files).arg(qint64(r.bytesWritten >> 20))
-                          .arg(r.verified ? QStringLiteral(", verified") : QString());
-            if (r.skipped > 0) summary += QStringLiteral("; %1 unchanged file(s) skipped").arg(r.skipped);
-            if (!r.settingsWritten.empty() || !r.settingsKept.empty())
-                summary += QStringLiteral("; settings: %1 written, %2 kept").arg(r.settingsWritten.size()).arg(r.settingsKept.size());
-            if (!r.backup.empty()) summary += QStringLiteral("; old database kept as %1").arg(QString::fromStdString(r.backup));
-            if (!r.orphans.empty()) {
-                uint64_t bytes = 0;
-                for (const trakcrate::Orphan& o : r.orphans) bytes += o.size;
-                orphans_ = r.orphans;
-                summary += QStringLiteral("; %1 orphaned file(s) on the drive (%2)").arg(r.orphans.size()).arg(QLocale().formattedDataSize(qint64(bytes)));
-                orphanButton_->setText(QStringLiteral("Orphans (%1)...").arg(r.orphans.size()));
-                orphanButton_->setToolTip(QStringLiteral("Tracks, artwork and analysis files from earlier exports that the database no longer uses"));
-                orphanButton_->show();
-            }
-        } else {
-            summary = r.cancelled ? QStringLiteral("Export cancelled") : QStringLiteral("Export failed: %1").arg(QString::fromStdString(r.error));
-        }
-        for (const std::string& w : r.warnings) detail += QString::fromStdString(w) + QLatin1Char('\n');
-        progressLabel_->setText(summary);
-        progressLabel_->setToolTip(detail);
-        emit exportFinished(summary, ok, exportDest_);
-        if (ok && !exportRegisterName_.isEmpty()) emit registerPendriveRequested(exportRegisterName_, exportDest_);
-        return;
-    }
     if (rb_) {
         const trakcrate::RbImportReport r = *rb_;
         rb_.reset();
@@ -1056,13 +1119,21 @@ void TrakcratePanel::exportDialog()
                                      ? QStringList(tree_->currentItem()->data(0, NameRole).toString()) : QStringList();
     for (const QString& n : selected) dlg.selectPlaylist(n);
     if (dlg.exec() != QDialog::Accepted) return;
-    if (!exportDrive(dlg.options(), dlg.registerAsVirtualPendrive() ? dlg.virtualPendriveName() : QString()))
-        QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Another job is still running, or the template database is missing."));
+    const std::vector<trakcrate::ExportOptions> all = dlg.allOptions();
+    QStringList refused;
+    for (size_t i = 0; i < all.size(); ++i)
+        if (!exportDrive(all[i], i == 0 && dlg.registerAsVirtualPendrive() ? dlg.virtualPendriveName() : QString()))
+            refused << QString::fromStdString(all[i].dest.string());
+    if (!refused.isEmpty())
+        QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Not started: %1.\nAnother job is still running, another export is writing to that folder, or the template database is missing.")
+                                                                     .arg(refused.join(QStringLiteral(", "))));
 }
 
 bool TrakcratePanel::exportDrive(trakcrate::ExportOptions opts, const QString& registerName)
 {
     if (!lib_.isOpen() || jobs_->busy()) return false;
+    for (const auto& e : exports_)                       // two exports into one folder (or one inside the other) would damage each other
+        if (trakcrate::destinationsOverlap(e->dest.toStdString(), opts.dest)) return false;
     QFile tpl(QStringLiteral(":/trakcrate/template-export.pdb"));
     if (!tpl.open(QIODevice::ReadOnly)) return false;
     opts.templatePdb.assign(tpl.readAll().constData(), size_t(tpl.size()));
@@ -1079,21 +1150,27 @@ bool TrakcratePanel::exportDrive(trakcrate::ExportOptions opts, const QString& r
         if (trakcrate::createSettingsSet(lib_, "Default", defaultSettingsUserName().toStdString(), &e)) rebuildTree(false);
     }
     // the player support files come from opts.settingsSet (empty = the library's default settings set), resolved by exportDrive
-    export_ = std::make_shared<trakcrate::ExportResult>();
     analysis_.reset(); bpm_.reset(); rb_.reset();
     report_.reset();
-    exportDest_ = QString::fromStdString(opts.dest.string());
-    exportRegisterName_ = registerName;
-    std::shared_ptr<trakcrate::ExportResult> result = export_;
+    auto job = std::make_unique<ExportJob>();
+    job->id = nextExportId_++;
+    job->result = std::make_shared<trakcrate::ExportResult>();
+    job->dest = QString::fromStdString(opts.dest.string());
+    job->registerName = registerName;
+    job->runner = new TrakcrateJobRunner(this);
+    const int id = job->id;
+    std::shared_ptr<trakcrate::ExportResult> result = job->result;
     const trakcrate::Library lib = lib_;
-    watchSuspended_ = true;
-    setBusyUi(true);
-    progressLabel_->setText(QStringLiteral("Exporting to %1").arg(exportDest_));
-    const bool started = jobs_->start(QStringLiteral("Export"), [result, lib, opts](const std::atomic<bool>& cancel, const TrakcrateJobRunner::Progress& progress) {
+    connect(job->runner, &TrakcrateJobRunner::progress, this, [this, id](int d, int t, const QString& cur) { onExportProgress(id, d, t, cur); });
+    connect(job->runner, &TrakcrateJobRunner::finished, this, [this, id](const QString&, bool) { onExportFinished(id); });
+    TrakcrateJobRunner* runner = job->runner;
+    exports_.push_back(std::move(job));
+    jobsStrip_->addJob(id, QFileInfo(QString::fromStdString(opts.dest.string())).fileName().isEmpty() ? QString::fromStdString(opts.dest.string())
+                                                                                                  : QFileInfo(QString::fromStdString(opts.dest.string())).fileName());
+    updateExportUi();
+    return runner->start(QStringLiteral("Export"), [result, lib, opts](const std::atomic<bool>& cancel, const TrakcrateJobRunner::Progress& progress) {
         *result = trakcrate::exportDrive(lib, opts, progress, &cancel);
     });
-    if (!started) { watchSuspended_ = false; setBusyUi(false); }
-    return started;
 }
 
 // ---- analysis ---------------------------------------------------------------------------------------------------------------------
@@ -1110,10 +1187,9 @@ QStringList TrakcratePanel::selectedTrackDirs() const
 
 bool TrakcratePanel::analyseTracks(const QStringList& trackDirs, bool force)
 {
-    if (!lib_.isOpen() || jobs_->busy() || trackDirs.isEmpty()) return false;
+    if (!lib_.isOpen() || anyBusy() || trackDirs.isEmpty()) return false;
     analysis_ = std::make_shared<std::vector<trakcrate::AnalyseResult>>();
     report_.reset();
-    export_.reset();
     std::shared_ptr<std::vector<trakcrate::AnalyseResult>> results = analysis_;
     std::vector<trakcrate::fs::path> paths;
     for (const QString& d : trackDirs) paths.push_back(d.toStdString());
@@ -1137,12 +1213,11 @@ bool TrakcratePanel::analyseTracks(const QStringList& trackDirs, bool force)
 
 bool TrakcratePanel::detectBpm(const QString& trackDir)
 {
-    if (!lib_.isOpen() || jobs_->busy() || trackDir.isEmpty()) return false;
+    if (!lib_.isOpen() || anyBusy() || trackDir.isEmpty()) return false;
     const trakcrate::fs::path audio = trakcrate::audioFileOf(trackDir.toStdString());
     if (audio.empty()) { progressLabel_->setText(QStringLiteral("No audio file in that track folder")); return false; }
     analysis_.reset();
     report_.reset();
-    export_.reset();
     rb_.reset();
     bpm_ = std::make_shared<trakcrate::BpmDetection>();
     bpmDir_ = trackDir;
@@ -1193,7 +1268,7 @@ void TrakcratePanel::tableContextMenu(const QPoint& pos)
     QAction* force = menu.addAction(QStringLiteral("Re-analyse, replacing rekordbox/edited data"));
     QAction* detect = menu.addAction(trakcrate::bpmDetectAvailable() ? QStringLiteral("Detect BPM...")
                                                                        : QStringLiteral("Detect BPM... (needs libaubio-dev)"));
-    detect->setEnabled(dirs.size() == 1 && !jobs_->busy() && trakcrate::bpmDetectAvailable());
+    detect->setEnabled(dirs.size() == 1 && !anyBusy() && trakcrate::bpmDetectAvailable());
     QAction* load = menu.addAction(loadText_);
     load->setEnabled(dirs.size() == 1);
     QAction* playHere = menu.addAction(QStringLiteral("Play the list from here"));
@@ -1214,7 +1289,7 @@ void TrakcratePanel::tableContextMenu(const QPoint& pos)
         }
         menu.addSeparator();
     }
-    analyse->setEnabled(!dirs.isEmpty() && !jobs_->busy());
+    analyse->setEnabled(!dirs.isEmpty() && !anyBusy());
     force->setEnabled(analyse->isEnabled());
     QAction* chosen = menu.exec(table_->viewport()->mapToGlobal(pos));
     if (chosen == analyse) analyseTracks(dirs, false);
@@ -1265,7 +1340,7 @@ trakcrate::Library::Impact TrakcratePanel::folderImpact(const QString& folder) c
 
 bool TrakcratePanel::deleteFolder(const QString& folder, QString* err)
 {
-    if (!lib_.isOpen() || jobs_->busy()) { if (err) *err = QStringLiteral("a job is running"); return false; }
+    if (!lib_.isOpen() || anyBusy()) { if (err) *err = QStringLiteral("a job is running"); return false; }
     const std::string f = folder.toStdString();
     if (!trakcrate::isSafeName(f) || !trakcrate::fs::is_directory(lib_.masterDir() / f)) { if (err) *err = QStringLiteral("no such folder"); return false; }
     std::vector<trakcrate::fs::path> dirs;
@@ -1327,7 +1402,7 @@ void TrakcratePanel::exportPendrive(const QString& drive, bool physical)
     if (dangling) emit status(QStringLiteral("The settings linked to \"%1\" no longer exist: the default settings are used").arg(drive));
     if (dlg.exec() != QDialog::Accepted) return;
     if (!exportDrive(dlg.options(), dlg.registerAsVirtualPendrive() ? dlg.virtualPendriveName() : QString()))
-        QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Another job is still running, or the template database is missing."));
+        QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Another job is still running, another export is writing to that folder, or the template database is missing."));
 }
 
 bool TrakcratePanel::moveRows(const std::vector<int>& rows, int insertBefore, QString* err)
@@ -1536,7 +1611,7 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
     const QString kind = it ? it->data(0, KindRole).toString() : QString();
     const QString name = it ? it->data(0, NameRole).toString() : QString();
     QMenu menu(this);
-    const bool idle = !jobs_->busy();
+    const bool idle = !anyBusy();
     QAction* newDrive = menu.addAction(QStringLiteral("New pendrive..."));
     QAction *newSettings = nullptr, *copySettings = nullptr, *defSettings = nullptr, *renSettings = nullptr, *dupSettings = nullptr, *delSettings = nullptr, *userSettings = nullptr, *viewSettings = nullptr, *cmpSettings = nullptr;
     if (kind == QLatin1String("settings") || kind == QLatin1String("settings-hint") || kind == QLatin1String("settings-set") || kind == QLatin1String("setting")) {

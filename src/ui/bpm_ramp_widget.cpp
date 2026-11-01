@@ -61,7 +61,6 @@ BpmRampWidget::BpmRampWidget(QWidget* parent)
 
     connect(applyBtn_, &QPushButton::clicked, this, [this]() {
         emit rampRequested(targetSpin_->value(), barsSpin_->value());
-        statusLabel_->setText("Ramping…");
     });
     connect(plusOne_, &QPushButton::clicked, this, [this]() {
         emit bpmNudged(1.0);
@@ -76,6 +75,11 @@ BpmRampWidget::BpmRampWidget(QWidget* parent)
 void BpmRampWidget::setCurrentBpm(double bpm)
 {
     targetSpin_->setValue(bpm);
+}
+
+void BpmRampWidget::setStatusText(const QString& text)
+{
+    statusLabel_->setText(text);
 }
 
 } // namespace vdj

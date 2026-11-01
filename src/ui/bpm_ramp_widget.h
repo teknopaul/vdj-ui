@@ -1,6 +1,7 @@
 #ifndef BPM_RAMP_WIDGET_H
 #define BPM_RAMP_WIDGET_H
 
+#include <QString>
 #include <QWidget>
 
 class QDoubleSpinBox;
@@ -19,6 +20,8 @@ public:
     explicit BpmRampWidget(QWidget* parent = nullptr);
 
     void setCurrentBpm(double bpm);
+    // The text next to the button: what the ramp is doing now (empty when idle).
+    void setStatusText(const QString& text);
 
 signals:
     void rampRequested(double targetBpm, int bars);

@@ -4,6 +4,8 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QProgressBar>
+#include "ui/trakcrate_jobs_strip.h"
 #include <QSignalSpy>
 #include <QTreeView>
 #include <QTreeWidget>
@@ -451,6 +453,44 @@ void TestTrakcratePanel::panelExportsAPlaylist()
     QVERIFY(p.exportDrive(o));                                                           // and it can export again
     QVERIFY(p.waitForJob(20000));
     QCOMPARE(done.count(), 5);
+
+    // several exports at once: different folders run side by side, each reports on its own
+    tc::ExportOptions a = o, b = o;
+    a.update = b.update = false;
+    a.dest = tmp_ / "stickA";
+    b.dest = tmp_ / "stickB";
+    QVERIFY(p.exportDrive(a, "A"));
+    QVERIFY(p.exportDrive(b, "B"));
+    QVERIFY(p.busy());
+    int rows = 0;
+    for (QProgressBar* bar : p.findChildren<QProgressBar*>()) if (bar->isVisibleTo(&p)) ++rows;
+    QVERIFY2(rows >= 2, "a progress bar for each running export");
+    tc::ExportOptions nested = o;
+    nested.update = false;
+    nested.dest = tmp_ / "stickA" / "inside";
+    QVERIFY(!p.exportDrive(nested));                                                     // a folder inside a running export's is refused
+    QVERIFY(!p.exportDrive(a));                                                          // and so is the same one
+    QVERIFY(!p.importFolder((tmp_ / "Gig").string().c_str(), tc::ImportOptions()));      // the library is not changed under running exports
+    QVERIFY(p.waitForJob(30000));
+    QCOMPARE(done.count(), 7);
+    QVERIFY2(done.at(5).at(1).toBool(), qPrintable(done.at(5).at(0).toString()));
+    QVERIFY2(done.at(6).at(1).toBool(), qPrintable(done.at(6).at(0).toString()));
+    QVERIFY(tc::fs::exists(tmp_ / "stickA/PIONEER/rekordbox/export.pdb"));
+    QVERIFY(tc::fs::exists(tmp_ / "stickB/PIONEER/rekordbox/export.pdb"));
+    QCOMPARE(reg.count(), 3);                                                            // "Gig on stick", "A" and "B"
+    QVERIFY(!p.busy());
+
+    // Cancel stops every running export; the panel is idle again
+    tc::fs::remove_all(tmp_ / "stickA");
+    tc::fs::remove_all(tmp_ / "stickB");
+    QVERIFY(p.exportDrive(a));
+    QVERIFY(p.exportDrive(b));
+    int cancelButtons = 0;                                                               // one Cancel per running export, in the jobs strip
+    for (QPushButton* bt : p.findChildren<QPushButton*>()) if (bt->text() == "Cancel" && bt->isEnabled()) { bt->click(); ++cancelButtons; }
+    QVERIFY(cancelButtons >= 2);
+    QVERIFY(p.waitForJob(30000));
+    QCOMPARE(done.count(), 9);
+    QVERIFY(!p.busy());
 }
 
 void TestTrakcratePanel::panelImportsARekordboxDrive()
@@ -864,6 +904,34 @@ void TestTrakcratePanel::pendriveSettingsLinkAndExportDialog()
         QTRY_VERIFY_WITH_TIMEOUT(summaryText().contains(QStringLiteral("track(s)")), 10000);       // entries read, summary made
         QVERIFY(!summaryText().contains(QStringLiteral("Loading...")));
         QCOMPARE(adlg.options().lists.size(), size_t(1));                                         // the entries are ticked
+    }
+
+    // several drives: the ticked ones get the same export, started together; a drive that holds an export is updated
+    {
+        tc::fs::create_directories(tmp_ / "usb1");
+        tc::fs::create_directories(tmp_ / "usb2");
+        tc::fs::create_directories(tmp_ / "usb3/PIONEER");                                // an earlier export
+        tc::fs::create_directories(tmp_ / "usb3/Contents");
+        TrakcrateExportDialog mdlg(p.library(), nullptr, false);
+        mdlg.setPendrive(QStringLiteral("Fri"), true);
+        mdlg.setDestination(QString::fromStdString((tmp_ / "usb1").string()));
+        QCOMPARE(mdlg.allOptions().size(), size_t(1));                                    // nothing ticked: the one drive
+        mdlg.addExtraDrive(QString::fromStdString((tmp_ / "usb2").string()), QStringLiteral("usb2"));
+        mdlg.addExtraDrive(QString::fromStdString((tmp_ / "usb3").string()), QStringLiteral("usb3"));
+        mdlg.addExtraDrive(QString::fromStdString((tmp_ / "usb1").string()), QStringLiteral("usb1 again"));
+        mdlg.selectExtraDrive(QString::fromStdString((tmp_ / "usb2").string()));
+        mdlg.selectExtraDrive(QString::fromStdString((tmp_ / "usb3").string()));
+        mdlg.selectExtraDrive(QString::fromStdString((tmp_ / "usb1").string()));          // the chosen destination itself is not written twice
+        const std::vector<tc::ExportOptions> all = mdlg.allOptions();
+        QCOMPARE(all.size(), size_t(3));
+        QCOMPARE(all[0].dest, tmp_ / "usb1");
+        QCOMPARE(all[1].dest, tmp_ / "usb2");
+        QVERIFY(!all[1].update);
+        QCOMPARE(all[2].dest, tmp_ / "usb3");
+        QVERIFY(all[2].update);                                                           // it already holds an export
+        QCOMPARE(all[1].lists.size(), all[0].lists.size());
+        QVERIFY(!all[1].lists.empty());
+        QVERIFY(!mdlg.registerAsVirtualPendrive());
     }
 
     // exporting the linked pendrive puts that set's profile on the drive

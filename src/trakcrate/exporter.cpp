@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <map>
+#include <mutex>
 #include <set>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -282,6 +283,38 @@ struct Staging {
     ~Staging() { if (!dir.empty()) { std::error_code ec; fs::remove_all(dir, ec); } }
 };
 
+// Staging space promised to the exports running right now, per file system: concurrent exports to different drives each check the free space of
+// the staging area, and without this they would all count the same free bytes.
+std::mutex g_reserveMutex;
+std::map<dev_t, uint64_t> g_reserved;
+
+struct StagingReservation {
+    dev_t dev = 0;
+    uint64_t bytes = 0;
+    bool held = false;
+    // false (and nothing reserved) when `need` plus what the other exports hold exceeds `available`
+    bool take(const fs::path& dir, uint64_t available, uint64_t need)
+    {
+        struct stat st;
+        if (::stat(dir.c_str(), &st) != 0) return true;                   // cannot tell: the plain free space check stands
+        std::lock_guard<std::mutex> lock(g_reserveMutex);
+        uint64_t& r = g_reserved[st.st_dev];
+        if (available < r + need) return false;
+        r += need;
+        dev = st.st_dev; bytes = need; held = true;
+        return true;
+    }
+    ~StagingReservation()
+    {
+        if (!held) return;
+        std::lock_guard<std::mutex> lock(g_reserveMutex);
+        auto it = g_reserved.find(dev);
+        if (it == g_reserved.end()) return;
+        it->second -= std::min(it->second, bytes);
+        if (it->second == 0) g_reserved.erase(it);
+    }
+};
+
 fs::path pickStagingBase(const ExportOptions& o, bool* tmpfs, std::vector<std::string>* warnings)
 {
     std::error_code ec;
@@ -535,6 +568,7 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& optsIn, const 
                         std::to_string(sp.available >> 20) + " MiB free");
     }
     Staging stage;
+    StagingReservation reservation;
     {
         bool tmpfs = false;
         fs::path base = pickStagingBase(o, &tmpfs, &res.warnings);
@@ -544,7 +578,7 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& optsIn, const 
         if (stage.dir.empty()) return fail("cannot create the staging area: " + err);
         res.stagingUsed = stage.dir.string();
         fs::space_info sp = fs::space(stage.dir, ec);
-        if (!ec && sp.available < meta + (8u << 20)) return fail("not enough space in the staging area " + base.string());
+        if (!ec && !reservation.take(stage.dir, sp.available, meta + (8u << 20))) return fail("not enough space in the staging area " + base.string());
     }
 
     // ---- stage: database, analysis files, artwork, settings
@@ -826,6 +860,27 @@ uint64_t deleteOrphans(const fs::path& dest, const std::vector<Orphan>& orphans,
         fs::remove(*it, ec);
     }
     return freed;
+}
+
+bool stagingReserved()
+{
+    std::lock_guard<std::mutex> lock(g_reserveMutex);
+    return !g_reserved.empty();
+}
+
+bool destinationsOverlap(const fs::path& a, const fs::path& b)
+{
+    std::error_code ec;
+    const fs::path ca = fs::weakly_canonical(a, ec), cb = fs::weakly_canonical(b, ec);
+    auto inside = [](const fs::path& inner, const fs::path& outer) {
+        auto o = outer.begin(), i = inner.begin();
+        for (; o != outer.end(); ++o, ++i) {
+            if (o->empty()) continue;                                      // trailing separator
+            if (i == inner.end() || *i != *o) return false;
+        }
+        return true;
+    };
+    return inside(ca, cb) || inside(cb, ca);
 }
 
 } // namespace trakcrate

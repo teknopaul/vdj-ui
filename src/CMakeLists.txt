@@ -63,6 +63,10 @@ add_library(vdj-cdj STATIC
     midi/joystick_map.cpp
     midi/joystick_seq_bridge.cpp
     midi/diff_lock.cpp
+    midi/sync_telemetry.cpp
+    midi/seq_phase_model.cpp
+    midi/sync_controller.cpp
+    midi/sync_aligner.cpp
     midi/midi_map_input.cpp
     midi/djtoolz_ctl_map.cpp
     midi/djtoolz_midi_control.cpp
@@ -115,6 +119,7 @@ add_library(vdj-cdj STATIC
     ui/recording_panel.cpp
     ui/rekordbox_mode_panel.cpp
     ui/trakcrate_job.cpp
+    ui/trakcrate_jobs_strip.cpp
     ui/trakcrate_track_model.cpp
     ui/trakcrate_import_dialog.cpp
     ui/trakcrate_bpm_dialog.cpp
@@ -139,6 +144,7 @@ add_library(vdj-cdj STATIC
     ui/main_window.cpp
     ui/trakcrate_window.cpp
     network/beat_tempo.cpp
+    network/beat_phase.cpp
     network/network_manager.cpp
     network/link_export.cpp
     export/pendrive_registry.cpp

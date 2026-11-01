@@ -34,8 +34,13 @@ public:
 
     // The options chosen. The caller adds the template database and the artwork encoder.
     trakcrate::ExportOptions options() const;
+    // Every export to start: options() for the chosen destination, then the same export for each other mounted drive ticked under "Also write to"
+    // (physical device mode). A drive that already holds an export is updated, an empty one gets a fresh export.
+    std::vector<trakcrate::ExportOptions> allOptions() const;
     bool registerAsVirtualPendrive() const;
     QString virtualPendriveName() const;
+    void addExtraDrive(const QString& mountPoint, const QString& label);     // offer one more drive under "Also write to" (the scan adds the mounted ones)
+    void selectExtraDrive(const QString& mountPoint, bool on = true);       // tick a mounted drive under "Also write to"
     void setDestination(const QString& dir);
     void selectPlaylist(const QString& name, bool on = true);
     // Export a user defined pendrive: its entries (ticked here, in the pendrive's order) replace the playlist list. physical = write to a mounted
@@ -59,6 +64,7 @@ private slots:
 
 private:
     struct SummaryData;
+    std::vector<QString> tickedExtraDrives() const;                          // mount points, without the chosen destination
     trakcrate::ExportOptions baseOptions(std::vector<int>* entryIdx) const;     // the widgets as options; a pendrive's entries as indexes into entries_
     void fillEntries();
     void setLoading();
@@ -75,6 +81,9 @@ private:
     QPushButton* browse_ = nullptr;
     QLineEdit* dest_;
     QComboBox* drives_;
+    QWidget* extraBox_ = nullptr;                    // "Also write to": more drives for the same export, physical device mode only
+    QListWidget* extraDrives_ = nullptr;
+    bool physical_ = false;
     QCheckBox* update_;
     QComboBox* settingsSet_;
     QRadioButton *addMissing_, *replace_;

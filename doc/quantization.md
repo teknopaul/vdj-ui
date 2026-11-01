@@ -15,7 +15,7 @@ Status: the local player is in `.planning/plans/cue-quantize_PLAN.md`, the ALSA 
     follow-master is on. Never our own grid. No reference deck -> play immediately.
   - Back/forward jumps are **not** quantized and do not use the grid: pure BPM arithmetic, `60000 / originalBpm` source-ms per beat
     (`beatJumpMs`). The local BPM is trusted.
-- **Latency is ignored** everywhere. Move by exact BPM-derived amounts; the DJ compensates by ear.
+- **Latency is ignored** for jumps and the local player's quantization. Move by exact BPM-derived amounts; the DJ compensates by ear. The one exception is the DJ Tools sound: its "Audio latency" setting (`dj/djtoolz_latency_ms`, saved) queues those hits earlier, and nothing else uses it.
 
 ## Time bases (the usual bug source)
 

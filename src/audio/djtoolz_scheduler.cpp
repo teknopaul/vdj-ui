@@ -159,6 +159,16 @@ bool DjtoolzScheduler::waitIdle(int timeoutMs)
 
 // Where the next window of hits starts: where the last one ended, or now for a tool that has just become active; a sequencer
 // that restarted (its beat count went back) cancels a one bar in progress and starts over from now.
+qint64 DjtoolzScheduler::steadyNsAtBeat(double beat) const
+{
+    return source_->steadyNsAtBeat(beat) - latencyNs_.load();
+}
+
+double DjtoolzScheduler::lookaheadMs() const
+{
+    return kLookaheadMs + std::max(0.0, double(latencyNs_.load()) / 1e6);
+}
+
 double DjtoolzScheduler::windowStart(const State& st, double nowBeat, double lookaheadBeats, DjtoolzTool* m)
 {
     if (!st.active)
@@ -178,7 +188,7 @@ void DjtoolzScheduler::tickDrums(const std::shared_ptr<DjtoolzTool>& m, const To
         std::lock_guard<std::mutex> lock(mutex_);
         st = states_[m->id()];
     }
-    const double lookaheadBeats = kLookaheadMs * bpm / 60000.0;
+    const double lookaheadBeats = lookaheadMs() * bpm / 60000.0;
     const double from = windowStart(st, nowBeat, lookaheadBeats, m.get());
     const double to = nowBeat + lookaheadBeats;
     std::vector<PlannedHit> hits;
@@ -197,7 +207,7 @@ void DjtoolzScheduler::tickDrums(const std::shared_ptr<DjtoolzTool>& m, const To
         }
         Trigger t;
         t.sample = sample;
-        t.steadyNs = source_->steadyNsAtBeat(h.beat) + qint64(v.offsetMs * 1e6);
+        t.steadyNs = steadyNsAtBeat(h.beat) + qint64(v.offsetMs * 1e6);
         t.gain = s.gain * float(s.volume) / float(DjtoolzTool::kMaxVolume) * float(v.volume) / float(DjtoolzTool::kMaxVolume) * h.level;
         t.tag = m->id();
         if (v.chokeSteps > 0) {
@@ -223,7 +233,7 @@ void DjtoolzScheduler::tickMidi(const std::shared_ptr<DjtoolzTool>& m, const Too
         std::lock_guard<std::mutex> lock(mutex_);
         st = states_[m->id()];
     }
-    const double lookaheadBeats = kLookaheadMs * bpm / 60000.0;
+    const double lookaheadBeats = lookaheadMs() * bpm / 60000.0;
     const double from = windowStart(st, nowBeat, lookaheadBeats, m.get());
     const double to = nowBeat + lookaheadBeats;
     std::vector<PlannedHit> hits;
@@ -288,9 +298,9 @@ bool DjtoolzScheduler::fireOneShot(int toolId, qint64 nowNs)
     if (s.quantize && running) {
         const double beat = source_->beatsAtSteadyNs(nowNs);
         if (beat >= 0.0) {
-            ns = source_->steadyNsAtBeat(std::ceil(beat));
+            ns = steadyNsAtBeat(std::ceil(beat));
             if (ns < nowNs + immediateLeadNs_)       // too close to be heard on that beat: take the next one
-                ns = source_->steadyNsAtBeat(std::ceil(beat) + 1.0);
+                ns = steadyNsAtBeat(std::ceil(beat) + 1.0);
         }
     }
     Trigger t;
@@ -359,7 +369,7 @@ void DjtoolzScheduler::tick(qint64 nowNs)
                     requestLoad(s.samplePath);
             }
             if (st.active && m->stretchesToBpm() && stopSink_)
-                stopSink_(m->id(), source_->steadyNsAtBeat(std::ceil(nowBeat)));   // a loop that is switched off ends on the next beat
+                stopSink_(m->id(), steadyNsAtBeat(std::ceil(nowBeat)));   // a loop that is switched off ends on the next beat
             std::lock_guard<std::mutex> lock(mutex_);
             states_[m->id()].active = false;         // starts from "now" when it becomes active again
             states_[m->id()].lastStretched = st.lastStretched;
@@ -394,7 +404,7 @@ void DjtoolzScheduler::tick(qint64 nowNs)
         }
         const double durationMs = played->lengthMs();
         const bool reverse = s.reverseSync && m->supportsReverseSync();
-        const double lookaheadBeats = (kLookaheadMs + (reverse ? durationMs : 0.0)) * beatsPerMs;
+        const double lookaheadBeats = (lookaheadMs() + (reverse ? durationMs : 0.0)) * beatsPerMs;
 
         double from = nowBeat;
         if (st.active) {
@@ -411,7 +421,7 @@ void DjtoolzScheduler::tick(qint64 nowNs)
             m->plan(from, to, hits);
 
         for (const PlannedHit& h : hits) {
-            qint64 ns = source_->steadyNsAtBeat(h.beat) + qint64(s.offsetMs * 1e6);
+            qint64 ns = steadyNsAtBeat(h.beat) + qint64(s.offsetMs * 1e6);
             qint64 startFrame = 0;
             if (reverse) {
                 ns -= qint64(durationMs * 1e6);

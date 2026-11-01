@@ -19,6 +19,7 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSlider>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QToolButton>
 #include <QTreeView>
@@ -97,6 +98,12 @@ DjtoolzPanel::DjtoolzPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
     master_->setValue(100);
     master_->setMaximumWidth(120);
     master_->setToolTip(tr("DJ Tools volume"));
+    latency_ = new QSpinBox(this);
+    latency_->setRange(-200, 500);
+    latency_->setSuffix(QStringLiteral(" ms"));
+    latency_->setToolTip(tr("Audio latency of the DJ Tools sound. Positive: the audio stack is slow, the sounds are played earlier so they are "
+                            "heard on the beat. Negative delays them. It only moves the DJ Tools sound: the MIDI clock and the sync offset "
+                            "(difflock) are separate."));
     status_ = new QLabel(this);
     auto* top = new QHBoxLayout;
     top->addWidget(add_);
@@ -112,6 +119,8 @@ DjtoolzPanel::DjtoolzPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
     top->addWidget(controllerButton_);
     top->addWidget(columnsBox_);
     top->addWidget(status_);
+    top->addWidget(new QLabel(tr("Audio latency"), this));
+    top->addWidget(latency_);
     top->addWidget(new QLabel(tr("Vol"), this));
     top->addWidget(master_);
 
@@ -159,6 +168,10 @@ DjtoolzPanel::DjtoolzPanel(AlsaClock* clock, const QString& dataDir, QWidget* pa
         }
     });
     connect(columnsBox_, QOverload<int>::of(&QComboBox::activated), this, [this](int i) { setColumns(columnsBox_->itemData(i).toInt()); });
+    connect(latency_, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int v) {
+        scheduler_.setLatencyMs(v);
+        emit latencyChanged(v);
+    });
     connect(master_, &QSlider::valueChanged, this, [this](int v) {
         engine_.setMasterGain(float(v) / 100.0f);
         scheduleSave();
@@ -585,6 +598,19 @@ void DjtoolzPanel::poll()
             PacketLogger::instance().log(QStringLiteral("SYS"), QStringLiteral("DJTOOLZ tool %1: rendered %2 ms from its scheduled time")
                                                                    .arg(t.tag).arg(double(t.errorNs) / 1e6, 0, 'f', 3));
     }
+}
+
+} // namespace vdj
+
+namespace vdj {
+
+int DjtoolzPanel::latencyMs() const { return latency_->value(); }
+
+void DjtoolzPanel::setLatencyMs(int ms)
+{
+    QSignalBlocker block(latency_);
+    latency_->setValue(ms);
+    scheduler_.setLatencyMs(latency_->value());
 }
 
 } // namespace vdj

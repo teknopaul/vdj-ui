@@ -82,7 +82,10 @@ static void onUpdate(vdj_t* v, cdj_cdj_status_packet_t* cs_pkt)
     if (nm->isJoining()) return;
     emit nm->statusUpdated(pid, bpm, pitch, flags, masterState, active);
     // only report a master when someone is one: ourselves after a handoff (v->master), or a deck flagging itself
-    if (v->master) emit nm->masterChanged(v->player_id);
+    // A deck that is the master on the link wins over our own v->master: the lib only clears that on a request it saw, so after
+    // a master change made on the decks it stays set and would keep reporting us as the master (Sync then never follows the deck).
+    if ((flags & CDJ_STAT_FLAG_MASTER) && masterState == CDJ_MASTER_STATE_ON) emit nm->masterChanged(pid);
+    else if (v->master) emit nm->masterChanged(v->player_id);
     else if (flags & CDJ_STAT_FLAG_MASTER) emit nm->masterChanged(pid);
 }
 
@@ -91,6 +94,7 @@ static void onBeat(vdj_t* v, cdj_beat_packet_t* b_pkt)
     NetworkManager* nm = instanceFrom(v);
     if (!nm) return;
     const double sequencerOffset = nm->sequencerOffsetNow();   // read first: the delivery to the GUI thread adds delay
+    const double tickOffset = nm->sequencerTickOffsetNow();
     const qint64 arrivedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
     int pid = cdj_beat_player_id(b_pkt);
@@ -103,6 +107,14 @@ static void onBeat(vdj_t* v, cdj_beat_packet_t* b_pkt)
                 .arg(pid).arg(bpm, 0, 'f', 2).arg(barPos));
 
     emit nm->beatReceived(pid, bpm, barPos, sequencerOffset);
+    {
+        uint32_t beat8 = 0;
+        if (b_pkt->len >= 0x3c) {
+            const uint8_t* d = b_pkt->data + 0x38;
+            beat8 = (uint32_t(d[0]) << 24) | (uint32_t(d[1]) << 16) | (uint32_t(d[2]) << 8) | uint32_t(d[3]);
+        }
+        emit nm->beatRaw(pid, int(cdj_beat_bpm(b_pkt)), cdj_beat_pitch(b_pkt), cdj_beat_next(b_pkt), beat8, tickOffset);
+    }
     emit nm->beatTimed(pid, barPos, arrivedNs);
 }
 

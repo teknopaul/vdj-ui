@@ -9,7 +9,11 @@
 #include <QStringList>
 #include <map>
 #include "network/beat_tempo.h"
+#include "network/beat_phase.h"
 #include "midi/diff_lock.h"
+#include "midi/sync_aligner.h"
+#include "midi/sync_controller.h"
+#include "midi/sync_telemetry.h"
 
 class QLabel;
 class QTimer;
@@ -104,7 +108,7 @@ private:
     bool setVdjBpm(double bpm);                  // user changes: refused while synced to a real deck
     bool applyVdjBpm(double bpm);                // the one place the tempo is applied (clock, link, rows)
     int bpmLockedTo() const;                     // the deck whose BPM we must follow (difflock), 0 = free
-    void followLockedBpm();                      // adopt the locked deck's BPM
+    void followLockedBpm(bool beatTick = false); // adopt the followed deck's BPM (one glide step per beat after a master change)
     void setVdjPlaying(bool playing);
     void vdjRestart(bool quantize);                 // MIDI stop / start at the bar start; quantized: on the sync deck's next downbeat
     void cancelPendingRestart();
@@ -117,6 +121,10 @@ private:
     void nudgeSequencer(int ms);
     void captureDiffLockTarget();
     void refreshDiffLock();
+    // sync telemetry (Debug menu): a CSV of every remote beat and sync event, for testing sync against real decks
+    SyncTelemetry::Sample telemetryState() const;       // everything but the beat itself
+    void telemetryEvent(const QString& what);
+    void setSyncTelemetry(bool on);
     DiffLockBar* vdjDiffLockBar() const;
     bool isVdjRow(const DeckWidget* d) const;
     bool isVdjDeck(int playerId) const;
@@ -143,7 +151,10 @@ private:
     bool isLocalDeck(int playerId) const;
     void applyPitchFromDeck(int playerId);
     void markDeckBpm(int playerId, double bpm);
-    void syncToMaster();
+    void syncToMaster();                         // the VDJ row's Sync: sync mode on for "the master", or off
+    void syncButtonPressed(int playerId);        // any Sync button: select that deck / the master, or press again to stop
+    void startMasterSync();
+    void startSyncTargetFromBar();
     void copyBpmFromMaster(int playerId);
     void broadcastFromActiveDeck();
     int activeDeckIndex() const { return activeDeckIndex_; }
@@ -156,6 +167,22 @@ private:
     NetworkManager* network_;
     AlsaClock* clock_ = nullptr;
     DiffLock difflock_;
+    SyncController syncController_{ difflock_ };   // what the Sync buttons mean; drives difflock_
+    // Beat alignment after the first Sync press: the reference's offset is measured, then the sequencer is slewed onto it,
+    // a step per reference beat, with the difflock held; then the offset settles for a bar before the difflock takes over.
+    enum class AlignState { None, Measuring, Shifting, Settling };
+    AlignState alignState_ = AlignState::None;
+    SyncAligner::Plan alignPlan_;
+    int alignStep_ = 0;
+    int alignSettle_ = 0;
+    void startAlign();
+    void alignOnBeat(int pid, double beatLenMs);
+    void cancelAlign();
+    struct BeatStash { double offsetMs; double bpm; int barPos; };
+    std::map<int, BeatStash> beatStash_;        // per deck: the beat's sequencer offset, waits for beatTimed (which has the arrival time)
+    bool quantisedPhase_ = false;               // feed the difflock the BeatPhase estimate instead of the raw packet arrival (setting dj/sync_quantised_phase)
+    SyncTelemetry telemetry_;
+    std::map<int, SyncTelemetry::Sample> telemetryPending_;   // per deck: the beat's diff and nudge, written once beatTimed has its arrival time
     AutoIpManager* autoIp_;
     ConfigManager* config_;
     QTimer* startTimer_ = nullptr;              // single shot: a quantized Play waiting for the sync deck's beat
@@ -215,6 +242,7 @@ private:
     DjtoolzMidiControl* djtoolzControl_ = nullptr;
     QElapsedTimer followersClock_;       // throttles the ALSA subscriber query
     QStringList followerNames_;
+    std::map<int, BeatPhase> beatPhase_;   // per deck: beat phase / period fitted knowing the deck sends beats on a timer tick
     std::map<int, BeatTempo> beatTempo_;   // per deck: tempo measured from the beat packets
     MidiMapInput* midiIn_ = nullptr;
     JoystickSeqBridge* joystick_ = nullptr;

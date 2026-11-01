@@ -21,6 +21,7 @@ class QLabel;
 class QMenu;
 class QPushButton;
 class QSlider;
+class QSpinBox;
 class QToolButton;
 class QTreeView;
 class QVBoxLayout;
@@ -101,6 +102,10 @@ public:
     QToolButton* addButton() const { return add_; }
     QSlider* masterSlider() const { return master_; }
     QLabel* statusLabel() const { return status_; }
+    // Audio latency of the DJ Tools sound (ms, + = late): the scheduler queues hits that much earlier. Not the MIDI/difflock offset.
+    int latencyMs() const;
+    void setLatencyMs(int ms);                       // also tells the scheduler; no latencyChanged
+    QSpinBox* latencySpin() const { return latency_; }
     QTreeView* tree() const { return tree_; }
     // The right click menu of the tree: "Send to <tool>" for every tool that plays a sample (null when there is nothing to offer).
     // Public so a test can build it without a mouse.
@@ -113,6 +118,7 @@ public:
 signals:
     void message(const QString& text);
     void kitsChanged();
+    void latencyChanged(int ms);                     // the user changed it: save it
     void controllerDialogRequested();                // the "Controller..." button
 
 private:
@@ -145,6 +151,7 @@ private:
     QPushButton* clearPreset_;
     QPushButton* deletePreset_;
     QSlider* master_;
+    QSpinBox* latency_;
     QLabel* status_;
     QGridLayout* toolsLayout_;
     QComboBox* columnsBox_;

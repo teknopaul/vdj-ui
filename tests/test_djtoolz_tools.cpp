@@ -13,6 +13,7 @@ class TestDjtoolzTools : public QObject
 private slots:
     void init();
     void bombomatic120Bpm();
+    void latencyQueuesHitsEarlier();
     void offsetShiftsHits();
     void stabBeatChooser();
     void disabledToolIsSilent();
@@ -100,6 +101,27 @@ void TestDjtoolzTools::init()
 }
 
 #define MAKE_SCHED DjtoolzScheduler sch(&beats_, &cache_, [this](const Trigger& t) { got_.push_back(t); })
+
+void TestDjtoolzTools::latencyQueuesHitsEarlier()
+{
+    std::vector<qint64> base, early, late;
+    for (double lat : { 0.0, 30.0, -30.0 }) {
+        got_.clear();
+        beats_ = FakeBeatSource();
+        MAKE_SCHED;
+        sch.setLatencyMs(lat);
+        sch.addTool(bomb(shortWav_));
+        run(sch, 0, 2000);
+        QVERIFY(got_.size() >= 3);
+        auto& v = lat == 0.0 ? base : lat > 0 ? early : late;
+        for (const Trigger& t : got_) v.push_back(t.steadyNs);
+    }
+    QCOMPARE(early.size(), base.size());
+    for (size_t i = 0; i < base.size(); ++i) {
+        QCOMPARE(base[i] - early[i], ms(30));        // exactly 30 ms earlier
+        QCOMPARE(late[i] - base[i], ms(30));         // negative: later
+    }
+}
 
 void TestDjtoolzTools::bombomatic120Bpm()
 {

@@ -31,7 +31,21 @@ bool DiffLock::lock(int player)
 void DiffLock::off()
 {
     player_ = 0;
+    hold_ = false;
     reset();
+}
+
+void DiffLock::rebase(int player)
+{
+    if (player < 1 || player > kMaxPlayers)
+        return;
+    const int i = player - 1;
+    last_[i] = 0.0;
+    std::memset(set_[i], 0, sizeof(set_[i]));
+    pos_[i] = 0;
+    count_[i] = 0;
+    player_ = player;
+    hold_ = true;
 }
 
 void DiffLock::setFollowMaster(bool on)
@@ -81,7 +95,7 @@ int DiffLock::onBeat(int player, int barPos, double diffMs)
     ++count_[i];
 
     // auto nudge on the last beat of the bar, so the next downbeat should then be in time
-    if (player != player_ || barPos != 4 || !hasAverage(player))
+    if (player != player_ || barPos != 4 || hold_ || !hasAverage(player))
         return 0;
     return limit(int(std::lround(avgDiff(player) - targetMs_)));
 }

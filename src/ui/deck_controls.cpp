@@ -41,6 +41,7 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
     sync_ = new QPushButton("Sync", this);
     becomeMaster_ = new QPushButton("Master", this);
     copyBpm_ = new QPushButton("Copy BPM", this);
+    copyBpm_->setToolTip(QStringLiteral("Copy the master's BPM to the VDJ. The BPM only: the beat does not move (Sync does both)"));
     broadcastBeat_ = new QPushButton("Send Beat", this);
     broadcastBeat_->setToolTip(QStringLiteral("Send this deck's BPM and bar position on the link"));
 
@@ -78,6 +79,7 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
     layout->addWidget(playPause_);
     layout->addWidget(forward_);
     layout->addWidget(sync_);
+    setSyncState(SyncState::Off);
     layout->addWidget(becomeMaster_);
     layout->addWidget(copyBpm_);
     layout->addWidget(broadcastBeat_);
@@ -123,6 +125,9 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
 void DeckControls::setBpm(double bpm)
 {
     if (bpm > 0) {
+        // Showing a deck's BPM is not the DJ asking for it: only an edit of the spinner (setBpmClicked) may change the VDJ's tempo.
+        // Without this every BPM packet of every deck set the VDJ's tempo while it was not synced to anything.
+        QSignalBlocker block(bpmSpin_);
         bpmSpin_->setValue(bpm);
         bpmValueLabel_->setText(QString::number(bpm, 'f', 2));
     }
@@ -179,8 +184,7 @@ void DeckControls::setRemote(bool remote)
     back_->setVisible(!remote);
     forward_->setVisible(!remote);
     sync_->setVisible(true);   // remote decks: Sync difflocks the VDJ sequencer to that deck
-    sync_->setToolTip(remote ? QStringLiteral("Sync the VDJ to this deck")
-                             : QStringLiteral("Sync the VDJ to the master"));
+    setSyncState(syncState_);                        // refreshes the text and the tip for this kind of row
     becomeMaster_->setVisible(!remote);
     broadcastBeat_->setVisible(!remote);
     bpmSpin_->setVisible(!remote);
@@ -235,13 +239,40 @@ bool DeckControls::syncVisible() const
     return sync_ && !sync_->isHidden();
 }
 
-void DeckControls::setSyncLocked(bool locked)
+void DeckControls::setSyncState(SyncState state)
 {
-    if (syncLocked_ == locked)
-        return;
-    syncLocked_ = locked;
-    sync_->setText(locked ? QStringLiteral("Locked") : QStringLiteral("Sync"));
-    sync_->setStyleSheet(locked ? QStringLiteral("QPushButton { background: #806000; color: white; }") : QString());
+    syncState_ = state;
+    const QString what = remote_ ? QStringLiteral("this deck") : QStringLiteral("the master");
+    QString text, tip, style;
+    switch (state) {
+    case SyncState::Off:
+        text = QStringLiteral("Sync");
+        tip = QStringLiteral("Sync the VDJ to %1: the tempo and the beat follow it. Press again to stop.").arg(what);
+        break;
+    case SyncState::Waiting:
+        text = QStringLiteral("Waiting");
+        tip = QStringLiteral("Sync is on and follows the master, but there is no master yet. Press to stop.");
+        style = QStringLiteral("QPushButton { border: 1px solid #806000; }");
+        break;
+    case SyncState::Syncing:
+        text = QStringLiteral("Syncing...");
+        tip = QStringLiteral("Bringing the VDJ in time with %1. Press to stop.").arg(what);
+        style = QStringLiteral("QPushButton { background: #4a3c10; color: white; }");
+        break;
+    case SyncState::Locked:
+        text = QStringLiteral("Locked");
+        tip = QStringLiteral("The VDJ follows %1. Press to stop.").arg(what);
+        style = QStringLiteral("QPushButton { background: #806000; color: white; }");
+        break;
+    case SyncState::Suspended:
+        text = QStringLiteral("Master");
+        tip = QStringLiteral("Sync is on but the VDJ is the master, so it follows nobody. It follows the next master. Press to stop.");
+        style = QStringLiteral("QPushButton { border: 1px solid #806000; color: #c09000; }");
+        break;
+    }
+    sync_->setText(text);
+    sync_->setToolTip(tip);
+    sync_->setStyleSheet(style);
 }
 
 bool DeckControls::copyBpmVisible() const

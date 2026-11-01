@@ -55,6 +55,13 @@ public:
         double ms = 0.0;
         return (beatProbe_ && beatProbe_(&ms)) ? ms : std::nan("");
     }
+    // The same offset from the sequencer's tick counter (5 ms steps), only for the sync telemetry to compare with.
+    void setTickBeatProbe(std::function<bool(double*)> probe) { tickBeatProbe_ = std::move(probe); }
+    double sequencerTickOffsetNow() const
+    {
+        double ms = 0.0;
+        return (tickBeatProbe_ && tickBeatProbe_(&ms)) ? ms : std::nan("");
+    }
 
 signals:
     void connected();
@@ -72,6 +79,9 @@ signals:
     // steadyNs: std::chrono::steady_clock time of the packet's arrival (taken on the network thread), for measuring a
     // deck's real tempo from the beat intervals
     void beatTimed(int playerId, int barPos, qint64 steadyNs);
+    // The raw numbers of a beat packet (sync telemetry). Emitted between beatReceived and beatTimed of the same packet.
+    // nextBeatMs / beat8Ms: the deck's grid time to the next / 8th beat at 100% pitch, whole ms.
+    void beatRaw(int playerId, int trackBpmRaw, quint32 pitchRaw, quint32 nextBeatMs, quint32 beat8Ms, double tickOffsetMs);
     void masterChanged(int playerId);
     void linkExportLog(const QString& line);        // what the export does (media queries, dbserver, NFS)
     void linkExportChanged(bool running);
@@ -122,6 +132,7 @@ private:
     std::atomic<bool> statusStarted_{true};
     std::atomic<bool> joining_{false};   // vdj_exec_discovery() is running: deck events wait until connected() has been emitted
     std::function<bool(double*)> beatProbe_;
+    std::function<bool(double*)> tickBeatProbe_;
     struct RemoteLoad { int from = 0, slot = 0, type = 0; qint64 seenMs = 0; };
     QMutex loadMutex_;
     QHash<int, RemoteLoad> remoteLoads_;

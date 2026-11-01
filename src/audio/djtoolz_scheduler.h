@@ -40,6 +40,10 @@ public:
     // Sounds that start "now" (a one shot that is not quantised, a reverse-sync hit that is already late) cannot be heard before the
     // output latency has passed: they are put this far ahead. 0 in tests, the engine's latency + a margin in the program.
     void setImmediateLeadMs(double ms) { immediateLeadNs_ = qint64(ms * 1e6); }
+    // Audio stack latency (ms, + = the sound comes out late): every hit is queued that much earlier so it is heard on the beat; a negative
+    // value delays them. DJ Tools sound only: the MIDI clock and the difflock offset are not touched.
+    void setLatencyMs(double ms) { latencyNs_ = qint64(ms * 1e6); }
+    double latencyMs() const { return double(latencyNs_.load()) / 1e6; }
     void setStopSink(StopSink s) { stopSink_ = std::move(s); }
     StretchCache& stretchCache() { return stretch_; }
 
@@ -84,6 +88,9 @@ private:
     Sink sink_;
     StopSink stopSink_;
     qint64 immediateLeadNs_ = 0;
+    std::atomic<qint64> latencyNs_{ 0 };
+    qint64 steadyNsAtBeat(double beat) const;       // the source's time for the beat, less the audio latency
+    double lookaheadMs() const;                     // the window is wider by a positive latency
     MidiSink midiSink_;
     StretchCache stretch_;
 

@@ -87,14 +87,43 @@ void AlsaClock::close()
     client_ = port_ = djtoolzPort_ = queue_ = -1;
 }
 
+int64_t AlsaClock::queueRealNs() const
+{
+    snd_seq_queue_status_t* st;
+    snd_seq_queue_status_alloca(&st);
+    if (snd_seq_get_queue_status(seq_, queue_, st) < 0)
+        return -1;
+    const snd_seq_real_time_t* rt = snd_seq_queue_status_get_real_time(st);
+    return int64_t(rt->tv_sec) * 1000000000LL + int64_t(rt->tv_nsec);
+}
+
+// The queue has just been started: tick 0 and real time 0 coincide, so the position is the real time over the tempo.
+void AlsaClock::anchorModel()
+{
+    const int64_t r = queueRealNs();
+    if (r < 0) {
+        model_.invalidate();
+        return;
+    }
+    model_.reset(r, double(r) / (lastMicros_ * 1000.0), lastMicros_);
+}
+
 bool AlsaClock::applyTempo(double bpmValue, double extraMicros)
 {
     snd_seq_queue_tempo_t* tempo;
     snd_seq_queue_tempo_alloca(&tempo);
     const double micros = std::max(1000.0, 60000000.0 / bpmValue + extraMicros);   // micros per beat
-    snd_seq_queue_tempo_set_tempo(tempo, static_cast<unsigned int>(std::lround(micros)));
+    const unsigned int whole = static_cast<unsigned int>(std::lround(micros));
+    snd_seq_queue_tempo_set_tempo(tempo, whole);
     snd_seq_queue_tempo_set_ppq(tempo, kPpq);
-    return snd_seq_set_queue_tempo(seq_, queue_, tempo) == 0;
+    // the queue's clock right before the tempo changes: the model integrates the old tempo up to here
+    const int64_t at = model_.valid() ? queueRealNs() : -1;
+    if (snd_seq_set_queue_tempo(seq_, queue_, tempo) != 0)
+        return false;
+    lastMicros_ = double(whole);
+    if (at >= 0)
+        model_.setTempo(at, lastMicros_);
+    return true;
 }
 
 double AlsaClock::effectiveBpm() const
@@ -125,6 +154,26 @@ void AlsaClock::nudgeMillis(int ms)
         nudgeEnd_ = std::chrono::steady_clock::now() + std::chrono::microseconds(std::lround(60000000.0 / bpm));
 }
 
+bool AlsaClock::phaseShiftMs(int ms)
+{
+    if (!seq_ || !running_)
+        return false;
+    std::lock_guard<std::mutex> lock(mutex_);
+    const double bpm = bpm_;
+    const double base = 60000000.0 / bpm;                    // micros per beat
+    const double shift = ms * 1000.0;
+    if (std::fabs(shift) > 0.75 * base)
+        return false;
+    if (ms == 0)
+        return true;
+    // one beat of real time at micros T moves the position by (1 - base/T) * base: solve T for the wanted shift
+    const double extra = base * shift / (base - shift);
+    if (!applyTempo(bpm, extra))
+        return false;
+    nudgeEnd_ = std::chrono::steady_clock::now() + std::chrono::microseconds(std::lround(base));
+    return true;
+}
+
 void AlsaClock::nudgeBpm(int multiplier)
 {
     if (!seq_ || !running_ || multiplier == 0)
@@ -136,16 +185,52 @@ void AlsaClock::nudgeBpm(int multiplier)
         nudgeEnd_ = std::chrono::steady_clock::now() + std::chrono::microseconds(std::lround(60000000.0 / bpm));
 }
 
+static double wrappedPhase(double beats)
+{
+    double phase = beats - std::floor(beats);
+    if (phase >= 0.5)
+        phase -= 1.0;
+    return phase;
+}
+
 bool AlsaClock::beatOffsetMs(double* ms) const
+{
+    const double beats = positionBeatsExact();
+    if (beats < 0.0)
+        return false;
+    *ms = wrappedPhase(beats) * 60000.0 / bpm_;
+    return true;
+}
+
+bool AlsaClock::beatOffsetTickMs(double* ms) const
 {
     const double beats = positionBeats();
     if (beats < 0.0)
         return false;
-    double phase = beats - std::floor(beats);
-    if (phase >= 0.5)
-        phase -= 1.0;
-    *ms = phase * 60000.0 / bpm_;
+    *ms = wrappedPhase(beats) * 60000.0 / bpm_;
     return true;
+}
+
+double AlsaClock::positionBeatsExact(int64_t* steadyNs) const
+{
+    if (!seq_ || !running_)
+        return -1.0;
+    std::lock_guard<std::mutex> lock(mutex_);
+    snd_seq_queue_status_t* st;
+    snd_seq_queue_status_alloca(&st);
+    if (snd_seq_get_queue_status(seq_, queue_, st) < 0)
+        return -1.0;
+    if (steadyNs)
+        *steadyNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    const snd_seq_real_time_t* rt = snd_seq_queue_status_get_real_time(st);
+    const int64_t realNs = int64_t(rt->tv_sec) * 1000000000LL + int64_t(rt->tv_nsec);
+    const double tickBeats = double(snd_seq_queue_status_get_tick_time(st)) / kPpq;
+    if (!model_.consistentWith(tickBeats, realNs)) {
+        // a tempo change or restart the model did not see: fall back to the middle of the tick, and say so
+        model_.reset(realNs, tickBeats + 0.5 / kPpq, lastMicros_);
+        ++resyncs_;
+    }
+    return model_.beatsAt(realNs);
 }
 
 double AlsaClock::queueBpm() const
@@ -248,6 +333,7 @@ void AlsaClock::start()
         snd_seq_start_queue(seq_, queue_, nullptr);
         snd_seq_drain_output(seq_);
         sendNow(seq_, port_, SND_SEQ_EVENT_START);
+        anchorModel();
     }
     beatOffset_ = 0;
     resetNext_ = false;
@@ -287,6 +373,7 @@ void AlsaClock::restart()
     snd_seq_start_queue(seq_, queue_, nullptr);
     snd_seq_drain_output(seq_);
     sendNow(seq_, port_, SND_SEQ_EVENT_START);
+    anchorModel();
     beatOffset_ = 0;
     resetNext_ = true;                        // the loop's `next` tick is from the old timeline; the loop takes mutex_ before using it
 }
@@ -305,6 +392,7 @@ void AlsaClock::stopLocked()
     applyTempo(bpm_);
     snd_seq_stop_queue(seq_, queue_, nullptr);
     snd_seq_drain_output(seq_);
+    model_.invalidate();
 }
 
 // Keep MIDI clock pulses queued two beats ahead of the queue's position.
