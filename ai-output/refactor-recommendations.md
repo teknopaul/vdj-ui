@@ -53,3 +53,38 @@ Add dated notes here while developing, newest first.
 - The seven settings wrappers in `trakcrate_panel.cpp` (`createSettingsSet`, `renameSettingsSet`, ...) repeat the same lines. A helper taking a lambda would shorten them.
 - The CLI (`src-cli/`) has no settings sets; porting `settings_sets` to the C helper would make both tools agree on `user-settings/<set>/`.
 - `ExportOptions` still has both the settings byte fields and `settingsSet`; once callers stop passing bytes the fields could go.
+
+## Sync improvements (2026-11-01)
+
+Docs only, nothing was changed in libcdj. What the sync work found that belongs in or next to libcdj. Background: `doc/sync-timing.md`, `doc/sync.md`, `ai-output/sync-bpm-rounding.md`.
+
+### libcdj behaviour worth fixing or extending
+
+- **`v->master` is never cleared when another deck takes over, unless libcdj saw the matching request.** `vdj.c` (the `CDJ_STATUS` case, "if I am master, and now `v->master_req` matches his status") only drops `v->master` for a `master_req` it knows. After a master change made on the decks it stayed set. `onUpdate` in `src/network/network_manager.cpp` reported the VDJ as master on every status packet, so Sync could never follow the new master ("stuck after a few master changes"). The vdj-ui workaround: a deck flagged `CDJ_STAT_FLAG_MASTER` with `master_state == CDJ_MASTER_STATE_ON` wins over `v->master`. The proper fix is in libcdj: clear `v->master` when a status packet from another player says it is the master (`master_state ON`), and expose "who is master" as one value (`backline->master_id` is only ever set, never cleared).
+- **A master-change callback.** vdj-ui gets the master from three places (`v->master`, the MASTER flag, `masterState`) and re-emits `masterChanged` on every status packet. libcdj could call a handler once per change with the old and new id. That would also remove the "deck left, no master" special case in `SyncController::deckLeft`.
+- **Packet arrival time.** Beat callbacks have no timestamp, so vdj-ui reads `steady_clock` in the handler (`onBeat`, after the ALSA queue read). A receive time taken in the socket thread (`recvmsg` with `SO_TIMESTAMPNS`, converted to `CLOCK_MONOTONIC`) would take the scheduling delay between `recv` and the callback out of every `diff_ms`. It is the cheapest accuracy gain left and needs a `cdj_beat_packet_t` field or a callback argument.
+- **Beat packet fields.** `cdj_beat_next()` (next-beat ms) is used; the field at 0x38 (`beat8_ms`, 8 beats ahead) is read by hand in vdj-ui (`data + 0x38`, big endian) and should be an accessor. The raw `cdj_beat_bpm()` / `cdj_beat_pitch()` are used by the telemetry. `cdj_beat_pitch` is truncated, not rounded (0.5 ppm, harmless, but a comment in libcdj would stop the next person checking).
+- **Precision of the calculated BPM.** `cdj_calculated_bpm` returns a `float` (24 bit mantissa, about 0.00001 BPM at 140 BPM). Fine for sync, but `double` costs nothing (`ai-output/sync-bpm-rounding.md`).
+
+### Pure sync code in vdj-ui that is not Qt or ALSA specific
+
+These have no Qt in them (or only `QObject` for tests) and are the natural content of a small "link timing" module, `<cdj/sync.h>` or a separate libcdj-sync, if the CLI or another front end ever follows a deck:
+
+| What                                                                                  | Where                                              | Notes                                                                                                                       |
+|---------------------------------------------------------------------------------------|----------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `DiffLock` (the `adj` difflock: per-deck offset history, bar-end nudge, hold, rebase) | `src/midi/diff_lock.{h,cpp}`                       | Ported from `adj_diff.c`, so it may already exist in C in the adj sources. Dependency free.                                 |
+| `SyncController` (Mode / Phase state machine for the Sync button)                     | `src/midi/sync_controller.{h,cpp}`                 | Only knows `DiffLock`. Tests: `tests/test_sync_controller.cpp`.                                                             |
+| `SyncAligner` (wrap to the short way, split into steps)                               | `src/midi/sync_aligner.{h,cpp}`                    | Pure arithmetic.                                                                                                            |
+| `BpmChangeDetector`                                                                   | `src/midi/bpm_change_detector.h`                   | Header only.                                                                                                                |
+| `BeatTempo` (least squares tempo from arrival times), `BeatPhase` (quantised phase)   | `src/network/beat_tempo.*`, `src/network/beat_phase.*` | `BeatPhase` encodes the 3 ms deck tick (learned from the data). It is what should replace averaging when a deck is measured. Real CSV fixtures in `tests/fixtures/sync-telemetry/`. |
+| `SeqPhaseModel` (sub-tick sequencer position from the tempo history)                  | `src/midi/seq_phase_model.{h,cpp}`                 | Pure; ALSA only supplies queue real time. Useful for anything that reads an ALSA queue position (the tick counter is 96 ppq). |
+
+Not general: `AlsaClock::phaseShiftMs` / `nudgeMillis` (ALSA queue tempo trick; `nudgeMillis(n)` really moves n·beat/(beat+n), documented in `doc/sync-timing.md`), the telemetry CSV writer (`sync_telemetry.*`, vdj-ui specific), and the UI glue.
+
+### vdj-ui structure
+
+- `src/ui/main_window.cpp` is now about 2560 lines. The sync part (`syncButtonPressed`, `startMasterSync`, `lockDiffLockTo`, the align state machine `startAlign` / `alignOnBeat`, `followLockedBpm`, `syncReferenceBpm`, `refreshDiffLock`, telemetry state, and the `beatTimed` lambda) could move to a `SyncCoordinator` QObject that owns `DiffLock`, `SyncController`, the per-deck `BeatTempo` / `BeatPhase` / `BpmChangeDetector` maps and the align state, and talks to the window through a few signals (`syncStateChanged`, `bpmRequested`, `nudgeRequested`). `MainWindow` would only connect them. That would also make the phase 5 to 9 behaviour testable without constructing a window (the tests that need a `MainWindow` today: `deckBeatsNudgeTheSequencer`, `syncIsAStickyModeAcrossMasterChanges`).
+- The `beatTimed` lambda in `connectDeckSignals` does stashing, tempo, phase, difflock, alignment, controller, glide, telemetry and the measured-BPM label. Each of those is a short function on the coordinator.
+- `DeckControls::setBpm` was feeding the BPM spinner's `valueChanged`, which meant "a deck's BPM was shown" and "the DJ typed a BPM" were the same event (every deck's BPM packet set the VDJ tempo while Sync was off). It is now blocked in `setBpm`; the cleaner shape is for the spinner to emit only on `editingFinished` / user actions, and for the model to be set through a separate setter.
+- Tests that need a real ALSA sequencer skip when none exists (`QSKIP("no ALSA sequencer available")`); a fake `snd_seq` or a tempo model interface on `AlsaClock` would let `phaseShiftMs` and the nudge tests run everywhere.
+- Build directory: the repo root has its own in-source `CMakeCache.txt` and `Makefile`, so `cmake ..` from a build directory regenerates the wrong tree. Moving the in-source build away (or an `.gitignore`/guard in `CMakeLists.txt` that refuses an in-source configure) would stop that mistake.

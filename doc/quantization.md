@@ -17,6 +17,13 @@ Status: the local player is in `.planning/plans/cue-quantize_PLAN.md`, the ALSA 
     (`beatJumpMs`). The local BPM is trusted.
 - **Latency is ignored** for jumps and the local player's quantization. Move by exact BPM-derived amounts; the DJ compensates by ear. The one exception is the DJ Tools sound: its "Audio latency" setting (`dj/djtoolz_latency_ms`, saved) queues those hits earlier, and nothing else uses it.
 
+- **The local player and the sequencer**: with the player's Q on and the VDJ's ALSA sequencer running, **Play** (from stopped or paused) and the **cue buttons**
+  (while playing) wait for the sequencer's next grid point (global resolution) instead of going at once: Play starts on it, a cue lands exactly on it
+  (`PlayerPanel::sequencerGridWaitMs`, the sequencer is an `AlsaClockBeatSource`). A grid point passed less than 5 ms ago does not wait a beat. While Play is
+  queued its button shows pause and pressing it cancels; stop and load cancel too. A cue pressed while the player is stopped or paused only moves the playhead.
+  This is a launch on the beat, not a beat sync: the player runs at its own tempo afterwards. **Copy BPM** (VDJ row) sets the player's tempo as well as the
+  sequencer's, so the two run at the same BPM (the track's BPM is the tempo ratio's base). With the sequencer stopped, the track's own beat grid rules above apply.
+
 ## Time bases (the usual bug source)
 
 - Beat grid and `AudioPlayer::positionMs()` are **source time**. Waiting is **wall time** = source / tempo.

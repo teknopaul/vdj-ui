@@ -5,11 +5,13 @@
 #include <QList>
 #include "track_details.h"
 #include "audio/beat_clock.h"
+#include "audio/beat_source.h"
 
 class QComboBox;
 class QLabel;
 class QPushButton;
 class QHBoxLayout;
+class QTimer;
 
 namespace vdj {
 
@@ -44,6 +46,7 @@ public:
     QPushButton* stopButton() const { return stop_; }
     QPushButton* bpmDownButton() const { return bpmDown_; }
     QPushButton* bpmUpButton() const { return bpmUp_; }
+    QPushButton* bpmResetButton() const { return bpmReset_; }   // back to the track's own BPM
     const QList<QPushButton*>& cueButtons() const { return cueButtons_; }
     double originalBpm() const { return originalBpm_; }
     double targetBpm() const { return targetBpm_; }
@@ -61,6 +64,12 @@ public:
     };
     bool hasBeatGrid() const { return clock_.isValid(); }
     BeatPhase beatPhase() const { return phase_; }
+    // The VDJ's ALSA sequencer (not owned). With Q on and the sequencer running, Play and the cue buttons wait for its next beat (at the
+    // global resolution) instead of going at once. This is only a launch on the beat, the player is not beat-synced to it afterwards.
+    void setSequencerBeats(const BeatSource* source) { sequencer_ = source; }
+    // Wall ms until the sequencer's next grid point; -1 when it does not apply (Q off, no sequencer, not running), 0 when a grid point is just past.
+    double sequencerGridWaitMs() const;
+    bool playPending() const { return playPending_; }
     void setQuantizeSettings(QuantizeSettings* settings) { quantizeSettings_ = settings; }   // the global resolution
     void setAnalysisForTest(const TrackAnalysis& analysis);   // test-only: set the beat grid without loading a track
 
@@ -78,6 +87,8 @@ private:
     void rebuildCueButtons();
     void setBeatGrid();
     void jumpToCue(double cueMs);
+    void playClicked();
+    void cancelPendingPlay();
     void jumpBeats(int beats);                   // pure BPM jump: negative = back, no beat grid needed
     void updatePhase(double ms);
 
@@ -90,9 +101,13 @@ private:
     QPushButton* quantize_;
     QuantizeSettings* quantizeSettings_ = nullptr;
     bool warnedNoGrid_ = false;
+    const BeatSource* sequencer_ = nullptr;
+    QTimer* playTimer_ = nullptr;
+    bool playPending_ = false;
     QPushButton* stop_;
     QPushButton* bpmDown_;
     QPushButton* bpmUp_;
+    QPushButton* bpmReset_;
     QLabel* title_;
     QLabel* time_;
     QLabel* bpm_;

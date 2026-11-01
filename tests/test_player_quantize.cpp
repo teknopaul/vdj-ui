@@ -6,6 +6,8 @@
 #include "ui/player_panel.h"
 #include "ui/waveform_widget.h"
 #include "ui/track_analysis.h"
+#include <QDataStream>
+#include <QFile>
 
 using namespace vdj;
 
@@ -34,6 +36,9 @@ private slots:
     void beatChangedOnlyOnNewBeat();
     void buttons();
     void resolutionSetting();
+    void sequencerGridWait();
+    void bpmResetGoesBackToTheTracksBpm();
+    void playWaitsForTheSequencerBeat();
 };
 
 void TestPlayerQuantize::noGridByDefault()
@@ -93,6 +98,104 @@ void TestPlayerQuantize::resolutionSetting()
     QCOMPARE(s.subdivisions(), 2);
     s.setResolution(QuantizeSettings::Half);
     QCOMPARE(spy.count(), 2);
+}
+
+void TestPlayerQuantize::bpmResetGoesBackToTheTracksBpm()
+{
+    QTemporaryDir dir;
+    QFile f(dir.filePath("a.wav"));
+    QVERIFY(f.open(QIODevice::WriteOnly));
+    const int frames = 44100;
+    QByteArray h;
+    QDataStream s(&h, QIODevice::WriteOnly);
+    s.setByteOrder(QDataStream::LittleEndian);
+    s.writeRawData("RIFF", 4); s << quint32(36 + frames * 4); s.writeRawData("WAVEfmt ", 8);
+    s << quint32(16) << quint16(1) << quint16(2) << quint32(44100) << quint32(44100 * 4) << quint16(4) << quint16(16);
+    s.writeRawData("data", 4); s << quint32(frames * 4);
+    f.write(h);
+    f.write(QByteArray(frames * 4, 0));
+    f.close();
+
+    PlayerPanel panel;
+    QVERIFY(!panel.bpmResetButton()->isEnabled());   // nothing loaded
+    TrackInfo info;
+    info.title = "t";
+    info.audioPath = dir.filePath("a.wav");
+    info.fields.append({QStringLiteral("BPM"), QStringLiteral("124")});
+    if (!panel.loadTrack(info))
+        QSKIP("cannot load a wav here");
+    QVERIFY(panel.bpmResetButton()->isEnabled());
+    QCOMPARE(panel.targetBpm(), 124.0);
+    panel.setTargetBpm(131.3);
+    QCOMPARE(panel.targetBpm(), 131.3);
+    panel.bpmResetButton()->click();
+    QCOMPARE(panel.targetBpm(), 124.0);
+    QCOMPARE(panel.player()->tempo(), 1.0);
+}
+
+void TestPlayerQuantize::sequencerGridWait()
+{
+    PlayerPanel panel;
+    QuantizeSettings settings;
+    panel.setQuantizeSettings(&settings);
+    FakeBeatSource seq;                              // 120 BPM: a beat is 500 ms
+    seq.startNs = BeatSource::steadyNowNs() - qint64(130e6);       // 130 ms past a beat
+    panel.setSequencerBeats(&seq);
+    QCOMPARE(panel.sequencerGridWaitMs(), -1.0);     // Q is off
+    panel.quantizeButton()->setEnabled(true);
+    panel.quantizeButton()->setChecked(true);
+    double w = panel.sequencerGridWaitMs();
+    QVERIFY2(std::abs(w - 370.0) < 15.0, qPrintable(QString::number(w)));
+    settings.setResolution(QuantizeSettings::Quarter);              // 125 ms steps: 130 ms past a beat, the next step is in 120 ms
+    w = panel.sequencerGridWaitMs();
+    QVERIFY2(std::abs(w - 120.0) < 15.0, qPrintable(QString::number(w)));
+    seq.startNs = BeatSource::steadyNowNs() - qint64(2e6);          // a beat was 2 ms ago: go now
+    settings.setResolution(QuantizeSettings::Beat);
+    QCOMPARE(panel.sequencerGridWaitMs(), 0.0);
+    seq.isRunning = false;
+    QCOMPARE(panel.sequencerGridWaitMs(), -1.0);     // sequencer stopped: the player is not held
+}
+
+void TestPlayerQuantize::playWaitsForTheSequencerBeat()
+{
+    QTemporaryDir dir;
+    QFile f(dir.filePath("a.wav"));
+    QVERIFY(f.open(QIODevice::WriteOnly));
+    const int frames = 44100;                         // one second of silence
+    QByteArray h;
+    QDataStream s(&h, QIODevice::WriteOnly);
+    s.setByteOrder(QDataStream::LittleEndian);
+    s.writeRawData("RIFF", 4); s << quint32(36 + frames * 4); s.writeRawData("WAVEfmt ", 8);
+    s << quint32(16) << quint16(1) << quint16(2) << quint32(44100) << quint32(44100 * 4) << quint16(4) << quint16(16);
+    s.writeRawData("data", 4); s << quint32(frames * 4);
+    f.write(h);
+    f.write(QByteArray(frames * 4, 0));
+    f.close();
+
+    PlayerPanel panel;
+    TrackInfo info;
+    info.title = "t";
+    info.audioPath = dir.filePath("a.wav");
+    if (!panel.loadTrack(info))
+        QSKIP("cannot load a wav here");
+    QuantizeSettings settings;
+    panel.setQuantizeSettings(&settings);
+    FakeBeatSource seq;
+    seq.startNs = BeatSource::steadyNowNs() - qint64(100e6);        // 100 ms past a beat, the next in 400 ms
+    panel.setSequencerBeats(&seq);
+
+    panel.playButton()->click();                      // Q off: starts at once
+    QVERIFY(!panel.playPending());
+    panel.playButton()->click();                      // pause
+    panel.quantizeButton()->setChecked(true);
+    panel.playButton()->click();
+    QVERIFY(panel.playPending());                     // queued
+    QVERIFY(panel.playButton()->text().contains(QString::fromUtf8("\u23f8")));   // shows pause: pressing cancels
+    panel.playButton()->click();
+    QVERIFY(!panel.playPending());
+    panel.playButton()->click();
+    QVERIFY(panel.playPending());
+    QTRY_VERIFY_WITH_TIMEOUT(!panel.playPending(), 1000);       // started on the beat
 }
 
 QTEST_MAIN(TestPlayerQuantize)

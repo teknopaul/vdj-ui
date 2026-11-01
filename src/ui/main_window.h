@@ -11,6 +11,8 @@
 #include "network/beat_tempo.h"
 #include "network/beat_phase.h"
 #include "midi/diff_lock.h"
+#include <memory>
+#include "audio/beat_source.h"
 #include "midi/bpm_change_detector.h"
 #include "midi/sync_aligner.h"
 #include "midi/sync_controller.h"
@@ -175,6 +177,7 @@ private: // adopt the followed deck's BPM (one glide step per beat after a maste
     QMenu* deckFilesMenu_ = nullptr;
     NetworkManager* network_;
     AlsaClock* clock_ = nullptr;
+    std::unique_ptr<AlsaClockBeatSource> playerBeats_;   // the local player's Q waits for this sequencer's beat
     DiffLock difflock_;
     SyncController syncController_{ difflock_ };   // what the Sync buttons mean; drives difflock_
     // Beat alignment after the first Sync press: the reference's offset is measured, then the sequencer is slewed onto it,

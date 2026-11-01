@@ -1460,6 +1460,8 @@ void MainWindow::setupDemoDecks()
     centralLayout->setContentsMargins(0, 0, 0, 0);
     playerPanel_ = new PlayerPanel(this);
     playerPanel_->setQuantizeSettings(quantize_);
+    playerBeats_ = std::make_unique<AlsaClockBeatSource>(clock_);
+    playerPanel_->setSequencerBeats(playerBeats_.get());     // Q on: Play and the cues go on the sequencer's beat
     playerPanel_->setVisible(config_->loadValue(QStringLiteral("ui"), QStringLiteral("local_player")) != QLatin1String("0"));
     centralLayout->addWidget(playerPanel_);
     djtoolzPanel_ = new DjtoolzPanel(clock_, ConfigManager::configDir(), this);
@@ -1962,9 +1964,20 @@ void MainWindow::copyBpmFromMaster(int playerId)
                                         : QStringLiteral("No master BPM known yet"), 3000);
         return;
     }
+    // The local player (a track loaded from the rekordbox viewer, a pendrive...) takes the BPM too, by tempo change: it plays at this BPM
+    // like the sequencer does. Even when the sequencer's BPM is locked to a deck: that is the BPM the player should have.
+    const bool playerTakesIt = playerPanel_ && playerPanel_->originalBpm() > 0 && playerPanel_->player()->isLoaded();
+    if (playerTakesIt)
+        playerPanel_->setTargetBpm(bpm);
     if (!setVdjBpm(bpm)) {
         if (!bpmLockedTo())       // locked: setVdjBpm has said so in the status bar
             statusBar()->showMessage(QStringLiteral("BPM %1 is out of range").arg(bpm, 0, 'f', 2), 4000);
+        else if (playerTakesIt)
+            statusBar()->showMessage(QStringLiteral("The player is now at %1 BPM (the sequencer follows deck %2)").arg(bpm, 0, 'f', 2).arg(bpmLockedTo()), 4000);
+        return;
+    }
+    if (playerTakesIt) {
+        statusBar()->showMessage(QStringLiteral("Copied BPM %1 to the VDJ, the ALSA clock and the player").arg(bpm, 0, 'f', 2), 4000);
         return;
     }
     statusBar()->showMessage(remote ? QStringLiteral("Copied BPM %1 from deck %2 to the VDJ and the ALSA clock")

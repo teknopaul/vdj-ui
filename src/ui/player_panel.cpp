@@ -8,11 +8,14 @@
 #include "trakcrate/track.h"
 #include <QComboBox>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QPushButton>
 #include <QStyle>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <algorithm>
+#include <cmath>
 
 namespace vdj {
 
@@ -77,6 +80,12 @@ PlayerPanel::PlayerPanel(QWidget* parent)
         b->setFixedSize(30, 22);
         b->setStyleSheet(QStringLiteral("QPushButton { padding: 0px; }"));
     }
+    bpmReset_ = new QPushButton(this);
+    bpmReset_->setIcon(QIcon(QStringLiteral(":/img/view-refresh-22x22.png")));
+    bpmReset_->setToolTip(QStringLiteral("Reset the BPM to the track's own BPM"));
+    bpmReset_->setFocusPolicy(Qt::NoFocus);
+    bpmReset_->setFixedSize(30, 22);
+    bpmReset_->setStyleSheet(QStringLiteral("QPushButton { padding: 0px; }"));
     bpm_ = new QLabel(QStringLiteral("---.-"), this);
     bpm_->setAlignment(Qt::AlignCenter);
     QFont f = bpm_->font();
@@ -90,6 +99,7 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     auto* bpmButtons = new QHBoxLayout;
     bpmButtons->addWidget(bpmDown_);
     bpmButtons->addWidget(bpmUp_);
+    bpmButtons->addWidget(bpmReset_);
     bpmBox->addLayout(bpmButtons);
 
     auto* middle = new QHBoxLayout;
@@ -113,12 +123,15 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     connect(device_, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
         player_->setDevice(device_->currentData().toString());
     });
-    connect(play_, &QPushButton::clicked, this, [this]() {
-        if (player_->state() == AudioPlayer::Playing)
-            player_->pause();
-        else
-            player_->play();
+    playTimer_ = new QTimer(this);
+    playTimer_->setSingleShot(true);
+    playTimer_->setTimerType(Qt::PreciseTimer);
+    connect(playTimer_, &QTimer::timeout, this, [this]() {
+        playPending_ = false;
+        player_->play();
+        updateButtons();
     });
+    connect(play_, &QPushButton::clicked, this, &PlayerPanel::playClicked);
     connect(back_, &QPushButton::clicked, this, [this]() { jumpBeats(-4); });
     connect(forward_, &QPushButton::clicked, this, [this]() { jumpBeats(4); });
     connect(quantize_, &QPushButton::toggled, this, [this](bool on) {
@@ -128,10 +141,14 @@ PlayerPanel::PlayerPanel(QWidget* parent)
         }
     });
     connect(player_, &AudioPlayer::jumped, this, [this](double) { emit status(QString()); });
-    connect(stop_, &QPushButton::clicked, player_, &AudioPlayer::stop);
+    connect(stop_, &QPushButton::clicked, this, [this]() {
+        cancelPendingPlay();
+        player_->stop();
+    });
     connect(waveform_, &WaveformWidget::seekRequested, player_, &AudioPlayer::seekMs);
     connect(bpmDown_, &QPushButton::clicked, this, [this]() { setTargetBpm(targetBpm_ - kBpmStep); });
     connect(bpmUp_, &QPushButton::clicked, this, [this]() { setTargetBpm(targetBpm_ + kBpmStep); });
+    connect(bpmReset_, &QPushButton::clicked, this, [this]() { setTargetBpm(originalBpm_); });
     connect(player_, &AudioPlayer::positionChanged, this, [this](double ms) {
         waveform_->setPlayPosition(player_->isLoaded() ? ms : -1.0);
         time_->setText(QStringLiteral("%1 / %2").arg(mmss(ms), mmss(player_->lengthMs())));
@@ -193,6 +210,7 @@ void PlayerPanel::reloadTrakcrateAnalysis(const QString& trackDir)
 
 bool PlayerPanel::loadImpl(const TrackInfo& info, const TrackAnalysis* given)
 {
+    cancelPendingPlay();
     player_->unload();
     analysis_ = TrackAnalysis();
     setBeatGrid();
@@ -284,8 +302,67 @@ void PlayerPanel::jumpBeats(int beats)
     player_->seekMs(std::clamp(player_->positionMs() + delta, 0.0, player_->lengthMs()));
 }
 
+double PlayerPanel::sequencerGridWaitMs() const
+{
+    if (!quantize_->isChecked() || !sequencer_ || !sequencer_->running())
+        return -1.0;
+    const int div = quantizeSettings_ ? quantizeSettings_->subdivisions() : 1;
+    const qint64 now = BeatSource::steadyNowNs();
+    const double beat = sequencer_->beatsAtSteadyNs(now);
+    const double bpm = sequencer_->bpm();
+    if (beat < 0.0 || bpm <= 0.0)
+        return -1.0;
+    const double gridMs = 60000.0 / bpm / div;
+    const double nextGrid = std::ceil(beat * div - 1e-9) / div;
+    const double wait = double(sequencer_->steadyNsAtBeat(nextGrid) - now) / 1e6;
+    if (gridMs - wait < 5.0)                      // a grid point was only just passed: go now, a beat's wait would be silly
+        return 0.0;
+    return std::max(0.0, wait);
+}
+
+void PlayerPanel::cancelPendingPlay()
+{
+    if (playTimer_) playTimer_->stop();
+    if (playPending_) {
+        playPending_ = false;
+        updateButtons();
+    }
+}
+
+// Play pauses a playing deck and cancels a queued start; otherwise it starts, on the sequencer's next beat when Q is on and the sequencer runs.
+void PlayerPanel::playClicked()
+{
+    if (playPending_) {
+        cancelPendingPlay();
+        return;
+    }
+    if (player_->state() == AudioPlayer::Playing) {
+        player_->pause();
+        return;
+    }
+    const double wait = sequencerGridWaitMs();
+    if (wait <= 0.0) {
+        player_->play();
+        return;
+    }
+    playPending_ = true;
+    playTimer_->start(int(std::lround(wait)));
+    updateButtons();
+    emit status(QStringLiteral("Play queued on the sequencer's beat (%1 ms)").arg(qRound(wait)));
+}
+
 void PlayerPanel::jumpToCue(double cueMs)
 {
+    if (player_->state() == AudioPlayer::Playing) {
+        const double wait = sequencerGridWaitMs();
+        if (wait > 0.0) {
+            // the cue lands on the sequencer's next beat; the trigger is in source time, which runs `tempo` times faster than the wall clock
+            const double tempo = player_->tempo() > 0 ? player_->tempo() : 1.0;
+            player_->seekAtMs(player_->positionMs() + wait * tempo, cueMs);
+            emit status(QStringLiteral("Cue queued on the sequencer's beat (%1 ms)").arg(qRound(wait)));
+            return;
+        }
+    }
     if (!quantize_->isChecked() || player_->state() != AudioPlayer::Playing || !clock_.isValid()) {
         player_->seekMs(cueMs);
         return;
@@ -318,6 +395,7 @@ void PlayerPanel::updateBpmLabel()
     const bool on = originalBpm_ > 0 && player_->isLoaded();
     bpmDown_->setEnabled(on);
     bpmUp_->setEnabled(on);
+    bpmReset_->setEnabled(on);
 }
 
 void PlayerPanel::updateButtons()
@@ -325,7 +403,7 @@ void PlayerPanel::updateButtons()
     const bool loaded = player_->isLoaded();
     const auto s = player_->state();
     play_->setEnabled(loaded);
-    play_->setText(s == AudioPlayer::Playing ? kPauseGlyph : kPlayGlyph);
+    play_->setText(s == AudioPlayer::Playing || playPending_ ? kPauseGlyph : kPlayGlyph);
     back_->setEnabled(loaded && originalBpm_ > 0);
     forward_->setEnabled(loaded && originalBpm_ > 0);
     quantize_->setEnabled(loaded);
