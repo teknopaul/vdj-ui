@@ -390,13 +390,37 @@ bool Library::addDriveEntry(const std::string& drive, const std::string& nameIn,
     return true;
 }
 
+static std::set<std::string> canonicalSet(const std::vector<fs::path>& dirs);
+
+// Adding a folder or playlist that already has an entry on the pendrive tops that entry up with the tracks it lost (appended at the end)
+// instead of making a second entry; with nothing missing it does nothing. Returns true when the entry was handled.
+static bool topUpDriveEntry(const Library& lib, const std::string& drive, const std::string& kind, const std::string& source,
+                            const std::vector<fs::path>& tracks, bool* handled, std::string* err)
+{
+    *handled = false;
+    for (const Library::DriveEntry& e : lib.driveEntries(drive)) {
+        if (e.kind != kind || e.source != source) continue;
+        Library d = lib.driveLibrary(drive);
+        const std::set<std::string> have = canonicalSet(d.playlistTracks(e.dir));
+        std::error_code ec;
+        std::vector<fs::path> missing;
+        for (const fs::path& t : tracks)
+            if (!have.count(fs::weakly_canonical(t, ec).string())) missing.push_back(t);
+        *handled = true;
+        return missing.empty() || d.addTracksToPlaylist(e.dir, missing, -1, err);
+    }
+    return true;
+}
+
 bool Library::addFolderToDrive(const std::string& drive, const std::string& folder, std::string* err) const
 {
     if (!isSafeName(folder)) return fail(err, "bad folder name: " + folder);
     std::vector<fs::path> tracks;
     for (const std::string& t : listTracks(folder)) tracks.push_back(trackDir(folder, t));
     if (tracks.empty()) return fail(err, "the folder is empty: " + folder);
-    return addDriveEntry(drive, folder, "folder", folder, tracks, err);
+    bool handled = false;
+    if (hasDrive(drive) && !topUpDriveEntry(*this, drive, "folder", folder, tracks, &handled, err)) return false;
+    return handled || addDriveEntry(drive, folder, "folder", folder, tracks, err);
 }
 
 bool Library::addPlaylistToDrive(const std::string& drive, const std::string& playlist, std::string* err) const
@@ -404,7 +428,9 @@ bool Library::addPlaylistToDrive(const std::string& drive, const std::string& pl
     if (!hasPlaylist(playlist)) return fail(err, "no such playlist: " + playlist);
     std::vector<fs::path> tracks = playlistTracks(playlist);
     if (tracks.empty()) return fail(err, "the playlist is empty: " + playlist);
-    return addDriveEntry(drive, playlist, "playlist", playlist, tracks, err);
+    bool handled = false;
+    if (hasDrive(drive) && !topUpDriveEntry(*this, drive, "playlist", playlist, tracks, &handled, err)) return false;
+    return handled || addDriveEntry(drive, playlist, "playlist", playlist, tracks, err);
 }
 
 bool Library::removeDriveEntry(const std::string& drive, int index, std::string* err) const

@@ -610,17 +610,30 @@ static void pad4(struct tc_buf *b)
     }
 }
 
-static void put_string(struct tc_buf *b, const char *s)
+/* Real rekordbox starts every UTF-16 string (kind 0x90) on a 4 byte boundary of the row (rows start 4 byte aligned) by padding with zeros
+ * before it; the decks crash on a text that starts at 2 mod 4 (seen with a non-ASCII album name). Short ASCII strings are not aligned. */
+static void align_wide(struct tc_buf *b, const uint8_t *enc)
 {
-    size_t n;
+    if (enc != NULL && enc[0] == 0x90) {
+        pad4(b);
+    }
+}
+
+/* appends the string and returns the offset in the row where it starts (after any padding) */
+static size_t put_string(struct tc_buf *b, const char *s)
+{
+    size_t n, at;
     uint8_t *e = tc_devsql_string(s ? s : "", &n);
 
     if (e == NULL) {
         b->err = 1;
-        return;
+        return b->n;
     }
+    align_wide(b, e);
+    at = b->n;
     tc_buf_put(b, e, n);
     free(e);
+    return at;
 }
 
 static uint8_t *finish(struct tc_buf *b, size_t *len)
@@ -652,9 +665,14 @@ static uint8_t *artist_row(uint32_t id, const char *name, size_t *len)
         tc_set_le16(b.d, 0x60);
         tc_set_le32(b.d + 4, id);
         b.d[8] = 0x03;
-        b.d[9] = 0x0a;                                  /* the name starts right after this header */
     }
-    put_string(&b, name);
+    {
+        size_t at = put_string(&b, name);                /* 0x0a, or 0x0c when the name is padded for UTF-16 */
+
+        if (b.d != NULL) {
+            b.d[9] = (uint8_t)at;
+        }
+    }
     return finish(&b, len);
 }
 
@@ -668,9 +686,14 @@ static uint8_t *album_row(uint32_t id, uint32_t artist_id, const char *name, siz
         tc_set_le32(b.d + 8, artist_id);
         tc_set_le32(b.d + 12, id);
         b.d[20] = 0x03;
-        b.d[21] = 0x16;
     }
-    put_string(&b, name);
+    {
+        size_t at = put_string(&b, name);                /* 0x16, or 0x18 when the name is padded for UTF-16 */
+
+        if (b.d != NULL) {
+            b.d[21] = (uint8_t)at;
+        }
+    }
     return finish(&b, len);
 }
 
@@ -856,6 +879,7 @@ static uint8_t *track_row(const struct track_template *tpl, const struct tc_plan
     tc_buf_put(&row, fixed, sizeof fixed);
     tc_buf_zeros(&row, K_TRACK_SLOTS * 2);
     for (i = 0; i < K_TRACK_SLOTS; i++) {
+        align_wide(&row, s[i]);
         if (row.d != NULL) {
             tc_set_le16(row.d + K_TRACK_FIXED + 2 * i, (unsigned)row.n);
         }

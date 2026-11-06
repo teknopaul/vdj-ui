@@ -182,6 +182,7 @@ void TestTrakcratePdbBuild::unicodeAndLongStrings()
     p.tracks[1].title = std::string(300, 'L');                                                          // long ASCII
     p.tracks[1].comment = std::string(500, 'c');
     p.tracks[2].artist = "Bj\xC3\xB6rk";
+    p.tracks[0].filePath = "/Contents/Wost/Miniteca Selv\xC3\xA1tica/Palo.mp3";
     p.tracks[2].album = "\xE2\x99\xAB Music \xF0\x9F\x8E\xA7";                                           // note + emoji
     p.tracks[3].genre = "";
     p.tracks[3].artist = "";
@@ -191,6 +192,14 @@ void TestTrakcratePdbBuild::unicodeAndLongStrings()
     BuiltPdb b;
     std::string err;
     QVERIFY(buildPdb(p, tpl_, &b, &err));
+    // every UTF-16 string starts on a 4 byte boundary like in real rekordbox files (a deck crashed on an album name at 2 mod 4)
+    for (const std::string& str : {p.tracks[0].title, p.tracks[2].artist, p.tracks[2].album, p.tracks[0].filePath}) {
+        const std::string enc = encodeDeviceSqlString(str);
+        size_t at = 0;
+        int found = 0;
+        while ((at = b.bytes.find(enc, at)) != std::string::npos) { QCOMPARE(at % 4, size_t(0)); ++found; ++at; }
+        if (uint8_t(enc[0]) == 0x90) QVERIFY2(found > 0, str.c_str());
+    }
     // title longer than the cap is shortened, not corrupted
     ExportPlan q = plan(1);
     q.tracks[0].title = std::string(6000, 'T');

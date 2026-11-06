@@ -346,6 +346,48 @@ vdj-ui-difflock-test/fast:
 .PHONY : vdj-ui-difflock-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-seq-phase-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-seq-phase-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-seq-phase-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-seq-phase-test: tests/CMakeFiles/vdj-ui-seq-phase-test.dir/rule
+.PHONY : vdj-ui-seq-phase-test
+
+# fast build rule for target.
+vdj-ui-seq-phase-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build
+.PHONY : vdj-ui-seq-phase-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-beat-phase-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-beat-phase-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-beat-phase-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-beat-phase-test: tests/CMakeFiles/vdj-ui-beat-phase-test.dir/rule
+.PHONY : vdj-ui-beat-phase-test
+
+# fast build rule for target.
+vdj-ui-beat-phase-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build
+.PHONY : vdj-ui-beat-phase-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sync-controller-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sync-controller-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sync-controller-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sync-controller-test: tests/CMakeFiles/vdj-ui-sync-controller-test.dir/rule
+.PHONY : vdj-ui-sync-controller-test
+
+# fast build rule for target.
+vdj-ui-sync-controller-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build
+.PHONY : vdj-ui-sync-controller-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-beat-tempo-test.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-beat-tempo-test.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-beat-tempo-test.dir/rule
@@ -1102,6 +1144,20 @@ vdj-ui-level-meter-test/fast:
 .PHONY : vdj-ui-level-meter-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-sync-aligner-test: tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/rule
+.PHONY : vdj-ui-sync-aligner-test
+
+# fast build rule for target.
+vdj-ui-sync-aligner-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build
+.PHONY : vdj-ui-sync-aligner-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -1408,6 +1464,90 @@ vdj-ui-difflock-test_autogen: tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/
 vdj-ui-difflock-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build
 .PHONY : vdj-ui-difflock-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-seq-phase-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-seq-phase-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-seq-phase-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-seq-phase-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-seq-phase-test_autogen: tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/rule
+.PHONY : vdj-ui-seq-phase-test_autogen
+
+# fast build rule for target.
+vdj-ui-seq-phase-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/build
+.PHONY : vdj-ui-seq-phase-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-beat-phase-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-beat-phase-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-beat-phase-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-beat-phase-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-beat-phase-test_autogen: tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/rule
+.PHONY : vdj-ui-beat-phase-test_autogen
+
+# fast build rule for target.
+vdj-ui-beat-phase-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/build
+.PHONY : vdj-ui-beat-phase-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sync-controller-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sync-controller-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sync-controller-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sync-controller-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sync-controller-test_autogen: tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/rule
+.PHONY : vdj-ui-sync-controller-test_autogen
+
+# fast build rule for target.
+vdj-ui-sync-controller-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/build
+.PHONY : vdj-ui-sync-controller-test_autogen/fast
 
 # Convenience name for target.
 tests/CMakeFiles/vdj-ui-beat-tempo-test_autogen_timestamp_deps.dir/rule:
@@ -2921,6 +3061,34 @@ vdj-ui-level-meter-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-level-meter-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-level-meter-test_autogen.dir/build
 .PHONY : vdj-ui-level-meter-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-sync-aligner-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-sync-aligner-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sync-aligner-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sync-aligner-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-sync-aligner-test_autogen: tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/rule
+.PHONY : vdj-ui-sync-aligner-test_autogen
+
+# fast build rule for target.
+vdj-ui-sync-aligner-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/build
+.PHONY : vdj-ui-sync-aligner-test_autogen/fast
+
 test_audio.o: test_audio.cpp.o
 .PHONY : test_audio.o
 
@@ -3016,6 +3184,30 @@ test_beat_grid.s: test_beat_grid.cpp.s
 test_beat_grid.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beatgrid-test.dir/build.make tests/CMakeFiles/vdj-ui-beatgrid-test.dir/test_beat_grid.cpp.s
 .PHONY : test_beat_grid.cpp.s
+
+test_beat_phase.o: test_beat_phase.cpp.o
+.PHONY : test_beat_phase.o
+
+# target to build an object file
+test_beat_phase.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/test_beat_phase.cpp.o
+.PHONY : test_beat_phase.cpp.o
+
+test_beat_phase.i: test_beat_phase.cpp.i
+.PHONY : test_beat_phase.i
+
+# target to preprocess a source file
+test_beat_phase.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/test_beat_phase.cpp.i
+.PHONY : test_beat_phase.cpp.i
+
+test_beat_phase.s: test_beat_phase.cpp.s
+.PHONY : test_beat_phase.s
+
+# target to generate assembly for a file
+test_beat_phase.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/test_beat_phase.cpp.s
+.PHONY : test_beat_phase.cpp.s
 
 test_beat_tempo.o: test_beat_tempo.cpp.o
 .PHONY : test_beat_tempo.o
@@ -4049,6 +4241,78 @@ test_seq_bar.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seqbar-test.dir/build.make tests/CMakeFiles/vdj-ui-seqbar-test.dir/test_seq_bar.cpp.s
 .PHONY : test_seq_bar.cpp.s
 
+test_seq_phase_model.o: test_seq_phase_model.cpp.o
+.PHONY : test_seq_phase_model.o
+
+# target to build an object file
+test_seq_phase_model.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/test_seq_phase_model.cpp.o
+.PHONY : test_seq_phase_model.cpp.o
+
+test_seq_phase_model.i: test_seq_phase_model.cpp.i
+.PHONY : test_seq_phase_model.i
+
+# target to preprocess a source file
+test_seq_phase_model.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/test_seq_phase_model.cpp.i
+.PHONY : test_seq_phase_model.cpp.i
+
+test_seq_phase_model.s: test_seq_phase_model.cpp.s
+.PHONY : test_seq_phase_model.s
+
+# target to generate assembly for a file
+test_seq_phase_model.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/test_seq_phase_model.cpp.s
+.PHONY : test_seq_phase_model.cpp.s
+
+test_sync_aligner.o: test_sync_aligner.cpp.o
+.PHONY : test_sync_aligner.o
+
+# target to build an object file
+test_sync_aligner.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/test_sync_aligner.cpp.o
+.PHONY : test_sync_aligner.cpp.o
+
+test_sync_aligner.i: test_sync_aligner.cpp.i
+.PHONY : test_sync_aligner.i
+
+# target to preprocess a source file
+test_sync_aligner.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/test_sync_aligner.cpp.i
+.PHONY : test_sync_aligner.cpp.i
+
+test_sync_aligner.s: test_sync_aligner.cpp.s
+.PHONY : test_sync_aligner.s
+
+# target to generate assembly for a file
+test_sync_aligner.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/test_sync_aligner.cpp.s
+.PHONY : test_sync_aligner.cpp.s
+
+test_sync_controller.o: test_sync_controller.cpp.o
+.PHONY : test_sync_controller.o
+
+# target to build an object file
+test_sync_controller.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/test_sync_controller.cpp.o
+.PHONY : test_sync_controller.cpp.o
+
+test_sync_controller.i: test_sync_controller.cpp.i
+.PHONY : test_sync_controller.i
+
+# target to preprocess a source file
+test_sync_controller.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/test_sync_controller.cpp.i
+.PHONY : test_sync_controller.cpp.i
+
+test_sync_controller.s: test_sync_controller.cpp.s
+.PHONY : test_sync_controller.s
+
+# target to generate assembly for a file
+test_sync_controller.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/test_sync_controller.cpp.s
+.PHONY : test_sync_controller.cpp.s
+
 test_tracks.o: test_tracks.cpp.o
 .PHONY : test_tracks.o
 
@@ -4528,6 +4792,30 @@ vdj-ui-autoip-permanent-test_autogen/mocs_compilation.s: vdj-ui-autoip-permanent
 vdj-ui-autoip-permanent-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-autoip-permanent-test.dir/build.make tests/CMakeFiles/vdj-ui-autoip-permanent-test.dir/vdj-ui-autoip-permanent-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-autoip-permanent-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-beat-phase-test_autogen/mocs_compilation.o: vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-beat-phase-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-beat-phase-test_autogen/mocs_compilation.i: vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-beat-phase-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-beat-phase-test_autogen/mocs_compilation.s: vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-beat-phase-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-beat-phase-test_autogen/mocs_compilation.cpp.s
 
 vdj-ui-beat-tempo-test_autogen/mocs_compilation.o: vdj-ui-beat-tempo-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-beat-tempo-test_autogen/mocs_compilation.o
@@ -5561,6 +5849,30 @@ vdj-ui-rekordbox-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-rekordbox-test.dir/build.make tests/CMakeFiles/vdj-ui-rekordbox-test.dir/vdj-ui-rekordbox-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-rekordbox-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-seq-phase-test_autogen/mocs_compilation.o: vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-seq-phase-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-seq-phase-test_autogen/mocs_compilation.i: vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-seq-phase-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-seq-phase-test_autogen/mocs_compilation.s: vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-seq-phase-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-seq-phase-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-seqbar-test_autogen/mocs_compilation.o: vdj-ui-seqbar-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-seqbar-test_autogen/mocs_compilation.o
 
@@ -5584,6 +5896,54 @@ vdj-ui-seqbar-test_autogen/mocs_compilation.s: vdj-ui-seqbar-test_autogen/mocs_c
 vdj-ui-seqbar-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seqbar-test.dir/build.make tests/CMakeFiles/vdj-ui-seqbar-test.dir/vdj-ui-seqbar-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-seqbar-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-sync-aligner-test_autogen/mocs_compilation.o: vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sync-aligner-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sync-aligner-test_autogen/mocs_compilation.i: vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sync-aligner-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sync-aligner-test_autogen/mocs_compilation.s: vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sync-aligner-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sync-aligner-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-sync-controller-test_autogen/mocs_compilation.o: vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sync-controller-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-sync-controller-test_autogen/mocs_compilation.i: vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sync-controller-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-sync-controller-test_autogen/mocs_compilation.s: vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sync-controller-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-sync-controller-test_autogen/mocs_compilation.cpp.s
 
 vdj-ui-test_autogen/mocs_compilation.o: vdj-ui-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-test_autogen/mocs_compilation.o
@@ -6060,6 +6420,8 @@ help:
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-autoip-permanent-test_autogen"
 	@echo "... vdj-ui-autoip-permanent-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-beat-phase-test_autogen"
+	@echo "... vdj-ui-beat-phase-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beat-tempo-test_autogen"
 	@echo "... vdj-ui-beat-tempo-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatclock-test_autogen"
@@ -6146,8 +6508,14 @@ help:
 	@echo "... vdj-ui-rbpresence-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rekordbox-test_autogen"
 	@echo "... vdj-ui-rekordbox-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-seq-phase-test_autogen"
+	@echo "... vdj-ui-seq-phase-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-seqbar-test_autogen"
 	@echo "... vdj-ui-seqbar-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sync-aligner-test_autogen"
+	@echo "... vdj-ui-sync-aligner-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sync-controller-test_autogen"
+	@echo "... vdj-ui-sync-controller-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-test_autogen"
 	@echo "... vdj-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-tracks-test_autogen"
@@ -6188,6 +6556,7 @@ help:
 	@echo "... vdj-ui-wrapper-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-autoip-permanent-test"
+	@echo "... vdj-ui-beat-phase-test"
 	@echo "... vdj-ui-beat-tempo-test"
 	@echo "... vdj-ui-beatclock-test"
 	@echo "... vdj-ui-beatgrid-test"
@@ -6231,7 +6600,10 @@ help:
 	@echo "... vdj-ui-rbpanel-test"
 	@echo "... vdj-ui-rbpresence-test"
 	@echo "... vdj-ui-rekordbox-test"
+	@echo "... vdj-ui-seq-phase-test"
 	@echo "... vdj-ui-seqbar-test"
+	@echo "... vdj-ui-sync-aligner-test"
+	@echo "... vdj-ui-sync-controller-test"
 	@echo "... vdj-ui-test"
 	@echo "... vdj-ui-tracks-test"
 	@echo "... vdj-ui-trakcrate-analysis-test"
@@ -6263,6 +6635,9 @@ help:
 	@echo "... test_beat_grid.o"
 	@echo "... test_beat_grid.i"
 	@echo "... test_beat_grid.s"
+	@echo "... test_beat_phase.o"
+	@echo "... test_beat_phase.i"
+	@echo "... test_beat_phase.s"
 	@echo "... test_beat_tempo.o"
 	@echo "... test_beat_tempo.i"
 	@echo "... test_beat_tempo.s"
@@ -6392,6 +6767,15 @@ help:
 	@echo "... test_seq_bar.o"
 	@echo "... test_seq_bar.i"
 	@echo "... test_seq_bar.s"
+	@echo "... test_seq_phase_model.o"
+	@echo "... test_seq_phase_model.i"
+	@echo "... test_seq_phase_model.s"
+	@echo "... test_sync_aligner.o"
+	@echo "... test_sync_aligner.i"
+	@echo "... test_sync_aligner.s"
+	@echo "... test_sync_controller.o"
+	@echo "... test_sync_controller.i"
+	@echo "... test_sync_controller.s"
 	@echo "... test_tracks.o"
 	@echo "... test_tracks.i"
 	@echo "... test_tracks.s"
@@ -6452,6 +6836,9 @@ help:
 	@echo "... vdj-ui-autoip-permanent-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-autoip-permanent-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-autoip-permanent-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-beat-phase-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-beat-phase-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-beat-phase-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-beat-tempo-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-beat-tempo-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-beat-tempo-test_autogen/mocs_compilation.s"
@@ -6581,9 +6968,18 @@ help:
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-rekordbox-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-seq-phase-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-seq-phase-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-seq-phase-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-seqbar-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-seqbar-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-seqbar-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sync-aligner-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sync-aligner-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sync-aligner-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-sync-controller-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-sync-controller-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-sync-controller-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-test_autogen/mocs_compilation.s"

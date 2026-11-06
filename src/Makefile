@@ -1949,6 +1949,78 @@ midi/seq_bar.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_bar.cpp.s
 .PHONY : midi/seq_bar.cpp.s
 
+midi/seq_phase_model.o: midi/seq_phase_model.cpp.o
+.PHONY : midi/seq_phase_model.o
+
+# target to build an object file
+midi/seq_phase_model.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_phase_model.cpp.o
+.PHONY : midi/seq_phase_model.cpp.o
+
+midi/seq_phase_model.i: midi/seq_phase_model.cpp.i
+.PHONY : midi/seq_phase_model.i
+
+# target to preprocess a source file
+midi/seq_phase_model.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_phase_model.cpp.i
+.PHONY : midi/seq_phase_model.cpp.i
+
+midi/seq_phase_model.s: midi/seq_phase_model.cpp.s
+.PHONY : midi/seq_phase_model.s
+
+# target to generate assembly for a file
+midi/seq_phase_model.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/seq_phase_model.cpp.s
+.PHONY : midi/seq_phase_model.cpp.s
+
+midi/sync_aligner.o: midi/sync_aligner.cpp.o
+.PHONY : midi/sync_aligner.o
+
+# target to build an object file
+midi/sync_aligner.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_aligner.cpp.o
+.PHONY : midi/sync_aligner.cpp.o
+
+midi/sync_aligner.i: midi/sync_aligner.cpp.i
+.PHONY : midi/sync_aligner.i
+
+# target to preprocess a source file
+midi/sync_aligner.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_aligner.cpp.i
+.PHONY : midi/sync_aligner.cpp.i
+
+midi/sync_aligner.s: midi/sync_aligner.cpp.s
+.PHONY : midi/sync_aligner.s
+
+# target to generate assembly for a file
+midi/sync_aligner.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_aligner.cpp.s
+.PHONY : midi/sync_aligner.cpp.s
+
+midi/sync_controller.o: midi/sync_controller.cpp.o
+.PHONY : midi/sync_controller.o
+
+# target to build an object file
+midi/sync_controller.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_controller.cpp.o
+.PHONY : midi/sync_controller.cpp.o
+
+midi/sync_controller.i: midi/sync_controller.cpp.i
+.PHONY : midi/sync_controller.i
+
+# target to preprocess a source file
+midi/sync_controller.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_controller.cpp.i
+.PHONY : midi/sync_controller.cpp.i
+
+midi/sync_controller.s: midi/sync_controller.cpp.s
+.PHONY : midi/sync_controller.s
+
+# target to generate assembly for a file
+midi/sync_controller.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/sync_controller.cpp.s
+.PHONY : midi/sync_controller.cpp.s
+
 midi/sync_telemetry.o: midi/sync_telemetry.cpp.o
 .PHONY : midi/sync_telemetry.o
 
@@ -1996,6 +2068,30 @@ network/auto_ip_manager.s: network/auto_ip_manager.cpp.s
 network/auto_ip_manager.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/auto_ip_manager.cpp.s
 .PHONY : network/auto_ip_manager.cpp.s
+
+network/beat_phase.o: network/beat_phase.cpp.o
+.PHONY : network/beat_phase.o
+
+# target to build an object file
+network/beat_phase.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/beat_phase.cpp.o
+.PHONY : network/beat_phase.cpp.o
+
+network/beat_phase.i: network/beat_phase.cpp.i
+.PHONY : network/beat_phase.i
+
+# target to preprocess a source file
+network/beat_phase.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/beat_phase.cpp.i
+.PHONY : network/beat_phase.cpp.i
+
+network/beat_phase.s: network/beat_phase.cpp.s
+.PHONY : network/beat_phase.s
+
+# target to generate assembly for a file
+network/beat_phase.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/beat_phase.cpp.s
+.PHONY : network/beat_phase.cpp.s
 
 network/beat_tempo.o: network/beat_tempo.cpp.o
 .PHONY : network/beat_tempo.o
@@ -4928,12 +5024,24 @@ help:
 	@echo "... midi/seq_bar.o"
 	@echo "... midi/seq_bar.i"
 	@echo "... midi/seq_bar.s"
+	@echo "... midi/seq_phase_model.o"
+	@echo "... midi/seq_phase_model.i"
+	@echo "... midi/seq_phase_model.s"
+	@echo "... midi/sync_aligner.o"
+	@echo "... midi/sync_aligner.i"
+	@echo "... midi/sync_aligner.s"
+	@echo "... midi/sync_controller.o"
+	@echo "... midi/sync_controller.i"
+	@echo "... midi/sync_controller.s"
 	@echo "... midi/sync_telemetry.o"
 	@echo "... midi/sync_telemetry.i"
 	@echo "... midi/sync_telemetry.s"
 	@echo "... network/auto_ip_manager.o"
 	@echo "... network/auto_ip_manager.i"
 	@echo "... network/auto_ip_manager.s"
+	@echo "... network/beat_phase.o"
+	@echo "... network/beat_phase.i"
+	@echo "... network/beat_phase.s"
 	@echo "... network/beat_tempo.o"
 	@echo "... network/beat_tempo.i"
 	@echo "... network/beat_tempo.s"

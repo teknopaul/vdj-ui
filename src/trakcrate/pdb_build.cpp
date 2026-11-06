@@ -114,14 +114,24 @@ std::string nameRow(uint32_t id, const std::string& name)                // genr
     return padTo4(r);
 }
 
+// Real rekordbox starts every UTF-16 string (kind 0x90) on a 4 byte boundary of the row (rows start 4 byte aligned) by padding with zeros before
+// it; the decks crash on a text that starts at 2 mod 4 (seen with a non-ASCII album name). Short ASCII strings are not aligned.
+void alignWide(std::string& row, const std::string& encoded)
+{
+    if (!encoded.empty() && uint8_t(encoded[0]) == 0x90)
+        while (row.size() % 4) row += '\0';
+}
+
 std::string artistRow(uint32_t id, const std::string& name)
 {
     std::string r(10, '\0');
     put16(r, 0, 0x60);
     put32(r, 4, id);
     r[8] = 0x03;
-    r[9] = 0x0a;                                                         // the name starts right after this header
-    r += encodeDeviceSqlString(name);
+    const std::string enc = encodeDeviceSqlString(name);
+    alignWide(r, enc);
+    r[9] = char(r.size());                                               // the offset of the name: 0x0a, or 0x0c when it is padded for UTF-16
+    r += enc;
     return padTo4(r);
 }
 
@@ -132,8 +142,10 @@ std::string albumRow(uint32_t id, uint32_t artistId, const std::string& name)
     put32(r, 8, artistId);
     put32(r, 12, id);
     r[20] = 0x03;
-    r[21] = 0x16;
-    r += encodeDeviceSqlString(name);
+    const std::string enc = encodeDeviceSqlString(name);
+    alignWide(r, enc);
+    r[21] = char(r.size());                                              // 0x16, or 0x18 when it is padded for UTF-16
+    r += enc;
     return padTo4(r);
 }
 
@@ -240,6 +252,7 @@ std::string trackRow(const TrackTemplate& tpl, const PlanTrack& t, uint32_t id, 
 
     std::string row = fixed + std::string(size_t(kTrackSlots) * 2, '\0');
     for (int i = 0; i < kTrackSlots; ++i) {
+        alignWide(row, s[i]);
         put16(row, size_t(kTrackFixed + 2 * i), uint16_t(row.size()));
         row += s[i];
     }

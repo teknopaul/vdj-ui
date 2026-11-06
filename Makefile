@@ -673,6 +673,45 @@ vdj-ui-difflock-test/fast:
 .PHONY : vdj-ui-difflock-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-seq-phase-test
+
+# Build rule for target.
+vdj-ui-seq-phase-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-seq-phase-test
+.PHONY : vdj-ui-seq-phase-test
+
+# fast build rule for target.
+vdj-ui-seq-phase-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test.dir/build
+.PHONY : vdj-ui-seq-phase-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-beat-phase-test
+
+# Build rule for target.
+vdj-ui-beat-phase-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-beat-phase-test
+.PHONY : vdj-ui-beat-phase-test
+
+# fast build rule for target.
+vdj-ui-beat-phase-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test.dir/build
+.PHONY : vdj-ui-beat-phase-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sync-controller-test
+
+# Build rule for target.
+vdj-ui-sync-controller-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sync-controller-test
+.PHONY : vdj-ui-sync-controller-test
+
+# fast build rule for target.
+vdj-ui-sync-controller-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test.dir/build
+.PHONY : vdj-ui-sync-controller-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-beat-tempo-test
 
 # Build rule for target.
@@ -1375,6 +1414,19 @@ vdj-ui-level-meter-test/fast:
 .PHONY : vdj-ui-level-meter-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-sync-aligner-test
+
+# Build rule for target.
+vdj-ui-sync-aligner-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sync-aligner-test
+.PHONY : vdj-ui-sync-aligner-test
+
+# fast build rule for target.
+vdj-ui-sync-aligner-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test.dir/build
+.PHONY : vdj-ui-sync-aligner-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -1659,6 +1711,84 @@ vdj-ui-difflock-test_autogen: cmake_check_build_system
 vdj-ui-difflock-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test_autogen.dir/build
 .PHONY : vdj-ui-difflock-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-seq-phase-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-seq-phase-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-seq-phase-test_autogen_timestamp_deps
+.PHONY : vdj-ui-seq-phase-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-seq-phase-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-seq-phase-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-seq-phase-test_autogen
+
+# Build rule for target.
+vdj-ui-seq-phase-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-seq-phase-test_autogen
+.PHONY : vdj-ui-seq-phase-test_autogen
+
+# fast build rule for target.
+vdj-ui-seq-phase-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-seq-phase-test_autogen.dir/build
+.PHONY : vdj-ui-seq-phase-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-beat-phase-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-beat-phase-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-beat-phase-test_autogen_timestamp_deps
+.PHONY : vdj-ui-beat-phase-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-beat-phase-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-beat-phase-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-beat-phase-test_autogen
+
+# Build rule for target.
+vdj-ui-beat-phase-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-beat-phase-test_autogen
+.PHONY : vdj-ui-beat-phase-test_autogen
+
+# fast build rule for target.
+vdj-ui-beat-phase-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-beat-phase-test_autogen.dir/build
+.PHONY : vdj-ui-beat-phase-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sync-controller-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sync-controller-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sync-controller-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sync-controller-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sync-controller-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sync-controller-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sync-controller-test_autogen
+
+# Build rule for target.
+vdj-ui-sync-controller-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sync-controller-test_autogen
+.PHONY : vdj-ui-sync-controller-test_autogen
+
+# fast build rule for target.
+vdj-ui-sync-controller-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sync-controller-test_autogen.dir/build
+.PHONY : vdj-ui-sync-controller-test_autogen/fast
 
 #=============================================================================
 # Target rules for targets named vdj-ui-beat-tempo-test_autogen_timestamp_deps
@@ -3064,6 +3194,32 @@ vdj-ui-level-meter-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-level-meter-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-level-meter-test_autogen.dir/build
 .PHONY : vdj-ui-level-meter-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-sync-aligner-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-sync-aligner-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sync-aligner-test_autogen_timestamp_deps
+.PHONY : vdj-ui-sync-aligner-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-sync-aligner-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-sync-aligner-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-sync-aligner-test_autogen
+
+# Build rule for target.
+vdj-ui-sync-aligner-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-sync-aligner-test_autogen
+.PHONY : vdj-ui-sync-aligner-test_autogen
+
+# fast build rule for target.
+vdj-ui-sync-aligner-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/build
+.PHONY : vdj-ui-sync-aligner-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -3093,6 +3249,8 @@ help:
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-autoip-permanent-test_autogen"
 	@echo "... vdj-ui-autoip-permanent-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-beat-phase-test_autogen"
+	@echo "... vdj-ui-beat-phase-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beat-tempo-test_autogen"
 	@echo "... vdj-ui-beat-tempo-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-beatclock-test_autogen"
@@ -3179,8 +3337,14 @@ help:
 	@echo "... vdj-ui-rbpresence-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-rekordbox-test_autogen"
 	@echo "... vdj-ui-rekordbox-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-seq-phase-test_autogen"
+	@echo "... vdj-ui-seq-phase-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-seqbar-test_autogen"
 	@echo "... vdj-ui-seqbar-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sync-aligner-test_autogen"
+	@echo "... vdj-ui-sync-aligner-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-sync-controller-test_autogen"
+	@echo "... vdj-ui-sync-controller-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-test_autogen"
 	@echo "... vdj-ui-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-tracks-test_autogen"
@@ -3234,6 +3398,7 @@ help:
 	@echo "... vdj-ui"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-autoip-permanent-test"
+	@echo "... vdj-ui-beat-phase-test"
 	@echo "... vdj-ui-beat-tempo-test"
 	@echo "... vdj-ui-beatclock-test"
 	@echo "... vdj-ui-beatgrid-test"
@@ -3277,7 +3442,10 @@ help:
 	@echo "... vdj-ui-rbpanel-test"
 	@echo "... vdj-ui-rbpresence-test"
 	@echo "... vdj-ui-rekordbox-test"
+	@echo "... vdj-ui-seq-phase-test"
 	@echo "... vdj-ui-seqbar-test"
+	@echo "... vdj-ui-sync-aligner-test"
+	@echo "... vdj-ui-sync-controller-test"
 	@echo "... vdj-ui-test"
 	@echo "... vdj-ui-tracks-test"
 	@echo "... vdj-ui-trakcrate-analysis-test"

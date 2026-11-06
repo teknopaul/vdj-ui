@@ -21,3 +21,9 @@
 /usr/share/icons/hicolor/512x512/apps/vdj-ui.png
 /usr/share/icons/hicolor/scalable/apps/vdj-ui.svg
 /usr/share/applications/vdj-ui.desktop
+/usr/share/icons/hicolor/22x22/apps/trakcrate-ui.png
+/usr/share/icons/hicolor/32x32/apps/trakcrate-ui.png
+/usr/share/icons/hicolor/48x48/apps/trakcrate-ui.png
+/usr/share/icons/hicolor/64x64/apps/trakcrate-ui.png
+/usr/share/icons/hicolor/128x128/apps/trakcrate-ui.png
+/usr/share/applications/trakcrate-ui.desktop

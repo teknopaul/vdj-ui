@@ -433,9 +433,15 @@ void TestTrakcrateLibrary::pendriveEntries()
     QCOMPARE(es[1].name, std::string("Peak"));
     QCOMPARE(es[1].kind, std::string("playlist"));
     QCOMPARE(es[1].source, std::string("Peak"));
-    QVERIFY(lib.addFolderToDrive("Friday", "House"));              // same name again: made unique
-    QCOMPARE(lib.driveEntries("Friday")[3].name, std::string("House 2"));
-    QVERIFY(lib.removeDriveEntry("Friday", 3));
+    // adding the same folder again makes no second entry: it puts back the tracks that were removed from the entry
+    QVERIFY(lib.addFolderToDrive("Friday", "House"));
+    QCOMPARE(lib.driveEntries("Friday").size(), size_t(3));
+    QCOMPARE(lib.driveEntries("Friday")[0].tracks, 2);
+    QVERIFY(lib.removeDriveTrack("Friday", 0, 0));
+    QCOMPARE(lib.driveEntries("Friday")[0].tracks, 1);
+    QVERIFY(lib.addFolderToDrive("Friday", "House"));
+    QCOMPARE(lib.driveEntries("Friday").size(), size_t(3));
+    QCOMPARE(lib.driveEntries("Friday")[0].tracks, 2);
 
     // reorder the entries; the tracks follow their entry
     QVERIFY(lib.moveDriveEntry("Friday", 2, 0));
