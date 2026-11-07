@@ -64,6 +64,107 @@ static std::string textField(const std::string& s, size_t at, size_t n)
     return o;
 }
 
+// ---- DEVSETTING.DAT and MYSETTING.DAT: the player preferences -------------------------------------------------------------------------
+// Offsets are absolute file offsets (the data section starts at 0x68: magic, block id, then the options from 0x70). The codes are those of
+// rekordcrate's setting.rs. An option byte that is not in a field's table is shown as "unknown option 0xNN" and is grey, like the bytes
+// nobody has named yet.
+
+struct SettingOption {
+    uint8_t code;
+    const char* label;
+};
+struct SettingField {
+    size_t at;
+    const char* name;
+    const SettingOption* options;
+    size_t count;
+    const char* zeroNote;           // what a 0x00 means for this field, if it is seen in practice (older files); null: nothing to add
+};
+struct UnknownSpan {
+    size_t at, len;
+    const char* note;
+};
+
+#define OPTIONS(a) a, sizeof(a) / sizeof((a)[0])
+
+static const SettingOption kOffOn[] = {{0x80, "Off"}, {0x81, "On"}};
+static const SettingOption kUnlockLock[] = {{0x80, "Unlock"}, {0x81, "Lock"}};
+static const SettingOption kBrightness5[] = {{0x81, "1"}, {0x82, "2"}, {0x83, "3"}, {0x84, "4"}, {0x85, "5"}};
+static const SettingOption kBrightnessOff12[] = {{0x80, "Off"}, {0x81, "1 (Dark)"}, {0x82, "2 (Bright)"}};
+static const SettingOption kAutoCueLevel[] = {{0x80, "-36dB"}, {0x81, "-42dB"}, {0x82, "-48dB"}, {0x83, "-54dB"}, {0x84, "-60dB"},
+                                              {0x85, "-66dB"}, {0x86, "-72dB"}, {0x87, "-78dB"}, {0x88, "Memory"}};
+static const SettingOption kLanguage[] = {{0x81, "English"}, {0x82, "Fran\xc3\xa7" "ais"}, {0x83, "Deutsch"}, {0x84, "Italiano"}, {0x85, "Nederlands"},
+                                          {0x86, "Espa\xc3\xb1ol"}, {0x87, "\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9"},
+                                          {0x88, "\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4"}, {0x89, "\xe7\xae\x80\xe4\xbd\x93\xe4\xb8\xad\xe6\x96\x87"},
+                                          {0x8a, "\xe7\xb9\x81\xe9\xab\x94\xe4\xb8\xad\xe6\x96\x87"}, {0x8b, "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"},
+                                          {0x8c, "Portugu\xc3\xaa" "s"}, {0x8d, "Svenska"}, {0x8e, "\xc4\x8c" "e\xc5\xa1" "tina"}, {0x8f, "Magyar"},
+                                          {0x90, "Dansk"}, {0x91, "\xce\x95\xce\xbb\xce\xbb\xce\xb7\xce\xbd\xce\xb9\xce\xba\xce\xac"}, {0x92, "T\xc3\xbc" "rk\xc3\xa7" "e"}};
+static const SettingOption kQuantizeBeat[] = {{0x80, "1 Beat"}, {0x81, "1/2 Beat"}, {0x82, "1/4 Beat"}, {0x83, "1/8 Beat"}};
+static const SettingOption kHotCueAutoLoad[] = {{0x80, "Off"}, {0x81, "On"}, {0x82, "rekordbox SETTING"}};
+static const SettingOption kPlayMode[] = {{0x80, "Continue / On"}, {0x81, "Single / Off"}};
+static const SettingOption kTimeMode[] = {{0x80, "Elapsed"}, {0x81, "Remain"}};
+static const SettingOption kJogMode[] = {{0x80, "CDJ"}, {0x81, "Vinyl"}};
+static const SettingOption kTempoRange[] = {{0x80, "\xc2\xb1" "6%"}, {0x81, "\xc2\xb1" "10%"}, {0x82, "\xc2\xb1" "16%"}, {0x83, "Wide"}};
+static const SettingOption kPhaseMeter[] = {{0x80, "Type 1"}, {0x81, "Type 2"}};
+static const SettingOption kOverviewWaveform[] = {{0x01, "Half Waveform"}, {0x02, "Full Waveform"}};
+static const SettingOption kWaveformColor[] = {{0x01, "Blue"}, {0x03, "RGB"}, {0x04, "3Band"}};
+static const SettingOption kKeyDisplay[] = {{0x01, "Classic"}, {0x02, "Alphanumeric"}};
+static const SettingOption kWaveformPosition[] = {{0x01, "Center"}, {0x02, "Left"}};
+
+static const char* const kOldDevNote = "0x00; rekordbox 6 writes 0x01 here";
+
+static const SettingField kDevFields[] = {
+    {0x71, "Overview Waveform Type", OPTIONS(kOverviewWaveform), nullptr},
+    {0x72, "Waveform Color", OPTIONS(kWaveformColor), nullptr},
+    {0x74, "Key Display Format", OPTIONS(kKeyDisplay), kOldDevNote},
+    {0x75, "Waveform Current Position", OPTIONS(kWaveformPosition), kOldDevNote},
+};
+static const UnknownSpan kDevUnknown[] = {{0x70, 1, "0x01 in the samples"}, {0x73, 1, "0x01 in the samples"}, {0x76, 18, "zero in the samples"}};
+
+static const SettingField kMyFields[] = {
+    {0x70, "On Air Display", OPTIONS(kOffOn), nullptr},
+    {0x71, "LCD Brightness", OPTIONS(kBrightness5), nullptr},
+    {0x72, "Quantize", OPTIONS(kOffOn), nullptr},
+    {0x73, "Auto Cue Level", OPTIONS(kAutoCueLevel), nullptr},
+    {0x74, "Language", OPTIONS(kLanguage), nullptr},
+    {0x76, "Jog Ring Brightness", OPTIONS(kBrightnessOff12), nullptr},
+    {0x77, "Jog Ring Indicator", OPTIONS(kOffOn), nullptr},
+    {0x78, "Slip Flashing", OPTIONS(kOffOn), nullptr},
+    {0x7c, "Disc Slot Illumination", OPTIONS(kBrightnessOff12), nullptr},
+    {0x7d, "Eject/Load Lock", OPTIONS(kUnlockLock), nullptr},
+    {0x7e, "Sync", OPTIONS(kOffOn), nullptr},
+    {0x7f, "Play Mode / Auto Play Mode", OPTIONS(kPlayMode), nullptr},
+    {0x80, "Quantize Beat Value", OPTIONS(kQuantizeBeat), nullptr},
+    {0x81, "Hot Cue Auto Load", OPTIONS(kHotCueAutoLoad), nullptr},
+    {0x82, "Hot Cue Color", OPTIONS(kOffOn), nullptr},
+    {0x85, "Needle Lock", OPTIONS(kUnlockLock), "0x00; the shipped (older) file has no value here, rekordbox 6 writes 0x80 or 0x81"},
+    {0x88, "Time Mode", OPTIONS(kTimeMode), nullptr},
+    {0x89, "Jog Mode", OPTIONS(kJogMode), nullptr},
+    {0x8a, "Auto Cue", OPTIONS(kOffOn), nullptr},
+    {0x8b, "Master Tempo", OPTIONS(kOffOn), nullptr},
+    {0x8c, "Tempo Range", OPTIONS(kTempoRange), nullptr},
+    {0x8d, "Phase Meter", OPTIONS(kPhaseMeter), nullptr},
+};
+static const UnknownSpan kMyUnknown[] = {{0x75, 1, "0x01 in the samples"}, {0x79, 3, "01 01 01 in the samples"}, {0x83, 2, "zero in the samples"},
+                                         {0x86, 2, "zero in the samples"}, {0x8e, 2, "zero in the samples"}};
+
+// The label of an option byte; "unknown option 0xNN" (and *known false) when the field has no such code.
+static std::string optionLabel(const SettingField& f, uint8_t v, bool* known)
+{
+    for (size_t i = 0; i < f.count; ++i)
+        if (f.options[i].code == v) { *known = true; return f.options[i].label; }
+    *known = false;
+    return "unknown option " + hex(v, 2);
+}
+
+static std::string spanName(size_t at, size_t len)
+{
+    char b[40];
+    if (len <= 1) snprintf(b, sizeof b, "unknown 0x%02zX", at);
+    else snprintf(b, sizeof b, "unknown 0x%02zX-0x%02zX", at, at + len - 1);
+    return b;
+}
+
 static void describeSetting(SettingsKind kind, const std::string& b, std::vector<SettingsRow>* rows)
 {
     std::string why;
@@ -77,18 +178,42 @@ static void describeSetting(SettingsKind kind, const std::string& b, std::vector
     rows->push_back({"payload length", hex(le32(b, 0x64), 2), "", true});
     rows->push_back({"magic", hex(le32(b, 0x68), 8), "0x12345678", true});
     const size_t plen = le32(b, 0x64);
-    if (plen < 8 || 0x6c + plen > b.size()) return;               // the payload length counts the CRC and its two bytes of padding
+    if (plen < 8 || 0x6c + plen > b.size()) {                     // the payload length counts the CRC and its two bytes of padding
+        rows->push_back({"settings", "", "the payload length does not fit the file", false});
+        return;
+    }
     const size_t crcAt = 0x6c + plen - 4;
     const uint16_t stored = uint16_t((unsigned char)b[crcAt] | (unsigned char)b[crcAt + 1] << 8);
     const uint16_t calc = crc16Xmodem(b.data() + 0x68, crcAt - 0x68);
     rows->push_back({"crc", hex(stored, 4), stored == calc ? "matches CRC-16/XMODEM" : "does not match, computed " + hex(calc, 4), true});
     if (plen >= 4) rows->push_back({"block id", std::to_string(le32(b, 0x6c)), "", true});
-    for (size_t i = 4; i < plen - 4; ++i) {
-        const unsigned char v = (unsigned char)b[0x6c + i];
-        std::string note = "not decoded";
-        if (kind == SettingsKind::MySetting && (v & 0x80)) note = "option code 0x80 + " + std::to_string(v & 0x7f) + ", which setting is not decoded";
-        rows->push_back({"payload " + hex(unsigned(i), 2), hex(v, 2), note, false});
+
+    // the options are decoded whatever the CRC says, once the shape is right
+    const bool dev = kind == SettingsKind::DevSetting;
+    const size_t expected = dev ? 0x20 : 0x28;
+    const char* shape = nullptr;
+    if (le32(b, 0) != 0x60) shape = "the header length is not 0x60";
+    else if (le32(b, 0x68) != 0x12345678) shape = "the magic is not 0x12345678";
+    else if (plen != expected) shape = dev ? "the payload length is not 0x20, this is not a DEVSETTING.DAT" : "the payload length is not 0x28, this is not a MYSETTING.DAT";
+    else if (b.size() != 0x68 + plen + 4) shape = "the file size does not match the payload length";
+    if (shape) {
+        rows->push_back({"settings", "", shape, false});
+        return;
     }
+    const SettingField* fields = dev ? kDevFields : kMyFields;
+    const size_t nFields = dev ? sizeof kDevFields / sizeof kDevFields[0] : sizeof kMyFields / sizeof kMyFields[0];
+    for (size_t i = 0; i < nFields; ++i) {
+        const SettingField& f = fields[i];
+        if (f.at >= b.size()) continue;
+        const uint8_t v = (uint8_t)b[f.at];
+        bool known = false;
+        const std::string label = optionLabel(f, v, &known);
+        rows->push_back({f.name, label, !known && v == 0 && f.zeroNote ? f.zeroNote : hex(v, 2), known});
+    }
+    const UnknownSpan* spans = dev ? kDevUnknown : kMyUnknown;
+    const size_t nSpans = dev ? sizeof kDevUnknown / sizeof kDevUnknown[0] : sizeof kMyUnknown / sizeof kMyUnknown[0];
+    for (size_t i = 0; i < nSpans; ++i)
+        if (spans[i].at + spans[i].len <= b.size()) rows->push_back({spanName(spans[i].at, spans[i].len), hexBytes(b, spans[i].at, spans[i].len), spans[i].note, false});
 }
 
 static void describeDjprofile(const std::string& b, std::vector<SettingsRow>* rows)

@@ -42,6 +42,7 @@
 #include <QVBoxLayout>
 
 #include "config/config_manager.h"
+#include "trakcrate/ext_pdb.h"
 #include "trakcrate/settings_files.h"
 #include "trakcrate/settings_sets.h"
 #include "trakcrate_settings_dialogs.h"
@@ -53,6 +54,7 @@
 #include "trakcrate_pendrive_dialog.h"
 #include "trakcrate_rbimport_dialog.h"
 #include "trakcrate_preview_player.h"
+#include "trakcrate_search_dialog.h"
 #include "trakcrate_scripts.h"
 #include "trakcrate_table_view.h"
 #include "trakcrate_tree_widget.h"
@@ -145,6 +147,9 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     newPendriveButton_ = new QPushButton(QStringLiteral("New pendrive..."));
     newPendriveButton_->setToolTip(QStringLiteral("Make a pendrive from folders and playlists of the library"));
     newPendriveButton_->setEnabled(false);
+    newPlaylistButton_ = new QPushButton(QStringLiteral("New playlist..."));
+    newPlaylistButton_->setToolTip(QStringLiteral("Make an empty playlist and make it the current one: right click tracks to add them to it"));
+    newPlaylistButton_->setEnabled(false);
     rbImportButton_ = new QPushButton(QStringLiteral("Import drive..."));
     rbImportButton_->setToolTip(QStringLiteral("Import a real rekordbox pendrive: metadata, beat grids, cues, waveforms, artwork and playlists as they are"));
     rbImportButton_->setEnabled(false);
@@ -162,6 +167,7 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     top->addWidget(importButton_);
     top->addWidget(rbImportButton_);
     top->addWidget(newPendriveButton_);
+    top->addWidget(newPlaylistButton_);
     top->addWidget(exportButton_);
     top->addWidget(refreshButton_);
     scripts_ = new ScriptManager(config_, this);
@@ -283,6 +289,7 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     connect(newButton, &QPushButton::clicked, this, &TrakcratePanel::newLibrary);
     connect(importButton_, &QPushButton::clicked, this, &TrakcratePanel::importDialog);
     connect(newPendriveButton_, &QPushButton::clicked, this, &TrakcratePanel::newPendriveDialog);
+    connect(newPlaylistButton_, &QPushButton::clicked, this, &TrakcratePanel::newPlaylistDialog);
     connect(rbImportButton_, &QPushButton::clicked, this, &TrakcratePanel::rekordboxImportDialog);
     connect(refreshButton_, &QPushButton::clicked, this, &TrakcratePanel::refresh);
     connect(exportButton_, &QPushButton::clicked, this, &TrakcratePanel::exportDialog);
@@ -309,6 +316,11 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
         const QString d = model_->trackDir(proxy_->mapToSource(idx).row());
         if (!d.isEmpty()) { preview_->stop(); emit loadRequested(d); }       // the deck needs the audio output
     });
+    table_->onEnter = [this] {
+        const QModelIndex cur = table_->currentIndex();
+        const QString d = cur.isValid() ? model_->trackDir(proxy_->mapToSource(cur).row()) : QString();
+        if (!d.isEmpty()) { preview_->stop(); emit loadAndPlayRequested(d); }
+    };
     connect(table_, &QWidget::customContextMenuRequested, this, &TrakcratePanel::tableContextMenu);
     connect(preview_, &TrakcratePreviewPlayer::playRequested, this, [this] {
         const QModelIndex cur = table_->currentIndex();
@@ -385,6 +397,7 @@ bool TrakcratePanel::openLibrary(const QString& path, QString* err)
     importButton_->setEnabled(true);
     rbImportButton_->setEnabled(true);
     newPendriveButton_->setEnabled(true);
+    newPlaylistButton_->setEnabled(true);
     exportButton_->setEnabled(true);
     refreshButton_->setEnabled(true);
     scriptsButton_->setEnabled(true);
@@ -444,6 +457,35 @@ uint64_t TrakcratePanel::estimateBytes(const std::vector<trakcrate::fs::path>& t
     return n > 0 ? n + 300000 : 0;                              // the database and settings
 }
 
+// The My Tags of a set's exportExt.pdb: each category with its tags below it. Nothing is added when the file cannot be read.
+void TrakcratePanel::addMyTags(QTreeWidgetItem* file, const QString& set, const trakcrate::fs::path& path)
+{
+    std::string bytes;
+    std::vector<trakcrate::ExtTag> tags;
+    trakcrate::ExtPdbStats st;
+    if (!trakcrate::readFile(path, &bytes) || !trakcrate::readExtTags(bytes, &tags) || !trakcrate::extPdbStats(bytes, &st)) return;
+    std::map<uint32_t, QTreeWidgetItem*> categories;
+    for (const trakcrate::ExtTag& t : tags) {
+        QTreeWidgetItem* parent = file;
+        if (!t.category) {
+            const auto c = categories.find(t.parent);
+            if (c != categories.end()) parent = c->second;
+        }
+        auto* item = new QTreeWidgetItem(parent, QStringList(QString::fromStdString(t.name)));
+        item->setData(0, KindRole, t.category ? QStringLiteral("mytag-category") : QStringLiteral("mytag"));
+        item->setData(0, NameRole, QString::fromStdString(t.name));
+        item->setData(0, DriveRole, set);
+        if (t.category) {
+            QFont f = item->font(0);
+            f.setBold(true);
+            item->setFont(0, f);
+            categories[t.id] = item;
+        }
+    }
+    file->setToolTip(0, QStringLiteral("My Tags: %1 categories and tags, %2 track link(s)%3").arg(tags.size()).arg(st.trackLinks)
+                            .arg(st.trackLinks > 0 ? QStringLiteral(". Right-click: Remove track links") : QString()));
+}
+
 void TrakcratePanel::rebuildTree(bool selectionSignals)
 {
     QString keepKind, keepName, keepDrive;
@@ -497,7 +539,18 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
         }
         folders->setText(0, QStringLiteral("Folders (%1)").arg(QString::fromStdString(trakcrate::formatFolderSize(estimateBytes(everything)))));
         folders->setToolTip(0, QStringLiteral("Estimated disk space of all the folders: the audio plus an allowance for the analysis files"));
-        for (const std::string& p : lib_.listPlaylists()) add(lists, "playlist", p);
+        if (!currentPlaylist_.isEmpty() && !lib_.hasPlaylist(currentPlaylist_.toStdString())) currentPlaylist_.clear();      // deleted meanwhile
+        for (const std::string& p : lib_.listPlaylists()) {
+            add(lists, "playlist", p);
+            if (QString::fromStdString(p) == currentPlaylist_) {
+                QTreeWidgetItem* li = lists->child(lists->childCount() - 1);
+                QFont f = li->font(0);
+                f.setBold(true);
+                li->setFont(0, f);
+                li->setText(0, li->text(0) + QStringLiteral("  (current)"));
+                li->setToolTip(0, QStringLiteral("The current playlist: right click tracks and choose \"Add to current playlist\""));
+            }
+        }
         // user defined pendrives, each with its entries (the playlists that will be on it, in order)
         for (const std::string& dname : lib_.listDrives()) {
             auto* d = new QTreeWidgetItem(drives, QStringList(QString::fromStdString(dname)));
@@ -553,6 +606,7 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
                 it->setIcon(0, settingsIcon);
                 it->setData(0, KindRole, QStringLiteral("setting"));
                 it->setData(0, DriveRole, nm);                                  // the set it belongs to
+                if (n == "exportExt.pdb") addMyTags(it, nm, trakcrate::settingsSetDir(lib_, set.name) / n);
             }
         }
         if (sets.empty()) {
@@ -572,7 +626,10 @@ void TrakcratePanel::rebuildTree(bool selectionSignals)
     if (!hadItems) {                                     // first time the view is shown: Playlists open, Virtual Pendrives one level, the rest closed
         folders->setExpanded(false);
         settings->setExpanded(false);
-        for (int i = 0; i < settings->childCount(); ++i) settings->child(i)->setExpanded(false);
+        for (int i = 0; i < settings->childCount(); ++i) {
+            settings->child(i)->setExpanded(false);
+            for (int k = 0; k < settings->child(i)->childCount(); ++k) settings->child(i)->child(k)->setExpanded(false);      // the files, My Tags included
+        }
         for (int i = 0; i < drives->childCount(); ++i) drives->child(i)->setExpanded(false);
     } else {
         std::function<void(QTreeWidgetItem*)> fold = [&](QTreeWidgetItem* it) {
@@ -687,6 +744,14 @@ void TrakcratePanel::onPreviewEnd(const QString& owner)
 void TrakcratePanel::setPlaybackBlocker(std::function<QString()> blocker) { preview_->setBlocker(std::move(blocker)); }
 
 void TrakcratePanel::stopPreview() { preview_->stop(); }
+
+void TrakcratePanel::setPlayerKeys(std::function<bool(const QKeyEvent*)> wants, std::function<bool(QKeyEvent*)> handle)
+{
+    table_->playerWantsKey = std::move(wants);
+    table_->onPlayerKey = std::move(handle);
+}
+
+void TrakcratePanel::focusTable() { table_->setFocus(); }
 
 // Plays what the tree has chosen: a playlist, a list of a pendrive, or (on the pendrive itself) all its lists one after the other. The order is the
 // one on screen. proxyRow is where to start (-1: the first track).
@@ -918,6 +983,7 @@ void TrakcratePanel::setBusyUi(bool busy)
     exportButton_->setEnabled(!busy && lib_.isOpen());
     rbImportButton_->setEnabled(!busy && lib_.isOpen());
     newPendriveButton_->setEnabled(!busy && lib_.isOpen());
+    newPlaylistButton_->setEnabled(!busy && lib_.isOpen());
 }
 
 void TrakcratePanel::onJobProgress(int done, int total, const QString& current)
@@ -1028,6 +1094,7 @@ void TrakcratePanel::updateExportUi()
     importButton_->setEnabled(!running && lib_.isOpen());
     rbImportButton_->setEnabled(!running && lib_.isOpen());
     newPendriveButton_->setEnabled(!running && lib_.isOpen());
+    newPlaylistButton_->setEnabled(!running && lib_.isOpen());
     exportButton_->setEnabled(lib_.isOpen());                      // another export may start beside the running ones
 }
 
@@ -1146,7 +1213,7 @@ void TrakcratePanel::exportDialog()
     const std::vector<trakcrate::ExportOptions> all = dlg.allOptions();
     QStringList refused;
     for (size_t i = 0; i < all.size(); ++i)
-        if (!exportDrive(all[i], i == 0 && dlg.registerAsVirtualPendrive() ? dlg.virtualPendriveName() : QString()))
+        if (!exportDrive(all[i], QString()))
             refused << QString::fromStdString(all[i].dest.string());
     if (!refused.isEmpty())
         QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Not started: %1.\nAnother job is still running, another export is writing to that folder, or the template database is missing.")
@@ -1367,6 +1434,22 @@ void TrakcratePanel::tableContextMenu(const QPoint& pos)
     QAction* load = menu.addAction(loadText_);
     load->setEnabled(dirs.size() == 1);
     QAction* playHere = menu.addAction(QStringLiteral("Play the list from here"));
+    menu.addSeparator();
+    QAction* addCurrent = menu.addAction(currentPlaylist_.isEmpty() ? QStringLiteral("Add to current playlist")
+                                                                    : QStringLiteral("Add to current playlist (%1)").arg(currentPlaylist_));
+    addCurrent->setEnabled(!dirs.isEmpty() && !currentPlaylist_.isEmpty());
+    if (currentPlaylist_.isEmpty()) addCurrent->setToolTip(QStringLiteral("Make a New playlist, or right click a playlist and choose Set as current playlist"));
+    QMenu* addToMenu = menu.addMenu(QStringLiteral("Add to playlist..."));
+    std::map<QAction*, QString> playlistTargets;
+    for (const std::string& p : lib_.listPlaylists()) playlistTargets[addToMenu->addAction(QString::fromStdString(p))] = QString::fromStdString(p);
+    if (addToMenu->isEmpty()) addToMenu->addAction(QStringLiteral("(no playlists yet)"))->setEnabled(false);
+    addToMenu->setEnabled(!dirs.isEmpty());
+    QAction* removeFromList = nullptr;
+    if (tree_->currentItem() && tree_->currentItem()->data(0, KindRole).toString() == QLatin1String("playlist")) {
+        removeFromList = menu.addAction(QStringLiteral("Remove from this playlist"));
+        removeFromList->setToolTip(QStringLiteral("The tracks stay in the library; they only leave this playlist"));
+        removeFromList->setEnabled(!dirs.isEmpty());
+    }
     playHere->setEnabled(under.isValid() && currentListKey() != QString() && currentListKey() != QLatin1String("folder"));
     menu.addSeparator();
     QAction *mvUp = nullptr, *mvDown = nullptr, *mvStart = nullptr, *mvEnd = nullptr, *entryRemove = nullptr;
@@ -1391,6 +1474,12 @@ void TrakcratePanel::tableContextMenu(const QPoint& pos)
     else if (chosen == force) analyseTracks(dirs, true);
     else if (chosen == load) { preview_->stop(); emit loadRequested(dirs.first()); }
     else if (chosen == playHere) { QString err; startPreview(under.isValid() ? under.row() : -1, &err); }
+    else if (chosen && (chosen == addCurrent || playlistTargets.count(chosen))) {
+        const QString target = chosen == addCurrent ? currentPlaylist_ : playlistTargets[chosen];
+        QString err;
+        if (!addToPlaylist(target, dirs, &err)) emit status(err);
+    }
+    else if (removeFromList && chosen == removeFromList) { QString err; if (!removeSelectedFromPlaylist(&err)) emit status(err); }
     else if (chosen && (chosen == mvStart || chosen == mvUp || chosen == mvDown || chosen == mvEnd)) {
         QString err;
         if (!moveSelected(chosen == mvStart ? -2 : chosen == mvUp ? -1 : chosen == mvDown ? 1 : 2, &err) && !err.isEmpty()) emit status(err);
@@ -1452,6 +1541,120 @@ bool TrakcratePanel::deleteFolder(const QString& folder, QString* err)
     return ok;
 }
 
+int TrakcratePanel::searchTracks(bool artist, const QString& text)
+{
+    searchHits_.clear();
+    searchAt_ = -1;
+    const QString needle = text.trimmed();
+    if (!lib_.isOpen() || needle.isEmpty()) return 0;
+    for (const std::string& f : lib_.listFolders())
+        for (const std::string& t : lib_.listTracks(f)) {
+            const trakcrate::fs::path dir = lib_.trackDir(f, t);
+            trakcrate::Track tr;
+            if (!trakcrate::loadTrack(dir, &tr)) continue;
+            QString hay;
+            if (artist) hay = QString::fromStdString(tr.meta.get("artist"));
+            else hay = QString::fromStdString(tr.title()) + QLatin1Char('\n') + QString::fromStdString(t);      // the title, else the folder name tells
+            if (hay.contains(needle, Qt::CaseInsensitive)) searchHits_.push_back({QString::fromStdString(f), QString::fromStdString(dir.string())});
+        }
+    if (!searchHits_.empty()) showSearchHit(0);
+    return int(searchHits_.size());
+}
+
+bool TrakcratePanel::searchNext(int direction)
+{
+    if (searchHits_.empty()) return false;
+    const int n = int(searchHits_.size());
+    return showSearchHit(((searchAt_ + direction) % n + n) % n);
+}
+
+bool TrakcratePanel::showSearchHit(int index)
+{
+    if (index < 0 || size_t(index) >= searchHits_.size()) return false;
+    searchAt_ = index;
+    const SearchHit h = searchHits_[size_t(index)];
+    selectFolder(h.folder);
+    for (int r = 0; r < proxy_->rowCount(); ++r)
+        if (model_->trackDir(proxy_->mapToSource(proxy_->index(r, 0)).row()) == h.dir) {
+            table_->setCurrentIndex(proxy_->index(r, 0));
+            table_->selectionModel()->select(proxy_->index(r, 0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+            table_->scrollTo(proxy_->index(r, 0));
+            return true;
+        }
+    return false;
+}
+
+// One small box per kind of search, kept open until Esc; the box does the asking, the panel the finding.
+void TrakcratePanel::searchDialog(bool artist)
+{
+    if (!lib_.isOpen()) return;
+    auto* dlg = new TrakcrateSearchDialog(artist ? QStringLiteral("Search artist") : QStringLiteral("Search track"), this);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    auto report = [this, dlg] {
+        dlg->setResult(searchHits_.empty() ? QStringLiteral("Not found") : QStringLiteral("%1 of %2").arg(searchAt_ + 1).arg(searchHits_.size()));
+    };
+    connect(dlg, &TrakcrateSearchDialog::searchRequested, this, [this, artist, report](const QString& t) { searchTracks(artist, t); report(); });
+    connect(dlg, &TrakcrateSearchDialog::nextRequested, this, [this, report] { searchNext(1); report(); });
+    connect(dlg, &TrakcrateSearchDialog::previousRequested, this, [this, report] { searchNext(-1); report(); });
+    dlg->show();
+    dlg->edit()->setFocus();
+}
+
+void TrakcratePanel::newPlaylistDialog()
+{
+    if (!lib_.isOpen()) return;
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, QStringLiteral("New playlist"), QStringLiteral("Name of the new playlist:"), QLineEdit::Normal, QString(), &ok).trimmed();
+    if (!ok || name.isEmpty()) return;
+    QString err;
+    if (!createPlaylist(name, &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), QStringLiteral("Could not create the playlist: %1").arg(err));
+}
+
+bool TrakcratePanel::createPlaylist(const QString& name, QString* err)
+{
+    std::string e;
+    if (!lib_.isOpen()) { if (err) *err = QStringLiteral("no library"); return false; }
+    if (!lib_.createPlaylist(name.trimmed().toStdString(), &e)) { if (err) *err = QString::fromStdString(e); return false; }
+    setCurrentPlaylist(name.trimmed());
+    emit status(QStringLiteral("Current playlist: %1").arg(name.trimmed()));
+    return true;
+}
+
+void TrakcratePanel::setCurrentPlaylist(const QString& name)
+{
+    currentPlaylist_ = name;
+    refresh();                                                      // re-marks the tree
+}
+
+bool TrakcratePanel::addToPlaylist(const QString& playlist, const QStringList& trackDirs, QString* err)
+{
+    std::string e;
+    if (!lib_.isOpen() || playlist.isEmpty() || trackDirs.isEmpty()) { if (err) *err = QStringLiteral("nothing to add"); return false; }
+    std::vector<trakcrate::fs::path> dirs;
+    for (const QString& d : trackDirs) dirs.push_back(trakcrate::fs::path(d.toStdString()));
+    if (!lib_.addTracksToPlaylist(playlist.toStdString(), dirs, -1, &e)) { if (err) *err = QString::fromStdString(e); return false; }
+    emit status(QStringLiteral("Added %1 track(s) to %2").arg(trackDirs.size()).arg(playlist));
+    refresh();                                                      // the shown playlist may be the one that grew
+    return true;
+}
+
+bool TrakcratePanel::removeSelectedFromPlaylist(QString* err)
+{
+    QTreeWidgetItem* cur = tree_->currentItem();
+    if (!lib_.isOpen() || !cur || cur->data(0, KindRole).toString() != QLatin1String("playlist")) { if (err) *err = QStringLiteral("choose a playlist"); return false; }
+    const std::string list = cur->data(0, NameRole).toString().toStdString();
+    std::vector<int> rows;
+    for (const QModelIndex& idx : table_->selectionModel()->selectedRows()) rows.push_back(proxy_->mapToSource(idx).row());
+    if (rows.empty()) { if (err) *err = QStringLiteral("no track selected"); return false; }
+    std::sort(rows.begin(), rows.end());
+    std::string e;
+    for (auto it = rows.rbegin(); it != rows.rend(); ++it)           // from the end, so the earlier indexes stay valid
+        if (!lib_.removeFromPlaylist(list, *it, &e)) { if (err) *err = QString::fromStdString(e); refresh(); return false; }
+    emit status(QStringLiteral("Removed %1 track(s) from %2").arg(rows.size()).arg(QString::fromStdString(list)));
+    refresh();
+    return true;
+}
+
 void TrakcratePanel::newPendriveDialog()
 {
     if (!lib_.isOpen()) return;
@@ -1496,7 +1699,7 @@ void TrakcratePanel::exportPendrive(const QString& drive, bool physical)
     trakcrate::effectiveDriveSettingsSet(lib_, drive.toStdString(), &dangling);
     if (dangling) emit status(QStringLiteral("The settings linked to \"%1\" no longer exist: the default settings are used").arg(drive));
     if (dlg.exec() != QDialog::Accepted) return;
-    if (!exportDrive(dlg.options(), dlg.registerAsVirtualPendrive() ? dlg.virtualPendriveName() : QString()))
+    if (!exportDrive(dlg.options(), QString()))
         QMessageBox::information(this, QStringLiteral("trakcrate"), QStringLiteral("Another job is still running, another export is writing to that folder, or the template database is missing."));
 }
 
@@ -1643,6 +1846,18 @@ bool TrakcratePanel::makeDefaultSettingsSet(const QString& name, QString* err)
     return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
 }
 
+bool TrakcratePanel::removeTrackLinks(const QString& set, int* links, QString* err)
+{
+    std::string e;
+    size_t n = 0;
+    const bool ok = lib_.isOpen() && trakcrate::removeSettingsTrackLinks(lib_, set.toStdString(), &n, &e);
+    if (ok) {
+        if (links) *links = int(n);
+        refresh();
+    }
+    return settingsResult(ok, lib_.isOpen() ? e : "no library is open", err);
+}
+
 bool TrakcratePanel::setSettingsUserName(const QString& set, const QString& userName, QString* err)
 {
     std::string e;
@@ -1708,6 +1923,21 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
     QMenu menu(this);
     const bool idle = !anyBusy();
     QAction* newDrive = menu.addAction(QStringLiteral("New pendrive..."));
+    QAction* newList = menu.addAction(QStringLiteral("New playlist..."));
+    QAction* searchArtist = nullptr;
+    QAction* searchTrack = nullptr;
+    if (kind == QLatin1String("folder") || (it && !it->parent() && name == QLatin1String("Folders"))) {
+        menu.addSeparator();
+        searchArtist = menu.addAction(QStringLiteral("Search artist..."));
+        searchTrack = menu.addAction(QStringLiteral("Search track..."));
+        menu.addSeparator();
+    }
+    QAction* setCurrent = nullptr;
+    if (kind == QLatin1String("playlist")) {
+        setCurrent = menu.addAction(QStringLiteral("Set as current playlist"));
+        setCurrent->setEnabled(name != currentPlaylist_);
+    }
+    QAction* removeLinks = nullptr;
     QAction *newSettings = nullptr, *copySettings = nullptr, *defSettings = nullptr, *renSettings = nullptr, *dupSettings = nullptr, *delSettings = nullptr, *userSettings = nullptr, *viewSettings = nullptr, *cmpSettings = nullptr;
     if (kind == QLatin1String("settings") || kind == QLatin1String("settings-hint") || kind == QLatin1String("settings-set") || kind == QLatin1String("setting")) {
         menu.addSeparator();
@@ -1725,6 +1955,11 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
             renSettings = menu.addAction(QStringLiteral("Rename..."));
             dupSettings = menu.addAction(QStringLiteral("Duplicate..."));
             delSettings = menu.addAction(QStringLiteral("Delete..."));
+        }
+        if (kind == QLatin1String("setting") && it->text(0) == QLatin1String("exportExt.pdb")) {
+            menu.addSeparator();
+            removeLinks = menu.addAction(QStringLiteral("Remove track links"));
+            removeLinks->setToolTip(QStringLiteral("My Tags stay; the links from tracks to tags name tracks of another database"));
         }
     }
     QMenu* addMenu = nullptr;
@@ -1783,10 +2018,21 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
     if (!chosen) return;
     QString err;
     if (chosen == newDrive) newPendriveDialog();
+    else if (chosen == newList) newPlaylistDialog();
+    else if (searchArtist && chosen == searchArtist) searchDialog(true);
+    else if (searchTrack && chosen == searchTrack) searchDialog(false);
+    else if (setCurrent && chosen == setCurrent) { setCurrentPlaylist(name); emit status(QStringLiteral("Current playlist: %1").arg(name)); }
     else if (driveSettings.count(chosen)) {
         if (!setPendriveSettings(name, driveSettings[chosen], &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
     } else if (chosen == newSettings) newSettingsDialog();
     else if (chosen == copySettings) copySettingsDialog();
+    else if (chosen && chosen == removeLinks) {
+        int n = 0;
+        const QString set = it->data(0, DriveRole).toString();
+        if (!removeTrackLinks(set, &n, &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
+        else emit status(n > 0 ? QStringLiteral("Removed %1 track link(s) from exportExt.pdb of \"%2\"").arg(n).arg(set)
+                               : QStringLiteral("exportExt.pdb of \"%1\" has no track links").arg(set));
+    }
     else if (chosen && (chosen == viewSettings || chosen == cmpSettings)) {
         const QString set = kind == QLatin1String("settings-set") ? name : it->data(0, DriveRole).toString();
         QString other;

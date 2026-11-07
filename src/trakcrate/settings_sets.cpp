@@ -1,5 +1,6 @@
 #include "settings_sets.h"
 
+#include "ext_pdb.h"
 #include "natsort.h"
 #include "settings_files.h"
 
@@ -297,6 +298,20 @@ bool setSettingsSetUserName(const Library& lib, const std::string& name, const s
     info.source = kv["source"];
     info.userName = userName;
     return writeSetInfo(settingsSetDir(lib, name), info, err);
+}
+
+bool removeSettingsTrackLinks(const Library& lib, const std::string& name, size_t* links, std::string* err)
+{
+    if (!hasSettingsSet(lib, name)) return fail(err, "no settings set named " + name);
+    const fs::path file = settingsSetDir(lib, name) / "exportExt.pdb";
+    std::string bytes, clean, why;
+    std::error_code ec;
+    if (!fs::is_regular_file(file, ec) || !readFile(file, &bytes) || bytes.empty()) bytes = defaultExportExt();
+    ExtPdbStats before;
+    if (!extPdbStats(bytes, &before, &why) || !withoutTrackLinks(bytes, &clean, &why)) return fail(err, "exportExt.pdb of " + name + " cannot be cleaned: " + why);
+    if (links) *links = before.trackLinks;
+    if (clean == bytes && fs::is_regular_file(file, ec)) return true;
+    return atomicWrite(file, clean, err);
 }
 
 bool deleteSettingsSet(const Library& lib, const std::string& name, std::string* err)

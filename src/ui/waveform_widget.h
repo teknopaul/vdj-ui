@@ -1,6 +1,7 @@
 #ifndef WAVEFORM_WIDGET_H
 #define WAVEFORM_WIDGET_H
 
+#include <QImage>
 #include <QList>
 #include <QString>
 #include <QWidget>
@@ -124,6 +125,7 @@ protected:
 private:
     double lengthMs() const { return analysis_.lengthMs(); }
     void paintWaveform(QPainter& p, double t0, double span);
+    void paintWaveformSharp(QPainter& p, double t0, double span);   // one-pixel columns, no blur
     void paintBeats(QPainter& p, double t0, double span);
     void paintCues(QPainter& p);
     void paintCuemarks(QPainter& p);
@@ -131,6 +133,8 @@ private:
     int nearestBeat(double ms) const;
 
     TrackAnalysis analysis_;
+    QImage waveCache_;                       // blurred waveform layer, rebuilt when the view changes
+    double waveT0_ = -1, waveSpan_ = -1;
     bool interactive_ = false;
     double viewStart_ = 0.0;
     double viewSpan_ = 0.0;                      // 0 = not set yet: the whole track

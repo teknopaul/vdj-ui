@@ -4,6 +4,9 @@ General purpose library code belongs in `libcdj` (C, installed system-wide, usab
 (`src/trakcrate/`), and that is fine for now. **Nothing here is to be fixed during the trakcrate CLI work** (`.planning/plans/trakcrate-cli_PLAN.md`);
 this file only records candidates so the decision can be made later with the facts in front of us.
 
+N.B. libcdj should remain free of dependencies, we only want to port C code there that is pretty raw C code for handling binary data, and pure functions. 
+We dont wan't utils and helpers for handling other APIs, its not a "common" project its CDJ's various binary format handling code only.
+
 ## How to maintain this file
 
 While developing `src-cli/` (and whenever vdj-ui code is touched for another reason), add an entry when:
@@ -101,3 +104,10 @@ Not general: `AlsaClock::phaseShiftMs` / `nudgeMillis` (ALSA queue tempo trick; 
 - `trakcrate export` writes `SHA256SUMS` and a manifest that `add-to-drive` (like the GUI's add) leaves alone, so `trakcrate verify` reports a stale checksum for `export.pdb` after an addition. Either the add path should rewrite both files when they exist (it would need to hash the new files), or `verify` should treat a checksum list older than `export.pdb.bak` as stale; the GUI has the same gap.
 - The helper's `add-to-drive --stop-at STEP` (a test hook) and `AddOptions::stepHook` are two spellings of one idea; a shared list of step names in a header would keep them equal.
 - The `copy_one` of `rbexport.c` creates files exclusively (an export into an empty folder) while `rbadd.c` has its own `copy_safe` (temporary name, fsync, rename), as `copyOne(..., update=true)` in C++; a single copy function with an `update` flag would remove one of them.
+
+### Export dialog (from the export-dialog-ui work)
+
+- `ExportOptions::optionalFilesFrom` and `copyExportExt` / `copyRbfltr` / `copyUsbmng` / `copyDjprofile` (`src/trakcrate/exporter.{h,cpp}`) are no longer set by the dialog (user settings sets replaced "copy from a real drive"); the exporter, the CLI and their tests still use them. Remove them together if nothing else needs them.
+- `TrakcratePanel::exportDrive(opts, registerName)` is now always called with an empty `registerName` from the export dialogs; the parameter and the registering code behind it can go if no other caller uses it.
+- The dialog's Clean up (button and "after export" box) and Delete only have the UI and the confirm/enable/cancel flow: `Deleter` defaults to a no-op. The real code needs its own design (what counts as unreferenced in `Contents/`, which folders `Delete` may remove) and tests.
+- Empty trash does not check that the location is a mount root; it only refuses a trash path that is a symlink or not a folder.

@@ -40,8 +40,8 @@ Same container. All integers little endian.
 **CRC verified:** CRC-16/XMODEM (poly 0x1021, init 0, no reflection) over `[0x68, len-4)`, stored little endian. It matched both files (0x3bba and 0x2181). So a modified file can be regenerated correctly.
 
 Payload:
-- DEVSETTING: `01 00 00 00` then `01 01 01 01` then zeros. Probably a small number of player "device" options; the meaning of each byte is unknown.
-- MYSETTING: `02 00 00 00` then 28 bytes of values such as `81 83 81 84 81 01 82 81 ...`. The values with the high bit set look like option codes (`0x80 + choice`); these are the user preferences that rekordbox exports to players (e.g. auto cue, jog mode, quantize, sync). Which byte is which setting is not decoded and not needed if we copy.
+- DEVSETTING: `01 00 00 00` (block id), then the options from 0x70: overview waveform type (0x71), waveform colour (0x72), key display format (0x74) and the current-position marker (0x75), with unknown bytes at 0x70, 0x73 and 0x76-0x87. The codes are those of rekordcrate's `setting.rs`. The shipped (rekordbox 4.5.0 era) file has `00` at 0x74 and 0x75 where rekordbox 6 writes `01`; the viewer shows them as "unknown option 0x00".
+- MYSETTING: `02 00 00 00` (block id), then the player preferences from 0x70, one option code (`0x80 + choice`, brightness and language start at `0x81`) per byte: on air display, LCD brightness, quantize, auto cue level, language, jog ring, slip flashing, disc slot illumination, eject/load lock, sync, play mode, quantize beat value, hot cue auto load and colour, needle lock, time mode, jog mode, auto cue, master tempo, tempo range, phase meter. The decode tables are in `src/trakcrate/settings_view.cpp` (`kDevFields`, `kMyFields`); the viewer and the set comparison use them. The shipped file has `00` at 0x85 (needle lock), so that one shows as "unknown option 0x00". Unknown bytes: see `UNKNOWN_BYTES.md`.
 
 Players apply MYSETTING when the drive is loaded, so changing bytes changes player behaviour. The sample's values are the user's own rekordbox preferences, which is another reason to treat the copied file as a template rather than a default.
 
@@ -71,5 +71,5 @@ Different container: starts `FMAI`, a header length, then three space padded 32 
 ## To do
 
 - Test on a deck: a drive with only `export.pdb` and ANLZ, then add the files back one at a time; a changed `djprofile.nxs` name; `Replace` against `AddMissing`.
-- Decode the MYSETTING bytes against the rekordbox preferences screen (the viewer lists each payload byte and flags the option codes) if we want to edit them.
+- The MYSETTING and DEVSETTING options are decoded for display only; editing them (and fixing the CRC) is not offered.
 - Find the meaning of the four bytes at 0x1c of `djprofile.nxs` (a sample with a different name is needed, see `UNKNOWN_BYTES.md`).

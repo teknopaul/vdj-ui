@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QLabel>
 #include <QPushButton>
+#include <QListWidget>
+#include <QRadioButton>
 #include <QCheckBox>
 #include <QProgressBar>
 #include "ui/trakcrate_jobs_strip.h"
@@ -17,9 +19,12 @@
 #include <QSplitter>
 #include "ui/trakcrate_settings_viewer.h"
 #include "ui/trakcrate_export_dialog.h"
+#include "ui/dir_usage.h"
 #include "ui/trakcrate_preview_player.h"
 #include "audio/audio_player.h"
 #include "trakcrate/exporter.h"
+#include "trakcrate/ext_pdb.h"
+#include "trakcrate/pdb_writer.h"
 #include "trakcrate/settings_files.h"
 #include "trakcrate/settings_sets.h"
 #include "trakcrate/usb_speed.h"
@@ -30,6 +35,10 @@
 #include <cmath>
 #include <cstring>
 #include <fstream>
+#include <atomic>
+#include <chrono>
+#include <thread>
+#include <unistd.h>
 
 using namespace vdj;
 namespace tc = trakcrate;
@@ -78,6 +87,10 @@ private slots:
     void cleanup() { std::error_code ec; tc::fs::remove_all(tmp_, ec); }
 
     void jobRunnerRunsAndReports();
+    void panelHandMadePlaylists();
+    void panelEnterLoadsAndPlays();
+    void panelForwardsPlayerKeys();
+    void panelSearch();
     void jobRunnerOneAtATimeAndCancel();
     void modelShowsFoldersAndPlaylists();
     void modelLazyAndSortRoles();
@@ -713,6 +726,108 @@ void TestTrakcratePanel::panelReordersPlaylists()
     QCOMPARE(p.library().driveEntries("Fri")[1].name, std::string("Other"));
 }
 
+void TestTrakcratePanel::panelHandMadePlaylists()
+{
+    writeWav(tmp_ / "House" / "a.wav", 300, "A one");
+    writeWav(tmp_ / "House" / "b.wav", 330, "B two");
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    QVERIFY(p.importFolder((tmp_ / "House").string().c_str(), tc::ImportOptions()));
+    QVERIFY(p.waitForJob());
+    QString err;
+    QVERIFY(p.createPlaylist(QStringLiteral("Mine"), &err));
+    QVERIFY(!p.createPlaylist(QStringLiteral("Mine"), &err));              // a second one of that name is refused
+    QCOMPARE(p.currentPlaylist(), QStringLiteral("Mine"));
+    QVERIFY(p.library().hasPlaylist("Mine"));
+    QVERIFY(p.library().playlistTracks("Mine").empty());
+
+    p.selectFolder("House");
+    QTreeView* table = p.findChild<QTreeView*>();
+    table->selectAll();
+    const QStringList dirs = p.selectedTrackDirs();
+    QCOMPARE(dirs.size(), 2);
+    QVERIFY(p.addToPlaylist(p.currentPlaylist(), dirs, &err));
+    QCOMPARE(int(p.library().playlistTracks("Mine").size()), 2);
+
+    // remove the first row of the playlist: the track stays in the folder
+    p.selectPlaylist("Mine");
+    table->clearSelection();
+    table->selectionModel()->select(table->model()->index(0, 0), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+    QVERIFY(p.removeSelectedFromPlaylist(&err));
+    QCOMPARE(int(p.library().playlistTracks("Mine").size()), 1);
+    QCOMPARE(int(p.library().listTracks("House").size()), 2);
+}
+
+void TestTrakcratePanel::panelEnterLoadsAndPlays()
+{
+    writeWav(tmp_ / "House" / "a.wav", 300, "A one");
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    QVERIFY(p.importFolder((tmp_ / "House").string().c_str(), tc::ImportOptions()));
+    QVERIFY(p.waitForJob());
+    p.selectFolder("House");
+    QTreeView* table = p.findChild<QTreeView*>();
+    table->setCurrentIndex(table->model()->index(0, 0));
+    QSignalSpy spy(&p, &TrakcratePanel::loadAndPlayRequested);
+    // Up and Down are application shortcuts (pitch nudge): the list claims them while it has the focus
+    QKeyEvent over(QEvent::ShortcutOverride, Qt::Key_Down, Qt::NoModifier);
+    over.setAccepted(false);
+    QCoreApplication::sendEvent(table, &over);
+    QVERIFY(over.isAccepted());
+    QTest::keyClick(table, Qt::Key_Return);
+    QCOMPARE(spy.count(), 1);
+}
+
+void TestTrakcratePanel::panelForwardsPlayerKeys()
+{
+    writeWav(tmp_ / "House" / "a.wav", 300, "A one");
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    QVERIFY(p.importFolder((tmp_ / "House").string().c_str(), tc::ImportOptions()));
+    QVERIFY(p.waitForJob());
+    p.selectFolder("House");
+    QTreeView* table = p.findChild<QTreeView*>();
+    table->setCurrentIndex(table->model()->index(0, 0));
+    bool loaded = false;
+    int handled = 0;
+    p.setPlayerKeys([&](const QKeyEvent* e) { return loaded && e->key() == Qt::Key_Space; },
+                    [&](QKeyEvent* e) { if (!loaded || e->key() != Qt::Key_Space) return false; ++handled; e->accept(); return true; });
+    QKeyEvent over(QEvent::ShortcutOverride, Qt::Key_Space, Qt::NoModifier);
+    over.setAccepted(false);
+    QCoreApplication::sendEvent(table, &over);
+    QVERIFY(!over.isAccepted());                     // nothing loaded: Space stays the VDJ's play / pause
+    QTest::keyClick(table, Qt::Key_Space);
+    QCOMPARE(handled, 0);
+    loaded = true;
+    over.setAccepted(false);
+    QCoreApplication::sendEvent(table, &over);
+    QVERIFY(over.isAccepted());
+    QTest::keyClick(table, Qt::Key_Space);
+    QCOMPARE(handled, 1);
+}
+
+void TestTrakcratePanel::panelSearch()
+{
+    writeWav(tmp_ / "House" / "a.wav", 300, "Alpha tune");
+    writeWav(tmp_ / "Dub" / "b.wav", 330, "Beta tune");
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    for (const char* f : {"House", "Dub"}) {
+        QVERIFY(p.importFolder((tmp_ / f).string().c_str(), tc::ImportOptions()));
+        QVERIFY(p.waitForJob());
+    }
+    QCOMPARE(p.searchTracks(false, QStringLiteral("zzz")), 0);
+    QVERIFY(!p.searchNext());
+    QCOMPARE(p.searchTracks(false, QStringLiteral("TUNE")), 2);              // case does not matter
+    QCOMPARE(p.selectedTrackDirs().size(), 1);
+    const QString first = p.selectedTrackDirs().first();
+    QVERIFY(p.searchNext());
+    QVERIFY(p.selectedTrackDirs().first() != first);                         // the other folder was opened
+    QVERIFY(p.searchNext());
+    QCOMPARE(p.selectedTrackDirs().first(), first);                          // wraps round
+    QCOMPARE(p.searchTracks(false, QStringLiteral("beta")), 1);
+}
+
 void TestTrakcratePanel::panelPreviewPlayer()
 {
     writeWav(tmp_ / "House" / "a.wav", 300, "A one");
@@ -870,6 +985,50 @@ void TestTrakcratePanel::panelSettingsSets()
     QCOMPARE(group()->child(1)->child(0)->data(0, Qt::UserRole).toString(), QStringLiteral("setting"));
     QCOMPARE(group()->child(1)->child(0)->data(0, Qt::UserRole + 3).toString(), QStringLiteral("Home"));
 
+    // exportExt.pdb is not a leaf: its categories, each with its tags, are below it (My Tags)
+    auto extItem = [&](const char* set) -> QTreeWidgetItem* {
+        for (int i = 0; i < group()->childCount(); ++i) {
+            QTreeWidgetItem* si = group()->child(i);
+            if (si->data(0, Qt::UserRole + 1).toString() != QLatin1String(set)) continue;
+            for (int k = 0; k < si->childCount(); ++k) if (si->child(k)->text(0) == QLatin1String("exportExt.pdb")) return si->child(k);
+        }
+        return nullptr;
+    };
+    QTreeWidgetItem* ext = extItem("Home");
+    QVERIFY(ext);
+    QCOMPARE(ext->childCount(), 4);
+    QCOMPARE(ext->child(0)->text(0), QStringLiteral("Genre"));
+    QCOMPARE(ext->child(0)->data(0, Qt::UserRole).toString(), QStringLiteral("mytag-category"));
+    QCOMPARE(ext->child(0)->childCount(), 7);
+    QCOMPARE(ext->child(0)->child(0)->text(0), QStringLiteral("Acid House"));
+    QCOMPARE(ext->child(0)->child(0)->data(0, Qt::UserRole).toString(), QStringLiteral("mytag"));
+    QCOMPARE(ext->child(0)->child(0)->childCount(), 0);
+    QCOMPARE(ext->child(2)->text(0), QStringLiteral("Situation"));
+    QCOMPARE(ext->child(2)->childCount(), 8);
+    QVERIFY(ext->toolTip(0).contains(QStringLiteral("0 track link")));
+    {   // a copy with a deleted tag row: removing the track links also cleans it, and the tree follows
+        const tc::fs::path file = tc::settingsSetDir(p.library(), "Home") / "exportExt.pdb";
+        std::string pdb;
+        QVERIFY(tc::readFile(file, &pdb));
+        tc::PdbFile f;
+        QVERIFY(tc::parsePdb(pdb, &f));
+        f.pages[8].rows[3].present = false;
+        f.pages[8].u20 = uint16_t(f.pages[8].presentRows());
+        QVERIFY(tc::serialisePdb(f, &pdb));
+        QVERIFY(tc::atomicWrite(file, pdb));
+        p.refresh();
+        QCOMPARE(extItem("Home")->child(0)->childCount(), 6);
+        int links = -1;
+        QVERIFY(p.removeTrackLinks(QStringLiteral("Home"), &links, &err));
+        QCOMPARE(links, 0);
+        tc::ExtPdbStats st;
+        QVERIFY(tc::readFile(file, &pdb) && tc::extPdbStats(pdb, &st));
+        QCOMPARE(st.deletedTags, size_t(0));
+        QCOMPARE(st.tags, size_t(27));
+        QCOMPARE(extItem("Home")->child(0)->childCount(), 6);
+        QVERIFY(!p.removeTrackLinks(QStringLiteral("Nope"), &links, &err));
+    }
+
     QVERIFY(p.makeDefaultSettingsSet(QStringLiteral("Club"), &err));
     QCOMPARE(group()->child(0)->text(0), QStringLiteral("Club (default)"));
     QVERIFY(p.renameSettingsSet(QStringLiteral("Club"), QStringLiteral("Gig"), &err));
@@ -1015,6 +1174,8 @@ void TestTrakcratePanel::pendriveSettingsLinkAndExportDialog()
         tc::fs::create_directories(tmp_ / "usb2");
         tc::fs::create_directories(tmp_ / "usb3/PIONEER");                                // an earlier export
         tc::fs::create_directories(tmp_ / "usb3/Contents");
+        tc::fs::create_directories(tmp_ / "usb3/Contents/a");
+        std::ofstream(tmp_ / "usb3/Contents/a/big.mp3") << std::string(1 << 20, 'x');            // measured once per dialog: made before it
         TrakcrateExportDialog mdlg(p.library(), nullptr, false);
         mdlg.setPendrive(QStringLiteral("Fri"), true);
         mdlg.setDestination(QString::fromStdString((tmp_ / "usb1").string()));
@@ -1034,7 +1195,161 @@ void TestTrakcratePanel::pendriveSettingsLinkAndExportDialog()
         QVERIFY(all[2].update);                                                           // it already holds an export
         QCOMPARE(all[1].lists.size(), all[0].lists.size());
         QVERIFY(!all[1].lists.empty());
-        QVERIFY(!mdlg.registerAsVirtualPendrive());
+        // the chosen destination is not offered as an additional one; the drives are offered in physical mode only
+        QListWidget* extras = mdlg.findChild<QWidget*>(QStringLiteral("extraBox"))->findChild<QListWidget*>();
+        for (int i = 0; i < extras->count(); ++i) {                                       // (real mounted drives may be listed too)
+            const QString mp = extras->item(i)->data(Qt::UserRole).toString();
+            if (mp == QString::fromStdString((tmp_ / "usb1").string())) {
+                QVERIFY(extras->item(i)->isHidden());
+                QCOMPARE(extras->item(i)->checkState(), Qt::Unchecked);
+            } else if (mp == QString::fromStdString((tmp_ / "usb2").string())) {
+                QVERIFY(!extras->item(i)->isHidden());
+            }
+        }
+        QVERIFY(!mdlg.findChild<QWidget*>(QStringLiteral("physicalBox"))->isHidden());
+        // the space table: what is still to be written is the estimate minus what the drive holds already, never negative
+        {
+            const std::vector<TrakcrateExportDialog::LocationSpace>& sp = mdlg.spaces();
+            QVERIFY(sp.size() >= 3);
+            QVERIFY(sp[0].currentKnown);
+            QVERIFY(sp[0].requiredBytes > 0);
+            const qint64 est = qint64(sp[0].requiredBytes);                                 // usb1 is empty: required = the whole estimate
+            mdlg.selectExtraDrive(QString::fromStdString((tmp_ / "usb3").string()), false);
+            mdlg.selectExtraDrive(QString::fromStdString((tmp_ / "usb3").string()), true);
+            for (const auto& l : mdlg.spaces()) {
+                QVERIFY(l.requiredBytes >= 0);
+                if (l.base == QString::fromStdString((tmp_ / "usb3").string())) {
+                    QVERIFY(l.currentBytes >= (1 << 20));
+                    QCOMPARE(l.currentTracks, 1);
+                    QVERIFY(l.requiredBytes <= std::max<qint64>(0, est - (1 << 20)) + 1);
+                }
+            }
+        }
+        // the table: a block per location, with sizes in GiB form, never a negative Required; Empty trash only where a trash folder exists
+        {
+            const QString usb1 = QString::fromStdString((tmp_ / "usb1").string());
+            auto blockLabels = [&](const char* name) { QStringList v; for (QLabel* l : mdlg.findChildren<QLabel*>(QLatin1String(name))) v << l->text(); return v; };
+            QCOMPARE(blockLabels("requiredValue").size(), int(mdlg.spaces().size()));
+            for (const QString& r : blockLabels("requiredValue")) QVERIFY(!r.startsWith(QLatin1Char('-')));
+            const QList<QCheckBox*> after = mdlg.findChildren<QCheckBox*>(QStringLiteral("cleanUpAfter"));
+            QCOMPARE(after.size(), int(mdlg.spaces().size()));
+            QCOMPARE(after[0]->toolTip(), QStringLiteral("Clean up after export"));
+            QVERIFY(!mdlg.cleanUpAfterExport(usb1));
+            after[0]->setChecked(true);
+            QVERIFY(mdlg.cleanUpAfterExport(usb1));
+            tc::fs::create_directories(tmp_ / "usb1" / (".Trash-" + std::to_string(getuid())) / "files");
+            std::ofstream(tmp_ / "usb1" / (".Trash-" + std::to_string(getuid())) / "files/old.mp3") << "x";
+            mdlg.selectExtraDrive(QString::fromStdString((tmp_ / "usb2").string()), false);
+            mdlg.selectExtraDrive(QString::fromStdString((tmp_ / "usb2").string()), true);
+            QCOMPARE(mdlg.findChildren<QPushButton*>(QStringLiteral("emptyTrash")).first()->isEnabled(), true);
+            QCOMPARE(mdlg.findChildren<QPushButton*>(QStringLiteral("emptyTrash")).last()->isEnabled(), false);
+        }
+        // Empty trash: the contents go (a link inside is removed, not followed), the folder stays, the button goes off, a link as the trash is refused
+        {
+            const QString usb1 = QString::fromStdString((tmp_ / "usb1").string());
+            const tc::fs::path trash = tmp_ / "usb1" / (".Trash-" + std::to_string(getuid()));
+            tc::fs::create_directories(tmp_ / "outside");
+            std::ofstream(tmp_ / "outside/keep") << "k";
+            tc::fs::create_symlink(tmp_ / "outside", trash / "link");
+            mdlg.setConfirm([](const QString& t) { return t.contains(QStringLiteral(".Trash-")); });
+            QPushButton* et = mdlg.findChildren<QPushButton*>(QStringLiteral("emptyTrash")).first();
+            QVERIFY(et->isEnabled());
+            et->click();
+            QTRY_VERIFY(!mdlg.deleting());
+            QTRY_VERIFY(!et->isEnabled());
+            QVERIFY(tc::fs::is_directory(trash));
+            QVERIFY(tc::fs::is_empty(trash));
+            QVERIFY(tc::fs::exists(tmp_ / "outside/keep"));
+            tc::fs::remove(trash);
+            tc::fs::create_directory_symlink(tmp_ / "outside", trash);
+            QVERIFY(!TrakcrateExportDialog::emptyTrash(usb1));
+            QVERIFY(tc::fs::exists(tmp_ / "outside/keep"));
+            tc::fs::remove(trash);
+        }
+        // Delete really removes the exported data (and only that), links are not followed
+        {
+            const tc::fs::path d = tmp_ / "wipe";
+            for (const char* sub : {"PIONEER/USBANLZ/P1", "PIONEER/rekordbox", "PIONEER/Artwork", "Contents/Artist", "Other"}) tc::fs::create_directories(d / sub);
+            for (const char* f : {"PIONEER/USBANLZ/P1/ANLZ0000.DAT", "PIONEER/rekordbox/export.pdb", "PIONEER/Artwork/a.jpg", "Contents/Artist/t.mp3", "Other/mine.txt", "PIONEER/DEVSETTING.DAT"})
+                std::ofstream(d / f) << "x";
+            tc::fs::create_directory_symlink(tmp_ / "outside", d / "Contents/link");
+            std::atomic<bool> none{false};
+            QVERIFY(TrakcrateExportDialog::deleteRegenerable(QString::fromStdString(d.string()), none));
+            QVERIFY(tc::fs::is_empty(d / "Contents"));
+            QVERIFY(tc::fs::is_empty(d / "PIONEER/rekordbox"));
+            QVERIFY(tc::fs::is_empty(d / "PIONEER/USBANLZ"));
+            QVERIFY(tc::fs::is_empty(d / "PIONEER/Artwork"));
+            QVERIFY(tc::fs::exists(d / "Other/mine.txt"));
+            QVERIFY(tc::fs::exists(d / "PIONEER/DEVSETTING.DAT"));
+            QVERIFY(tc::fs::exists(tmp_ / "outside/keep"));
+            std::ofstream(d / "Contents/t2.mp3") << "x";
+            std::atomic<bool> stop{true};
+            QVERIFY(!TrakcrateExportDialog::deleteRegenerable(QString::fromStdString(d.string()), stop));
+            QVERIFY(tc::fs::exists(d / "Contents/t2.mp3"));                                 // cancelled before anything was removed
+        }
+        // Delete: the question names both folders (and warns above 1 GiB); Export and the busy location's buttons are off until the worker is done
+        {
+            const QString t = TrakcrateExportDialog::deleteConfirmText(QStringLiteral("/m/usb"), 100);
+            QVERIFY(t.contains(QStringLiteral("/m/usb/PIONEER")) && t.contains(QStringLiteral("/m/usb/Contents")));
+            QVERIFY(!t.contains(QStringLiteral("This may take a while")));
+            QVERIFY(TrakcrateExportDialog::deleteConfirmText(QStringLiteral("/m/usb"), qint64(2) << 30).contains(QStringLiteral("This may take a while")));
+            auto exportEnabled = [&] { for (QPushButton* b : mdlg.findChildren<QPushButton*>()) if (b->text() == QLatin1String("Export")) return b->isEnabled(); return false; };
+            for (QCheckBox* c : mdlg.findChildren<QCheckBox*>()) if (c->text().startsWith(QLatin1String("Allow tracks that are not analysed"))) c->setChecked(true);
+            QMetaObject::invokeMethod(&mdlg, "refreshSummary");
+            QVERIFY(exportEnabled());
+            std::atomic<bool> release{false}, sawCancel{false};
+            std::atomic<int> started{0};
+            mdlg.setConfirm([](const QString&) { return true; });
+            mdlg.setDeleter([&](const QString&, const std::atomic<bool>& cancel) {
+                ++started;
+                while (!release.load() && !cancel.load()) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                if (cancel.load()) sawCancel = true;
+            });
+            QList<QPushButton*> dels = mdlg.findChildren<QPushButton*>(QStringLiteral("deleteData"));
+            QVERIFY(dels.size() >= 2);
+            dels[0]->click();
+            QVERIFY(mdlg.deleting());
+            QVERIFY(!exportEnabled());
+            QVERIFY(!dels[0]->isEnabled());
+            QVERIFY(dels[1]->isEnabled());                                                // another location can still be deleted from
+            dels[1]->click();
+            QTRY_COMPARE(started.load(), 2);
+            release = true;
+            QTRY_VERIFY(!mdlg.deleting());
+            QTRY_VERIFY(exportEnabled());
+            for (QPushButton* b : mdlg.findChildren<QPushButton*>(QStringLiteral("deleteData"))) QVERIFY(b->isEnabled());
+            // closing the dialog stops a delete that is still going
+            release = false;
+            mdlg.findChildren<QPushButton*>(QStringLiteral("deleteData"))[0]->click();
+            QTRY_COMPARE(started.load(), 3);
+            mdlg.reject();
+            QTRY_VERIFY(sawCancel.load());
+            QTRY_VERIFY(!mdlg.deleting());
+            mdlg.setDeleter([](const QString&, const std::atomic<bool>&) {});
+        }
+        TrakcrateExportDialog fdlg(p.library(), nullptr, false);
+        fdlg.setPendrive(QStringLiteral("Fri"), false);
+        QVERIFY(fdlg.findChild<QWidget*>(QStringLiteral("physicalBox"))->isHidden());
+        bool titled = false;
+        for (QRadioButton* r : fdlg.findChildren<QRadioButton*>()) titled |= r->text() == QLatin1String("Overwrite All User Settings");
+        QVERIFY(titled);
+    }
+
+    {
+        tc::fs::create_directories(tmp_ / "du/PIONEER");
+        tc::fs::create_directories(tmp_ / "du/Contents/x");
+        std::ofstream(tmp_ / "du/PIONEER/f") << std::string(1000, 'a');
+        std::ofstream(tmp_ / "du/Contents/x/t.mp3") << std::string(2000, 'b');
+        const DirUsage u = measureRekordbox(QString::fromStdString((tmp_ / "du").string()));
+        QVERIFY(u.ok);
+        QCOMPARE(u.bytes, qint64(3000));
+        QCOMPARE(u.audioFiles, 1);
+        tc::fs::create_directories(tmp_ / "du_empty");
+        const DirUsage e = measureRekordbox(QString::fromStdString((tmp_ / "du_empty").string()));
+        QVERIFY(!e.ok);
+        QCOMPARE(e.bytes, qint64(0));
+        std::atomic<bool> stop{true};
+        QVERIFY(measureRekordbox(QString::fromStdString((tmp_ / "du").string()), &stop).bytes <= 3000);
     }
 
     // exporting the linked pendrive puts that set's profile on the drive

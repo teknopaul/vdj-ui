@@ -138,6 +138,8 @@ add_library(vdj-cdj STATIC
     ui/trakcrate_rbimport_dialog.cpp
     ui/trakcrate_panel.cpp
     ui/trakcrate_export_dialog.cpp
+    ui/trakcrate_search_dialog.cpp
+    ui/dir_usage.cpp
     ui/trakcrate_artwork.cpp
     ui/instrument_config_dialog.cpp
     ui/midi_monitor_dialog.cpp
@@ -221,6 +223,7 @@ add_library(vdj-trakcrate STATIC
     trakcrate/bpm_detect.cpp
     trakcrate/analysis.cpp
     trakcrate/pdb_writer.cpp
+    trakcrate/ext_pdb.cpp
     trakcrate/pdb_build.cpp
     trakcrate/pdb_append.cpp
     trakcrate/anlz_writer.cpp

@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 
+#include "trakcrate/ext_pdb.h"
 #include "trakcrate/fsutil.h"
+#include "trakcrate/pdb_writer.h"
 #include "trakcrate/library.h"
 #include "trakcrate/settings_files.h"
 #include "trakcrate/settings_sets.h"
@@ -154,6 +156,12 @@ private slots:
         QCOMPARE(slurp(settingsSetDir(lib, "Stock") / "djprofile.nxs"), defaultDjprofile());
     }
 
+    static SettingsRow rowOf(const std::vector<SettingsRow>& rows, const std::string& field)
+    {
+        for (const SettingsRow& r : rows) if (r.field == field) return r;
+        return SettingsRow{"<none>", "<none>", "", true};
+    }
+
     static std::string valueOf(const std::vector<SettingsRow>& rows, const std::string& field)
     {
         for (const SettingsRow& r : rows) if (r.field == field) return r.value;
@@ -168,13 +176,44 @@ private slots:
         QCOMPARE(valueOf(dev, "program"), std::string("rekordbox"));
         QCOMPARE(valueOf(dev, "version"), std::string("4.5.0"));
         QCOMPARE(valueOf(dev, "crc"), std::string("0x3bba"));
-        QCOMPARE(valueOf(dev, "payload 0x04"), std::string("0x01"));
+        QCOMPARE(valueOf(dev, "Overview Waveform Type"), std::string("Half Waveform"));
+        QCOMPARE(valueOf(dev, "Waveform Color"), std::string("Blue"));
+        for (const char* f : {"Key Display Format", "Waveform Current Position"}) {          // the 4.5.0 file has 0x00 where rekordbox 6 writes 0x01
+            QCOMPARE(valueOf(dev, f), std::string("unknown option 0x00"));
+            QVERIFY(!rowOf(dev, f).known);
+            QVERIFY(rowOf(dev, f).note.find("rekordbox 6 writes 0x01") != std::string::npos);
+        }
+        QVERIFY(rowOf(dev, "Overview Waveform Type").known);
+        for (const char* f : {"unknown 0x70", "unknown 0x73", "unknown 0x76-0x87"}) {
+            QVERIFY(valueOf(dev, f) != "<none>");
+            QVERIFY(!rowOf(dev, f).known);
+        }
+        QCOMPARE(valueOf(dev, "unknown 0x76-0x87").size(), size_t(18 * 3 - 1));
+        for (const SettingsRow& r : dev) QVERIFY(r.field.rfind("payload 0x", 0) != 0);           // no row per byte any more
         auto my = describeSettingsFile(SettingsKind::MySetting, defaultMySetting());
         QCOMPARE(valueOf(my, "crc"), std::string("0x2181"));
         QCOMPARE(valueOf(my, "block id"), std::string("2"));
-        bool coded = false;
-        for (const SettingsRow& r : my) if (r.field == "payload 0x04") { coded = r.note.find("option code") != std::string::npos; QVERIFY(!r.known); }
-        QVERIFY(coded);
+        const std::pair<const char*, const char*> shipped[] = {
+            {"On Air Display", "On"}, {"LCD Brightness", "3"}, {"Quantize", "On"}, {"Auto Cue Level", "-60dB"}, {"Language", "English"},
+            {"Jog Ring Brightness", "2 (Bright)"}, {"Jog Ring Indicator", "On"}, {"Slip Flashing", "On"}, {"Disc Slot Illumination", "2 (Bright)"},
+            {"Eject/Load Lock", "Unlock"}, {"Sync", "Off"}, {"Play Mode / Auto Play Mode", "Continue / On"}, {"Quantize Beat Value", "1 Beat"},
+            {"Hot Cue Auto Load", "rekordbox SETTING"}, {"Hot Cue Color", "Off"}, {"Time Mode", "Remain"}, {"Jog Mode", "CDJ"},
+            {"Auto Cue", "Off"}, {"Master Tempo", "Off"}, {"Tempo Range", "\xc2\xb1" "10%"}, {"Phase Meter", "Type 1"}};
+        for (const auto& e : shipped) {
+            QCOMPARE(valueOf(my, e.first), std::string(e.second));
+            QVERIFY(rowOf(my, e.first).known);
+        }
+        // the shipped file predates the needle lock option: 0x00 is not a code
+        QCOMPARE(valueOf(my, "Needle Lock"), std::string("unknown option 0x00"));
+        QVERIFY(!rowOf(my, "Needle Lock").known);
+        const std::pair<const char*, const char*> spans[] = {{"unknown 0x75", "01"}, {"unknown 0x79-0x7B", "01 01 01"}, {"unknown 0x83-0x84", "00 00"},
+                                                             {"unknown 0x86-0x87", "00 00"}, {"unknown 0x8E-0x8F", "00 00"}};
+        for (const auto& e : spans) {
+            QCOMPARE(valueOf(my, e.first), std::string(e.second));
+            QVERIFY(!rowOf(my, e.first).known);
+        }
+        for (const SettingsRow& r : my) QVERIFY(r.field.rfind("payload 0x", 0) != 0);
+        QCOMPARE(my.size(), size_t(1 + 1 + 6 + 2 + 22 + 5));      // size, file check, the header rows, crc and block id, the preferences, the unknown spans
         auto prof = describeSettingsFile(SettingsKind::Djprofile, defaultDjprofile());
         QCOMPARE(valueOf(prof, "name on the players"), std::string("teknopaul teknopaul"));
         QCOMPARE(valueOf(prof, "date"), std::string("2023-11-17 17:50:33 UTC"));
@@ -200,16 +239,234 @@ private slots:
         QCOMPARE(valueOf(describeSettingsFile(SettingsKind::MySetting, bad), "file check"), std::string("damaged"));
     }
 
+    // every code of every field: the byte is put in a copy of the shipped file and the label read back
+    void everyOptionCodeDecodes()
+    {
+        struct Case { SettingsKind kind; size_t at; const char* field; std::vector<std::pair<int, const char*>> codes; };
+        const std::vector<std::pair<int, const char*>> offOn = {{0x80, "Off"}, {0x81, "On"}}, unlockLock = {{0x80, "Unlock"}, {0x81, "Lock"}},
+            dark = {{0x80, "Off"}, {0x81, "1 (Dark)"}, {0x82, "2 (Bright)"}};
+        const SettingsKind M = SettingsKind::MySetting, D = SettingsKind::DevSetting;
+        const std::vector<Case> cases = {
+            {D, 0x71, "Overview Waveform Type", {{1, "Half Waveform"}, {2, "Full Waveform"}}},
+            {D, 0x72, "Waveform Color", {{1, "Blue"}, {3, "RGB"}, {4, "3Band"}}},
+            {D, 0x74, "Key Display Format", {{1, "Classic"}, {2, "Alphanumeric"}}},
+            {D, 0x75, "Waveform Current Position", {{1, "Center"}, {2, "Left"}}},
+            {M, 0x70, "On Air Display", offOn}, {M, 0x71, "LCD Brightness", {{0x81, "1"}, {0x82, "2"}, {0x83, "3"}, {0x84, "4"}, {0x85, "5"}}},
+            {M, 0x72, "Quantize", offOn},
+            {M, 0x73, "Auto Cue Level", {{0x80, "-36dB"}, {0x81, "-42dB"}, {0x82, "-48dB"}, {0x83, "-54dB"}, {0x84, "-60dB"}, {0x85, "-66dB"},
+                                         {0x86, "-72dB"}, {0x87, "-78dB"}, {0x88, "Memory"}}},
+            {M, 0x74, "Language", {{0x81, "English"}, {0x82, "Fran\xc3\xa7" "ais"}, {0x83, "Deutsch"}, {0x84, "Italiano"}, {0x85, "Nederlands"},
+                                   {0x86, "Espa\xc3\xb1ol"}, {0x87, "\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9"},
+                                   {0x88, "\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4"}, {0x89, "\xe7\xae\x80\xe4\xbd\x93\xe4\xb8\xad\xe6\x96\x87"},
+                                   {0x8a, "\xe7\xb9\x81\xe9\xab\x94\xe4\xb8\xad\xe6\x96\x87"}, {0x8b, "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"},
+                                   {0x8c, "Portugu\xc3\xaa" "s"}, {0x8d, "Svenska"}, {0x8e, "\xc4\x8c" "e\xc5\xa1" "tina"}, {0x8f, "Magyar"}, {0x90, "Dansk"},
+                                   {0x91, "\xce\x95\xce\xbb\xce\xbb\xce\xb7\xce\xbd\xce\xb9\xce\xba\xce\xac"}, {0x92, "T\xc3\xbc" "rk\xc3\xa7" "e"}}},
+            {M, 0x76, "Jog Ring Brightness", dark}, {M, 0x77, "Jog Ring Indicator", offOn}, {M, 0x78, "Slip Flashing", offOn},
+            {M, 0x7c, "Disc Slot Illumination", dark}, {M, 0x7d, "Eject/Load Lock", unlockLock}, {M, 0x7e, "Sync", offOn},
+            {M, 0x7f, "Play Mode / Auto Play Mode", {{0x80, "Continue / On"}, {0x81, "Single / Off"}}},
+            {M, 0x80, "Quantize Beat Value", {{0x80, "1 Beat"}, {0x81, "1/2 Beat"}, {0x82, "1/4 Beat"}, {0x83, "1/8 Beat"}}},
+            {M, 0x81, "Hot Cue Auto Load", {{0x80, "Off"}, {0x81, "On"}, {0x82, "rekordbox SETTING"}}}, {M, 0x82, "Hot Cue Color", offOn},
+            {M, 0x85, "Needle Lock", unlockLock}, {M, 0x88, "Time Mode", {{0x80, "Elapsed"}, {0x81, "Remain"}}},
+            {M, 0x89, "Jog Mode", {{0x80, "CDJ"}, {0x81, "Vinyl"}}}, {M, 0x8a, "Auto Cue", offOn}, {M, 0x8b, "Master Tempo", offOn},
+            {M, 0x8c, "Tempo Range", {{0x80, "\xc2\xb1" "6%"}, {0x81, "\xc2\xb1" "10%"}, {0x82, "\xc2\xb1" "16%"}, {0x83, "Wide"}}},
+            {M, 0x8d, "Phase Meter", {{0x80, "Type 1"}, {0x81, "Type 2"}}},
+        };
+        for (const Case& c : cases) {
+            for (const auto& code : c.codes) {
+                std::string f = c.kind == M ? defaultMySetting() : defaultDevSetting();
+                f[c.at] = char(code.first);
+                fixSettingsCrc(&f);
+                const auto rows = describeSettingsFile(c.kind, f);
+                QCOMPARE(valueOf(rows, c.field), std::string(code.second));
+                QVERIFY(rowOf(rows, c.field).known);
+            }
+            std::string f = c.kind == M ? defaultMySetting() : defaultDevSetting();
+            f[c.at] = char(0x99);
+            fixSettingsCrc(&f);
+            const auto rows = describeSettingsFile(c.kind, f);
+            QCOMPARE(valueOf(rows, c.field), std::string("unknown option 0x99"));
+            QVERIFY(!rowOf(rows, c.field).known);
+        }
+    }
+
+    void settingsOfTheWrongShape()
+    {
+        // a MYSETTING read as a DEVSETTING: a reason, no decoded values
+        auto rows = describeSettingsFile(SettingsKind::DevSetting, defaultMySetting());
+        QCOMPARE(rowOf(rows, "settings").known, false);
+        QVERIFY(rowOf(rows, "settings").note.find("not a DEVSETTING.DAT") != std::string::npos);
+        QCOMPARE(valueOf(rows, "Overview Waveform Type"), std::string("<none>"));
+        QCOMPARE(valueOf(rows, "On Air Display"), std::string("<none>"));
+        // a truncated file never reads outside the string
+        const std::string whole = defaultMySetting();
+        for (size_t n = 0; n < whole.size(); ++n) QVERIFY(!describeSettingsFile(SettingsKind::MySetting, whole.substr(0, n)).empty());
+        // a bad CRC with the right shape: damaged, but the values are still shown
+        std::string bad = defaultMySetting();
+        bad[0x70] = char(0x80);
+        rows = describeSettingsFile(SettingsKind::MySetting, bad);
+        QCOMPARE(valueOf(rows, "file check"), std::string("damaged"));
+        QVERIFY(rowOf(rows, "crc").note.find("does not match") != std::string::npos);
+        QCOMPARE(valueOf(rows, "On Air Display"), std::string("Off"));
+        // a wrong magic stops the decoding
+        std::string nomagic = defaultMySetting();
+        nomagic[0x68] ^= 0xff;
+        QCOMPARE(valueOf(describeSettingsFile(SettingsKind::MySetting, nomagic), "Quantize"), std::string("<none>"));
+    }
+
+    // The standard exportExt.pdb is as clean as a file can be: the tags and categories, no deleted rows, no links to tracks.
+    void defaultExportExtIsClean()
+    {
+        ExtPdbStats st;
+        QVERIFY(extPdbStats(defaultExportExt(), &st));
+        QCOMPARE(st.tags, size_t(28));
+        QCOMPARE(st.deletedTags, size_t(0));
+        QCOMPARE(st.trackLinks, size_t(0));
+        std::vector<ExtTag> tags;
+        QVERIFY(readExtTags(defaultExportExt(), &tags));
+        QCOMPARE(tags.size(), size_t(28));
+        std::vector<std::string> cats;
+        for (const ExtTag& t : tags) if (t.category) cats.push_back(t.name);
+        QCOMPARE(cats, (std::vector<std::string>{"Genre", "Components", "Situation", "Untitled Column"}));
+        // the tags of a category follow it, in the order of their positions
+        std::vector<std::string> situation;
+        bool in = false;
+        for (const ExtTag& t : tags) {
+            if (t.category) in = t.name == "Situation";
+            else if (in) situation.push_back(t.name);
+        }
+        QCOMPARE(situation, (std::vector<std::string>{"Main Floor", "Second Floor", "Lounge", "Mid Night", "Morning", "Build up", "Peak Time", "Build down"}));
+        QCOMPARE(tags[1].parent, tags[0].id);
+        // already clean: nothing changes
+        std::string again;
+        QVERIFY(withoutTrackLinks(defaultExportExt(), &again));
+        QVERIFY(again == defaultExportExt());
+    }
+
+    void withoutTrackLinksEmptiesTheLinkTable()
+    {
+        const std::string clean = defaultExportExt();
+        PdbFile f;
+        QVERIFY(parsePdb(clean, &f));
+        PdbTable* links = nullptr;
+        for (PdbTable& t : f.tables) if (t.type == 4) links = &t;
+        QVERIFY(links);
+        // three links on a data page, the way pdb_append adds the first page of an empty table
+        const uint32_t no = links->emptyCandidate, nextFree = f.nextUnusedPage;
+        QVERIFY(no < f.pages.size());
+        PdbPage np;
+        np.index = no;
+        np.type = 4;
+        np.next = nextFree;
+        np.flags = 0x24;
+        np.u20 = 3;
+        np.structured = true;
+        for (uint32_t track : {135u, 137u, 140u}) {
+            PdbRow r;
+            r.bytes.assign(16, '\0');
+            r.bytes[4] = char(track);
+            r.bytes[8] = char(28);
+            r.bytes[12] = char(3);
+            np.rows.push_back(r);
+        }
+        np.groupFlags.assign(1, 0x7);
+        f.pages[no] = np;
+        PdbPage& idx = f.pages[links->firstPage];
+        QVERIFY(!idx.structured);
+        for (int i = 0; i < 4; ++i) idx.raw[0x2c + size_t(i)] = char((no >> (8 * i)) & 0xff);
+        idx.next = no;
+        idx.raw[0x0c] = char(no);
+        links->lastPage = no;
+        links->emptyCandidate = nextFree;
+        f.nextUnusedPage = nextFree + 1;
+        std::string linked;
+        QVERIFY(serialisePdb(f, &linked));
+        ExtPdbStats st;
+        QVERIFY(extPdbStats(linked, &st));
+        QCOMPARE(st.trackLinks, size_t(3));
+        QCOMPARE(st.tags, size_t(28));
+
+        std::string out;
+        QVERIFY(withoutTrackLinks(linked, &out));
+        QCOMPARE(out.size(), linked.size());
+        QVERIFY(extPdbStats(out, &st));
+        QCOMPARE(st.trackLinks, size_t(0));
+        QCOMPARE(st.tags, size_t(28));
+        PdbFile g;
+        QVERIFY(parsePdb(out, &g));
+        for (const PdbTable& t : g.tables) {
+            if (t.type != 4) continue;
+            QCOMPARE(t.lastPage, t.firstPage);                                               // an empty table: its index page only
+            QCOMPARE(t.emptyCandidate, no);
+            QVERIFY(!g.pages[no].structured);
+            QCOMPARE(g.pages[no].raw, std::string(4096, '\0'));                              // the page of the links is blank
+            QCOMPARE(g.pages[t.firstPage].next, no);
+        }
+        // the tags are as they were: the page of the tags is byte for byte the clean one
+        QCOMPARE(out.substr(8 * 4096, 4096), clean.substr(8 * 4096, 4096));
+        QVERIFY(out.substr(9 * 4096, 4096) == clean.substr(9 * 4096, 4096));                  // and so is the (empty) index page
+        std::string twice;
+        QVERIFY(withoutTrackLinks(out, &twice));
+        QVERIFY(twice == out);
+    }
+
+    void withoutTrackLinksDropsDeletedTagRows()
+    {
+        PdbFile f;
+        QVERIFY(parsePdb(defaultExportExt(), &f));
+        PdbPage& page = f.pages[8];
+        QVERIFY(page.structured);
+        QCOMPARE(page.rows.size(), size_t(28));
+        page.rows[3].present = false;                                    // Techno
+        page.rows[5].present = false;                                    // Electro House
+        page.u20 = 26;                                                   // the page header counts the live rows
+        std::string edited;
+        QVERIFY(serialisePdb(f, &edited));
+        ExtPdbStats st;
+        QVERIFY(extPdbStats(edited, &st));
+        QCOMPARE(st.tags, size_t(26));
+        QCOMPARE(st.deletedTags, size_t(2));
+        std::string out;
+        QVERIFY(withoutTrackLinks(edited, &out));
+        QVERIFY(extPdbStats(out, &st));
+        QCOMPARE(st.deletedTags, size_t(0));
+        QCOMPARE(st.tags, size_t(26));
+        std::vector<ExtTag> tags;
+        QVERIFY(readExtTags(out, &tags));
+        QCOMPARE(tags.size(), size_t(26));
+        for (const ExtTag& t : tags) QVERIFY(t.name != "Techno" && t.name != "Electro House");
+        // the slot numbers in the rows follow the new places
+        PdbFile g;
+        QVERIFY(parsePdb(out, &g));
+        const PdbPage& p = g.pages[8];
+        QVERIFY(p.structured);
+        for (size_t i = 0; i < p.rows.size(); ++i) {
+            QVERIFY(p.rows[i].present);
+            QCOMPARE(unsigned(uint8_t(p.rows[i].bytes[2]) | uint8_t(p.rows[i].bytes[3]) << 8), unsigned(0x20 * i));
+        }
+        QCOMPARE(int(p.u20), 26);
+    }
+
+    void extPdbRefusesOtherFiles()
+    {
+        std::string out, err;
+        QVERIFY(!withoutTrackLinks(std::string("nope"), &out, &err));
+        QVERIFY(!err.empty());
+        ExtPdbStats st;
+        QVERIFY(!extPdbStats(std::string(300, '\0'), &st));
+        std::vector<ExtTag> tags;
+        QVERIFY(!readExtTags(std::string(), &tags));
+    }
+
     void diffFindsTheChangedByte()
     {
         QVERIFY(diffSettingsFiles(SettingsKind::MySetting, defaultMySetting(), defaultMySetting()).empty());
         std::string other = defaultMySetting();
-        other[0x70] = char(0x84);
+        other[0x70] = char(0x80);
         fixSettingsCrc(&other);
         auto d = diffSettingsFiles(SettingsKind::MySetting, defaultMySetting(), other);
         bool payload = false, crc = false, raw = false;
         for (const auto& r : d) {
-            if (r.field == "payload 0x04") { payload = true; QCOMPARE(r.b, std::string("0x84")); }
+            if (r.field == "On Air Display") { payload = true; QCOMPARE(r.a, std::string("On")); QCOMPARE(r.b, std::string("Off")); }
             if (r.field == "crc") crc = true;
             if (r.field == "raw bytes") raw = true;
         }

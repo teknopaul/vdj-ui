@@ -1,4 +1,6 @@
 #include "player_panel.h"
+
+#include <QKeyEvent>
 #include "waveform_widget.h"
 #include "audio/audio_output.h"
 #include "audio/audio_player.h"
@@ -9,6 +11,7 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QIcon>
+#include <QInputDialog>
 #include <QLabel>
 #include <QPushButton>
 #include <QStyle>
@@ -32,6 +35,7 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     : QWidget(parent)
 {
     player_ = new AudioPlayer(this);
+    setFocusPolicy(Qt::StrongFocus);                     // Space, Page Up and Page Down drive this player when it has the focus; the trakcrate list forwards the same keys
 
     auto* top = new QHBoxLayout;
     title_ = new QLabel(QStringLiteral("Player: double click a track to load it"), this);
@@ -52,9 +56,9 @@ PlayerPanel::PlayerPanel(QWidget* parent)
         b->setStyleSheet(QStringLiteral("QPushButton { padding: 0px; }"));
         return b;
     };
-    back_ = button(QString::fromUtf8("\u23ee\ufe0f"), QStringLiteral("Back one bar (4 beats)"));
-    play_ = button(kPlayGlyph, QStringLiteral("Play / pause"));
-    forward_ = button(QString::fromUtf8("\u23e9"), QStringLiteral("Forward one bar (4 beats)"));
+    back_ = button(QString::fromUtf8("\u23ee\ufe0f"), QStringLiteral("Back one bar (4 beats), Page Up"));
+    play_ = button(kPlayGlyph, QStringLiteral("Play / pause, Space"));
+    forward_ = button(QString::fromUtf8("\u23e9"), QStringLiteral("Forward one bar (4 beats), Page Down"));
     stop_ = button(QString::fromUtf8("\u23f9\ufe0f"), QStringLiteral("Stop and return to the start"));
     auto* transportRow = new QHBoxLayout;
     transportRow->addWidget(back_);
@@ -88,11 +92,24 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     bpmReset_->setStyleSheet(QStringLiteral("QPushButton { padding: 0px; }"));
     bpm_ = new QLabel(QStringLiteral("---.-"), this);
     bpm_->setAlignment(Qt::AlignCenter);
+    bpm_->setToolTip(QStringLiteral("Double click to type a BPM"));
+    bpm_->installEventFilter(this);
     QFont f = bpm_->font();
     f.setPointSize(f.pointSize() + 6);
     f.setBold(true);
     bpm_->setFont(f);
     bpm_->setMinimumWidth(30 * 2 + 20);   // two 30px buttons + 20px, so the whole BPM fits
+    bpmLock_ = new QPushButton(bpm_);                      // top right corner of the BPM display, kept there by eventFilter
+    bpmLock_->setIcon(QIcon(QStringLiteral(":/img/lock-16x16.png")));
+    bpmLock_->setIconSize(QSize(12, 12));
+    bpmLock_->setCheckable(true);
+    bpmLock_->setFlat(true);
+    bpmLock_->setFocusPolicy(Qt::NoFocus);
+    bpmLock_->setFixedSize(16, 16);
+    bpmLock_->setToolTip(QStringLiteral("Lock BPM: keep the current BPM when a new track is loaded"));
+    bpmLock_->setStyleSheet(QStringLiteral("QPushButton { padding: 0px; border: none; background: transparent; }"
+                                           "QPushButton:checked { background: #ff3030; border-radius: 3px; }"));
+    bpmLock_->move(bpm_->width() - bpmLock_->width(), 0);
     auto* bpmBox = new QVBoxLayout;
     bpmBox->addWidget(new QLabel(QStringLiteral("BPM"), this), 0, Qt::AlignHCenter);
     bpmBox->addWidget(bpm_);
@@ -108,6 +125,7 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     middle->addLayout(bpmBox);
 
     quantize_ = makeQuantizeButton(this);
+    quantize_->setToolTip(QStringLiteral("Quantize (q)"));
 
     cueLayout_ = new QHBoxLayout;
     cueLayout_->addWidget(quantize_);
@@ -148,6 +166,7 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     connect(waveform_, &WaveformWidget::seekRequested, player_, &AudioPlayer::seekMs);
     connect(bpmDown_, &QPushButton::clicked, this, [this]() { setTargetBpm(targetBpm_ - kBpmStep); });
     connect(bpmUp_, &QPushButton::clicked, this, [this]() { setTargetBpm(targetBpm_ + kBpmStep); });
+    connect(bpmLock_, &QPushButton::toggled, this, [this](bool on) { if (on && targetBpm_ > 0) heldBpm_ = targetBpm_; });
     connect(bpmReset_, &QPushButton::clicked, this, [this]() { setTargetBpm(originalBpm_); });
     connect(player_, &AudioPlayer::positionChanged, this, [this](double ms) {
         waveform_->setPlayPosition(player_->isLoaded() ? ms : -1.0);
@@ -210,6 +229,7 @@ void PlayerPanel::reloadTrakcrateAnalysis(const QString& trackDir)
 
 bool PlayerPanel::loadImpl(const TrackInfo& info, const TrackAnalysis* given)
 {
+    const double lockedBpm = bpmLock_->isChecked() ? heldBpm_ : 0.0;       // BPM lock: the new track plays at the BPM of the old one
     cancelPendingPlay();
     player_->unload();
     analysis_ = TrackAnalysis();
@@ -249,6 +269,10 @@ bool PlayerPanel::loadImpl(const TrackInfo& info, const TrackAnalysis* given)
             originalBpm_ = kv.second.toDouble();
     targetBpm_ = originalBpm_;
     player_->setTempo(1.0);
+    if (lockedBpm > 0 && originalBpm_ > 0) {              // no clamping: this is a preview, if it sounds bad the DJ needs to hear that
+        targetBpm_ = lockedBpm;
+        player_->setTempo(lockedBpm / originalBpm_);
+    }
     time_->setText(QStringLiteral("0:00.0 / %1").arg(mmss(player_->lengthMs())));
     rebuildCueButtons();
     updateBpmLabel();
@@ -299,7 +323,91 @@ void PlayerPanel::jumpBeats(int beats)
     const double delta = beatJumpMs(originalBpm_, beats);
     if (!player_->isLoaded() || delta == 0.0)
         return;
-    player_->seekMs(std::clamp(player_->positionMs() + delta, 0.0, player_->lengthMs()));
+    jumpToCue(std::clamp(player_->positionMs() + delta, 0.0, player_->lengthMs()));        // lands on the grid when Q is on
+}
+
+bool PlayerPanel::bpmLocked() const { return bpmLock_->isChecked(); }
+
+bool PlayerPanel::isPlaying() const { return player_->state() == AudioPlayer::Playing; }
+
+bool PlayerPanel::isPlayerKey(const QKeyEvent* e)
+{
+    return (e->key() == Qt::Key_Space || e->key() == Qt::Key_PageUp || e->key() == Qt::Key_PageDown) && !(e->modifiers() & ~Qt::KeypadModifier);
+}
+
+bool PlayerPanel::wantsPlayerKey(const QKeyEvent* e) const
+{
+    return isPlayerKey(e) && player_->isLoaded();
+}
+
+bool PlayerPanel::handlePlayerKey(QKeyEvent* e)
+{
+    if (!wantsPlayerKey(e))
+        return false;
+    if (e->key() == Qt::Key_Space)
+        playClicked();
+    else
+        jumpBeats(e->key() == Qt::Key_PageDown ? 4 : -4);
+    e->accept();
+    return true;
+}
+
+const AnalysisCue* PlayerPanel::hotCueForKey(const QList<AnalysisCue>& cues, int key)
+{
+    if (key < Qt::Key_A || key > Qt::Key_C)
+        return nullptr;
+    const int hot = key - Qt::Key_A + 1;
+    for (const AnalysisCue& c : cues)
+        if (c.hotCue == hot)
+            return &c;
+    return nullptr;
+}
+
+bool PlayerPanel::isCueKey(const QKeyEvent* e) const
+{
+    return player_->isLoaded() && !(e->modifiers() & ~Qt::KeypadModifier) &&
+           ((e->key() >= Qt::Key_A && e->key() <= Qt::Key_C) || e->key() == Qt::Key_Q);
+}
+
+// Space and Page Up / Down are shortcuts of the main window (play the VDJ deck), Up / Down nudge its pitch; while this panel has the focus
+// Space and Page Up / Down drive this player and Up / Down hand the focus to the track list.
+bool PlayerPanel::event(QEvent* e)
+{
+    if (e->type() == QEvent::ShortcutOverride) {
+        auto* k = static_cast<QKeyEvent*>(e);
+        const bool upDown = (k->key() == Qt::Key_Up || k->key() == Qt::Key_Down) && !(k->modifiers() & ~Qt::KeypadModifier);
+        if (isPlayerKey(k) || upDown || isCueKey(k)) {       // B is also the VDJ's copy BPM shortcut
+            e->accept();
+            return true;
+        }
+    }
+    return QWidget::event(e);
+}
+
+void PlayerPanel::keyPressEvent(QKeyEvent* e)
+{
+    if (isPlayerKey(e)) {                                 // Space with nothing loaded does nothing here (it never reaches the VDJ while focused)
+        if (!handlePlayerKey(e))
+            e->accept();
+        return;
+    }
+    if (isCueKey(e)) {
+        if (e->key() == Qt::Key_Q) {
+            quantize_->toggle();
+        } else if (const AnalysisCue* c = hotCueForKey(analysis_.cues, e->key())) {
+            jumpToCue(double(c->timeMs));
+        } else {
+            emit status(QStringLiteral("No cue %1").arg(QChar('A' + e->key() - Qt::Key_A)));
+        }
+        e->accept();
+        return;
+    }
+    if ((e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) && !(e->modifiers() & ~Qt::KeypadModifier)) {
+        emit focusTrackListRequested();
+        e->accept();
+        return;
+    }
+    QWidget::keyPressEvent(e);
 }
 
 double PlayerPanel::sequencerGridWaitMs() const
@@ -379,6 +487,23 @@ void PlayerPanel::jumpToCue(double cueMs)
     emit status(QStringLiteral("Cue queued (%1 ms)").arg(qRound((j.triggerMs - pos) / (tempo > 0 ? tempo : 1.0))));
 }
 
+// Double click on the BPM display: type the BPM to play at.
+bool PlayerPanel::eventFilter(QObject* o, QEvent* e)
+{
+    if (o == bpm_ && e->type() == QEvent::Resize) {
+        bpmLock_->move(bpm_->width() - bpmLock_->width(), 0);
+        return false;
+    }
+    if (o == bpm_ && e->type() == QEvent::MouseButtonDblClick && originalBpm_ > 0 && player_->isLoaded()) {
+        bool ok = false;
+        const double v = QInputDialog::getDouble(this, QStringLiteral("BPM"), QStringLiteral("Play at BPM:"), targetBpm_, 1.0, 999.0, 2, &ok);
+        if (ok)
+            setTargetBpm(v);
+        return true;
+    }
+    return QWidget::eventFilter(o, e);
+}
+
 void PlayerPanel::setTargetBpm(double bpm)
 {
     if (originalBpm_ <= 0 || !player_->isLoaded())
@@ -391,6 +516,8 @@ void PlayerPanel::setTargetBpm(double bpm)
 
 void PlayerPanel::updateBpmLabel()
 {
+    if (targetBpm_ > 0)
+        heldBpm_ = targetBpm_;
     bpm_->setText(targetBpm_ > 0 ? QString::number(targetBpm_, 'f', 1) : QStringLiteral("---.-"));
     const bool on = originalBpm_ > 0 && player_->isLoaded();
     bpmDown_->setEnabled(on);
@@ -425,8 +552,11 @@ void PlayerPanel::rebuildCueButtons()
         b->setStyleSheet(QStringLiteral(
             "QPushButton { background: #f4d963; color: black; font-weight: bold; border: 1px solid #b59a2a; border-radius: 3px; padding: 0px; }"
             "QPushButton:pressed { background: #d9bd45; }"));
-        b->setToolTip(QStringLiteral("%1 (%2)").arg(
-            c.loop ? QStringLiteral("Loop: jump to the start of the loop") : QStringLiteral("Jump to this cue point"), mmss(c.timeMs)));
+        QString tip = QStringLiteral("%1 (%2)").arg(
+            c.loop ? QStringLiteral("Loop: jump to the start of the loop") : QStringLiteral("Jump to this cue point"), mmss(c.timeMs));
+        if (c.hotCue >= 1 && c.hotCue <= 3)
+            tip += QStringLiteral(", key %1").arg(QChar('a' + c.hotCue - 1));
+        b->setToolTip(tip);
         b->setFocusPolicy(Qt::NoFocus);
         b->setFixedSize(26, 22);
         const quint32 t = c.timeMs;

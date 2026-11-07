@@ -33,7 +33,7 @@ Proposed solution....
 We already have a start estimate of the full virtual pendrive size requirement, and the pendrive free space.
 We still want the ability to add warning text in red in this pane, and the current warnings are correct when shown.
 
-For the disk sspace management, we need a table of data, for each of the locations we are going to export to instead of the incorrect text.  
+For the disk space management, we need a table of information, for each of the locations we are going to export to instead of the incorrect text.  
 
 | <drive name> - mount path              |
 |--------------|-------------------------|

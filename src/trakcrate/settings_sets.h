@@ -56,6 +56,10 @@ bool renameSettingsSet(const Library& lib, const std::string& from, const std::s
 bool duplicateSettingsSet(const Library& lib, const std::string& from, const std::string& to, std::string* err = nullptr);
 // Changes the user name in the set's djprofile.nxs (the built in profile when the set has none) and the cached name in set.txt.
 bool setSettingsSetUserName(const Library& lib, const std::string& name, const std::string& userName, std::string* err = nullptr);
+// Takes the links from tracks to My Tags out of the set's exportExt.pdb (and the tag rows rekordbox left marked deleted), keeping the categories and
+// tags. A set without the file gets the standard one, which has no links. `links` gets the number of links that were removed. The other files
+// of the set are not touched; nothing is changed when the file cannot be read as an exportExt.pdb.
+bool removeSettingsTrackLinks(const Library& lib, const std::string& name, size_t* links = nullptr, std::string* err = nullptr);
 // Deleting the default makes the first remaining set the default.
 bool deleteSettingsSet(const Library& lib, const std::string& name, std::string* err = nullptr);
 

@@ -49,6 +49,7 @@ void WaveformWidget::setSeekable(bool on)
 void WaveformWidget::setAnalysis(const TrackAnalysis& analysis)
 {
     analysis_ = analysis;
+    waveCache_ = QImage();
     viewStart_ = 0.0;
     viewSpan_ = 0.0;
     update();
@@ -255,7 +256,7 @@ void WaveformWidget::paintCuemarks(QPainter& p)
     }
 }
 
-void WaveformWidget::paintWaveform(QPainter& p, double t0, double span)
+void WaveformWidget::paintWaveformSharp(QPainter& p, double t0, double span)
 {
     const int W = width(), H = height(), mid = H / 2;
     if (!analysis_.color.isEmpty()) {
@@ -273,6 +274,7 @@ void WaveformWidget::paintWaveform(QPainter& p, double t0, double span)
                 if (h > bestH) { bestH = h; best = analysis_.color[i]; }
             }
             const QColor c(((best >> 13) & 7) * 255 / 7, ((best >> 10) & 7) * 255 / 7, ((best >> 7) & 7) * 255 / 7);
+            if (bestH == 0) continue;                      // silence: nothing to draw (and nothing for the blur to spread)
             const int half = bestH * (mid - 2) / 31;
             p.setPen(c);
             p.drawLine(x, mid - half, x, mid + half);
@@ -289,6 +291,48 @@ void WaveformWidget::paintWaveform(QPainter& p, double t0, double span)
             p.drawLine(x, mid - half, x, mid + half);
         }
     }
+}
+
+// Soften the waveform a little: one [1 2 1] pass horizontally and vertically over the premultiplied pixels.
+static void blurImage(QImage& img)
+{
+    const int W = img.width(), H = img.height();
+    if (W < 3 || H < 3) return;
+    auto mix = [](quint32 a, quint32 b, quint32 c) {
+        quint32 r = 0;
+        for (int s = 0; s < 32; s += 8)
+            r |= (((a >> s & 255) + 2 * (b >> s & 255) + (c >> s & 255) + 2) >> 2) << s;
+        return r;
+    };
+    QImage tmp(img.size(), img.format());
+    for (int y = 0; y < H; ++y) {
+        const quint32* s = reinterpret_cast<const quint32*>(img.constScanLine(y));
+        quint32* d = reinterpret_cast<quint32*>(tmp.scanLine(y));
+        d[0] = s[0]; d[W - 1] = s[W - 1];
+        for (int x = 1; x < W - 1; ++x) d[x] = mix(s[x - 1], s[x], s[x + 1]);
+    }
+    for (int y = 0; y < H; ++y) {
+        const quint32* a = reinterpret_cast<const quint32*>(tmp.constScanLine(std::max(0, y - 1)));
+        const quint32* b = reinterpret_cast<const quint32*>(tmp.constScanLine(y));
+        const quint32* c = reinterpret_cast<const quint32*>(tmp.constScanLine(std::min(H - 1, y + 1)));
+        quint32* d = reinterpret_cast<quint32*>(img.scanLine(y));
+        for (int x = 0; x < W; ++x) d[x] = mix(a[x], b[x], c[x]);
+    }
+}
+
+void WaveformWidget::paintWaveform(QPainter& p, double t0, double span)
+{
+    if (waveCache_.size() != size() || waveT0_ != t0 || waveSpan_ != span) {
+        waveCache_ = QImage(size(), QImage::Format_ARGB32_Premultiplied);
+        waveCache_.fill(Qt::transparent);
+        QPainter ip(&waveCache_);
+        paintWaveformSharp(ip, t0, span);
+        ip.end();
+        blurImage(waveCache_);
+        waveT0_ = t0;
+        waveSpan_ = span;
+    }
+    p.drawImage(0, 0, waveCache_);
 }
 
 void WaveformWidget::paintBeats(QPainter& p, double t0, double span)
@@ -342,6 +386,11 @@ void WaveformWidget::paintCues(QPainter& p)
         const QPointF arrow[3] = { QPointF(x - 4.5, 0.0), QPointF(x + 5.5, 0.0), QPointF(x + 0.5, 6.0) };
         p.drawPolygon(arrow, 3);
         p.setRenderHint(QPainter::Antialiasing, false);
+        if (c.hotCue >= 1 && c.hotCue <= 3) {                  // the player's a, b, c keys jump to these
+            const QString key(QChar('a' + c.hotCue - 1));
+            p.setPen(kCueColor);
+            p.drawText(QRect(x + 7, 0, 12, 13), Qt::AlignLeft | Qt::AlignVCenter, key);
+        }
     }
 }
 

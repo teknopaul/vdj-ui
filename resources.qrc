@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file alias="trakcrate/template-export.pdb">data/trakcrate/template-export.pdb</file>
+        <file alias="img/lock-16x16.png">img/lock-16x16.png</file>
         <file alias="img/button-red.png">img/button-red-24.png</file>
         <file alias="img/button-yellow.png">img/button-yellow-24.png</file>
         <file alias="img/button-grey.png">img/button-grey-24.png</file>

@@ -1,13 +1,17 @@
 #ifndef PLAYER_PANEL_H
 #define PLAYER_PANEL_H
 
+#include <QKeyEvent>
 #include <QWidget>
 #include <QList>
+#include "track_analysis.h"
 #include "track_details.h"
 #include "audio/beat_clock.h"
 #include "audio/beat_source.h"
 
 class QComboBox;
+class QEvent;
+class QKeyEvent;
 class QLabel;
 class QPushButton;
 class QHBoxLayout;
@@ -34,6 +38,16 @@ public:
     bool loadTrakcrateTrack(const QString& trackDir);
     // The master's analysis again (its beat grid or cuemarks were edited) without stopping the deck. No-op unless this track is loaded.
     void reloadTrakcrateAnalysis(const QString& trackDir);
+    // Keys that operate the player: Space (play / pause), Page Up / Page Down (+-4 beats). No modifiers except the keypad one.
+    static bool isPlayerKey(const QKeyEvent* e);
+    // The hot cue a/b/c (Qt::Key_A..Key_C) jumps to; null when the key is not one of them or the track has no such cue.
+    static const AnalysisCue* hotCueForKey(const QList<AnalysisCue>& cues, int key);
+    // True when handlePlayerKey would act on e: a player key and a track loaded (Space then stays the VDJ's play / pause otherwise).
+    bool wantsPlayerKey(const QKeyEvent* e) const;
+    // Do what e asks of the player; false (e untouched) when wantsPlayerKey is false. The trakcrate track list forwards its keys here.
+    bool handlePlayerKey(QKeyEvent* e);
+    void togglePlay() { playClicked(); }          // play / pause (queued on the sequencer's beat when Q is on)
+    bool isPlaying() const;
     QString trakcrateDir() const { return trakcrateDir_; }       // empty unless the loaded track came from the master
 
     AudioPlayer* player() const { return player_; }
@@ -47,6 +61,8 @@ public:
     QPushButton* bpmDownButton() const { return bpmDown_; }
     QPushButton* bpmUpButton() const { return bpmUp_; }
     QPushButton* bpmResetButton() const { return bpmReset_; }   // back to the track's own BPM
+    QPushButton* bpmLockButton() const { return bpmLock_; }     // checked: loading a track keeps the current BPM (not saved, off at start)
+    bool bpmLocked() const;
     const QList<QPushButton*>& cueButtons() const { return cueButtons_; }
     double originalBpm() const { return originalBpm_; }
     double targetBpm() const { return targetBpm_; }
@@ -75,9 +91,15 @@ public:
 
     static constexpr double kBpmStep = 0.1;
 
+protected:
+    bool event(QEvent* e) override;
+    void keyPressEvent(QKeyEvent* e) override;
+    bool eventFilter(QObject* o, QEvent* e) override;
+
 signals:
     void status(const QString& message);
     void trakcrateTrackLoaded(const QString& trackDir);   // a master track was loaded (folder), or empty when a track from elsewhere replaced it
+    void focusTrackListRequested();              // Up / Down while this panel has the focus: the owner gives it to the track list
     void beatChanged(int beatNumber);            // the play position entered a new beat of the grid
 
 private:
@@ -87,6 +109,7 @@ private:
     void rebuildCueButtons();
     void setBeatGrid();
     void jumpToCue(double cueMs);
+    bool isCueKey(const QKeyEvent* e) const;     // a, b, c, q with the player focused and a track loaded (not forwarded from the track list)
     void playClicked();
     void cancelPendingPlay();
     void jumpBeats(int beats);                   // pure BPM jump: negative = back, no beat grid needed
@@ -108,6 +131,7 @@ private:
     QPushButton* bpmDown_;
     QPushButton* bpmUp_;
     QPushButton* bpmReset_;
+    QPushButton* bpmLock_;
     QLabel* title_;
     QLabel* time_;
     QLabel* bpm_;
@@ -117,6 +141,7 @@ private:
     TrackAnalysis analysis_;
     double originalBpm_ = 0.0;
     double targetBpm_ = 0.0;
+    double heldBpm_ = 0.0;                        // the last BPM played at: what the BPM lock keeps, also over a track without a BPM
     BeatClock clock_;
     BeatPhase phase_;
 };

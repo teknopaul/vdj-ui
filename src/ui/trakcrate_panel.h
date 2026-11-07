@@ -2,6 +2,7 @@
 #define TRAKCRATE_PANEL_H
 
 #include <QElapsedTimer>
+#include <QKeyEvent>
 #include <QString>
 #include <QStringList>
 #include <QWidget>
@@ -69,6 +70,18 @@ public:
     // Ctrl+Up / Down on the chosen pendrive list: one place up (-1) or down (+1) among the lists of its pendrive.
     bool moveChosenEntry(int direction, QString* err = nullptr);
     bool moveEntry(const QString& drive, int from, int insertBefore, QString* err = nullptr);
+    // Playlists made by hand: a new empty playlist (it becomes the current one), the current playlist that "Add to current playlist" fills, adding the
+    // given track folders to a playlist, and removing the selected rows of the shown playlist (the tracks themselves stay in the library).
+    // Search the folders of the library for an artist or a track (a case insensitive part of the artist, or of the title / folder name). The first
+    // result is shown at once: its folder opened and its row highlighted. Returns the number of results; searchNext / searchPrevious step through them.
+    int searchTracks(bool artist, const QString& text);
+    bool searchNext(int direction = 1);
+    void searchDialog(bool artist);
+    bool createPlaylist(const QString& name, QString* err = nullptr);
+    void setCurrentPlaylist(const QString& name);
+    QString currentPlaylist() const { return currentPlaylist_; }
+    bool addToPlaylist(const QString& playlist, const QStringList& trackDirs, QString* err = nullptr);
+    bool removeSelectedFromPlaylist(QString* err = nullptr);
     bool startPreview(int proxyRow = -1, QString* err = nullptr);     // plays the shown playlist / entry, or all entries of the chosen pendrive
     ScriptManager* scripts() const { return scripts_; }          // the library's scripts (doc/trakcrate/scripts.md)
     // The width of the folder / playlist tree (pixels, the rest of the window goes to the table and details).
@@ -130,6 +143,8 @@ public:
     // Links a virtual pendrive to a settings set ("" = follow the default); exports of that pendrive use it.
     bool setPendriveSettings(const QString& drive, const QString& set, QString* err = nullptr);
     bool setSettingsUserName(const QString& set, const QString& userName, QString* err = nullptr);
+    // Takes the links from tracks to My Tags out of the set's exportExt.pdb; the categories and tags stay. links gets the number removed.
+    bool removeTrackLinks(const QString& set, int* links = nullptr, QString* err = nullptr);
 
     // The read only viewer of a set's files (and the differences to another set); not modal, deletes itself when closed.
     TrakcrateSettingsViewer* showSettingsViewer(const QString& set, const QString& file = QString(), const QString& compareWith = QString());
@@ -144,6 +159,10 @@ public:
     // Waits for the running job (tests).
     bool waitForJob(int timeoutMs = 10000);
 
+    // The track list forwards the player keys (Space, Page Up / Down) to the Local Track Player: wants says whether the player would act on a key.
+    void setPlayerKeys(std::function<bool(const QKeyEvent*)> wants, std::function<bool(QKeyEvent*)> handle);
+    void focusTable();
+
 signals:
     void status(const QString& message);
     void libraryChanged(const QString& path);
@@ -151,6 +170,7 @@ signals:
     void importFinished(const QString& summary, bool ok);
     void analysisFinished(const QString& summary, bool ok);
     void bpmFinished(const QString& summary, bool ok);
+    void loadAndPlayRequested(const QString& trackDir);   // Enter on a track: load it into the player and start it (the track list keeps the focus)
     void loadRequested(const QString& trackDir);          // the user asked to load this track into the player
     void rekordboxImportFinished(const QString& summary, bool ok);
     void exportFinished(const QString& summary, bool ok, const QString& dest);
@@ -170,6 +190,7 @@ private slots:
     void tableContextMenu(const QPoint& pos);
     void exportDialog();
     void newPendriveDialog();
+    void newPlaylistDialog();
     void treeContextMenu(const QPoint& pos);
     void deleteFolderDialog(const QString& folder);
     void newSettingsDialog();
@@ -182,6 +203,7 @@ private slots:
 private:
     QString loadText_ = QStringLiteral("Load into player");
     void rebuildTree(bool selectionSignals = true);
+    void addMyTags(QTreeWidgetItem* file, const QString& set, const trakcrate::fs::path& path);     // the categories and tags of an exportExt.pdb under its tree item
     uint64_t estimateBytes(const std::vector<trakcrate::fs::path>& trackDirs);   // distinct tracks, audio sizes cached between tree rebuilds
     void liveRefresh();                        // folders, playlists and the open list while an import is still running
     void showDetails(const QModelIndex& proxyIndex);
@@ -212,6 +234,12 @@ private:
     QPushButton* exportButton_;
     QPushButton* rbImportButton_;
     QPushButton* newPendriveButton_;
+    QPushButton* newPlaylistButton_;
+    struct SearchHit { QString folder, dir; };
+    std::vector<SearchHit> searchHits_;
+    int searchAt_ = -1;
+    bool showSearchHit(int index);
+    QString currentPlaylist_;                             // where "Add to current playlist" puts tracks; empty for none
     QProgressBar* progress_;
     QLabel* progressLabel_;
     QPushButton* cancelButton_;

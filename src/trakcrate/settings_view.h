@@ -18,7 +18,7 @@ struct SettingsRow {
     std::string field;
     std::string value;
     std::string note;
-    bool known = true;                       // false: the meaning is not decoded
+    bool known = true;                       // false: the meaning is not decoded (or an option code outside the known table)
 };
 
 // Never fails: a file of the wrong shape gives a "problem" row and what could be read.

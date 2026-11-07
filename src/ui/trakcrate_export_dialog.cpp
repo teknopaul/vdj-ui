@@ -11,12 +11,15 @@
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
+#include <QFile>
 #include <QFileInfo>
+#include <QFrame>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QRadioButton>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMessageBox>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QIcon>
@@ -24,6 +27,7 @@
 #include <QToolButton>
 #include <QPushButton>
 #include <QStorageInfo>
+#include <unistd.h>
 
 #include "trakcrate/settings_sets.h"
 #include "trakcrate/usb_speed.h"
@@ -72,7 +76,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     summary_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     summary_->setMinimumHeight(summary_->fontMetrics().lineSpacing() * 6);     // room for the usual messages: the dialog does not jump when they change
 
-    advanced_ = new QGroupBox(QStringLiteral("Advanced / compatibility testing"));
+    advanced_ = new QGroupBox(QStringLiteral("Advanced Export Options"));
     advanced_->setCheckable(true);
     advanced_->setChecked(false);
     settings_ = new QCheckBox(QStringLiteral("The five player settings files (players need them: compatibility testing only)"));
@@ -84,12 +88,6 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     verify_ = new QCheckBox(QStringLiteral("Read the drive back and compare checksums"));
     unanalysed_ = new QCheckBox(QStringLiteral("Allow tracks that are not analysed (flat waveform, no beat grid)"));
     for (QCheckBox* c : {settings_, artwork_, pvbr_, pwv4_, pwv5_}) c->setChecked(true);      // checksums and the read back are slow on a stick: off unless asked for
-    realDrive_ = new QLineEdit;
-    realDrive_->setPlaceholderText(QStringLiteral("folder holding PIONEER/ of a real rekordbox drive (other tracks' data!)"));
-    exportExt_ = new QCheckBox(QStringLiteral("exportExt.pdb"));
-    rbfltr_ = new QCheckBox(QStringLiteral("RBFLTR.DAT"));
-    usbmng_ = new QCheckBox(QStringLiteral("USBMNG.DAT"));
-    djprofile_ = new QCheckBox(QStringLiteral("djprofile.nxs (contains a user name)"));
     auto* advOuter = new QVBoxLayout(advanced_);
     auto* extras = new QWidget;                                  // shown only while the box is ticked
     advOuter->addWidget(extras);
@@ -97,11 +95,6 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     auto* adv = new QVBoxLayout(extras);
     adv->setContentsMargins(0, 0, 0, 0);
     for (QCheckBox* c : {settings_, artwork_, pvbr_, pwv4_, pwv5_, manifest_, verify_, unanalysed_}) adv->addWidget(c);
-    adv->addWidget(new QLabel(QStringLiteral("Copy from a real drive, only to find out which files a player needs:")));
-    adv->addWidget(realDrive_);
-    auto* copies = new QHBoxLayout;
-    for (QCheckBox* c : {exportExt_, rbfltr_, usbmng_, djprofile_}) copies->addWidget(c);
-    adv->addLayout(copies);
     extras->setVisible(false);
     connect(advanced_, &QGroupBox::toggled, this, [this, extras](bool on) {
         extras->setVisible(on);
@@ -114,13 +107,11 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     raiseLimits_->hide();
     update_ = new QCheckBox(QStringLiteral("Update the drive (only changed files are written; the old export.pdb is kept as export.pdb.bak, up to 3 backups)"));
     update_->hide();
-    register_ = new QCheckBox(QStringLiteral("Register the folder as an HD pendrive copy afterwards (to serve it to the decks)"));
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     ok_ = buttons->button(QDialogButtonBox::Ok);
     ok_->setText(QStringLiteral("Export"));
 
-    // a grid, not a form: when the dialog is made taller all the extra height goes to the playlist list, the destination and pendrive rows keep their size
-    auto* form = new QGridLayout;
+    // blocks, top to bottom; when the dialog is made taller all the extra height goes to the list of folders, the other blocks keep their size
     auto iconLabel = [](const char* res, const QString& tip) {
         auto* l = new QLabel;
         l->setPixmap(QPixmap(QString::fromLatin1(res)));
@@ -128,10 +119,23 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
         l->setToolTip(tip);
         return l;
     };
+    // the main destination: a little larger than the rest of the text
+    auto* destLabel = new QLabel(QStringLiteral("Destination:"));
+    QFont big = font();
+    big.setPointSizeF(big.pointSizeF() * 1.2);
+    destLabel->setFont(big);
+    dest_->setFont(big);
+    destRow->insertWidget(0, destLabel);
+
     // fixed-height row: the combo's popup must not make the dialog grow
+    physicalBox_ = new QWidget;
+    physicalBox_->setObjectName(QStringLiteral("physicalBox"));
+    auto* physLay = new QVBoxLayout(physicalBox_);
+    physLay->setContentsMargins(0, 0, 0, 0);
     auto* drivesRow = new QWidget;
     auto* drivesLay = new QHBoxLayout(drivesRow);
     drivesLay->setContentsMargins(0, 0, 0, 0);
+    drivesLay->addWidget(iconLabel(":/img/pendrive-64x64.png", QStringLiteral("Pendrive")));
     drivesLay->addWidget(drives_, 1, Qt::AlignVCenter);
     auto* refresh = new QToolButton;
     refresh->setIcon(QIcon(QStringLiteral(":/img/view-refresh-22x22.png")));
@@ -145,44 +149,47 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     drives_->setMinimumContentsLength(20);
     drives_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
     drives_->view()->setTextElideMode(Qt::ElideNone);
-    form->addWidget(iconLabel(":/img/traklist-64x64.png", QStringLiteral("Playlists")), 0, 0, Qt::AlignTop);
-    form->addWidget(playlists_, 0, 1);
-    form->addWidget(new QLabel(QStringLiteral("Destination")), 1, 0);
-    form->addLayout(destRow, 1, 1);
-    form->addWidget(iconLabel(":/img/pendrive-64x64.png", QStringLiteral("Pendrive")), 2, 0, Qt::AlignTop);
-    form->addWidget(drivesRow, 2, 1, Qt::AlignTop);
+    physLay->addWidget(drivesRow);
     extraBox_ = new QWidget;
+    extraBox_->setObjectName(QStringLiteral("extraBox"));
     {
         auto* el = new QVBoxLayout(extraBox_);
         el->setContentsMargins(0, 0, 0, 0);
-        el->addWidget(new QLabel(QStringLiteral("Also write the same to these drives (each is written at the same time):")));
+        el->addWidget(new QLabel(QStringLiteral("Simultaneous export destination(s)")));
         extraDrives_->setFixedHeight(extraDrives_->fontMetrics().lineSpacing() * 4 + 12);
         el->addWidget(extraDrives_);
     }
-    extraBox_->hide();
-    form->addWidget(extraBox_, 3, 1);
-    form->setRowStretch(0, 1);
-    form->setRowStretch(1, 0);
-    form->setRowStretch(2, 0);
-    form->setRowStretch(3, 0);
-    form->setColumnStretch(1, 1);
+    physLay->addWidget(extraBox_);
+    physicalBox_->hide();                                    // physical device mode only: otherwise the destination folder is all that is needed
+
+    auto* listRow = new QHBoxLayout;
+    listRow->addWidget(iconLabel(":/img/traklist-64x64.png", QStringLiteral("Playlists")), 0, Qt::AlignTop);
+    listRow->addWidget(playlists_, 1);
+
     auto* layout = new QVBoxLayout(this);
-    layout->addLayout(form, 1);
-    layout->addWidget(summary_);
-    layout->addWidget(raiseLimits_);
+    layout->addLayout(destRow);
+    layout->addWidget(physicalBox_);
     layout->addWidget(update_);
-    layout->addWidget(register_);
+    layout->addWidget(summary_);
+    spacesBox_ = new QWidget;
+    spacesBox_->setObjectName(QStringLiteral("spacesBox"));
+    new QVBoxLayout(spacesBox_);
+    spacesBox_->layout()->setContentsMargins(0, 0, 0, 0);
+    spacesBox_->hide();
+    layout->addWidget(spacesBox_);
+    layout->addWidget(raiseLimits_);
+    layout->addLayout(listRow, 1);
     {
-        auto* box = new QGroupBox(QStringLiteral("Player settings"));
+        auto* box = new QGroupBox;
         auto* bl = new QVBoxLayout(box);
         auto* row = new QHBoxLayout;
-        row->addWidget(new QLabel(QStringLiteral("Settings to use:")));
+        row->addWidget(new QLabel(QStringLiteral("User Settings: ")));
         settingsSet_ = new QComboBox;
         settingsSet_->setToolTip(QStringLiteral("DEVSETTING.DAT, MYSETTING.DAT, djprofile.nxs, RBFLTR.DAT and exportExt.pdb. Players need all of them, so they are always written."));
         row->addWidget(settingsSet_, 1);
         bl->addLayout(row);
-        addMissing_ = new QRadioButton(QStringLiteral("Keep the settings files already on the drive, add the missing ones"));
-        replace_ = new QRadioButton(QStringLiteral("Update the settings files on the drive with these"));
+        addMissing_ = new QRadioButton(QStringLiteral("Add missing User Settings"));
+        replace_ = new QRadioButton(QStringLiteral("Overwrite All User Settings"));
         addMissing_->setChecked(true);
         bl->addWidget(addMissing_);
         bl->addWidget(replace_);
@@ -211,6 +218,7 @@ TrakcrateExportDialog::TrakcrateExportDialog(const trakcrate::Library& lib, QWid
     connect(dest_, &QLineEdit::textEdited, this, [this](const QString& t) {
         if (drives_->currentIndex() > 0 && drives_->currentData().toString() != t) drives_->setCurrentIndex(0);
     });
+    connect(dest_, &QLineEdit::textChanged, this, &TrakcrateExportDialog::syncExtraDrives);
     connect(dest_, &QLineEdit::textChanged, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(playlists_, &QListWidget::itemChanged, refreshTimer_, QOverload<>::of(&QTimer::start));
     connect(extraDrives_, &QListWidget::itemChanged, refreshTimer_, QOverload<>::of(&QTimer::start));
@@ -233,7 +241,7 @@ void TrakcrateExportDialog::setPendrive(const QString& drive, bool physical)
     entries_.clear();
     playlists_->clear();
     physical_ = physical;
-    extraBox_->setVisible(physical);
+    physicalBox_->setVisible(physical);
     if (physical) {
         dest_->setReadOnly(true);
         dest_->setPlaceholderText(QStringLiteral("choose a mounted stick from the list below"));
@@ -343,6 +351,7 @@ void TrakcrateExportDialog::rescanDrives()
             it->setCheckState(ticked.contains(r.mountPoint) ? Qt::Checked : Qt::Unchecked);
             it->setData(Qt::UserRole, r.mountPoint);
         }
+        syncExtraDrives();
     };
     if (!async_) {
         show(scanDriveRows());
@@ -403,13 +412,6 @@ trakcrate::ExportOptions TrakcrateExportDialog::baseOptions(std::vector<int>* en
     o.includePwv5 = !adv || pwv5_->isChecked();
     o.writeManifest = adv && manifest_->isChecked();
     o.verify = adv && verify_->isChecked();
-    if (adv && !realDrive_->text().trimmed().isEmpty()) {
-        o.optionalFilesFrom = realDrive_->text().trimmed().toStdString();
-        o.copyExportExt = exportExt_->isChecked();
-        o.copyRbfltr = rbfltr_->isChecked();
-        o.copyUsbmng = usbmng_->isChecked();
-        o.copyDjprofile = djprofile_->isChecked();
-    }
     return o;
 }
 
@@ -434,12 +436,27 @@ void TrakcrateExportDialog::addExtraDrive(const QString& mountPoint, const QStri
     it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
     it->setCheckState(Qt::Unchecked);
     it->setData(Qt::UserRole, mountPoint);
+    syncExtraDrives();
+}
+
+// The main destination is not also an additional destination: its row is hidden and unticked.
+void TrakcrateExportDialog::syncExtraDrives()
+{
+    if (!extraDrives_) return;
+    const QString primary = dest_->text().trimmed().isEmpty() ? QString() : QDir::cleanPath(dest_->text().trimmed());
+    QSignalBlocker b(extraDrives_);
+    for (int i = 0; i < extraDrives_->count(); ++i) {
+        QListWidgetItem* it = extraDrives_->item(i);
+        const bool same = !primary.isEmpty() && QDir::cleanPath(it->data(Qt::UserRole).toString()) == primary;
+        it->setHidden(same);
+        if (same) it->setCheckState(Qt::Unchecked);
+    }
 }
 
 void TrakcrateExportDialog::selectExtraDrive(const QString& mountPoint, bool on)
 {
     for (int i = 0; i < extraDrives_->count(); ++i)
-        if (extraDrives_->item(i)->data(Qt::UserRole).toString() == mountPoint) extraDrives_->item(i)->setCheckState(on ? Qt::Checked : Qt::Unchecked);
+        if (!extraDrives_->item(i)->isHidden() && extraDrives_->item(i)->data(Qt::UserRole).toString() == mountPoint) extraDrives_->item(i)->setCheckState(on ? Qt::Checked : Qt::Unchecked);
     refreshSummary();
 }
 
@@ -457,15 +474,6 @@ std::vector<trakcrate::ExportOptions> TrakcrateExportDialog::allOptions() const
     return all;
 }
 
-bool TrakcrateExportDialog::registerAsVirtualPendrive() const { return register_->isChecked() && tickedExtraDrives().empty(); }
-
-QString TrakcrateExportDialog::virtualPendriveName() const
-{
-    const trakcrate::ExportOptions o = options();
-    if (o.playlists.size() == 1) return QString::fromStdString(o.playlists[0]);
-    return QFileInfo(QString::fromStdString(o.dest.string())).fileName();
-}
-
 // What the checks found out about the export and the destination; made off the GUI thread when the dialog is async.
 struct TrakcrateExportDialog::SummaryData {
     bool haveLists = false;
@@ -481,7 +489,7 @@ struct TrakcrateExportDialog::SummaryData {
         bool update = false, usbDowngraded = false;
         qint64 avail = 0;
     };
-    std::vector<Extra> extras;                          // the other drives ticked under "Also write to"
+    std::vector<Extra> extras;                          // the other drives ticked under "Simultaneous export destination(s)"
 };
 
 void TrakcrateExportDialog::setLoading()
@@ -528,7 +536,6 @@ void TrakcrateExportDialog::refreshSummary()
             d.extras.push_back(std::move(e));
         }
     };
-    register_->setEnabled(extraMounts.empty());                       // several drives: nothing is registered as a pendrive copy
     if (!async_) {
         resolveEntries(lib_, pendrive_.toStdString(), entries_, idx, &o);
         SummaryData d = compute(lib_, o);
@@ -550,8 +557,56 @@ void TrakcrateExportDialog::refreshSummary()
     });
 }
 
+// Measures a location's rekordbox folders (off the GUI thread when async); the summary is made again when the answer arrives.
+void TrakcrateExportDialog::ensureUsage(const QString& base)
+{
+    if (base.isEmpty() || usageCache_.contains(base) || usagePending_.contains(base)) return;
+    if (!async_) {
+        usageCache_.insert(base, measureRekordbox(base));
+        return;
+    }
+    usagePending_.insert(base);
+    spawn(alive_, [this, base] {
+        const DirUsage u = measureRekordbox(base);
+        return std::function<void()>([this, base, u] {
+            usagePending_.remove(base);
+            usageCache_.insert(base, u);
+            if (!lastSummary_) return;
+            const std::shared_ptr<SummaryData> keep = lastSummary_;                 // applySummary replaces lastSummary_
+            const trakcrate::ExportOptions opts = lastOptions_;
+            applySummary(*keep, opts);
+        });
+    });
+}
+
+// The space table rows: the chosen destination, then each ticked extra drive.
+std::vector<TrakcrateExportDialog::LocationSpace> TrakcrateExportDialog::locationSpaces(const SummaryData& d, const trakcrate::ExportOptions& o) const
+{
+    const qint64 estimate = qint64(d.s.audioBytes + d.s.metadataBytes);
+    auto make = [&](const QString& name, const QString& base, qint64 avail) {
+        LocationSpace l;
+        l.name = name;
+        l.base = base;
+        l.freeBytes = avail;
+        const auto it = usageCache_.constFind(base);
+        l.currentKnown = it != usageCache_.constEnd();
+        if (l.currentKnown) {
+            l.currentBytes = it->bytes;
+            l.currentTracks = it->audioFiles;
+        }
+        l.requiredBytes = std::max<qint64>(0, estimate - l.currentBytes);
+        return l;
+    };
+    std::vector<LocationSpace> v;
+    if (!o.dest.empty()) v.push_back(make(d.storageName, QString::fromStdString(o.dest.string()), d.avail));
+    for (const SummaryData::Extra& e : d.extras) v.push_back(make(e.name, e.mountPoint, e.avail));
+    return v;
+}
+
 void TrakcrateExportDialog::applySummary(const SummaryData& d, const trakcrate::ExportOptions& o)
 {
+    lastSummary_ = std::make_shared<SummaryData>(d);
+    lastOptions_ = o;
     QString html;
     const bool haveLists = d.haveLists;
     bool good = haveLists && !o.dest.empty();
@@ -583,25 +638,226 @@ void TrakcrateExportDialog::applySummary(const SummaryData& d, const trakcrate::
                 html += QStringLiteral("<span style='color:#b71c1c'><b>&#9888; This drive supports USB 3 but is connected as %1.</b> The socket, the cable or the "
                                        "drive's USB 3 contacts are not working: unplug it and plug it in again, or try another socket, before exporting.</span><br>")
                             .arg(QString::fromStdString(d.usbLabel).toHtmlEscaped());
-            const qint64 need = qint64(s.audioBytes + s.metadataBytes);
-            html += QStringLiteral("Free on %1: %2 (needs about %3)<br>").arg(d.storageName.toHtmlEscaped(), QLocale().formattedDataSize(d.avail), QLocale().formattedDataSize(need));
-            if (d.avail < need) { good = false; html += QStringLiteral("<span style='color:#c00'>Not enough space.</span><br>"); }
+            ensureUsage(QString::fromStdString(o.dest.string()));
         }
     }
     if (haveLists && !d.extras.empty()) {
-        const qint64 need = qint64(d.s.audioBytes + d.s.metadataBytes);
         html += QStringLiteral("Also writing to %1 more drive(s):<br>").arg(d.extras.size());
         for (const SummaryData::Extra& e : d.extras) {
-            html += QStringLiteral("&nbsp;&bull; %1: %2, %3 free").arg(e.name.toHtmlEscaped(), e.update ? QStringLiteral("updating the earlier export") : QStringLiteral("new export"),
-                                                                      QLocale().formattedDataSize(e.avail));
-            if (e.avail < need) { good = false; html += QStringLiteral(" <span style='color:#c00'>- not enough space</span>"); }
+            html += QStringLiteral("&nbsp;&bull; %1: %2").arg(e.name.toHtmlEscaped(), e.update ? QStringLiteral("updating the earlier export") : QStringLiteral("new export"));
+            ensureUsage(e.mountPoint);
             if (e.usbDowngraded) html += QStringLiteral(" <span style='color:#b71c1c'>- connected at lower USB speed</span>");
             html += QStringLiteral("<br>");
         }
     }
     if (o.dest.empty() || !d.pathIsDir) update_->setVisible(false);
+    // room: what is still to be written against what is free. While a location is being measured the whole estimate counts, unless it holds an earlier export.
+    spaces_.clear();
+    if (haveLists) {
+        spaces_ = locationSpaces(d, o);
+        for (size_t i = 0; i < spaces_.size(); ++i) {
+            const LocationSpace& l = spaces_[i];
+            const bool main = !o.dest.empty() && i == 0;
+            const bool holdsExport = main ? !d.clash.empty() : d.extras[i - (o.dest.empty() ? 0 : 1)].update;
+            if (!l.currentKnown && holdsExport) continue;
+            if (l.freeBytes < l.requiredBytes) {
+                good = false;
+                html += main ? QStringLiteral("<span style='color:#c00'>Not enough space.</span><br>")
+                               : QStringLiteral("<span style='color:#c00'>Not enough space on %1.</span><br>").arg(l.name.toHtmlEscaped());
+            }
+        }
+    }
     summary_->setText(html);
-    ok_->setEnabled(good);
+    showSpaces();
+    good_ = good;
+    updateOkEnabled();
+}
+
+void TrakcrateExportDialog::updateOkEnabled() { ok_->setEnabled(good_ && !deleting()); }
+
+QString TrakcrateExportDialog::deleteConfirmText(const QString& base, qint64 currentBytes)
+{
+    QString t = QStringLiteral("Delete all data from:\n%1\n%2\n").arg(QDir(base).filePath(QStringLiteral("PIONEER")), QDir(base).filePath(QStringLiteral("Contents")));
+    if (currentBytes > (qint64(1) << 30)) t += QStringLiteral("\nThis may take a while.");
+    return t;
+}
+
+// Deleting runs on a worker; until it is done Export and this location's Clean up and Delete stay disabled. Other locations can delete at the same time.
+void TrakcrateExportDialog::startDelete(const QString& base)
+{
+    if (deletingBases_.contains(base)) return;
+    const auto cached = usageCache_.constFind(base);
+    const QString text = deleteConfirmText(base, cached == usageCache_.constEnd() ? 0 : cached->bytes);
+    const bool yes = confirm_ ? confirm_(text)
+                              : QMessageBox::question(this, QStringLiteral("Delete"), text, QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes;
+    if (!yes) return;
+    auto cancel = std::make_shared<std::atomic<bool>>(false);
+    deletingBases_.insert(base, cancel);
+    showSpaces();
+    updateOkEnabled();
+    spawn(alive_, [this, base, cancel, deleter = deleter_] {
+        deleter(base, *cancel);
+        return std::function<void()>([this, base] {
+            deletingBases_.remove(base);
+            usageCache_.remove(base);
+            refreshSummary();                                                // the free space and the sizes again
+            showSpaces();
+            updateOkEnabled();
+        });
+    });
+}
+
+void TrakcrateExportDialog::done(int result)
+{
+    for (const auto& cancel : deletingBases_) cancel->store(true);
+    QDialog::done(result);
+}
+
+static QString trashDir(const QString& base) { return QDir(base).filePath(QStringLiteral(".Trash-%1").arg(unsigned(getuid()))); }
+
+// a plain folder with something in it
+static bool trashHasEntries(const QString& base)
+{
+    const QFileInfo fi(trashDir(base));
+    return fi.isDir() && !fi.isSymLink() && !QDir(fi.absoluteFilePath()).isEmpty(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
+}
+
+// Everything in dir, but not dir itself.
+static bool removeContents(const QString& dir, const std::atomic<bool>& cancel)
+{
+    bool ok = true;
+    const QDir d(dir);
+    for (const QFileInfo& e : d.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System)) {
+        if (cancel.load()) return false;
+        if (e.isDir() && !e.isSymLink()) {
+            ok = removeContents(e.absoluteFilePath(), cancel) && ok;
+            ok = d.rmdir(e.fileName()) && ok;
+        } else {
+            ok = QFile::remove(e.absoluteFilePath()) && ok;
+        }
+    }
+    return ok;
+}
+
+bool TrakcrateExportDialog::deleteRegenerable(const QString& base, const std::atomic<bool>& cancel)
+{
+    bool ok = true;
+    for (const char* sub : {"PIONEER/USBANLZ", "PIONEER/rekordbox", "PIONEER/Artwork", "Contents"}) {
+        const QFileInfo fi(QDir(base).filePath(QLatin1String(sub)));
+        if (!fi.isDir() || fi.isSymLink()) continue;
+        ok = removeContents(fi.absoluteFilePath(), cancel) && ok;
+        if (cancel.load()) return false;
+    }
+    return ok;
+}
+
+bool TrakcrateExportDialog::emptyTrash(const QString& base)
+{
+    const QFileInfo fi(trashDir(base));
+    if (!fi.isDir() || fi.isSymLink()) return false;                         // never follow a link out of the drive
+    bool ok = true;
+    const QDir trash(fi.absoluteFilePath());
+    for (const QFileInfo& e : trash.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System)) {
+        if (e.isDir() && !e.isSymLink()) ok = QDir(e.absoluteFilePath()).removeRecursively() && ok;
+        else ok = QFile::remove(e.absoluteFilePath()) && ok;
+    }
+    return ok;
+}
+
+void TrakcrateExportDialog::startEmptyTrash(const QString& base)
+{
+    if (trashing_.contains(base)) return;
+    const QString text = QStringLiteral("Empty the trash on the drive?\n%1\n").arg(trashDir(base));
+    const bool yes = confirm_ ? confirm_(text)
+                              : QMessageBox::question(this, QStringLiteral("Empty trash"), text, QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes;
+    if (!yes) return;
+    trashing_.insert(base);
+    showSpaces();
+    updateOkEnabled();
+    spawn(alive_, [this, base] {
+        emptyTrash(base);
+        return std::function<void()>([this, base] {
+            trashing_.remove(base);
+            refreshSummary();                                                // the free space again
+            showSpaces();
+            updateOkEnabled();
+        });
+    });
+}
+
+bool TrakcrateExportDialog::cleanUpAfterExport(const QString& base) const
+{
+    for (const SpaceBlock& b : blocks_)
+        if (b.base == base) return b.after->isChecked();
+    return false;
+}
+
+// One block per location. The blocks are kept while the locations stay the same, so the table does not flicker as the sizes arrive.
+void TrakcrateExportDialog::showSpaces()
+{
+    auto size = [](qint64 bytes) { return QLocale().formattedDataSize(bytes, 2, QLocale::DataSizeIecFormat); };
+    bool same = blocks_.size() == spaces_.size();
+    for (size_t i = 0; same && i < blocks_.size(); ++i) same = blocks_[i].base == spaces_[i].base;
+    if (!same) {
+        for (SpaceBlock& b : blocks_) delete b.box;
+        blocks_.clear();
+        for (const LocationSpace& l : spaces_) {
+            SpaceBlock b;
+            b.base = l.base;
+            b.box = new QFrame;
+            static_cast<QFrame*>(b.box)->setFrameShape(QFrame::StyledPanel);
+            auto* grid = new QGridLayout(b.box);
+            b.title = new QLabel;
+            QFont f = b.title->font();
+            f.setBold(true);
+            b.title->setFont(f);
+            b.title->setTextInteractionFlags(Qt::TextSelectableByMouse);
+            grid->addWidget(b.title, 0, 0, 1, 2);
+            auto row = [&](int r, const char* label, const char* name) {
+                grid->addWidget(new QLabel(QLatin1String(label)), r, 0);
+                auto* v = new QLabel;
+                v->setObjectName(QLatin1String(name));
+                grid->addWidget(v, r, 1);
+                return v;
+            };
+            b.free = row(1, "Free", "freeValue");
+            b.current = row(2, "Current size", "currentValue");
+            b.required = row(3, "Required", "requiredValue");
+            auto* buttons = new QHBoxLayout;
+            b.cleanUp = new QPushButton(QStringLiteral("Clean up"));
+            b.cleanUp->setObjectName(QStringLiteral("cleanUp"));
+            b.cleanUp->setToolTip(QStringLiteral("Delete the tracks in Contents/ that no export refers to"));
+            b.after = new QCheckBox;
+            b.after->setObjectName(QStringLiteral("cleanUpAfter"));
+            b.after->setToolTip(QStringLiteral("Clean up after export"));
+            b.after->setAccessibleName(QStringLiteral("Clean up after export"));
+            b.del = new QPushButton(QStringLiteral("Delete"));
+            b.del->setObjectName(QStringLiteral("deleteData"));
+            b.del->setToolTip(QStringLiteral("Delete all the exported data from this drive: the tracks, analysis, artwork and database, so there is room for a new export"));
+            connect(b.del, &QPushButton::clicked, this, [this, base = l.base] { startDelete(base); });
+            b.emptyTrash = new QPushButton(QStringLiteral("Empty trash"));
+            b.emptyTrash->setObjectName(QStringLiteral("emptyTrash"));
+            connect(b.emptyTrash, &QPushButton::clicked, this, [this, base = l.base] { startEmptyTrash(base); });
+            for (QWidget* w : {static_cast<QWidget*>(b.cleanUp), static_cast<QWidget*>(b.after), static_cast<QWidget*>(b.del), static_cast<QWidget*>(b.emptyTrash)}) buttons->addWidget(w);
+            buttons->addStretch(1);
+            grid->addLayout(buttons, 4, 0, 1, 2);
+            spacesBox_->layout()->addWidget(b.box);
+            blocks_.push_back(b);
+        }
+    }
+    for (size_t i = 0; i < blocks_.size(); ++i) {
+        const LocationSpace& l = spaces_[i];
+        SpaceBlock& b = blocks_[i];
+        b.title->setText(QStringLiteral("%1 - %2").arg(l.name.isEmpty() ? QFileInfo(l.base).fileName() : l.name, l.base));
+        b.free->setText(size(l.freeBytes));
+        b.current->setText(l.currentKnown ? QStringLiteral("%1 (%2 tracks)").arg(size(l.currentBytes)).arg(l.currentTracks) : QStringLiteral("calculating..."));
+        b.required->setText(size(l.requiredBytes));
+        b.emptyTrash->setEnabled(!trashing_.contains(l.base) && trashHasEntries(l.base));
+        const bool busy = deletingBases_.contains(l.base);
+        b.cleanUp->setEnabled(!busy);
+        b.del->setEnabled(!busy);
+    }
+    spacesBox_->setVisible(!blocks_.empty());
 }
 
 } // namespace vdj

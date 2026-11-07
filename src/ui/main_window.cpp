@@ -2452,6 +2452,17 @@ QDockWidget* MainWindow::trakcrateDock()
     tcEditorDock_->setWidget(tcEditor_);
     addDockWidget(Qt::BottomDockWidgetArea, tcEditorDock_);
     tcEditorDock_->hide();
+    connect(tcPanel_, &TrakcratePanel::loadAndPlayRequested, this, [this](const QString& dir) {
+        if (!playerPanel_) return;
+        playerPanel_->setVisible(true);
+        if (!playerPanel_->loadTrakcrateTrack(dir)) return;
+        if (!playerPanel_->isPlaying()) playerPanel_->togglePlay();
+    });
+    if (playerPanel_) {                                  // the track list keeps the focus and remotely operates the player (Space, Page Up / Down)
+        tcPanel_->setPlayerKeys([this](const QKeyEvent* e) { return playerPanel_->wantsPlayerKey(e); },
+                                [this](QKeyEvent* e) { return playerPanel_->handlePlayerKey(e); });
+        connect(playerPanel_, &PlayerPanel::focusTrackListRequested, tcPanel_, &TrakcratePanel::focusTable);
+    }
     connect(tcPanel_, &TrakcratePanel::loadRequested, this, [this](const QString& dir) {
         if (!playerPanel_) return;
         playerPanel_->setVisible(true);

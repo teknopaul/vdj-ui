@@ -2,6 +2,8 @@
 // always gets them. Replace the files in that folder to change the defaults; never edit them by hand.
 #include "settings_files.h"
 
+#include "ext_pdb.h"
+
 #ifndef TC_USER_SETTINGS_DIR
 #error "TC_USER_SETTINGS_DIR must name the folder holding djprofile.nxs, RBFLTR.DAT and exportExt.pdb"
 #endif
@@ -30,9 +32,15 @@ const std::string& defaultRbfltr()
     return s;
 }
 
+// The embedded file is a copy of a real drive's, with the history of the edits rekordbox left in it. The default is the same tags and categories
+// with nothing else: no deleted rows and no links to tracks (the file itself is used if that cannot be made).
 const std::string& defaultExportExt()
 {
-    static const std::string s(reinterpret_cast<const char*>(tc_inc_exportext_start), size_t(tc_inc_exportext_end - tc_inc_exportext_start));
+    static const std::string s = [] {
+        const std::string raw(reinterpret_cast<const char*>(tc_inc_exportext_start), size_t(tc_inc_exportext_end - tc_inc_exportext_start));
+        std::string clean;
+        return withoutTrackLinks(raw, &clean) ? clean : raw;
+    }();
     return s;
 }
 

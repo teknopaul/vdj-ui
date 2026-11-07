@@ -2621,6 +2621,30 @@ trakcrate/exporter.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/exporter.cpp.s
 .PHONY : trakcrate/exporter.cpp.s
 
+trakcrate/ext_pdb.o: trakcrate/ext_pdb.cpp.o
+.PHONY : trakcrate/ext_pdb.o
+
+# target to build an object file
+trakcrate/ext_pdb.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/ext_pdb.cpp.o
+.PHONY : trakcrate/ext_pdb.cpp.o
+
+trakcrate/ext_pdb.i: trakcrate/ext_pdb.cpp.i
+.PHONY : trakcrate/ext_pdb.i
+
+# target to preprocess a source file
+trakcrate/ext_pdb.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/ext_pdb.cpp.i
+.PHONY : trakcrate/ext_pdb.cpp.i
+
+trakcrate/ext_pdb.s: trakcrate/ext_pdb.cpp.s
+.PHONY : trakcrate/ext_pdb.s
+
+# target to generate assembly for a file
+trakcrate/ext_pdb.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/ext_pdb.cpp.s
+.PHONY : trakcrate/ext_pdb.cpp.s
+
 trakcrate/fsutil.o: trakcrate/fsutil.cpp.o
 .PHONY : trakcrate/fsutil.o
 
@@ -3388,6 +3412,30 @@ ui/diff_lock_bar.s: ui/diff_lock_bar.cpp.s
 ui/diff_lock_bar.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/diff_lock_bar.cpp.s
 .PHONY : ui/diff_lock_bar.cpp.s
+
+ui/dir_usage.o: ui/dir_usage.cpp.o
+.PHONY : ui/dir_usage.o
+
+# target to build an object file
+ui/dir_usage.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/dir_usage.cpp.o
+.PHONY : ui/dir_usage.cpp.o
+
+ui/dir_usage.i: ui/dir_usage.cpp.i
+.PHONY : ui/dir_usage.i
+
+# target to preprocess a source file
+ui/dir_usage.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/dir_usage.cpp.i
+.PHONY : ui/dir_usage.cpp.i
+
+ui/dir_usage.s: ui/dir_usage.cpp.s
+.PHONY : ui/dir_usage.s
+
+# target to generate assembly for a file
+ui/dir_usage.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/dir_usage.cpp.s
+.PHONY : ui/dir_usage.cpp.s
 
 ui/djtoolz_controller.o: ui/djtoolz_controller.cpp.o
 .PHONY : ui/djtoolz_controller.o
@@ -4373,6 +4421,30 @@ ui/trakcrate_scripts.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_scripts.cpp.s
 .PHONY : ui/trakcrate_scripts.cpp.s
 
+ui/trakcrate_search_dialog.o: ui/trakcrate_search_dialog.cpp.o
+.PHONY : ui/trakcrate_search_dialog.o
+
+# target to build an object file
+ui/trakcrate_search_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_search_dialog.cpp.o
+.PHONY : ui/trakcrate_search_dialog.cpp.o
+
+ui/trakcrate_search_dialog.i: ui/trakcrate_search_dialog.cpp.i
+.PHONY : ui/trakcrate_search_dialog.i
+
+# target to preprocess a source file
+ui/trakcrate_search_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_search_dialog.cpp.i
+.PHONY : ui/trakcrate_search_dialog.cpp.i
+
+ui/trakcrate_search_dialog.s: ui/trakcrate_search_dialog.cpp.s
+.PHONY : ui/trakcrate_search_dialog.s
+
+# target to generate assembly for a file
+ui/trakcrate_search_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_search_dialog.cpp.s
+.PHONY : ui/trakcrate_search_dialog.cpp.s
+
 ui/trakcrate_settings_dialogs.o: ui/trakcrate_settings_dialogs.cpp.o
 .PHONY : ui/trakcrate_settings_dialogs.o
 
@@ -5156,6 +5228,9 @@ help:
 	@echo "... trakcrate/exporter.o"
 	@echo "... trakcrate/exporter.i"
 	@echo "... trakcrate/exporter.s"
+	@echo "... trakcrate/ext_pdb.o"
+	@echo "... trakcrate/ext_pdb.i"
+	@echo "... trakcrate/ext_pdb.s"
 	@echo "... trakcrate/fsutil.o"
 	@echo "... trakcrate/fsutil.i"
 	@echo "... trakcrate/fsutil.s"
@@ -5252,6 +5327,9 @@ help:
 	@echo "... ui/diff_lock_bar.o"
 	@echo "... ui/diff_lock_bar.i"
 	@echo "... ui/diff_lock_bar.s"
+	@echo "... ui/dir_usage.o"
+	@echo "... ui/dir_usage.i"
+	@echo "... ui/dir_usage.s"
 	@echo "... ui/djtoolz_controller.o"
 	@echo "... ui/djtoolz_controller.i"
 	@echo "... ui/djtoolz_controller.s"
@@ -5375,6 +5453,9 @@ help:
 	@echo "... ui/trakcrate_scripts.o"
 	@echo "... ui/trakcrate_scripts.i"
 	@echo "... ui/trakcrate_scripts.s"
+	@echo "... ui/trakcrate_search_dialog.o"
+	@echo "... ui/trakcrate_search_dialog.i"
+	@echo "... ui/trakcrate_search_dialog.s"
 	@echo "... ui/trakcrate_settings_dialogs.o"
 	@echo "... ui/trakcrate_settings_dialogs.i"
 	@echo "... ui/trakcrate_settings_dialogs.s"
