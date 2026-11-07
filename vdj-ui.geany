@@ -27,7 +27,7 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=10
+current_page=7
 FILE_NAME_0=6455;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Frefactor-recommendations.md;0;4
 FILE_NAME_1=4295;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fexport-ui-improvements.prompt.md;0;4
 FILE_NAME_2=140;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fviewing-settings.prompt.md;0;4
@@ -36,9 +36,6 @@ FILE_NAME_4=1750;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fv
 FILE_NAME_5=1079;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Fuser-settings-decode-display_PLAN.md;0;3
 FILE_NAME_6=1014;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fexportext.pdb.prompt.md;0;4
 FILE_NAME_7=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Fdeck-edits-copy-back_PLAN.md;0;3
-FILE_NAME_8=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2FREADME.md;0;2
-FILE_NAME_9=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fdoc%2Ftrakcrate%2Ftrack-view-keyboard-control.md;0;2
-FILE_NAME_10=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Ftrack-view-keyboard-control-plan.md;0;2
 
 [VTE]
 last_dir=/home/teknopaul

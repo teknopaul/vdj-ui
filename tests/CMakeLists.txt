@@ -383,3 +383,8 @@ add_executable(vdj-ui-trakcrate-drive-add-test test_trakcrate_drive_add.cpp)
 target_compile_definitions(vdj-ui-trakcrate-drive-add-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
 target_link_libraries(vdj-ui-trakcrate-drive-add-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-drive-add-test COMMAND vdj-ui-trakcrate-drive-add-test)
+
+add_executable(vdj-ui-trakcrate-deckedits-test test_trakcrate_deckedits.cpp)
+target_compile_definitions(vdj-ui-trakcrate-deckedits-test PRIVATE DECK_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/deck-grid-move")
+target_link_libraries(vdj-ui-trakcrate-deckedits-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-deckedits-test COMMAND vdj-ui-trakcrate-deckedits-test)

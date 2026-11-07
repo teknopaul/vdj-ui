@@ -48,6 +48,17 @@ bool RemoteDeck::open(int exportIndex, QString* error)
     return ok;
 }
 
+bool RemoteDeck::refresh(QString* error)
+{
+    if (root_.isEmpty())
+        return false;
+    QDir(root_ + QStringLiteral("/PIONEER/USBANLZ")).removeRecursively();
+    verified_.clear();
+    const bool ok = fetch(QStringLiteral("/PIONEER/rekordbox/export.pdb"), true);
+    if (!ok && error) *error = lastError_ == QLatin1String("cancelled") ? QString() : lastError_;
+    return ok;
+}
+
 bool RemoteDeck::fetch(const QString& relPath, bool showProgress)
 {
     QString rel = relPath;

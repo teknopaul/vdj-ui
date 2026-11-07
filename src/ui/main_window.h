@@ -56,7 +56,7 @@ class PendriveToolBar;         // src/ui/pendrive_toolbar.h
 class VirtualPendrivesDialog;  // src/ui/virtual_pendrives_dialog.h
 class RekordboxModePanel;      // rekordbox PC mode (src/ui/rekordbox_mode_panel.h)
 class TrakcratePanel;
-class TrakcrateTrackEditor;
+struct TrackInfo;
 class TrakcrateTrackEditor;           // trakcrate library pane (src/ui/trakcrate_panel.h)
 struct RbModeOptions;
 
@@ -100,6 +100,7 @@ private:
     void setupStatusBar();
     void setupShortcuts();
     void setupDemoDecks();
+    void copyBackFromDeck(int what, const QList<TrackInfo>& tracks);   // viewer right click: deck edits into the trakcrate library
     void setupDemoTrackBrowser();
     void startDemoClocks();
     void setupDebugPanel();

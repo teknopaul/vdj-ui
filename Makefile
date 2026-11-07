@@ -1453,6 +1453,19 @@ vdj-ui-trakcrate-drive-add-test/fast:
 .PHONY : vdj-ui-trakcrate-drive-add-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-deckedits-test
+
+# Build rule for target.
+vdj-ui-trakcrate-deckedits-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-deckedits-test
+.PHONY : vdj-ui-trakcrate-deckedits-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-deckedits-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build
+.PHONY : vdj-ui-trakcrate-deckedits-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -3298,6 +3311,32 @@ vdj-ui-trakcrate-drive-add-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen.dir/build
 .PHONY : vdj-ui-trakcrate-drive-add-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-deckedits-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-deckedits-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-deckedits-test_autogen
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-deckedits-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -3437,6 +3476,8 @@ help:
 	@echo "... vdj-ui-trakcrate-artwork-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-deckedits-test_autogen"
+	@echo "... vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-drive-add-test_autogen"
 	@echo "... vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-editor-test_autogen"
@@ -3535,6 +3576,7 @@ help:
 	@echo "... vdj-ui-trakcrate-artwork-edit-test"
 	@echo "... vdj-ui-trakcrate-artwork-test"
 	@echo "... vdj-ui-trakcrate-cuemarks-test"
+	@echo "... vdj-ui-trakcrate-deckedits-test"
 	@echo "... vdj-ui-trakcrate-drive-add-test"
 	@echo "... vdj-ui-trakcrate-editor-test"
 	@echo "... vdj-ui-trakcrate-export-test"

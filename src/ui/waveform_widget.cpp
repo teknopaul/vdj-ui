@@ -294,7 +294,7 @@ void WaveformWidget::paintWaveformSharp(QPainter& p, double t0, double span)
 }
 
 // Soften the waveform a little: one [1 2 1] pass horizontally and vertically over the premultiplied pixels.
-static void blurImage(QImage& img)
+void blurImage(QImage& img)
 {
     const int W = img.width(), H = img.height();
     if (W < 3 || H < 3) return;

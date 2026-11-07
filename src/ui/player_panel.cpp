@@ -99,7 +99,7 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     f.setBold(true);
     bpm_->setFont(f);
     bpm_->setMinimumWidth(30 * 2 + 20);   // two 30px buttons + 20px, so the whole BPM fits
-    bpmLock_ = new QPushButton(bpm_);                      // top right corner of the BPM display, kept there by eventFilter
+    bpmLock_ = new QPushButton(this);                      // sits beside the "BPM" caption, clear of the digits
     bpmLock_->setIcon(QIcon(QStringLiteral(":/img/lock-16x16.png")));
     bpmLock_->setIconSize(QSize(12, 12));
     bpmLock_->setCheckable(true);
@@ -109,9 +109,15 @@ PlayerPanel::PlayerPanel(QWidget* parent)
     bpmLock_->setToolTip(QStringLiteral("Lock BPM: keep the current BPM when a new track is loaded"));
     bpmLock_->setStyleSheet(QStringLiteral("QPushButton { padding: 0px; border: none; background: transparent; }"
                                            "QPushButton:checked { background: #ff3030; border-radius: 3px; }"));
-    bpmLock_->move(bpm_->width() - bpmLock_->width(), 0);
     auto* bpmBox = new QVBoxLayout;
-    bpmBox->addWidget(new QLabel(QStringLiteral("BPM"), this), 0, Qt::AlignHCenter);
+    auto* bpmHeader = new QHBoxLayout;
+    bpmHeader->setSpacing(2);
+    bpmHeader->addStretch(1);
+    bpmHeader->addSpacing(bpmLock_->width());      // balances the lock so the caption stays centred
+    bpmHeader->addWidget(new QLabel(QStringLiteral("BPM"), this));
+    bpmHeader->addWidget(bpmLock_);
+    bpmHeader->addStretch(1);
+    bpmBox->addLayout(bpmHeader);
     bpmBox->addWidget(bpm_);
     auto* bpmButtons = new QHBoxLayout;
     bpmButtons->addWidget(bpmDown_);
@@ -490,10 +496,6 @@ void PlayerPanel::jumpToCue(double cueMs)
 // Double click on the BPM display: type the BPM to play at.
 bool PlayerPanel::eventFilter(QObject* o, QEvent* e)
 {
-    if (o == bpm_ && e->type() == QEvent::Resize) {
-        bpmLock_->move(bpm_->width() - bpmLock_->width(), 0);
-        return false;
-    }
     if (o == bpm_ && e->type() == QEvent::MouseButtonDblClick && originalBpm_ > 0 && player_->isLoaded()) {
         bool ok = false;
         const double v = QInputDialog::getDouble(this, QStringLiteral("BPM"), QStringLiteral("Play at BPM:"), targetBpm_, 1.0, 999.0, 2, &ok);

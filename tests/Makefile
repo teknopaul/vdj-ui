@@ -1186,6 +1186,20 @@ vdj-ui-trakcrate-drive-add-test/fast:
 .PHONY : vdj-ui-trakcrate-drive-add-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-trakcrate-deckedits-test: tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/rule
+.PHONY : vdj-ui-trakcrate-deckedits-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-deckedits-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build
+.PHONY : vdj-ui-trakcrate-deckedits-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -3173,6 +3187,34 @@ vdj-ui-trakcrate-drive-add-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen.dir/build
 .PHONY : vdj-ui-trakcrate-drive-add-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-trakcrate-deckedits-test_autogen: tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/rule
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-deckedits-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/fast
+
 test_audio.o: test_audio.cpp.o
 .PHONY : test_audio.o
 
@@ -4540,6 +4582,30 @@ test_trakcrate_cuemarks.s: test_trakcrate_cuemarks.cpp.s
 test_trakcrate_cuemarks.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test.dir/test_trakcrate_cuemarks.cpp.s
 .PHONY : test_trakcrate_cuemarks.cpp.s
+
+test_trakcrate_deckedits.o: test_trakcrate_deckedits.cpp.o
+.PHONY : test_trakcrate_deckedits.o
+
+# target to build an object file
+test_trakcrate_deckedits.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/test_trakcrate_deckedits.cpp.o
+.PHONY : test_trakcrate_deckedits.cpp.o
+
+test_trakcrate_deckedits.i: test_trakcrate_deckedits.cpp.i
+.PHONY : test_trakcrate_deckedits.i
+
+# target to preprocess a source file
+test_trakcrate_deckedits.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/test_trakcrate_deckedits.cpp.i
+.PHONY : test_trakcrate_deckedits.cpp.i
+
+test_trakcrate_deckedits.s: test_trakcrate_deckedits.cpp.s
+.PHONY : test_trakcrate_deckedits.s
+
+# target to generate assembly for a file
+test_trakcrate_deckedits.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/test_trakcrate_deckedits.cpp.s
+.PHONY : test_trakcrate_deckedits.cpp.s
 
 test_trakcrate_drive_add.o: test_trakcrate_drive_add.cpp.o
 .PHONY : test_trakcrate_drive_add.o
@@ -6245,6 +6311,30 @@ vdj-ui-trakcrate-cuemarks-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-cuemarks-test.dir/vdj-ui-trakcrate-cuemarks-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-trakcrate-cuemarks-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.o: vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.i: vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.s: vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-deckedits-test.dir/vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-trakcrate-drive-add-test_autogen/mocs_compilation.o: vdj-ui-trakcrate-drive-add-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-trakcrate-drive-add-test_autogen/mocs_compilation.o
 
@@ -6710,6 +6800,8 @@ help:
 	@echo "... vdj-ui-trakcrate-artwork-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-deckedits-test_autogen"
+	@echo "... vdj-ui-trakcrate-deckedits-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-drive-add-test_autogen"
 	@echo "... vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-editor-test_autogen"
@@ -6795,6 +6887,7 @@ help:
 	@echo "... vdj-ui-trakcrate-artwork-edit-test"
 	@echo "... vdj-ui-trakcrate-artwork-test"
 	@echo "... vdj-ui-trakcrate-cuemarks-test"
+	@echo "... vdj-ui-trakcrate-deckedits-test"
 	@echo "... vdj-ui-trakcrate-drive-add-test"
 	@echo "... vdj-ui-trakcrate-editor-test"
 	@echo "... vdj-ui-trakcrate-export-test"
@@ -6980,6 +7073,9 @@ help:
 	@echo "... test_trakcrate_cuemarks.o"
 	@echo "... test_trakcrate_cuemarks.i"
 	@echo "... test_trakcrate_cuemarks.s"
+	@echo "... test_trakcrate_deckedits.o"
+	@echo "... test_trakcrate_deckedits.i"
+	@echo "... test_trakcrate_deckedits.s"
 	@echo "... test_trakcrate_drive_add.o"
 	@echo "... test_trakcrate_drive_add.i"
 	@echo "... test_trakcrate_drive_add.s"
@@ -7193,6 +7289,9 @@ help:
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-trakcrate-deckedits-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-trakcrate-drive-add-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-trakcrate-drive-add-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-trakcrate-drive-add-test_autogen/mocs_compilation.s"

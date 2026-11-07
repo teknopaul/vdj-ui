@@ -23,7 +23,7 @@ One folder per track under `track-master-copy/<folder>/<track>/`:
 ├── track.mp3|wav|flac          copied from Contents/
 ├── meta.txt               title, artist, album, genre, label, key, bpm, year, rating, colour, comment, ...
 ├── artwork.jpg            from PIONEER/Artwork (the full-size file)
-├── beatgrid.txt           beats from PQTZ + PQT2 (ms and us)
+├── beatgrid.txt           beats from PQTZ + PQT2 (ms and us), plus the PQTZ header grid shift when there is one
 ├── cues.txt               hot cues, loops, memory points
 ├── waveform-*.png         rendered from the imported waveform tags
 ├── anlz/ANLZ0000.DAT      the original ANLZ files, byte for byte

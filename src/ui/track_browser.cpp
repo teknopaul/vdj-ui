@@ -55,7 +55,7 @@ TrackBrowser::TrackBrowser(QWidget* parent)
     for (int c = 1; c < 4; ++c)
         tree_->header()->setSectionResizeMode(c, QHeaderView::Interactive);
     tree_->setColumnWidth(1, 90);
-    tree_->setColumnWidth(2, 50);
+    tree_->setColumnWidth(2, 62);
     tree_->setColumnWidth(kWaveformColumn, 110);
     miniDelegate_ = new MiniWaveformDelegate(tree_);
     tree_->setItemDelegateForColumn(kWaveformColumn, miniDelegate_);
@@ -145,15 +145,60 @@ QList<ExportTrack> TrackBrowser::playlistTracks(const QTreeWidgetItem* item) con
 void TrackBrowser::showContextMenu(const QPoint& pos)
 {
     QTreeWidgetItem* item = tree_->itemAt(pos);
+    if (item && !item->parent() && remote_) {     // the top item of a deck's database
+        QMenu menu(this);
+        QAction* refreshAct = menu.addAction(QStringLiteral("Refresh from deck"));
+        if (menu.exec(tree_->viewport()->mapToGlobal(pos)) == refreshAct) {
+            QString err;
+            if (!refreshFromDeck(&err) && !err.isEmpty())
+                QMessageBox::warning(this, QStringLiteral("Refresh from deck"), err);
+        }
+        return;
+    }
     bool ok = false;
     const int idx = item ? item->data(0, Qt::UserRole + 3).toInt(&ok) : -1;
-    if (!ok || idx < 0 || idx >= playlists_.size())
+    if (!ok || idx < 0 || idx >= playlists_.size()) {
+        // track rows (of a database): copy back for the selected tracks, or the one under the cursor
+        if (!item || !hasPdb_)
+            return;
+        QList<QTreeWidgetItem*> rows = tree_->selectedItems();
+        if (!rows.contains(item))
+            rows = { item };
+        QList<TrackInfo> tracks;
+        for (QTreeWidgetItem* r : rows) {
+            bool isTrack = false;
+            const int ti = r->data(0, Qt::UserRole + 2).toInt(&isTrack);
+            if (isTrack && ti >= 0 && ti < dbTracks_.size())
+                tracks.append(dbTracks_[ti]);
+        }
+        if (tracks.isEmpty())
+            return;
+        QMenu menu(this);
+        addCopyBackActions(menu, tracks);
+        menu.exec(tree_->viewport()->mapToGlobal(pos));
         return;
+    }
 
     QMenu menu(this);
     QAction* exportAct = menu.addAction(QStringLiteral("Export playlist to folder..."));
-    if (menu.exec(tree_->viewport()->mapToGlobal(pos)) == exportAct)
+    menu.addSeparator();
+    QList<TrackInfo> tracks;
+    for (int i : playlists_[idx].dbIdx)
+        tracks.append(dbTracks_[i]);
+    addCopyBackActions(menu, tracks);
+    const QAction* picked = menu.exec(tree_->viewport()->mapToGlobal(pos));
+    if (picked == exportAct)
         exportPlaylistInteractive(playlists_[idx].name, playlists_[idx].tracks);
+}
+
+void TrackBrowser::addCopyBackActions(QMenu& menu, const QList<TrackInfo>& tracks)
+{
+    QAction* grid = menu.addAction(QStringLiteral("Copy back beatgrid"));
+    QAction* cues = menu.addAction(QStringLiteral("Copy back cue points"));
+    grid->setEnabled(!tracks.isEmpty());
+    cues->setEnabled(!tracks.isEmpty());
+    connect(grid, &QAction::triggered, this, [this, tracks]() { emit copyBackRequested(CopyBack::BeatGrid, tracks); });
+    connect(cues, &QAction::triggered, this, [this, tracks]() { emit copyBackRequested(CopyBack::CuePoints, tracks); });
 }
 
 void TrackBrowser::exportPlaylistInteractive(const QString& name, const QList<ExportTrack>& tracks)
@@ -230,6 +275,15 @@ bool TrackBrowser::openRemoteDeck(int playerId, const QString& ip, QString* erro
         return false;
     }
     return true;
+}
+
+bool TrackBrowser::refreshFromDeck(QString* error)
+{
+    if (!remote_)
+        return false;
+    if (!remote_->refresh(error))
+        return false;
+    return openFolder(remote_->root(), error);
 }
 
 bool TrackBrowser::openFolder(const QString& folder, QString* error)
@@ -427,7 +481,7 @@ bool TrackBrowser::loadPdb(const QString& pdbPath, const QString& root, QString*
         auto* item = new QTreeWidgetItem(parent);
         const QString artist = db.artists.value(t.artistId);
         const QString key = db.keys.value(t.keyId);
-        const QString bpm = t.bpmX100 ? QString::number(t.bpmX100 / 100.0, 'f', 1) : QString();
+        const QString bpm = t.bpmX100 ? QString::number(t.bpmX100 / 100.0, 'f', 2) : QString();
         item->setText(0, t.title);
         item->setText(1, artist);
         item->setText(2, bpm);
@@ -488,6 +542,8 @@ bool TrackBrowser::loadPdb(const QString& pdbPath, const QString& root, QString*
                 if (ti < 0) continue;
                 const DbTrack& t = db.tracks[ti];
                 pd.tracks.append({ root + t.path, t.title, db.artists.value(t.artistId) });
+                const auto di = infoIndex.find(ti);
+                if (di != infoIndex.end()) pd.dbIdx.append(di.value());
             }
             playlists_.append(pd);
             item->setData(0, Qt::UserRole + 3, playlists_.size() - 1);

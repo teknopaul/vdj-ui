@@ -146,3 +146,5 @@ add_test(vdj-ui-trakcrate-pdb-append-test "/home/teknopaul/bzr_workspace/vdj-ui/
 set_tests_properties(vdj-ui-trakcrate-pdb-append-test PROPERTIES  _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;380;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
 add_test(vdj-ui-trakcrate-drive-add-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-trakcrate-drive-add-test")
 set_tests_properties(vdj-ui-trakcrate-drive-add-test PROPERTIES  _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;385;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
+add_test(vdj-ui-trakcrate-deckedits-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-trakcrate-deckedits-test")
+set_tests_properties(vdj-ui-trakcrate-deckedits-test PROPERTIES  _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;390;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")

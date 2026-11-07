@@ -12,6 +12,7 @@ Source: `references/libcdj/doc-internal/rekordbox-anlz-format.text`.
 | PQT2 | EXT  | header repeats first and last beat, beat count, then one u16 per beat: microseconds after the ms. |
 
 - Both must agree: same count, same first and last beat. Beat numbers cycle 1-4 starting from the first entry's number (the first beat does not have to be a downbeat marked 1).
+- **Grid shift (PQTZ header 0x12, s16 ms):** the entries are not the whole story: a player (or rekordbox) that moves the grid start stores the shift in the tag header and the entries stay as analysed, so the real beat time is `entry ms + shift`. Our writer always writes 0. Readers must add it (`src/trakcrate/pqtz_offset.h`; libcdj `anlz_beat_at()` does not yet). PQT2 is not changed, its microsecond fractions belong to the unshifted grid. Details: `doc/deck-edits.md`.
 - In the real data PQTZ ms + PQT2 us lie on a straight line within ~0.1 ms, so rekordbox computes an exact constant-tempo grid `t_i = t_0 + i * 60000/bpm` and rounds.
 - Header word at PQT2 `0x2c` is different in almost every file (looks like a hash/id). Unknown; try zero, then test on a deck.
 - `PVBR` (VBR seek index, 1604 body bytes) is mostly zeros in the samples. Layout unknown.

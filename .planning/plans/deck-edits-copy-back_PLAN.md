@@ -216,3 +216,24 @@ geany-progress done 10 -r doc/deck-edits.md -r doc/trakcrate/gui.md -w "needs th
 - Phases 1-7 never write into a trakcrate library or onto a stick/deck; Phase 3 only writes the local cache folder.
 - Keep every phase to the files it names; shared decode (Phase 7) is a refactor, keep the existing tests green.
 - If a human test shows the deck does not store the data (or stores it somewhere unreadable), stop at the gate (Phase 5), report, and do not start Phase 6.
+
+
+---
+
+## REVISION (user, 2026-11-07): UI first, human testing in vdj-ui, no CLI snapshot tool
+
+Finding from the user's first test: the decks DO update the database that the rekordbox viewer shows, but the viewer
+has to reload the data over the network to see it. So the original Phases 1-2 (snapshot tool, pendrive tests) are dropped
+and the work is re-ordered. Human testing happens in vdj-ui itself. Do not use git.
+
+Revised phases (these are the ones registered with geany-progress):
+
+1. **Refresh from deck**: right click on the top (root) tree item of the rekordbox viewer: "Refresh from deck". Only present when the
+   viewer shows a database fetched over the network from a deck (not a local folder/pendrive). Drops the `RemoteDeck` cache of
+   `export.pdb` and the analysis files and reloads the tree. (Original Phase 3 item 2.)
+2. **Copy back menu items**: in the playlist context menu "Copy back beatgrid" and "Copy back cue points"; in the track context menu the same
+   pair for that track (or the track selection). The viewer only emits a signal with the tracks and the kind; the main window handles it.
+3. **Match + read + diff**: original Phases 6-7: map viewer tracks to library tracks, decode the deck's grid/cues (shared with rb_import), diff.
+4. **Writer + confirmation**: original Phase 8 (history snapshot, only beatgrid.txt/cues.txt/source.txt) and a confirmation/preview dialog
+   (original Phase 9), wired to the menu items of phase 2.
+5. **Docs and human acceptance test in vdj-ui** (original Phase 10).

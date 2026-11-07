@@ -33,6 +33,8 @@ public:
     // are needed). Asks which export when the deck has several. Returns false and sets *error on failure; a user
     // cancel returns false with an empty error.
     bool openRemoteDeck(int playerId, const QString& ip, QString* error = nullptr);
+    // Fetch the database and the analysis files of the shown deck again and rebuild the tree (remote only).
+    bool refreshFromDeck(QString* error = nullptr);
     bool isRemote() const { return remote_ != nullptr; }
     int remotePlayerId() const { return remote_ ? playerId_ : 0; }         // the deck whose database is shown, 0 for a local one
     // Tracks (in playlist order) of a playlist item, empty for any other item.
@@ -47,7 +49,12 @@ public:
     MiniWaveformDelegate* miniWaveformDelegate() const { return miniDelegate_; }
     static constexpr int kWaveformColumn = 3;
 
+    enum class CopyBack { BeatGrid, CuePoints };
+
 signals:
+    // Right click "Copy back beatgrid" / "Copy back cue points" on a playlist or on track(s): the deck's edits of these
+    // tracks should go into the trakcrate library. The browser knows nothing about trakcrate; the main window handles it.
+    void copyBackRequested(TrackBrowser::CopyBack what, const QList<TrackInfo>& tracks);
     void trackSelected(int playerId, const QString& title, const QString& artist,
                        const QString& bpm, const QString& key);
     // Double click on a track: load it in the preview player.
@@ -56,6 +63,7 @@ signals:
 
 private:
     void showContextMenu(const QPoint& pos);
+    void addCopyBackActions(QMenu& menu, const QList<TrackInfo>& tracks);
     void exportPlaylistInteractive(const QString& name, const QList<ExportTrack>& tracks);
     void populateItem(QTreeWidgetItem* parent, const QString& path, int depth);
 
@@ -71,7 +79,7 @@ private:
     QTreeWidget* tree_;
     TrackDetails* details_;
     MiniWaveformDelegate* miniDelegate_;
-    struct PlaylistData { QString name; QList<ExportTrack> tracks; };
+    struct PlaylistData { QString name; QList<ExportTrack> tracks; QList<int> dbIdx; };   // dbIdx: indexes into dbTracks_
     QList<PlaylistData> playlists_;   // indexed by the item's Qt::UserRole + 3
     QList<TrackInfo> dbTracks_;   // indexed by the item's Qt::UserRole + 2
 };

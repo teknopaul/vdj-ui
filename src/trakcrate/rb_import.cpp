@@ -10,6 +10,7 @@
 #include "track.h"
 
 #include <cdj/anlz.h>
+#include "deck_edits.h"
 #include <cdj/pdb.h>
 
 #include <algorithm>
@@ -195,13 +196,6 @@ struct Anlz {
     anlz_track_t* t = nullptr;
     ~Anlz() { if (t) anlz_track_close(t); }
 };
-
-std::string hexColour(const anlz_cue_t& c)
-{
-    char buf[16];
-    std::snprintf(buf, sizeof buf, "#%02x%02x%02x", c.red, c.green, c.blue);
-    return buf;
-}
 
 void be16(std::vector<uint16_t>& v, const uint8_t* p) { v.push_back(uint16_t(p[0] << 8 | p[1])); }
 
@@ -427,15 +421,8 @@ RbImportReport importRekordboxDrive(const Library& lib, const fs::path& rootIn, 
             Anlz a;
             if (!rt.analyzePath.empty() && anlz_track_open(root.string().c_str(), rt.analyzePath.c_str(), &a.t) == ANLZ_OK && a.t) {
                 BeatGrid g;
-                anlz_beatgrid_t bg;
-                if (opts.beatgrid && anlz_track_beatgrid(a.t, &bg) == ANLZ_OK && bg.count > 0) {
-                    anlz_beat_t first, b;
-                    anlz_beat_at(&bg, 0, &first);
-                    g.bpm = first.bpm_x100 / 100.0;
-                    g.firstBeatUs = (long long)first.time_ms * 1000 + first.sub_ms_us;
-                    bool variable = false;
-                    for (uint32_t i = 1; i < bg.count && !variable; ++i)
-                        if (anlz_beat_at(&bg, i, &b) && b.bpm_x100 != first.bpm_x100) variable = true;
+                bool variable = false;
+                if (opts.beatgrid && gridFromAnlz(a.t, &g, &variable, pqtzGridOffsetMs(root.string().c_str(), rt.analyzePath.c_str()))) {
                     t.grid.addComment("trakcrate beatgrid (from rekordbox)");
                     t.hasGrid = true;
                     setBeatGrid(t.grid, g);
@@ -448,27 +435,14 @@ RbImportReport importRekordboxDrive(const Library& lib, const fs::path& rootIn, 
                     grid = true;
                 }
                 if (opts.cues) {
-                    anlz_cue_list_t list{};
-                    if (anlz_track_cues(a.t, ANLZ_CUES_ALL, &list) == ANLZ_OK && list.count > 0) {
+                    std::vector<Cuemark> marks = cuesFromAnlz(a.t, g);
+                    if (!marks.empty()) {
                         t.hasCuemarks = true;
                         t.cuemarks.comments.push_back("# imported from rekordbox");
-                        const double periodMs = g.empty() ? 0 : 60000.0 / g.bpm;
-                        for (uint32_t i = 0; i < list.count; ++i) {
-                            const anlz_cue_t& c = list.cues[i];
-                            Cuemark m;
-                            m.ms = c.time_ms;
-                            m.beat = periodMs > 0 ? (c.time_ms - g.firstBeatUs / 1000.0) / periodMs : std::nan("");
-                            m.label = c.comment;
-                            if (c.hot_cue >= 1 && c.hot_cue <= 3) m.hot = char('A' + c.hot_cue - 1);
-                            else if (c.hot_cue > 3 && m.label.empty()) m.label = std::string("hot ") + char('A' + c.hot_cue - 1);
-                            if (c.has_rgb) m.colour = hexColour(c);
-                            if (c.is_loop) m.extra.push_back("loop_end_ms=" + std::to_string(c.loop_time_ms));
-                            t.cuemarks.marks.push_back(m);
-                        }
+                        t.cuemarks.marks = std::move(marks);
                         setOrigin(t.source, "cues", "rekordbox");
                         cues = true;
                     }
-                    anlz_cue_list_free(&list);
                 }
                 if (opts.waveform) {
                     Waveform w;

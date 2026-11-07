@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include "trakcrate/analysis.h"
+#include "waveform_widget.h"
 
 namespace vdj {
 
@@ -64,7 +65,7 @@ static QPixmap miniWave(const trakcrate::Waveform& w)
 {
     constexpr int W = 120, H = 20;
     if (w.pwav.empty()) return QPixmap();
-    QImage img(W, H, QImage::Format_ARGB32);
+    QImage img(W, H, QImage::Format_ARGB32_Premultiplied);
     img.fill(Qt::transparent);
     QPainter p(&img);
     const size_t n = w.pwav.size();
@@ -80,6 +81,7 @@ static QPixmap miniWave(const trakcrate::Waveform& w)
         p.drawLine(x, H / 2 - px / 2, x, H / 2 + (px + 1) / 2 - 1);
     }
     p.end();
+    blurImage(img);
     return QPixmap::fromImage(img);
 }
 

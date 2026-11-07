@@ -236,6 +236,7 @@ add_library(vdj-trakcrate STATIC
     trakcrate/artwork_paths.cpp
     trakcrate/exporter.cpp
     trakcrate/rb_import.cpp
+    trakcrate/deck_edits.cpp
     trakcrate/usb_speed.cpp
 )
 set_target_properties(vdj-trakcrate PROPERTIES POSITION_INDEPENDENT_CODE ON)

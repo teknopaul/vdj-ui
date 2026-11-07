@@ -1,4 +1,5 @@
 #include "track_analysis.h"
+#include "trakcrate/pqtz_offset.h"
 #include <cdj/anlz.h>
 #include <QByteArray>
 #include <QFile>
@@ -72,6 +73,10 @@ TrackAnalysis loadTrackAnalysis(const QString& root, const QString& analyzePath)
         anlz_beat_t first, last;
         anlz_beat_at(&g, 0, &first);
         anlz_beat_at(&g, g.count - 1, &last);
+        // a grid moved on a deck is saved as a shift of the whole grid (see pqtz_offset.h)
+        const int shift = trakcrate::pqtzGridOffsetMs(QFile::encodeName(root).constData(), QFile::encodeName(analyzePath).constData());
+        first.time_ms += shift;
+        last.time_ms += shift;
         r.beatCount = int(g.count);
         r.avgBpm = anlz_avg_bpm(&g);
         r.firstBeatMs = first.time_ms;
@@ -80,7 +85,7 @@ TrackAnalysis loadTrackAnalysis(const QString& root, const QString& analyzePath)
         for (uint32_t i = 0; i < g.count; ++i) {
             anlz_beat_t b;
             anlz_beat_at(&g, i, &b);
-            r.beats.append({ b.time_ms + b.sub_ms_us / 1000.0, quint8(b.beat_number) });
+            r.beats.append({ shift ? double(b.time_ms) + shift : b.time_ms + b.sub_ms_us / 1000.0, quint8(b.beat_number) });
         }
     }
 

@@ -1,6 +1,8 @@
 #include "waveform_delegate.h"
 #include "track_analysis.h"
+#include "waveform_widget.h"
 #include <QApplication>
+#include <QImage>
 #include <QPainter>
 #include <QStyle>
 
@@ -55,15 +57,21 @@ void MiniWaveformDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
     const bool selected = option.state & QStyle::State_Selected;
     painter->save();
     painter->setClipRect(option.rect);
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(selected ? option.palette.highlightedText().color() : QColor(70, 160, 255));
+    QImage img(r.size(), QImage::Format_ARGB32_Premultiplied);
+    img.fill(Qt::transparent);
+    QPainter ip(&img);
+    ip.setPen(Qt::NoPen);
+    ip.setBrush(selected ? option.palette.highlightedText().color() : QColor(70, 160, 255));
     const int n = cols.size();
     for (int i = 0; i < n; ++i) {
-        const int x0 = r.left() + i * r.width() / n;
-        const int x1 = r.left() + (i + 1) * r.width() / n;
+        const int x0 = i * r.width() / n;
+        const int x1 = (i + 1) * r.width() / n;
         const int h = qMax(1, r.height() * cols[i] / 15);
-        painter->drawRect(x0, r.bottom() - h + 1, qMax(1, x1 - x0), h);
+        ip.drawRect(x0, r.height() - h, qMax(1, x1 - x0), h);
     }
+    ip.end();
+    blurImage(img);                                        // same soft look as the big waveform views
+    painter->drawImage(r.topLeft(), img);
     painter->restore();
 }
 

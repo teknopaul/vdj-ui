@@ -19,6 +19,10 @@ public:
     bool connect(QString* error);
     QStringList exports() const { return nfs_.exports(); }
     bool open(int exportIndex, QString* error);
+    // Forget everything mirrored so far except the audio: the database and the analysis files (grids, cues, waveforms) are
+    // fetched again, because the deck may have changed them since (a file keeps its size when a cue moves, so the size check
+    // of ensure() cannot see it).
+    bool refresh(QString* error);
 
     QString root() const { return root_; }
     int playerId() const { return playerId_; }

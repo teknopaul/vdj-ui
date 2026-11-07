@@ -2573,6 +2573,30 @@ trakcrate/cuemark_render.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/cuemark_render.cpp.s
 .PHONY : trakcrate/cuemark_render.cpp.s
 
+trakcrate/deck_edits.o: trakcrate/deck_edits.cpp.o
+.PHONY : trakcrate/deck_edits.o
+
+# target to build an object file
+trakcrate/deck_edits.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/deck_edits.cpp.o
+.PHONY : trakcrate/deck_edits.cpp.o
+
+trakcrate/deck_edits.i: trakcrate/deck_edits.cpp.i
+.PHONY : trakcrate/deck_edits.i
+
+# target to preprocess a source file
+trakcrate/deck_edits.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/deck_edits.cpp.i
+.PHONY : trakcrate/deck_edits.cpp.i
+
+trakcrate/deck_edits.s: trakcrate/deck_edits.cpp.s
+.PHONY : trakcrate/deck_edits.s
+
+# target to generate assembly for a file
+trakcrate/deck_edits.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/deck_edits.cpp.s
+.PHONY : trakcrate/deck_edits.cpp.s
+
 trakcrate/default_files.o: trakcrate/default_files.cpp.o
 .PHONY : trakcrate/default_files.o
 
@@ -5222,6 +5246,9 @@ help:
 	@echo "... trakcrate/cuemark_render.o"
 	@echo "... trakcrate/cuemark_render.i"
 	@echo "... trakcrate/cuemark_render.s"
+	@echo "... trakcrate/deck_edits.o"
+	@echo "... trakcrate/deck_edits.i"
+	@echo "... trakcrate/deck_edits.s"
 	@echo "... trakcrate/default_files.o"
 	@echo "... trakcrate/default_files.i"
 	@echo "... trakcrate/default_files.s"

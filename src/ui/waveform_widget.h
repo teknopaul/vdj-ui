@@ -9,6 +9,9 @@
 
 namespace vdj {
 
+// Softens a premultiplied ARGB32 image with one [1 2 1] pass each way: the look of the waveform views.
+void blurImage(QImage& img);
+
 // A trakcrate cuemark as the widget shows it (doc/trakcrate/cuemarks.md): drawn as a green line; hot is 0 or 'A'..'C'.
 struct WaveCuemark {
     double ms = 0;
