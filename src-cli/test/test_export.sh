@@ -175,6 +175,53 @@ test_export_refuses_more_tracks_than_a_deck_holds()
     assert_contains "report" "would export 10001 tracks" "$out"
 }
 
+# Real rekordbox starts every UTF-16 (kind 0x90) string on a 4 byte boundary of its row; a deck crashed on an album name at 2 mod 4.
+test_export_aligns_utf16_strings()
+{
+    setup
+    make_track "$LIB" F t4 "title: Café" "artist: Björk" "album: Miniteca Selvática" "genre: House" "duration_ms: 12000" "bpm_tag: 120"
+    rm -f "$LIB/track-master-copy/F/t4/track.mp3"
+    python3 -I "$TC_TEST_DIR/gen_beats.py" "$LIB/track-master-copy/F/t4/track.wav" 120 12 stereo 0.1
+    tc analyse --all >/dev/null 2>&1
+    tc pendrive new U >/dev/null 2>&1
+    tc pendrive add U t4 t1 >/dev/null 2>&1
+    run tc export U "$D"
+    assert_status "export" 0
+    local bad
+    bad=$(python3 -I - "$D/PIONEER/rekordbox/export.pdb" <<'PY'
+import struct, sys
+d = open(sys.argv[1], 'rb').read()
+n = wide = 0
+for pg in range(1, len(d) // 4096):
+    p = d[pg * 4096:(pg + 1) * 4096]
+    if p[0x1b] & 0x40 or p[0x18] == 0:
+        continue
+    for g in range((p[0x18] + 15) // 16):
+        gb = 4096 - 36 * (g + 1)
+        pres = struct.unpack('<H', p[gb + 32:gb + 34])[0]
+        for k in range(16):
+            if not pres >> k & 1:
+                continue
+            off = 0x28 + struct.unpack('<H', p[gb + 2 * (15 - k):gb + 2 * (15 - k) + 2])[0]
+            r = p[off:]
+            for q in range(min(0x300, len(r) - 8)):
+                ln = struct.unpack('<H', r[q + 1:q + 3])[0]
+                if r[q] == 0x90 and r[q + 3] == 0 and 6 <= ln <= 500 and ln % 2 == 0:
+                    try:
+                        t = r[q + 4:q + ln].decode('utf-16le')
+                    except ValueError:
+                        continue
+                    if t.isprintable():
+                        wide += 1
+                        if (off + q) % 4:
+                            n += 1
+                        break
+print(n if wide >= 3 else 'only %d wide strings' % wide)
+PY
+)
+    assert_eq "no UTF-16 string starts off a 4 byte boundary" "0" "$bad"
+}
+
 test_export_dry_run_writes_nothing()
 {
     setup

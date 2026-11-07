@@ -1427,6 +1427,32 @@ vdj-ui-sync-aligner-test/fast:
 .PHONY : vdj-ui-sync-aligner-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-pdb-append-test
+
+# Build rule for target.
+vdj-ui-trakcrate-pdb-append-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-pdb-append-test
+.PHONY : vdj-ui-trakcrate-pdb-append-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-append-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-append-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-append-test.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-append-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-drive-add-test
+
+# Build rule for target.
+vdj-ui-trakcrate-drive-add-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-drive-add-test
+.PHONY : vdj-ui-trakcrate-drive-add-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-drive-add-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test.dir/build
+.PHONY : vdj-ui-trakcrate-drive-add-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -3220,6 +3246,58 @@ vdj-ui-sync-aligner-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-sync-aligner-test_autogen.dir/build
 .PHONY : vdj-ui-sync-aligner-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-pdb-append-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-pdb-append-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-pdb-append-test_autogen
+.PHONY : vdj-ui-trakcrate-pdb-append-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-append-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-append-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-append-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-append-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-drive-add-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-drive-add-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-drive-add-test_autogen
+.PHONY : vdj-ui-trakcrate-drive-add-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-drive-add-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-drive-add-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-drive-add-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -3359,6 +3437,8 @@ help:
 	@echo "... vdj-ui-trakcrate-artwork-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen"
 	@echo "... vdj-ui-trakcrate-cuemarks-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-drive-add-test_autogen"
+	@echo "... vdj-ui-trakcrate-drive-add-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-editor-test_autogen"
 	@echo "... vdj-ui-trakcrate-editor-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-export-test_autogen"
@@ -3371,6 +3451,8 @@ help:
 	@echo "... vdj-ui-trakcrate-nudge-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-panel-test_autogen"
 	@echo "... vdj-ui-trakcrate-panel-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-pdb-append-test_autogen"
+	@echo "... vdj-ui-trakcrate-pdb-append-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-pdb-build-test_autogen"
 	@echo "... vdj-ui-trakcrate-pdb-build-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen"
@@ -3453,12 +3535,14 @@ help:
 	@echo "... vdj-ui-trakcrate-artwork-edit-test"
 	@echo "... vdj-ui-trakcrate-artwork-test"
 	@echo "... vdj-ui-trakcrate-cuemarks-test"
+	@echo "... vdj-ui-trakcrate-drive-add-test"
 	@echo "... vdj-ui-trakcrate-editor-test"
 	@echo "... vdj-ui-trakcrate-export-test"
 	@echo "... vdj-ui-trakcrate-import-test"
 	@echo "... vdj-ui-trakcrate-library-test"
 	@echo "... vdj-ui-trakcrate-nudge-test"
 	@echo "... vdj-ui-trakcrate-panel-test"
+	@echo "... vdj-ui-trakcrate-pdb-append-test"
 	@echo "... vdj-ui-trakcrate-pdb-build-test"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test"
 	@echo "... vdj-ui-trakcrate-rbimport-test"

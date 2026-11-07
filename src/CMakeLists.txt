@@ -120,6 +120,7 @@ add_library(vdj-cdj STATIC
     ui/rekordbox_mode_panel.cpp
     ui/trakcrate_job.cpp
     ui/trakcrate_jobs_strip.cpp
+    ui/mounted_sticks.cpp
     ui/trakcrate_track_model.cpp
     ui/trakcrate_import_dialog.cpp
     ui/trakcrate_bpm_dialog.cpp
@@ -221,6 +222,7 @@ add_library(vdj-trakcrate STATIC
     trakcrate/analysis.cpp
     trakcrate/pdb_writer.cpp
     trakcrate/pdb_build.cpp
+    trakcrate/pdb_append.cpp
     trakcrate/anlz_writer.cpp
     trakcrate/mp3_index.cpp
     trakcrate/settings_files.cpp

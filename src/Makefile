@@ -2765,6 +2765,30 @@ trakcrate/natsort.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/natsort.cpp.s
 .PHONY : trakcrate/natsort.cpp.s
 
+trakcrate/pdb_append.o: trakcrate/pdb_append.cpp.o
+.PHONY : trakcrate/pdb_append.o
+
+# target to build an object file
+trakcrate/pdb_append.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_append.cpp.o
+.PHONY : trakcrate/pdb_append.cpp.o
+
+trakcrate/pdb_append.i: trakcrate/pdb_append.cpp.i
+.PHONY : trakcrate/pdb_append.i
+
+# target to preprocess a source file
+trakcrate/pdb_append.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_append.cpp.i
+.PHONY : trakcrate/pdb_append.cpp.i
+
+trakcrate/pdb_append.s: trakcrate/pdb_append.cpp.s
+.PHONY : trakcrate/pdb_append.s
+
+# target to generate assembly for a file
+trakcrate/pdb_append.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_append.cpp.s
+.PHONY : trakcrate/pdb_append.cpp.s
+
 trakcrate/pdb_build.o: trakcrate/pdb_build.cpp.o
 .PHONY : trakcrate/pdb_build.o
 
@@ -3676,6 +3700,30 @@ ui/midi_monitor_dialog.s: ui/midi_monitor_dialog.cpp.s
 ui/midi_monitor_dialog.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/midi_monitor_dialog.cpp.s
 .PHONY : ui/midi_monitor_dialog.cpp.s
+
+ui/mounted_sticks.o: ui/mounted_sticks.cpp.o
+.PHONY : ui/mounted_sticks.o
+
+# target to build an object file
+ui/mounted_sticks.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mounted_sticks.cpp.o
+.PHONY : ui/mounted_sticks.cpp.o
+
+ui/mounted_sticks.i: ui/mounted_sticks.cpp.i
+.PHONY : ui/mounted_sticks.i
+
+# target to preprocess a source file
+ui/mounted_sticks.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mounted_sticks.cpp.i
+.PHONY : ui/mounted_sticks.cpp.i
+
+ui/mounted_sticks.s: ui/mounted_sticks.cpp.s
+.PHONY : ui/mounted_sticks.s
+
+# target to generate assembly for a file
+ui/mounted_sticks.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mounted_sticks.cpp.s
+.PHONY : ui/mounted_sticks.cpp.s
 
 ui/pendrive_clone_dialog.o: ui/pendrive_clone_dialog.cpp.o
 .PHONY : ui/pendrive_clone_dialog.o
@@ -5126,6 +5174,9 @@ help:
 	@echo "... trakcrate/natsort.o"
 	@echo "... trakcrate/natsort.i"
 	@echo "... trakcrate/natsort.s"
+	@echo "... trakcrate/pdb_append.o"
+	@echo "... trakcrate/pdb_append.i"
+	@echo "... trakcrate/pdb_append.s"
 	@echo "... trakcrate/pdb_build.o"
 	@echo "... trakcrate/pdb_build.i"
 	@echo "... trakcrate/pdb_build.s"
@@ -5240,6 +5291,9 @@ help:
 	@echo "... ui/midi_monitor_dialog.o"
 	@echo "... ui/midi_monitor_dialog.i"
 	@echo "... ui/midi_monitor_dialog.s"
+	@echo "... ui/mounted_sticks.o"
+	@echo "... ui/mounted_sticks.i"
+	@echo "... ui/mounted_sticks.s"
 	@echo "... ui/pendrive_clone_dialog.o"
 	@echo "... ui/pendrive_clone_dialog.i"
 	@echo "... ui/pendrive_clone_dialog.s"

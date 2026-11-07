@@ -34,6 +34,10 @@ target/lib/defaultfiles.o: $(wildcard data/user-settings/*)
 target/rb_roundtrip: test/rb_roundtrip.c $(filter-out target/helper/%,$(OBJS))
 	$(CC) $(CFLAGS) -o $@ test/rb_roundtrip.c $(filter-out target/helper/%,$(OBJS)) $(LDFLAGS) $(LDLIBS)
 
+# the database editor driven by a plan file (test/test_append_oracle.sh), not installed
+target/append_plan: test/append_plan.c $(filter-out target/helper/%,$(OBJS))
+	$(CC) $(CFLAGS) -o $@ test/append_plan.c $(filter-out target/helper/%,$(OBJS)) $(LDFLAGS) $(LDLIBS)
+
 target/trakcrate-helper: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
 

@@ -1,4 +1,5 @@
 #include "pdb_build.h"
+#include "pdb_rows.h"
 
 #include "sha256.h"
 
@@ -76,6 +77,48 @@ std::string truncateUtf8(const std::string& s, size_t max)
 
 } // namespace
 
+uint32_t analyzeSlot(const std::string& filePath)
+{
+    // The deck recomputes the analysis folder from the track's path, so this must be rekordbox's own rule (doc/trakcrate/usbanalz-hashing.md):
+    // slot = H mod 200003 with H = h*0x34f5501d + c*0x93b6 (wrapping 32 bit) over the UTF-16 code units of the path.
+    uint32_t h = 0;
+    for (size_t k = 0; k < filePath.size();) {
+        const unsigned char c0 = static_cast<unsigned char>(filePath[k]);
+        uint32_t cp = c0; size_t n = 1;
+        if (c0 >= 0xF0 && k + 3 < filePath.size()) { cp = (c0 & 7u) << 18; n = 4; }
+        else if (c0 >= 0xE0 && k + 2 < filePath.size()) { cp = (c0 & 15u) << 12; n = 3; }
+        else if (c0 >= 0xC0 && k + 1 < filePath.size()) { cp = (c0 & 31u) << 6; n = 2; }
+        for (size_t j = 1; j < n; ++j) cp |= (static_cast<unsigned char>(filePath[k + j]) & 63u) << (6 * (n - 1 - j));
+        k += n;
+        uint32_t units[2] = {cp, 0}; int cnt = 1;
+        if (cp >= 0x10000) { cp -= 0x10000; units[0] = 0xD800 + (cp >> 10); units[1] = 0xDC00 + (cp & 0x3FF); cnt = 2; }
+        for (int u = 0; u < cnt; ++u) h = h * 0x34f5501du + units[u] * 0x93b6u;
+    }
+    return h % 200003u;
+}
+
+unsigned analyzePartition(uint32_t slot)
+{
+    // the partition (first folder, 0..127) is seven bits of the slot
+    static const int kBits[7] = {0, 2, 6, 7, 9, 13, 16};
+    unsigned part = 0;
+    for (int k = 0; k < 7; ++k) part |= ((slot >> kBits[k]) & 1u) << k;
+    return part;
+}
+
+std::string analyzePathFor(const std::string& filePath, std::set<std::string>& used)
+{
+    // Tracks that share a slot share the folder and are told apart by the ANLZ%04X counter.
+    const uint32_t slot = analyzeSlot(filePath);
+    const unsigned part = analyzePartition(slot);
+    char buf[96];
+    for (unsigned n = 0;; ++n) {
+        std::snprintf(buf, sizeof buf, "/PIONEER/USBANLZ/P%03X/%08X/ANLZ%04X.DAT", part, slot, n);
+        if (used.insert(buf).second) break;
+    }
+    return buf;
+}
+
 std::string encodeDeviceSqlString(const std::string& utf8In)
 {
     const std::string utf8 = truncateUtf8(utf8In, kMaxStringBytes);
@@ -102,7 +145,42 @@ std::string encodeDeviceSqlString(const std::string& utf8In)
     return out;
 }
 
-namespace {
+bool decodeDeviceSqlString(const std::string& row, size_t at, std::string* utf8, size_t* end)
+{
+    utf8->clear();
+    if (at >= row.size()) return false;
+    const uint8_t kind = uint8_t(row[at]);
+    if (kind == 0x40 || kind == 0x90) {
+        if (at + 4 > row.size()) return false;
+        const size_t total = size_t(uint8_t(row[at + 1])) | size_t(uint8_t(row[at + 2])) << 8;       // including the 4 byte header
+        if (total < 4 || at + total > row.size()) return false;
+        const size_t n = total - 4;
+        if (kind == 0x40) {
+            utf8->assign(row, at + 4, n);
+        } else {
+            if (n % 2) return false;
+            for (size_t i = 0; i < n; i += 2) {
+                uint32_t cp = uint32_t(uint8_t(row[at + 4 + i])) | uint32_t(uint8_t(row[at + 5 + i])) << 8;
+                if (cp >= 0xD800 && cp < 0xDC00 && i + 3 < n) {
+                    const uint32_t lo = uint32_t(uint8_t(row[at + 6 + i])) | uint32_t(uint8_t(row[at + 7 + i])) << 8;
+                    if (lo >= 0xDC00 && lo < 0xE000) { cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00); i += 2; }
+                }
+                if (cp < 0x80) *utf8 += char(cp);
+                else if (cp < 0x800) { *utf8 += char(0xC0 | (cp >> 6)); *utf8 += char(0x80 | (cp & 63)); }
+                else if (cp < 0x10000) { *utf8 += char(0xE0 | (cp >> 12)); *utf8 += char(0x80 | ((cp >> 6) & 63)); *utf8 += char(0x80 | (cp & 63)); }
+                else { *utf8 += char(0xF0 | (cp >> 18)); *utf8 += char(0x80 | ((cp >> 12) & 63)); *utf8 += char(0x80 | ((cp >> 6) & 63)); *utf8 += char(0x80 | (cp & 63)); }
+            }
+        }
+        if (end) *end = at + total;
+        return true;
+    }
+    if ((kind & 1) == 0) return false;                       // an unknown kind
+    const size_t total = kind >> 1;                           // length byte included
+    if (total < 1 || at + total > row.size()) return false;
+    utf8->assign(row, at + 1, total - 1);
+    if (end) *end = at + total;
+    return true;
+}
 
 // ---- row encoders ----------------------------------------------------------------------------------------------------------------------
 
@@ -116,7 +194,7 @@ std::string nameRow(uint32_t id, const std::string& name)                // genr
 
 // Real rekordbox starts every UTF-16 string (kind 0x90) on a 4 byte boundary of the row (rows start 4 byte aligned) by padding with zeros before
 // it; the decks crash on a text that starts at 2 mod 4 (seen with a non-ASCII album name). Short ASCII strings are not aligned.
-void alignWide(std::string& row, const std::string& encoded)
+static void alignWide(std::string& row, const std::string& encoded)
 {
     if (!encoded.empty() && uint8_t(encoded[0]) == 0x90)
         while (row.size() % 4) row += '\0';
@@ -170,10 +248,7 @@ std::string entryRow(uint32_t index, uint32_t trackId, uint32_t playlistId)
     return r;
 }
 
-// The strings of a track row: 21 slots in the order the template row stores them.
-constexpr int kTrackFixed = 94, kTrackSlots = 21;
-
-size_t deviceSqlLength(const std::string& row, size_t at)
+static size_t deviceSqlLength(const std::string& row, size_t at)
 {
     if (at >= row.size()) return 0;
     uint8_t kind = uint8_t(row[at]);
@@ -181,11 +256,6 @@ size_t deviceSqlLength(const std::string& row, size_t at)
     return size_t(kind >> 1);
 }
 
-struct TrackTemplate {
-    std::string fixed;                         // 94 bytes
-    std::string strings[kTrackSlots];          // default encoded strings per slot
-    std::string defaultDate;
-};
 
 bool loadTrackTemplate(const PdbFile& t, TrackTemplate* out)
 {
@@ -260,6 +330,8 @@ std::string trackRow(const TrackTemplate& tpl, const PlanTrack& t, uint32_t id, 
     row.append(40, '\0');
     return padTo4(row);
 }
+
+namespace {
 
 // ---- pages -----------------------------------------------------------------------------------------------------------------------------
 
@@ -358,32 +430,7 @@ bool buildPdb(const ExportPlan& plan, const std::string& templateBytes, BuiltPdb
 
         std::string path = t.analyzePath;
         if (path.empty()) {
-            // The deck recomputes this folder from the track's path, so it must be rekordbox's own rule (doc/trakcrate/usbanalz-hashing.md):
-            // slot = H mod 200003 with H = h*0x34f5501d + c*0x93b6 (wrapping 32 bit) over the UTF-16 code units of the path; the partition is seven
-            // bits of the slot. Tracks that share a slot share the folder and are told apart by the ANLZ%04X counter.
-            uint32_t h = 0;
-            for (size_t k = 0; k < t.filePath.size();) {
-                const unsigned char c0 = static_cast<unsigned char>(t.filePath[k]);
-                uint32_t cp = c0; size_t n = 1;
-                if (c0 >= 0xF0 && k + 3 < t.filePath.size()) { cp = (c0 & 7u) << 18; n = 4; }
-                else if (c0 >= 0xE0 && k + 2 < t.filePath.size()) { cp = (c0 & 15u) << 12; n = 3; }
-                else if (c0 >= 0xC0 && k + 1 < t.filePath.size()) { cp = (c0 & 31u) << 6; n = 2; }
-                for (size_t j = 1; j < n; ++j) cp |= (static_cast<unsigned char>(t.filePath[k + j]) & 63u) << (6 * (n - 1 - j));
-                k += n;
-                uint32_t units[2] = {cp, 0}; int cnt = 1;
-                if (cp >= 0x10000) { cp -= 0x10000; units[0] = 0xD800 + (cp >> 10); units[1] = 0xDC00 + (cp & 0x3FF); cnt = 2; }
-                for (int u = 0; u < cnt; ++u) h = h * 0x34f5501du + units[u] * 0x93b6u;
-            }
-            const uint32_t slot = h % 200003u;
-            static const int kBits[7] = {0, 2, 6, 7, 9, 13, 16};
-            unsigned part = 0;
-            for (int k = 0; k < 7; ++k) part |= ((slot >> kBits[k]) & 1u) << k;
-            char buf[96];
-            for (unsigned n = 0;; ++n) {
-                std::snprintf(buf, sizeof buf, "/PIONEER/USBANLZ/P%03X/%08X/ANLZ%04X.DAT", part, slot, n);
-                if (usedAnalyze.insert(buf).second) break;
-            }
-            path = buf;
+            path = analyzePathFor(t.filePath, usedAnalyze);
         } else {
             usedAnalyze.insert(path);
         }

@@ -29,6 +29,7 @@
 #include "../lib/rbexport.h"
 #include "../lib/rbsettings.h"
 #include "../lib/status.h"
+#include "lists.h"
 
 struct ctx {
     FILE *prog;
@@ -51,96 +52,6 @@ static void on_warn(void *ud, const char *msg)
 {
     (void)ud;
     fprintf(stderr, "trakcrate-helper export: warning: %s\n", msg);
-}
-
-struct lists {
-    char **names;
-    char ***dirs;
-    size_t *counts;
-    size_t n;
-};
-
-static int add_entry(struct lists *l, const char *name, const char *dir)
-{
-    size_t i;
-
-    for (i = 0; i < l->n; i++) {
-        if (strcmp(l->names[i], name) == 0) {
-            break;
-        }
-    }
-    if (i == l->n) {
-        char **nn = realloc(l->names, (l->n + 1) * sizeof *nn);
-        char ***nd;
-        size_t *nc;
-
-        if (nn == NULL) {
-            return -1;
-        }
-        l->names = nn;
-        nd = realloc(l->dirs, (l->n + 1) * sizeof *nd);
-        if (nd == NULL) {
-            return -1;
-        }
-        l->dirs = nd;
-        nc = realloc(l->counts, (l->n + 1) * sizeof *nc);
-        if (nc == NULL) {
-            return -1;
-        }
-        l->counts = nc;
-        l->names[i] = strdup(name);
-        l->dirs[i] = NULL;
-        l->counts[i] = 0;
-        if (l->names[i] == NULL) {
-            return -1;
-        }
-        l->n++;
-    }
-    if (dir[0] != '\0') {
-        char **nd = realloc(l->dirs[i], (l->counts[i] + 1) * sizeof *nd);
-
-        if (nd == NULL) {
-            return -1;
-        }
-        l->dirs[i] = nd;
-        l->dirs[i][l->counts[i]] = strdup(dir);
-        if (l->dirs[i][l->counts[i]] == NULL) {
-            return -1;
-        }
-        l->counts[i]++;
-    }
-    return 0;
-}
-
-static int read_lists(FILE *in, struct lists *l)
-{
-    char *line = NULL;
-    size_t cap = 0;
-    ssize_t n;
-
-    while ((n = getline(&line, &cap, in)) >= 0) {
-        char *tab;
-
-        while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == '\r')) {
-            line[--n] = '\0';
-        }
-        if (n == 0) {
-            continue;
-        }
-        tab = strchr(line, '\t');
-        if (tab == NULL) {
-            free(line);
-            errno = EINVAL;
-            return -1;
-        }
-        *tab = '\0';
-        if (add_entry(l, line, tab + 1) != 0) {
-            free(line);
-            return -1;
-        }
-    }
-    free(line);
-    return 0;
 }
 
 static int load_setting(const char *dir, const char *name, uint8_t **out, size_t *len)
@@ -169,7 +80,7 @@ int cmd_export(int argc, char **argv)
     const char *template_path = NULL, *settings_from = NULL, *data;
     char tpl_default[PATH_MAX];
     char *tpl = NULL;
-    size_t tpl_len = 0, i, k;
+    size_t tpl_len = 0, i;
     uint8_t *dev = NULL, *my = NULL;
     size_t dev_len = 0, my_len = 0;
     int rc = TC_FAIL, a;
@@ -257,7 +168,7 @@ int cmd_export(int argc, char **argv)
         o.mysetting = my;
         o.my_len = my_len;
     }
-    if (read_lists(stdin, &l) != 0) {
+    if (lists_read(stdin, &l) != 0) {
         fprintf(stderr, "trakcrate-helper export: bad list input (want NAME TAB TRACKDIR per line)\n");
         rc = TC_USAGE;
         goto done;
@@ -279,16 +190,7 @@ int cmd_export(int argc, char **argv)
            res.verified, (unsigned long long)res.audio_bytes, (unsigned long long)res.meta_bytes);
     rc = TC_OK;
 done:
-    for (i = 0; i < l.n; i++) {
-        for (k = 0; k < l.counts[i]; k++) {
-            free(l.dirs[i][k]);
-        }
-        free(l.dirs[i]);
-        free(l.names[i]);
-    }
-    free(l.dirs);
-    free(l.names);
-    free(l.counts);
+    lists_free(&l);
     free(el);
     free(tpl);
     free(dev);

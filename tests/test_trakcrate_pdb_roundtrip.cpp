@@ -47,6 +47,7 @@ private:
 private slots:
     void rawRoundTripIsByteIdentical();
     void largeRealExportRoundTrips();
+    void rekordboxDriveFixturesRoundTripAndKeepTheirChains();
     void dataPagesAreUnderstood();
     void headerFieldsAndChains();
     void rowsAgreeWithLibcdj();
@@ -69,6 +70,37 @@ void TestTrakcratePdbRoundtrip::rawRoundTripIsByteIdentical()
         QVERIFY2(serialisePdb(f, &again, &err), err.c_str());
         QVERIFY2(again == original, name);                       // every byte, including the pages the model does not understand
         QCOMPARE(f.pages.size() * kPdbPageSize, original.size());
+    }
+}
+
+// Real rekordbox sticks used by the add-to-rekordbox tests (doc/trakcrate/pdb-append-notes.md): every data page is understood, every table's
+// chain ends at its empty candidate page, and a page has flags 0x34 exactly when it has deleted rows.
+void TestTrakcratePdbRoundtrip::rekordboxDriveFixturesRoundTripAndKeepTheirChains()
+{
+    for (const char* name : {"rb-loads-fine.pdb", "rb-mini.pdb"}) {
+        const std::string original = slurp(std::string(TRAKCRATE_FIXTURES) + "/pdb-drive/" + name);
+        QVERIFY2(!original.empty(), name);
+        PdbFile f;
+        std::string err;
+        QVERIFY2(parsePdb(original, &f, &err), err.c_str());
+        std::string again;
+        QVERIFY2(serialisePdb(f, &again, &err), err.c_str());
+        QVERIFY2(again == original, name);
+        QVERIFY2(f.nextUnusedPage >= f.pages.size(), name);
+        for (const PdbTable& t : f.tables) {
+            uint32_t pg = t.firstPage;
+            size_t steps = 0;
+            while (pg < f.pages.size() && f.pages[pg].next < f.pages.size() && f.pages[pg].next != 0 && steps++ <= f.pages.size()) pg = f.pages[pg].next;
+            QVERIFY2(steps <= f.pages.size(), name);                      // no loop
+            // the chain ends at the empty candidate page: a blank page inside the file, or a page number beyond the end of the file
+            const bool endsAtCandidate = pg == t.emptyCandidate || (pg < f.pages.size() && f.pages[pg].next == t.emptyCandidate);
+            QVERIFY2(endsAtCandidate, name);
+        }
+        for (size_t n = 1; n < f.pages.size(); ++n) {
+            const PdbPage& p = f.pages[n];
+            if (!p.structured) continue;                                  // index and blank pages
+            QVERIFY2(p.flags == (p.presentRows() == int(p.rows.size()) ? 0x24 : 0x34), name);
+        }
     }
 }
 

@@ -25,6 +25,7 @@ _CPack_Packages/
 /CTestTestfile.cmake
 /Makefile
 /Testing/
+/tests/Testing/
 /src/Makefile
 /src/cmake_install.cmake
 /src/vdj-ui

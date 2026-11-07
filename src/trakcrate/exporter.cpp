@@ -5,6 +5,7 @@
 #include "mp3_index.h"
 #include "artwork_paths.h"
 #include "natsort.h"
+#include "pdb_append.h"
 #include "pdb_build.h"
 #include "settings_files.h"
 #include "settings_sets.h"
@@ -121,6 +122,7 @@ struct GTrack {
     std::vector<AnlzCue> hot;
     std::string artSource, artKey;
     uint64_t audioBytes = 0;
+    int onStick = 0;               // adding to a drive: 1 = the drive has this track (row and identical file), 2 = identical file but no row, 0 = new
 };
 
 struct Gathered {
@@ -141,13 +143,68 @@ std::string today()
     return buf;
 }
 
-Gathered gather(const Library& lib, const ExportOptions& o)
+// Adding to a drive that already has a database: what is on it, so that paths, folder spellings and artwork numbers continue what is there.
+struct GatherSeed {
+    const DriveDb* db = nullptr;
+    fs::path drive;
+};
+
+// Same size and the same first and last megabyte: the two files are taken to be the same recording (reading all of a big file twice from a slow
+// stick for every track already on it would cost more than the copy it saves).
+bool sameAudio(const fs::path& a, const fs::path& b)
+{
+    std::error_code ec;
+    const uint64_t n = fs::file_size(a, ec);
+    if (ec || fs::file_size(b, ec) != n || ec) return false;
+    std::ifstream x(a, std::ios::binary), y(b, std::ios::binary);
+    if (!x || !y) return false;
+    const uint64_t chunk = uint64_t(1) << 20;
+    std::string p(size_t(std::min<uint64_t>(chunk, n)), '\0'), q(p.size(), '\0');
+    for (uint64_t at : {uint64_t(0), n > chunk ? n - chunk : uint64_t(0)}) {
+        x.clear(); y.clear();
+        x.seekg(std::streamoff(at)); y.seekg(std::streamoff(at));
+        x.read(&p[0], std::streamsize(p.size())); y.read(&q[0], std::streamsize(q.size()));
+        if (x.gcount() != y.gcount() || p != q) return false;
+    }
+    return true;
+}
+
+// 0 = the path is free, 1 = the drive has a row for it and the file is this audio, 2 = the file is there and is this audio but has no row,
+// 3 = something else is there (another recording, or a row whose file is missing): choose another name.
+int classifyOnDrive(const GatherSeed& s, const std::string& full, const fs::path& audio, uint64_t bytes)
+{
+    std::error_code ec;
+    const fs::path onDisk = s.drive / full.substr(1);
+    const bool there = fs::is_regular_file(onDisk, ec);
+    auto it = s.db->trackByPath.find(lower(full));
+    if (it != s.db->trackByPath.end())
+        return (there && s.db->tracks[it->second].fileSize == uint32_t(bytes) && sameAudio(audio, onDisk)) ? 1 : 3;
+    if (there) return sameAudio(audio, onDisk) ? 2 : 3;
+    return 0;
+}
+
+Gathered gather(const Library& lib, const ExportOptions& o, const GatherSeed* seed = nullptr)
 {
     Gathered g;
     std::map<std::string, size_t> index;                       // canonical track dir -> track number
     std::set<std::string> usedPaths;                           // lower case Contents paths (FAT is case insensitive)
     std::map<std::string, std::string> artistDirs, albumDirs;  // lower case -> the first spelling used: FAT folders are case insensitive, rekordbox reuses it
     std::error_code ec;
+    if (seed) {                                                // the spelling of the folders already on the drive wins (FAT is case insensitive)
+        for (const DriveTrack& t : seed->db->tracks) {
+            std::vector<std::string> parts;
+            for (size_t b = 0; b <= t.filePath.size();) {
+                size_t e = t.filePath.find('/', b);
+                if (e == std::string::npos) e = t.filePath.size();
+                parts.push_back(t.filePath.substr(b, e - b));
+                b = e + 1;
+            }
+            if (parts.size() == 5 && parts[1] == "Contents") {
+                artistDirs.emplace(lower(parts[2]), parts[2]);
+                albumDirs.emplace(lower(parts[2]) + "/" + lower(parts[3]), parts[3]);
+            }
+        }
+    }
     if (o.playlists.empty() && o.lists.empty()) g.problems.push_back("no playlist chosen");
     std::vector<ExportList> sources;
     for (const std::string& name : o.playlists) {
@@ -199,11 +256,20 @@ Gathered gather(const Library& lib, const ExportOptions& o)
                 const std::string albumDir = albumDirs.emplace(lower(artistDir) + "/" + lower(albumRaw), albumRaw).first->second;
                 std::string rel = "/Contents/" + artistDir + "/" + albumDir + "/" + fatSafeName(stem);
                 std::string full = rel + ext;
-                for (int n = 2; !usedPaths.insert(lower(full)).second; ++n) full = rel + " (" + std::to_string(n) + ")" + ext;
+                for (int n = 1;; ++n) {
+                    if (n > 1) full = rel + " (" + std::to_string(n) + ")" + ext;
+                    if (usedPaths.count(lower(full))) continue;
+                    if (seed) {
+                        t.onStick = classifyOnDrive(*seed, full, t.audio, t.audioBytes);
+                        if (t.onStick == 3) continue;
+                    }
+                    usedPaths.insert(lower(full));
+                    break;
+                }
                 p.filePath = full;
                 p.fileName = full.substr(full.rfind('/') + 1);
                 t.haveWave = loadWaveform(d, &t.wave);
-                if (!t.haveWave && !o.allowUnanalysed) g.problems.push_back("not analysed: " + stem + " (" + d.string() + ")");
+                if (!t.haveWave && !o.allowUnanalysed && t.onStick != 1) g.problems.push_back("not analysed: " + stem + " (" + d.string() + ")");
                 for (const Cuemark& c : t.track.cuemarks.marks) {
                     if (c.hot < 'A' || c.hot > 'C') continue;
                     AnlzCue a;
@@ -216,7 +282,7 @@ Gathered gather(const Library& lib, const ExportOptions& o)
                     t.hot.push_back(a);
                 }
                 std::sort(t.hot.begin(), t.hot.end(), [](const AnlzCue& a, const AnlzCue& b) { return a.hotCue < b.hotCue; });
-                if (o.includeArtwork && o.encodeArtwork) {
+                if (o.includeArtwork && o.encodeArtwork && t.onStick != 1) {
                     for (const char* n : {"artwork.jpg", "artwork.jpeg", "artwork.png"}) {
                         if (readFile(d / n, &t.artSource)) { t.artKey = sha256Hex(t.artSource); break; }
                     }
@@ -231,16 +297,17 @@ Gathered gather(const Library& lib, const ExportOptions& o)
     }
     // artwork ids in the order buildPdb will give them: first seen
     std::map<std::string, uint32_t> artId;
+    const uint32_t artBase = seed && seed->db->maxId.count(13) ? seed->db->maxId.at(13) : 0;      // adding: numbering continues after the drive's own artwork
     for (GTrack& t : g.tracks) {
         if (!t.artKey.empty()) {
             auto it = artId.find(t.artKey);
-            if (it == artId.end()) it = artId.emplace(t.artKey, uint32_t(artId.size() + 1)).first;
+            if (it == artId.end()) it = artId.emplace(t.artKey, artBase + uint32_t(artId.size() + 1)).first;
             t.plan.artworkKey = t.artKey;
             t.plan.artworkPath = artworkPath(it->second);
         }
         g.plan.tracks.push_back(t.plan);
     }
-    {   // the limits of the decks: tracks, artists and albums as the database will count them (an album is an artist and a name)
+    if (!seed) {   // the limits of the decks: tracks, artists and albums as the database will count them (an album is an artist and a name)
         std::set<std::string> artists;
         std::set<std::pair<std::string, std::string>> albums;
         for (const PlanTrack& t : g.plan.tracks) {
@@ -331,6 +398,70 @@ bool writeStaged(const fs::path& staging, const std::string& rel, const std::str
     std::error_code ec;
     fs::create_directories((staging / rel).parent_path(), ec);
     return atomicWrite(staging / rel, data, err);
+}
+
+// Builds the analysis files (and the artwork) of the tracks of `g` into the staging folder: the same files for a whole new drive and for tracks added
+// to an existing one (`only`: null = every track, else the tracks flagged true). analyzePaths: one per track of `g`, as the database names them.
+// Messages in *err are complete. Warnings are appended to *warnings.
+bool stageTrackFiles(const Gathered& g, const ExportOptions& o, const std::vector<std::string>& analyzePaths, const std::vector<bool>* only,
+                     const fs::path& stageDir, std::vector<std::string>* anlzDat, std::vector<std::string>* warnings, std::string* err)
+{
+    std::string e;
+    for (size_t i = 0; i < g.tracks.size(); ++i) {
+        if (only && !(*only)[i]) continue;
+        const GTrack& t = g.tracks[i];
+        AnlzTrackData d;
+        d.audioPath = t.plan.filePath;
+        d.includePvbr = o.includePvbr;
+        d.includePwv5 = o.includePwv5;
+        Waveform w = t.wave;
+        if (!t.haveWave) {                                      // allowUnanalysed: a flat waveform of the right length
+            const size_t cols = size_t(t.durationMs * Waveform::kColumnsPerSecond / 1000.0) + 1;
+            w.pwv3.assign(cols, 0);
+            w.pwv5.assign(cols, 0);
+            w.pwav.assign(Waveform::kPreviewColumns, 0);
+            w.pwv2.assign(Waveform::kTinyColumns, 0);
+            warnings->push_back("not analysed, flat waveform and no beat grid: " + t.dir.filename().string());
+        }
+        setWaveforms(&d, w, o.includePwv4);                     // PWV4 comes from the true waveform: its layout is only partly understood, so it gets no spikes
+        if (o.cuemarks.enabled && !t.track.cuemarks.marks.empty()) {
+            const Waveform r = renderCuemarks(w, t.track.cuemarks.marks, t.durationMs, o.cuemarks);
+            d.pwav = r.pwav;
+            d.pwv2 = r.pwv2;
+            d.pwv3 = r.pwv3;
+            d.pwv5 = r.pwv5;
+        }
+        d.beats = beatsFromGrid(t.grid, t.durationMs, &d.beatSubUs);
+        d.hotCues = t.hot;
+        if (lower(t.audio.extension().string()) == ".mp3") {     // a VBR mp3 carries its seek index in the PVBR tag and in every cue
+            const Mp3Index ix = indexMp3(t.audio);
+            if (ix.ok && ix.vbr) {
+                d.pvbr = ix.pvbr();
+                for (AnlzCue& c : d.hotCues) { c.seek = true; c.bytePos = ix.offsetAtMs(c.timeMs); }
+            }
+        }
+        AnlzFiles f;
+        if (!buildAnlz(d, &f, &e)) { *err = "analysis files for " + t.plan.title + ": " + e; return false; }
+        std::string base = analyzePaths[i].substr(1);     // PIONEER/USBANLZ/Pxxx/yyyyyyyy/ANLZ0000.DAT
+        if (!writeStaged(stageDir, base, f.dat, &e) || !writeStaged(stageDir, base.substr(0, base.size() - 3) + "EXT", f.ext, &e)) { *err = "staging: " + e; return false; }
+        anlzDat->push_back(base);
+    }
+    if (o.includeArtwork && o.encodeArtwork) {
+        std::set<std::string> done;
+        for (size_t i = 0; i < g.tracks.size(); ++i) {
+            const GTrack& t = g.tracks[i];
+            if ((only && !(*only)[i]) || t.artKey.empty() || !done.insert(t.artKey).second) continue;
+            std::string full;
+            if (!o.encodeArtwork(t.artSource, kArtworkSize, &full, &e)) {
+                warnings->push_back("artwork of " + t.plan.title + " not usable: " + e);
+                *err = "artwork of " + t.plan.title + ": " + e;
+                return false;
+            }
+            const std::string p = t.plan.artworkPath;           // /PIONEER/Artwork/00001/a1.jpg
+            if (!writeStaged(stageDir, p.substr(1), full, &e)) { *err = "staging: " + e; return false; }
+        }
+    }
+    return true;
 }
 
 // ---- copying -------------------------------------------------------------------------------------------------------------------------
@@ -433,6 +564,17 @@ bool skipIfIdentical(const fs::path& dest, OutFile& f, int* skipped, bool hashin
     return true;
 }
 
+// Makes room for a new export.pdb.bak: .bak.2 becomes .bak.3 (the old .bak.3 is dropped) and .bak becomes .bak.2. Renames only.
+bool rotateBackups(const fs::path& pdb, std::string* err)
+{
+    std::error_code ec;
+    const auto bak = [&](int n) { return fs::path(pdb.string() + (n == 1 ? ".bak" : ".bak." + std::to_string(n))); };
+    fs::remove(bak(3), ec);
+    for (int n = 2; n >= 1; --n)
+        if (fs::exists(bak(n), ec) && ::rename(bak(n).c_str(), bak(n + 1).c_str()) != 0) { *err = "cannot rotate " + bak(n).string() + ": " + std::strerror(errno); return false; }
+    return true;
+}
+
 // update: keeps the three newest copies of the old export.pdb as export.pdb.bak (newest), .bak.2 and .bak.3. The live file is copied, never moved,
 // so a drive always has a database. `made` is the name of the new backup (empty when there was no export.pdb).
 bool backupPdb(const fs::path& pdb, std::string* made, std::string* err)
@@ -440,14 +582,12 @@ bool backupPdb(const fs::path& pdb, std::string* made, std::string* err)
     std::error_code ec;
     made->clear();
     if (!fs::is_regular_file(pdb, ec)) return true;
-    const auto bak = [&](int n) { return fs::path(pdb.string() + (n == 1 ? ".bak" : ".bak." + std::to_string(n))); };
-    fs::remove(bak(3), ec);
-    for (int n = 2; n >= 1; --n)
-        if (fs::exists(bak(n), ec) && ::rename(bak(n).c_str(), bak(n + 1).c_str()) != 0) { *err = "cannot rotate " + bak(n).string() + ": " + std::strerror(errno); return false; }
+    if (!rotateBackups(pdb, err)) return false;
     std::string bytes;
     if (!readFile(pdb, &bytes, err)) return false;
-    if (!atomicWrite(bak(1), bytes, err)) return false;
-    *made = bak(1).filename().string();
+    const fs::path bak1(pdb.string() + ".bak");
+    if (!atomicWrite(bak1, bytes, err)) return false;
+    *made = bak1.filename().string();
     return true;
 }
 
@@ -589,57 +729,7 @@ ExportResult exportDrive(const Library& lib, const ExportOptions& optsIn, const 
     std::vector<std::string> diff = verifyPdb(built.bytes, g.plan, built);
     if (!diff.empty()) return fail("the database does not say what the plan says: " + diff.front());
     std::vector<std::string> anlzDat;                          // staged analysis paths, for the check below
-    for (size_t i = 0; i < g.tracks.size(); ++i) {
-        const GTrack& t = g.tracks[i];
-        AnlzTrackData d;
-        d.audioPath = t.plan.filePath;
-        d.includePvbr = o.includePvbr;
-        d.includePwv5 = o.includePwv5;
-        Waveform w = t.wave;
-        if (!t.haveWave) {                                      // allowUnanalysed: a flat waveform of the right length
-            const size_t cols = size_t(t.durationMs * Waveform::kColumnsPerSecond / 1000.0) + 1;
-            w.pwv3.assign(cols, 0);
-            w.pwv5.assign(cols, 0);
-            w.pwav.assign(Waveform::kPreviewColumns, 0);
-            w.pwv2.assign(Waveform::kTinyColumns, 0);
-            res.warnings.push_back("not analysed, flat waveform and no beat grid: " + t.dir.filename().string());
-        }
-        setWaveforms(&d, w, o.includePwv4);                     // PWV4 comes from the true waveform: its layout is only partly understood, so it gets no spikes
-        if (o.cuemarks.enabled && !t.track.cuemarks.marks.empty()) {
-            const Waveform r = renderCuemarks(w, t.track.cuemarks.marks, t.durationMs, o.cuemarks);
-            d.pwav = r.pwav;
-            d.pwv2 = r.pwv2;
-            d.pwv3 = r.pwv3;
-            d.pwv5 = r.pwv5;
-        }
-        d.beats = beatsFromGrid(t.grid, t.durationMs, &d.beatSubUs);
-        d.hotCues = t.hot;
-        if (lower(t.audio.extension().string()) == ".mp3") {     // a VBR mp3 carries its seek index in the PVBR tag and in every cue
-            const Mp3Index ix = indexMp3(t.audio);
-            if (ix.ok && ix.vbr) {
-                d.pvbr = ix.pvbr();
-                for (AnlzCue& c : d.hotCues) { c.seek = true; c.bytePos = ix.offsetAtMs(c.timeMs); }
-            }
-        }
-        AnlzFiles f;
-        if (!buildAnlz(d, &f, &err)) return fail("analysis files for " + t.plan.title + ": " + err);
-        std::string base = built.analyzePaths[i].substr(1);     // PIONEER/USBANLZ/Pxxx/yyyyyyyy/ANLZ0000.DAT
-        if (!writeStaged(stage.dir, base, f.dat, &err) || !writeStaged(stage.dir, base.substr(0, base.size() - 3) + "EXT", f.ext, &err)) return fail("staging: " + err);
-        anlzDat.push_back(base);
-    }
-    if (o.includeArtwork && o.encodeArtwork) {
-        std::set<std::string> done;
-        for (const GTrack& t : g.tracks) {
-            if (t.artKey.empty() || !done.insert(t.artKey).second) continue;
-            std::string full;
-            if (!o.encodeArtwork(t.artSource, kArtworkSize, &full, &err)) {
-                res.warnings.push_back("artwork of " + t.plan.title + " not usable: " + err);
-                return fail("artwork of " + t.plan.title + ": " + err);
-            }
-            const std::string p = t.plan.artworkPath;           // /PIONEER/Artwork/00001/a1.jpg
-            if (!writeStaged(stage.dir, p.substr(1), full, &err)) return fail("staging: " + err);
-        }
-    }
+    if (!stageTrackFiles(g, o, built.analyzePaths, nullptr, stage.dir, &anlzDat, &res.warnings, &err)) return fail(err);
     if (o.includeSettings) {
         if (!writeStaged(stage.dir, "PIONEER/DEVSETTING.DAT", o.devSetting.empty() ? defaultDevSetting() : o.devSetting, &err) ||
             !writeStaged(stage.dir, "PIONEER/MYSETTING.DAT", o.mySetting.empty() ? defaultMySetting() : o.mySetting, &err))
@@ -882,5 +972,245 @@ bool destinationsOverlap(const fs::path& a, const fs::path& b)
     };
     return inside(ca, cb) || inside(cb, ca);
 }
+
+// ---- adding a playlist to a pendrive that already has a database -------------------------------------------------------------------------
+
+AddResult addToDrive(const Library& lib, const AddOptions& opts, const ExportProgress& progress, const std::atomic<bool>* cancel)
+{
+    AddResult res;
+    const ExportOptions& o = opts.base;
+    const fs::path drive = o.dest;
+    const std::string pdbRel = "PIONEER/rekordbox/export.pdb";
+    std::error_code ec;
+    auto fail = [&](const std::string& m) { res.error = m; return res; };
+    // a stopped run (tests) leaves everything as it is, like a pulled stick
+    auto stopped = [&](const char* step) {
+        if (!opts.stepHook || opts.stepHook(step)) return false;
+        res.error = std::string("stopped at ") + step;
+        res.orphans = res.created;
+        return true;
+    };
+    auto syncDrive = [&]() {
+        int fd = ::open(drive.c_str(), O_RDONLY | O_DIRECTORY);
+        if (fd >= 0) { ::syncfs(fd); ::close(fd); }
+    };
+    // an error or cancel before the switch: take the files we added off the stick again (best effort) and report what stayed
+    auto rollback = [&]() {
+        std::vector<Orphan> added;
+        for (const std::string& rel : res.created) { Orphan x; x.rel = rel; added.push_back(x); }
+        std::vector<std::string> failed;
+        deleteOrphans(drive, added, &failed);
+        fs::remove(drive / (pdbRel + ".new"), ec);
+        fs::remove(drive / (pdbRel + ".new.trakcrate-tmp"), ec);
+        res.orphans = failed;
+    };
+
+    if (o.dest.empty() || !fs::is_directory(drive, ec)) return fail("the pendrive is not available: " + drive.string());
+    if (o.playlists.size() != 1) return fail("add exactly one playlist");
+    if (o.templatePdb.empty()) return fail("no template export.pdb");
+    res.playlist = o.playlists[0];
+    if (fs::exists(drive / "PIONEER/rekordbox/exportLibrary.db", ec))
+        return fail("this pendrive also has exportLibrary.db (the newer rekordbox format), which cannot be added to safely: nothing was changed");
+    if (!fs::is_regular_file(drive / pdbRel, ec)) return fail("this pendrive has no PIONEER/rekordbox/export.pdb");
+    if (::access(drive.c_str(), W_OK) != 0) return fail("the pendrive is read only");
+
+    // the old database into memory, checked before anything is written
+    std::string oldBytes, err;
+    if (!readFile(drive / pdbRel, &oldBytes, &err)) return fail("cannot read export.pdb: " + err);
+    DriveDb db;
+    {
+        std::vector<std::string> problems;
+        if (!loadDriveDb(oldBytes, &db, &problems)) {
+            std::string m = "the database on the pendrive cannot be added to (nothing was changed):";
+            for (size_t i = 0; i < problems.size() && i < 6; ++i) m += "\n  " + problems[i];
+            return fail(m);
+        }
+        for (const std::string& w : db.warnings) res.warnings.push_back("database: " + w);
+    }
+    {
+        std::string key = o.playlists[0];
+        for (char& c : key) c = char(std::tolower(static_cast<unsigned char>(c)));
+        if (db.playlistByName.count(key)) return fail("the pendrive already has a playlist called \"" + o.playlists[0] + "\": nothing was changed");
+    }
+
+    // a copy of the old database outside the stick, kept for good
+    {
+        std::time_t now = std::time(nullptr);
+        std::tm tm;
+        gmtime_r(&now, &tm);
+        char stamp[32];
+        std::strftime(stamp, sizeof stamp, "%Y%m%dT%H%M%SZ", &tm);
+        fs::create_directories(opts.backupDir, ec);
+        fs::path copy = opts.backupDir / (std::string("rekordbox-edit-backup-export.") + stamp + ".pdb");
+        for (int n = 2; fs::exists(copy, ec); ++n) copy = opts.backupDir / (std::string("rekordbox-edit-backup-export.") + stamp + "-" + std::to_string(n) + ".pdb");
+        std::string back;
+        if (!atomicWrite(copy, oldBytes, &err) || !readFile(copy, &back, &err) || back != oldBytes) return fail("cannot make the backup copy " + copy.string() + (err.empty() ? "" : ": " + err));
+        res.backupCopy = copy.string();
+    }
+    if (stopped("backup")) return res;
+
+    // the playlist against what the pendrive holds
+    GatherSeed seed;
+    seed.db = &db;
+    seed.drive = drive;
+    Gathered g = gather(lib, o, &seed);
+    if (!g.problems.empty()) {
+        std::string m = "cannot add:";
+        for (size_t i = 0; i < g.problems.size() && i < 8; ++i) m += "\n  " + g.problems[i];
+        if (g.problems.size() > 8) m += "\n  ... and " + std::to_string(g.problems.size() - 8) + " more";
+        return fail(m);
+    }
+    if (g.tracks.empty()) return fail("the playlist is empty");
+    {   // the limits of the decks, counted on the whole database after the addition
+        std::set<std::string> artists;
+        std::set<std::pair<std::string, std::string>> albums;
+        int newTracks = 0;
+        for (const GTrack& t : g.tracks) {
+            if (t.onStick == 1) continue;
+            ++newTracks;
+            if (!t.plan.artist.empty() && !db.artist.count(t.plan.artist)) artists.insert(t.plan.artist);
+            if (!t.plan.album.empty()) {
+                auto a = db.artist.find(t.plan.artist);
+                if (a == db.artist.end() || !db.album.count({a->second, t.plan.album})) albums.insert({t.plan.artist, t.plan.album});
+            }
+        }
+        bool over = false, overRaised = false;
+        const std::vector<std::string> lim = checkDeckLimits(int(db.tracks.size()) + newTracks, int(db.artist.size() + artists.size()), int(db.album.size() + albums.size()), o.raiseLimits, &over, &overRaised);
+        if (!lim.empty()) return fail("cannot add:\n  " + lim.front());
+    }
+    AppendOptions ao;
+    ao.templatePdb = o.templatePdb;
+    AppendResult ar;
+    if (!appendPlaylist(db, g.plan, ao, &ar, &err)) return fail("cannot add: " + err);
+    {
+        const std::vector<std::string> diff = verifyAppended(oldBytes, ar.bytes, g.plan, ar);
+        if (!diff.empty()) return fail("the new database does not say what the plan says: " + diff.front());
+    }
+    for (size_t i = 0; i < g.tracks.size(); ++i) {
+        if (ar.trackIsNew[i]) ++res.newTracks;
+        else if (ar.trackIds[i]) ++res.existingTracks;
+    }
+    if (stopped("planned")) return res;
+
+    // space on the stick for what is new, and the staging area for the analysis files and artwork
+    std::vector<bool> isNew(g.tracks.size(), false);
+    Gathered fresh;
+    uint64_t audioBytes = 0;
+    for (size_t i = 0; i < g.tracks.size(); ++i) {
+        isNew[i] = g.tracks[i].onStick != 1;
+        if (isNew[i]) fresh.tracks.push_back(g.tracks[i]);
+        if (g.tracks[i].onStick == 0) audioBytes += g.tracks[i].audioBytes;
+    }
+    const uint64_t meta = estimateMetadata(fresh) + ar.bytes.size();
+    {
+        fs::space_info sp = fs::space(drive, ec);
+        if (!ec && sp.available < audioBytes + meta + o.minFreeBytes)
+            return fail("not enough space on the pendrive: needs " + std::to_string((audioBytes + meta + o.minFreeBytes) >> 20) + " MiB, " + std::to_string(sp.available >> 20) + " MiB free");
+    }
+    Staging stage;
+    StagingReservation reservation;
+    {
+        bool tmpfs = false;
+        fs::path base = pickStagingBase(o, &tmpfs, &res.warnings);
+        res.stagedOnTmpfs = tmpfs;
+        stage.dir = makeTempDir("trakcrate-add", base, &err);
+        if (stage.dir.empty()) return fail("cannot create the staging area: " + err);
+        res.stagingUsed = stage.dir.string();
+        fs::space_info sp = fs::space(stage.dir, ec);
+        if (!ec && !reservation.take(stage.dir, sp.available, estimateMetadata(fresh) + (8u << 20))) return fail("not enough space in the staging area " + base.string());
+    }
+    std::vector<std::string> anlz;
+    if (!stageTrackFiles(g, o, ar.analyzePaths, &isNew, stage.dir, &anlz, &res.warnings, &err)) return fail(err);
+
+    // the files, audio first; nothing that exists is changed
+    std::vector<OutFile> files;
+    std::vector<const char*> kinds;
+    for (const GTrack& t : g.tracks) {
+        if (t.onStick != 0) continue;
+        OutFile f;
+        f.rel = t.plan.filePath.substr(1);
+        f.src = t.audio;
+        files.push_back(f);
+        kinds.push_back("audio");
+    }
+    for (const std::string& p : ar.artworkPaths) {
+        OutFile f;
+        f.rel = p.substr(1);
+        f.src = stage.dir / f.rel;
+        files.push_back(f);
+        kinds.push_back("artwork");
+    }
+    for (const std::string& base : anlz)
+        for (const std::string ext : {"DAT", "EXT"}) {
+            OutFile f;
+            f.rel = base.substr(0, base.size() - 3) + ext;
+            f.src = stage.dir / f.rel;
+            files.push_back(f);
+            kinds.push_back("analysis");
+        }
+    const int total = int(files.size()) + 2;
+    int done = 0;
+    const char* lastKind = "";
+    for (size_t i = 0; i < files.size(); ++i) {
+        if (std::string(kinds[i]) != lastKind) {
+            lastKind = kinds[i];
+            if (stopped(lastKind)) return res;
+        }
+        if (cancel && cancel->load()) { rollback(); res.cancelled = true; res.error = "cancelled"; return res; }
+        if (progress) progress(done, total, files[i].rel);
+        bool cancelled = false;
+        if (!copyOne(drive, files[i], cancel, &res.bytesWritten, &err, &cancelled, true, false, true)) {
+            rollback();
+            if (cancelled) { res.cancelled = true; res.error = "cancelled"; }
+            else res.error = err;
+            return res;
+        }
+        res.created.push_back(files[i].rel);
+        ++res.filesCopied;
+        ++done;
+    }
+    syncDrive();                                                // all the new files are on the stick before the database that names them
+
+    // the new database next to the old one
+    if (stopped("database")) return res;
+    {
+        OutFile nf;
+        nf.rel = pdbRel + ".new";
+        nf.mem = ar.bytes;
+        nf.inMemory = true;
+        bool cancelled = false;
+        if (progress) progress(done, total, nf.rel);
+        if (!copyOne(drive, nf, nullptr, &res.bytesWritten, &err, &cancelled, true, false, true)) { rollback(); res.error = err; return res; }
+        ++done;
+    }
+    syncDrive();
+
+    // the one change to existing data: two renames
+    if (cancel && cancel->load()) { rollback(); res.cancelled = true; res.error = "cancelled"; return res; }
+    if (stopped("switch")) return res;
+    if (progress) progress(done, total, "Switching database...");
+    const fs::path pdb = drive / pdbRel, bak = drive / (pdbRel + ".bak"), fresh2 = drive / (pdbRel + ".new");
+    if (!rotateBackups(pdb, &err)) { rollback(); res.error = "cannot rotate the old backups: " + err; return res; }
+    if (::rename(pdb.c_str(), bak.c_str()) != 0) { rollback(); res.error = std::string("cannot rename export.pdb to export.pdb.bak: ") + std::strerror(errno); return res; }
+    if (stopped("between-renames")) return res;
+    if (::rename(fresh2.c_str(), pdb.c_str()) != 0) {
+        const std::string why = std::strerror(errno);
+        if (::rename(bak.c_str(), pdb.c_str()) != 0) res.error = "cannot put the new export.pdb in place (" + why + ") and cannot restore the old one: rename " + bak.string() + " to export.pdb";
+        else { rollback(); res.error = "cannot put the new export.pdb in place: " + why; }
+        return res;
+    }
+    syncDrive();
+    res.switched = true;
+    res.backupOnDrive = pdbRel + ".bak";
+    ++done;
+    if (progress) progress(done, total, std::string());
+
+    std::string after;
+    if (!readFile(pdb, &after, &err) || after != ar.bytes) { res.error = "the database on the pendrive does not read back as written" + (err.empty() ? std::string() : ": " + err); return res; }
+    if (stopped("done")) return res;
+    res.ok = true;
+    return res;
+}
+
 
 } // namespace trakcrate

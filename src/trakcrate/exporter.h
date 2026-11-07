@@ -112,6 +112,43 @@ using ExportProgress = std::function<void(int done, int total, const std::string
 
 ExportResult exportDrive(const Library& lib, const ExportOptions& opts, const ExportProgress& progress = nullptr, const std::atomic<bool>* cancel = nullptr);
 
+// ---- adding a playlist to a pendrive that already has a database (doc/trakcrate/pdb-append-notes.md) ----
+
+struct AddOptions {
+    // dest = the stick's root, playlists = exactly one playlist, templatePdb, encodeArtwork, allowUnanalysed, includeArtwork, includePvbr / Pwv4 / Pwv5,
+    // cuemarks, raiseLimits and minFreeBytes are used; settings and the other export switches are not (no settings file on the stick is touched).
+    ExportOptions base;
+    fs::path backupDir = "/var/tmp";         // the stick's export.pdb is copied here as rekordbox-edit-backup-export.<isodate>.pdb and never deleted
+    // Tests: called with the name of each step ("backup", "planned", "audio", "artwork", "analysis", "database", "switch", "done"); returning false stops
+    // there at once with nothing cleaned up, as if the stick had been pulled.
+    std::function<bool(const char* step)> stepHook;
+};
+
+struct AddResult {
+    bool ok = false;
+    bool cancelled = false;
+    std::string error;
+    std::vector<std::string> warnings;
+    int newTracks = 0;                       // tracks whose rows were added
+    int existingTracks = 0;                  // tracks the stick had already: referenced, nothing copied
+    int filesCopied = 0;
+    uint64_t bytesWritten = 0;
+    std::vector<std::string> created;        // files added to the stick, relative to its root, in the order written
+    std::vector<std::string> orphans;        // of those, the ones still on the stick after a failure or a stopped run (nothing refers to them)
+    std::string backupCopy;                  // full path of the copy of the old export.pdb made before anything was changed
+    std::string backupOnDrive;               // PIONEER/rekordbox/export.pdb.bak after the switch
+    bool switched = false;                   // export.pdb on the stick is the new database
+    std::string playlist;
+    std::string stagingUsed;
+    bool stagedOnTmpfs = false;
+};
+
+// Adds the playlist base.playlists[0] to the pendrive base.dest: refuses (before writing anything) when the stick has exportLibrary.db, no usable
+// export.pdb or a playlist of that name; copies the old database to backupDir; then adds the new audio, artwork and analysis files (existing files
+// and rows are reused, nothing existing is changed), writes export.pdb.new and, as the one change to existing data, renames export.pdb to
+// export.pdb.bak and export.pdb.new to export.pdb. Cancel is honoured until that switch. On an error before the switch the files added are removed again.
+AddResult addToDrive(const Library& lib, const AddOptions& opts, const ExportProgress& progress = nullptr, const std::atomic<bool>* cancel = nullptr);
+
 // Removes the given orphans from dest (and folders that become empty). Only plain files below Contents/, PIONEER/Artwork/ and PIONEER/USBANLZ/ are
 // ever touched, whatever the list says. Returns the bytes freed; `failed` gets the paths that could not be removed.
 uint64_t deleteOrphans(const fs::path& dest, const std::vector<Orphan>& orphans, std::vector<std::string>* failed = nullptr);

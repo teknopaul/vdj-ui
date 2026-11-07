@@ -93,6 +93,7 @@ private slots:
     void emptyAndSmallPlans();
     void multiPageTables();
     void unicodeAndLongStrings();
+    void analyzePathRuleMatchesRealRekordboxDrives();
     void idsAreSharedAndStable();
     void playlists();
     void analyzePaths();
@@ -173,6 +174,42 @@ void TestTrakcratePdbBuild::multiPageTables()
         QVERIFY(id == prev + 1);
         prev = id;
     }
+}
+
+// The analysis folder is a function of the track's database path (doc/trakcrate/usbanalz-hashing.md): every track of the real rekordbox drives in
+// the fixtures must give back the folder rekordbox chose, and tracks that share a slot are told apart by the counter.
+void TestTrakcratePdbBuild::analyzePathRuleMatchesRealRekordboxDrives()
+{
+    struct Seen { std::vector<std::pair<std::string, std::string>> pairs; };
+    int checked = 0;
+    for (const char* name : {"rb-loads-fine.pdb", "rb-mini.pdb", "../pdb/export7.pdb"}) {
+        const std::string bytes = slurp(std::string(TRAKCRATE_FIXTURES) + "/pdb-drive/" + name);
+        QVERIFY2(!bytes.empty(), name);
+        Seen seen;
+        pdb_parse(reinterpret_cast<const uint8_t*>(bytes.data()), uint32_t(bytes.size()),
+                  [](const pdb_track_t* t, void* ud) {
+                      static_cast<Seen*>(ud)->pairs.emplace_back(t->file_path ? t->file_path : "", t->analyze_path ? t->analyze_path : "");
+                      return 0;
+                  }, &seen);
+        QVERIFY2(!seen.pairs.empty(), name);
+        std::set<std::string> used;
+        for (const auto& pr : seen.pairs) {
+            QCOMPARE(analyzePathFor(pr.first, used), pr.second);
+            ++checked;
+        }
+    }
+    QVERIFY(checked >= 10);
+    // a second track with the same slot (here the very same path) gets the next counter
+    std::set<std::string> used;
+    const std::string first = analyzePathFor("/Contents/A/B/c.mp3", used);
+    const std::string second = analyzePathFor("/Contents/A/B/c.mp3", used);
+    QVERIFY(first.size() > 4 && first.rfind("ANLZ0000.DAT") == first.size() - 12);
+    QCOMPARE(second.substr(0, second.size() - 12), first.substr(0, first.size() - 12));
+    QVERIFY(second.rfind("ANLZ0001.DAT") == second.size() - 12);
+    QVERIFY(analyzePartition(analyzeSlot("/Contents/A/B/c.mp3")) < 128);
+    QVERIFY(analyzeSlot("/Contents/A/B/c.mp3") < 200003u);
+    // a path with a character outside the BMP counts two UTF-16 units; the slot differs from the same path with an ASCII letter
+    QVERIFY(analyzeSlot("/Contents/\xF0\x9F\x8E\xA7.mp3") != analyzeSlot("/Contents/a.mp3"));
 }
 
 void TestTrakcratePdbBuild::unicodeAndLongStrings()

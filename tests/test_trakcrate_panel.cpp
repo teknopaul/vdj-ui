@@ -25,6 +25,7 @@
 #include "trakcrate/usb_speed.h"
 #include <QFile>
 #include "ui/trakcrate_track_model.h"
+#include "ui/mounted_sticks.h"
 
 #include <cmath>
 #include <cstring>
@@ -87,6 +88,8 @@ private slots:
     void panelPicksUpChangesOnDisk();
     void panelAnalysesSelectedTracks();
     void panelExportsAPlaylist();
+    void rekordboxSticksAreListedFromMountedVolumes();
+    void panelAddsAPlaylistToARekordboxStick();
     void panelImportsARekordboxDrive();
     void panelPendrives();
     void panelSettingsSets();
@@ -371,6 +374,106 @@ void TestTrakcratePanel::panelAnalysesSelectedTracks()
     QVERIFY(p.importFolder((tmp_ / "Auto").string().c_str(), o));
     QVERIFY(p.waitForJob());
     QVERIFY(tc::fs::exists(p.library().trackDir("Auto", "c") / "waveform.bin"));
+}
+
+void TestTrakcratePanel::rekordboxSticksAreListedFromMountedVolumes()
+{
+    auto makeStick = [&](const char* name, bool database) {
+        const tc::fs::path root = tmp_ / name;
+        tc::fs::create_directories(root / "PIONEER/rekordbox");
+        if (database) std::ofstream(root / "PIONEER/rekordbox/export.pdb") << "x";
+        return QString::fromStdString(root.string());
+    };
+    MountedVolume ok, noDb, readOnly, notReady, unnamed;
+    ok.root = makeStick("ok", true);            ok.name = "KIOXIA";        ok.freeBytes = 5ll << 30;
+    noDb.root = makeStick("nodb", false);       noDb.name = "PLAIN";
+    readOnly.root = makeStick("ro", true);      readOnly.name = "LOCKED";  readOnly.readOnly = true;
+    notReady.root = makeStick("nr", true);      notReady.name = "GONE";    notReady.ready = false;
+    unnamed.root = makeStick("unnamed", true);
+    const QList<RekordboxStick> sticks = listRekordboxSticks([&]() { return QList<MountedVolume>{noDb, ok, readOnly, notReady, unnamed}; });
+    QCOMPARE(sticks.size(), 2);                                                          // only ready, writable volumes with PIONEER/rekordbox/export.pdb, in order
+    QCOMPARE(sticks[0].root, ok.root);
+    QVERIFY(sticks[0].label.startsWith("KIOXIA ("));
+    QVERIFY(sticks[0].label.contains("free"));
+    QCOMPARE(sticks[1].root, unnamed.root);
+    QVERIFY(sticks[1].label.startsWith("unnamed ("));                                    // no volume name: the folder name
+    QVERIFY(listRekordboxSticks([]() { return QList<MountedVolume>(); }).isEmpty());
+}
+
+void TestTrakcratePanel::panelAddsAPlaylistToARekordboxStick()
+{
+    auto makeSet = [&](const char* folder, std::initializer_list<const char*> names, double base) {
+        double f = base;
+        for (const char* n : names) writeWav(tmp_ / folder / (std::string(n) + ".wav"), f += 40);
+    };
+    makeSet("Gig", {"g1", "g2"}, 300);
+    makeSet("More", {"m1", "m2", "m3"}, 700);
+    makeSet("Raw", {"r1"}, 900);
+    TrakcratePanel p;
+    QVERIFY(p.createLibrary((tmp_ / "lib").string().c_str()));
+    tc::ImportOptions io;
+    io.analyse = true;
+    QVERIFY(p.importFolder((tmp_ / "Gig").string().c_str(), io));
+    QVERIFY(p.waitForJob());
+    QVERIFY(p.importFolder((tmp_ / "More").string().c_str(), io));
+    QVERIFY(p.waitForJob());
+    tc::ImportOptions raw;
+    raw.analyse = false;
+    QVERIFY(p.importFolder((tmp_ / "Raw").string().c_str(), raw));
+    QVERIFY(p.waitForJob());
+
+    tc::ExportOptions o;
+    o.playlists = {"Gig"};
+    o.dest = tmp_ / "stick";
+    o.stagingBase = tmp_;
+    QSignalSpy done(&p, &TrakcratePanel::exportFinished);
+    QVERIFY(p.exportDrive(o));
+    QVERIFY(p.waitForJob(20000));
+    QVERIFY2(done.last().at(1).toBool(), qPrintable(done.last().at(0).toString()));
+
+    // the library as it is now: adding to the stick must not touch it
+    auto snapshot = [&]() {
+        std::map<std::string, std::uintmax_t> m;
+        std::error_code ec;
+        for (const auto& e : tc::fs::recursive_directory_iterator(tmp_ / "lib", ec))
+            if (e.is_regular_file(ec)) m[e.path().lexically_relative(tmp_ / "lib").generic_string()] = tc::fs::file_size(e.path(), ec);
+        return m;
+    };
+    const auto libBefore = snapshot();
+    QCOMPARE(p.unanalysedInPlaylist("More"), 0);
+    QCOMPARE(p.unanalysedInPlaylist("Raw"), 1);
+
+    const QString stick = QString::fromStdString((tmp_ / "stick").string());
+    QString err;
+    QVERIFY2(p.addToRekordbox("More", stick, false, &err), qPrintable(err));
+    QVERIFY(p.busy());
+    QString again;
+    QVERIFY(!p.addToRekordbox("Raw", stick, true, &again));                                 // one job on a pendrive at a time (and exclusive jobs are not running)
+    QVERIFY(p.waitForJob(30000));
+    QCOMPARE(done.count(), 2);
+    QVERIFY2(done.last().at(1).toBool(), qPrintable(done.last().at(0).toString()));
+    QVERIFY(done.last().at(0).toString().contains("Added playlist \"More\" to"));
+    QVERIFY(done.last().at(0).toString().contains("3 new track(s)"));
+    QCOMPARE(done.last().at(2).toString(), stick);
+    QVERIFY(tc::fs::exists(tmp_ / "stick/PIONEER/rekordbox/export.pdb.bak"));
+    QVERIFY(libBefore == snapshot());                                                       // no change to the trakcrate library
+
+    // a playlist with the name already on the stick fails, and says so
+    QVERIFY(p.addToRekordbox("More", stick, false, &err));
+    QVERIFY(p.waitForJob(30000));
+    QCOMPARE(done.count(), 3);
+    QVERIFY(!done.last().at(1).toBool());
+    QVERIFY2(done.last().at(0).toString().contains("already has a playlist"), qPrintable(done.last().at(0).toString()));
+
+    // an unanalysed playlist is refused by the engine unless the question was answered yes
+    QVERIFY(p.addToRekordbox("Raw", stick, false, &err));
+    QVERIFY(p.waitForJob(30000));
+    QVERIFY(!done.last().at(1).toBool());
+    QVERIFY(done.last().at(0).toString().contains("not analysed"));
+    QVERIFY(p.addToRekordbox("Raw", stick, true, &err));
+    QVERIFY(p.waitForJob(30000));
+    QVERIFY2(done.last().at(1).toBool(), qPrintable(done.last().at(0).toString()));
+    QVERIFY(libBefore == snapshot());
 }
 
 void TestTrakcratePanel::panelExportsAPlaylist()

@@ -3,6 +3,7 @@
 
 #include "pdb_writer.h"
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -49,6 +50,13 @@ bool buildPdb(const ExportPlan& plan, const std::string& templateBytes, BuiltPdb
 // Reads the built bytes back with libcdj's parsers and compares everything against the plan (counts, titles, ids, paths, playlists).
 // Returns the list of differences; empty means the database says what the plan says.
 std::vector<std::string> verifyPdb(const std::string& bytes, const ExportPlan& plan, const BuiltPdb& built);
+
+// Where the deck looks for the analysis of a track: /PIONEER/USBANLZ/P<partition>/<slot>/ANLZ<counter>.DAT, a function of the track's database
+// path (rekordbox's own rule, doc/trakcrate/usbanalz-hashing.md). `used` holds the analyze paths already taken (the first free counter is chosen
+// and the result is added to it).
+uint32_t analyzeSlot(const std::string& filePath);          // H mod 200003
+unsigned analyzePartition(uint32_t slot);                   // 0..127
+std::string analyzePathFor(const std::string& filePath, std::set<std::string>& used);
 
 // DeviceSQL string encoding (exposed for tests): short ASCII, long ASCII, or UTF-16LE for anything else.
 std::string encodeDeviceSqlString(const std::string& utf8);

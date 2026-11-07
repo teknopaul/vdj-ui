@@ -142,3 +142,7 @@ add_test(vdj-ui-level-meter-test "/home/teknopaul/bzr_workspace/vdj-ui/target-te
 set_tests_properties(vdj-ui-level-meter-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;367;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
 add_test(vdj-ui-sync-aligner-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-sync-aligner-test")
 set_tests_properties(vdj-ui-sync-aligner-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;372;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
+add_test(vdj-ui-trakcrate-pdb-append-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-trakcrate-pdb-append-test")
+set_tests_properties(vdj-ui-trakcrate-pdb-append-test PROPERTIES  _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;380;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
+add_test(vdj-ui-trakcrate-drive-add-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-trakcrate-drive-add-test")
+set_tests_properties(vdj-ui-trakcrate-drive-add-test PROPERTIES  _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;385;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")

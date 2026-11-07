@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "mounted_sticks.h"
 #include "trakcrate/analysis.h"
 #include "trakcrate/bpm_detect.h"
 #include "trakcrate/exporter.h"
@@ -107,6 +108,16 @@ public:
     // Exports playlists as a rekordbox drive as a background job (staged on tmpfs, checked, then written once). The template database and
     // the artwork encoder are filled in here. When registerName is not empty the destination is offered as a virtual pendrive on success.
     bool exportDrive(trakcrate::ExportOptions opts, const QString& registerName = QString());
+
+    // "Add to rekordbox": adds the playlist to the database of a mounted rekordbox pendrive as a background job next to the exports (the same jobs strip,
+    // progress and cancel). Nothing in the trakcrate library changes. allowUnanalysed: tracks without beat grid and waveform are added with a flat waveform.
+    bool addToRekordbox(const QString& playlist, const QString& stickRoot, bool allowUnanalysed, QString* err = nullptr);
+    // How many tracks of the playlist have no analysis (the menu asks before adding them).
+    int unanalysedInPlaylist(const QString& playlist) const;
+    // The menu action: asks about unanalysed tracks, then starts addToRekordbox.
+    void addToRekordboxDialog(const QString& playlist, const QString& stickRoot);
+    // Where the "Add to rekordbox" menu looks for pendrives (tests give it folders).
+    void setVolumeLister(std::function<QList<MountedVolume>()> lister) { volumes_ = std::move(lister); }
 
     // Settings sets (trakcrate/settings_sets.h): the player support files copied onto every pendrive. These change the library at once, refresh the
     // tree and return false with err on failure; the dialogs of the User Settings menu call them.
@@ -226,10 +237,13 @@ private:
         QString dest, registerName;
         int done = 0, total = 0;
         bool writingDatabase = false;                      // the database write cannot be interrupted
+        std::shared_ptr<trakcrate::AddResult> addResult;   // set for "Add to rekordbox" jobs (result is then unused)
+        QString playlist;
     };
     std::vector<std::unique_ptr<ExportJob>> exports_;
     int nextExportId_ = 1;
     QString orphanDest_;
+    std::function<QList<MountedVolume>()> volumes_ = systemVolumes;
     TrakcrateJobsStrip* jobsStrip_ = nullptr;
     QStringList exportLog_;                               // what the last exports reported, newest last (the status line shows the newest)
     bool anyBusy() const;

@@ -76,6 +76,21 @@ static int free_bytes(const struct tc_pdb_page *p)
     return (int)K_PAGE - (int)K_HEAD - (int)heap_bytes(p) - (2 * (int)p->nrows + 4 * (int)groups_for(p->nrows));
 }
 
+size_t tc_pdb_index_span(size_t slots)
+{
+    return index_span(slots);
+}
+
+size_t tc_pdb_heap_bytes(const struct tc_pdb_page *p)
+{
+    return heap_bytes(p);
+}
+
+size_t tc_pdb_present_rows(const struct tc_pdb_page *p)
+{
+    return present_rows(p);
+}
+
 /* ---- memory ---- */
 
 static void page_free(struct tc_pdb_page *p)
@@ -143,6 +158,38 @@ static int page_clone(const struct tc_pdb_page *s, struct tc_pdb_page *d)
         memcpy(d->group_flags, s->group_flags, s->ngroups * sizeof *d->group_flags);
     }
     return 0;
+}
+
+void tc_pdb_page_free(struct tc_pdb_page *p)
+{
+    page_free(p);
+}
+
+int tc_pdb_clone(const struct tc_pdb *s, struct tc_pdb *d)
+{
+    size_t i;
+
+    *d = *s;
+    d->tables = NULL;
+    d->header_tail = NULL;
+    d->pages = NULL;
+    d->tables = malloc((s->ntables ? s->ntables : 1) * sizeof *d->tables);
+    d->header_tail = malloc(s->header_tail_len ? s->header_tail_len : 1);
+    d->pages = calloc(s->npages ? s->npages : 1, sizeof *d->pages);
+    if (d->tables == NULL || d->header_tail == NULL || d->pages == NULL) {
+        goto oom;
+    }
+    memcpy(d->tables, s->tables, s->ntables * sizeof *d->tables);
+    memcpy(d->header_tail, s->header_tail, s->header_tail_len);
+    for (i = 0; i < s->npages; i++) {
+        if (page_clone(&s->pages[i], &d->pages[i]) != 0) {
+            goto oom;
+        }
+    }
+    return 0;
+oom:
+    tc_pdb_free(d);
+    return -1;
 }
 
 /* ---- parse ---- */
@@ -601,6 +648,144 @@ uint8_t *tc_devsql_string(const char *utf8, size_t *len)
     return o.d;
 }
 
+int tc_devsql_decode(const uint8_t *row, size_t rowlen, size_t at, char **utf8, size_t *end)
+{
+    unsigned kind;
+    size_t total, n, i, o = 0;
+    char *out;
+
+    *utf8 = NULL;
+    if (at >= rowlen) {
+        return -1;
+    }
+    kind = row[at];
+    if (kind == 0x40 || kind == 0x90) {
+        if (at + 4 > rowlen) {
+            return -1;
+        }
+        total = (size_t)row[at + 1] | (size_t)row[at + 2] << 8;         /* including the 4 byte header */
+        if (total < 4 || at + total > rowlen) {
+            return -1;
+        }
+        n = total - 4;
+        if (kind == 0x90 && n % 2) {
+            return -1;
+        }
+        out = malloc(n * 2 + 1);                                         /* UTF-16 units become at most 3 bytes per 2 */
+        if (out == NULL) {
+            return -1;
+        }
+        if (kind == 0x40) {
+            memcpy(out, row + at + 4, n);
+            o = n;
+        } else {
+            for (i = 0; i < n; i += 2) {
+                uint32_t cp = (uint32_t)row[at + 4 + i] | (uint32_t)row[at + 5 + i] << 8;
+
+                if (cp >= 0xD800 && cp < 0xDC00 && i + 3 < n) {
+                    uint32_t lo = (uint32_t)row[at + 6 + i] | (uint32_t)row[at + 7 + i] << 8;
+
+                    if (lo >= 0xDC00 && lo < 0xE000) {
+                        cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00);
+                        i += 2;
+                    }
+                }
+                if (cp < 0x80) {
+                    out[o++] = (char)cp;
+                } else if (cp < 0x800) {
+                    out[o++] = (char)(0xC0 | (cp >> 6));
+                    out[o++] = (char)(0x80 | (cp & 63));
+                } else if (cp < 0x10000) {
+                    out[o++] = (char)(0xE0 | (cp >> 12));
+                    out[o++] = (char)(0x80 | ((cp >> 6) & 63));
+                    out[o++] = (char)(0x80 | (cp & 63));
+                } else {
+                    out[o++] = (char)(0xF0 | (cp >> 18));
+                    out[o++] = (char)(0x80 | ((cp >> 12) & 63));
+                    out[o++] = (char)(0x80 | ((cp >> 6) & 63));
+                    out[o++] = (char)(0x80 | (cp & 63));
+                }
+            }
+        }
+    } else {
+        if ((kind & 1) == 0) {
+            return -1;                                                   /* an unknown kind */
+        }
+        total = kind >> 1;                                               /* length byte included */
+        if (total < 1 || at + total > rowlen) {
+            return -1;
+        }
+        n = total - 1;
+        out = malloc(n + 1);
+        if (out == NULL) {
+            return -1;
+        }
+        memcpy(out, row + at + 1, n);
+        o = n;
+    }
+    out[o] = '\0';
+    *utf8 = out;
+    if (end != NULL) {
+        *end = at + total;
+    }
+    return 0;
+}
+
+/* slot = H mod 200003 with H = h*0x34f5501d + c*0x93b6 (wrapping 32 bit) over the UTF-16 code units of the path */
+uint32_t tc_analyze_slot(const char *path)
+{
+    const unsigned char *s = (const unsigned char *)path;
+    const size_t n = strlen(path);
+    size_t k = 0;
+    uint32_t h = 0;
+
+    while (k < n) {
+        uint32_t c0 = s[k], cp = c0, units[2];
+        size_t len = 1, j;
+        int cnt = 1, u;
+
+        if (c0 >= 0xF0 && k + 3 < n) {
+            cp = (c0 & 7u) << 18;
+            len = 4;
+        } else if (c0 >= 0xE0 && k + 2 < n) {
+            cp = (c0 & 15u) << 12;
+            len = 3;
+        } else if (c0 >= 0xC0 && k + 1 < n) {
+            cp = (c0 & 31u) << 6;
+            len = 2;
+        }
+        for (j = 1; j < len; j++) {
+            cp |= (uint32_t)(s[k + j] & 63u) << (6 * (len - 1 - j));
+        }
+        k += len;
+        units[0] = cp;
+        units[1] = 0;
+        if (cp >= 0x10000) {
+            cp -= 0x10000;
+            units[0] = 0xD800 + (cp >> 10);
+            units[1] = 0xDC00 + (cp & 0x3FF);
+            cnt = 2;
+        }
+        for (u = 0; u < cnt; u++) {
+            h = h * 0x34f5501du + units[u] * 0x93b6u;
+        }
+    }
+    return h % 200003u;
+}
+
+/* the first folder (0..127): seven bits of the slot */
+unsigned tc_analyze_partition(uint32_t slot)
+{
+    static const int bits[7] = {0, 2, 6, 7, 9, 13, 16};
+    unsigned part = 0;
+    int k;
+
+    for (k = 0; k < 7; k++) {
+        part |= ((slot >> bits[k]) & 1u) << k;
+    }
+    return part;
+}
+
 /* ---- row encoders (each returns a malloc'd row padded to a multiple of 4) ---- */
 
 static void pad4(struct tc_buf *b)
@@ -647,7 +832,7 @@ static uint8_t *finish(struct tc_buf *b, size_t *len)
     return b->d;
 }
 
-static uint8_t *name_row(uint32_t id, const char *name, size_t *len)         /* genres, labels, artwork paths */
+uint8_t *tc_row_name(uint32_t id, const char *name, size_t *len)         /* genres, labels, artwork paths */
 {
     struct tc_buf b = { NULL, 0, 0, 0 };
 
@@ -656,7 +841,7 @@ static uint8_t *name_row(uint32_t id, const char *name, size_t *len)         /* 
     return finish(&b, len);
 }
 
-static uint8_t *artist_row(uint32_t id, const char *name, size_t *len)
+uint8_t *tc_row_artist(uint32_t id, const char *name, size_t *len)
 {
     struct tc_buf b = { NULL, 0, 0, 0 };
 
@@ -676,7 +861,7 @@ static uint8_t *artist_row(uint32_t id, const char *name, size_t *len)
     return finish(&b, len);
 }
 
-static uint8_t *album_row(uint32_t id, uint32_t artist_id, const char *name, size_t *len)
+uint8_t *tc_row_album(uint32_t id, uint32_t artist_id, const char *name, size_t *len)
 {
     struct tc_buf b = { NULL, 0, 0, 0 };
 
@@ -697,7 +882,7 @@ static uint8_t *album_row(uint32_t id, uint32_t artist_id, const char *name, siz
     return finish(&b, len);
 }
 
-static uint8_t *playlist_row(uint32_t id, uint32_t sort_order, const char *name, size_t *len)
+uint8_t *tc_row_playlist(uint32_t id, uint32_t sort_order, const char *name, size_t *len)
 {
     struct tc_buf b = { NULL, 0, 0, 0 };
 
@@ -710,7 +895,7 @@ static uint8_t *playlist_row(uint32_t id, uint32_t sort_order, const char *name,
     return finish(&b, len);
 }
 
-static uint8_t *entry_row(uint32_t index, uint32_t track_id, uint32_t playlist_id, size_t *len)
+uint8_t *tc_row_entry(uint32_t index, uint32_t track_id, uint32_t playlist_id, size_t *len)
 {
     struct tc_buf b = { NULL, 0, 0, 0 };
 
@@ -725,9 +910,6 @@ static uint8_t *entry_row(uint32_t index, uint32_t track_id, uint32_t playlist_i
     return b.d;
 }
 
-/* The strings of a track row: 21 slots in the order the template row stores them. */
-#define K_TRACK_FIXED 94
-#define K_TRACK_SLOTS 21
 
 static size_t devsql_length(const uint8_t *row, size_t rowlen, size_t at)
 {
@@ -743,23 +925,16 @@ static size_t devsql_length(const uint8_t *row, size_t rowlen, size_t at)
     return kind >> 1;
 }
 
-struct track_template {
-    uint8_t fixed[K_TRACK_FIXED];
-    uint8_t *strings[K_TRACK_SLOTS];
-    size_t string_len[K_TRACK_SLOTS];
-    char default_date[32];
-};
-
-static void track_template_free(struct track_template *t)
+void tc_track_template_free(struct tc_track_template *t)
 {
     int i;
 
-    for (i = 0; i < K_TRACK_SLOTS; i++) {
+    for (i = 0; i < TC_TRACK_SLOTS; i++) {
         free(t->strings[i]);
     }
 }
 
-static int load_track_template(const struct tc_pdb *t, struct track_template *out)
+int tc_track_template_load(const struct tc_pdb *t, struct tc_track_template *out)
 {
     size_t n, i;
     const struct tc_pdb_row **rows = tc_pdb_table_rows(t, 0, &n);
@@ -768,14 +943,14 @@ static int load_track_template(const struct tc_pdb *t, struct track_template *ou
     int ok = 0;
 
     memset(out, 0, sizeof *out);
-    if (rows == NULL || n == 0 || rows[0]->len < (size_t)(K_TRACK_FIXED + K_TRACK_SLOTS * 2)) {
+    if (rows == NULL || n == 0 || rows[0]->len < (size_t)(TC_TRACK_FIXED + TC_TRACK_SLOTS * 2)) {
         goto out;
     }
     r = rows[0]->bytes;
     rl = rows[0]->len;
-    memcpy(out->fixed, r, K_TRACK_FIXED);
-    for (i = 0; i < K_TRACK_SLOTS; i++) {
-        size_t ofs = tc_get_le16(r + K_TRACK_FIXED + 2 * i), len = devsql_length(r, rl, ofs);
+    memcpy(out->fixed, r, TC_TRACK_FIXED);
+    for (i = 0; i < TC_TRACK_SLOTS; i++) {
+        size_t ofs = tc_get_le16(r + TC_TRACK_FIXED + 2 * i), len = devsql_length(r, rl, ofs);
 
         if (ofs + len > rl || len == 0) {
             goto out;
@@ -797,7 +972,7 @@ static int load_track_template(const struct tc_pdb *t, struct track_template *ou
 out:
     free(rows);
     if (!ok) {
-        track_template_free(out);
+        tc_track_template_free(out);
     }
     return ok;
 }
@@ -822,15 +997,15 @@ static int file_type_of(const char *name)
     return -1;
 }
 
-static uint8_t *track_row(const struct track_template *tpl, const struct tc_plan_track *t, uint32_t id, uint32_t genre_id, uint32_t album_id,
+uint8_t *tc_row_track(const struct tc_track_template *tpl, const struct tc_plan_track *t, uint32_t id, uint32_t genre_id, uint32_t album_id,
                           uint32_t artist_id, uint32_t label_id, uint32_t artwork_id, const char *analyze_path, size_t *len)
 {
-    uint8_t fixed[K_TRACK_FIXED];
+    uint8_t fixed[TC_TRACK_FIXED];
     struct tc_buf row = { NULL, 0, 0, 0 };
     const char *date = t->date_added != NULL && t->date_added[0] ? t->date_added : tpl->default_date;
-    uint8_t *s[K_TRACK_SLOTS];
-    size_t sl[K_TRACK_SLOTS];
-    int i, own[K_TRACK_SLOTS] = { 0 };
+    uint8_t *s[TC_TRACK_SLOTS];
+    size_t sl[TC_TRACK_SLOTS];
+    int i, own[TC_TRACK_SLOTS] = { 0 };
 
     memcpy(fixed, tpl->fixed, sizeof fixed);
     tc_set_le16(fixed + 0, 0x24);
@@ -859,7 +1034,7 @@ static uint8_t *track_row(const struct track_template *tpl, const struct tc_plan
         tc_set_le16(fixed + 90, (unsigned)file_type_of(t->file_name));
     }
 
-    for (i = 0; i < K_TRACK_SLOTS; i++) {
+    for (i = 0; i < TC_TRACK_SLOTS; i++) {
         s[i] = tpl->strings[i];
         sl[i] = tpl->string_len[i];
     }
@@ -877,24 +1052,24 @@ static uint8_t *track_row(const struct track_template *tpl, const struct tc_plan
 #undef SLOT
 
     tc_buf_put(&row, fixed, sizeof fixed);
-    tc_buf_zeros(&row, K_TRACK_SLOTS * 2);
-    for (i = 0; i < K_TRACK_SLOTS; i++) {
+    tc_buf_zeros(&row, TC_TRACK_SLOTS * 2);
+    for (i = 0; i < TC_TRACK_SLOTS; i++) {
         align_wide(&row, s[i]);
         if (row.d != NULL) {
-            tc_set_le16(row.d + K_TRACK_FIXED + 2 * i, (unsigned)row.n);
+            tc_set_le16(row.d + TC_TRACK_FIXED + 2 * i, (unsigned)row.n);
         }
         tc_buf_put(&row, s[i], sl[i]);
     }
     /* the template rows end with 38 to 70 zero bytes after the last string (reserve for edits); the length is a multiple of 4 */
     tc_buf_zeros(&row, 40);
-    for (i = 0; i < K_TRACK_SLOTS; i++) {
+    for (i = 0; i < TC_TRACK_SLOTS; i++) {
         if (own[i]) {
             free(s[i]);
         }
     }
     return finish(&row, len);
 oom:
-    for (i = 0; i < K_TRACK_SLOTS; i++) {
+    for (i = 0; i < TC_TRACK_SLOTS; i++) {
         if (own[i]) {
             free(s[i]);
         }
@@ -1084,7 +1259,7 @@ static int page_append(struct tc_pdb *f, size_t *cap, const struct tc_pdb_page *
 int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, size_t tpl_len, struct tc_built_pdb *out, char *err, size_t errsz)
 {
     struct tc_pdb tpl, f;
-    struct track_template ttpl;
+    struct tc_track_template ttpl;
     struct idlist genre, label, artist, album, artwork;
     uint32_t *genre_id = NULL, *label_id = NULL, *artist_id = NULL, *album_id = NULL, *artwork_id = NULL;
     char **analyze = NULL;
@@ -1113,7 +1288,7 @@ int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, si
         seterr(err, errsz, "the template must have 20 tables");
         goto out;
     }
-    if (!load_track_template(&tpl, &ttpl)) {
+    if (!tc_track_template_load(&tpl, &ttpl)) {
         seterr(err, errsz, "the template has no usable track row");
         goto out;
     }
@@ -1164,32 +1339,22 @@ int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, si
         if (p->analyze_path != NULL && p->analyze_path[0]) {
             analyze[t] = strdup(p->analyze_path);
         } else {
-            /* The real names look like P00C/0000D1E2: 3 and 8 hex digits. The rule is not known, but in all 2195 tracks of a real export the first
-         * number is at most 0x7F and the second below 200003 (the slot count of USBANLZ/USBMNG.DAT), so both are kept in those ranges. */
-            char hex[65], a3[4] = "", b8[9] = "";
-            unsigned a = 0, b = 0;
-            size_t j;
+            /* The deck recomputes this folder from the track's database path, so it must be rekordbox's own rule (doc/trakcrate/usbanalz-hashing.md):
+             * P<partition>/<slot>/ANLZ<counter>.DAT. Tracks that share a slot share the folder and are told apart by the counter. */
+            const uint32_t slot = tc_analyze_slot(p->file_path ? p->file_path : "");
+            unsigned n;
 
-            if (p->audio_hash != NULL && p->audio_hash[0]) {
-                snprintf(hex, sizeof hex, "%s", p->audio_hash);
-            } else {
-                tc_sha256_hex(p->file_path ? p->file_path : "", strlen(p->file_path ? p->file_path : ""), hex);
-            }
-            snprintf(a3, sizeof a3, "%.3s", hex);
-            snprintf(b8, sizeof b8, "%.8s", strlen(hex) > 3 ? hex + 3 : "");
-            sscanf(a3, "%x", &a);
-            sscanf(b8, "%x", &b);
-            for (;;) {
+            for (n = 0;; n++) {
                 int used = 0;
+                size_t j;
 
-                snprintf(buf, sizeof buf, "/PIONEER/USBANLZ/P%03X/%08X/ANLZ0000.DAT", a % 128u, b % 200003u);
+                snprintf(buf, sizeof buf, "/PIONEER/USBANLZ/P%03X/%08X/ANLZ%04X.DAT", tc_analyze_partition(slot), slot, n);
                 for (j = 0; j < plan->ntracks && !used; j++) {
                     used = analyze[j] != NULL && strcmp(analyze[j], buf) == 0;
                 }
                 if (!used) {
                     break;
                 }
-                b++;                                    /* two tracks hashed alike: step to a free name */
             }
             analyze[t] = strdup(buf);
         }
@@ -1203,7 +1368,7 @@ int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, si
     for (t = 0; t < plan->ntracks; t++) {
         size_t len = 0;
 
-        if (rowlist_add(&rows[0], track_row(&ttpl, &plan->tracks[t], (uint32_t)(t + 1), genre_id[t], album_id[t], artist_id[t], label_id[t],
+        if (rowlist_add(&rows[0], tc_row_track(&ttpl, &plan->tracks[t], (uint32_t)(t + 1), genre_id[t], album_id[t], artist_id[t], label_id[t],
                                             artwork_id[t], analyze[t], &len), &len) != 0) {
             goto oom;
         }
@@ -1211,20 +1376,20 @@ int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, si
 #define NAMES(tbl, list) \
     for (i = 0; i < (list).n; i++) { \
         size_t len; \
-        if (rowlist_add(&rows[tbl], name_row((uint32_t)(i + 1), (list).names[i], &len), &len) != 0) goto oom; \
+        if (rowlist_add(&rows[tbl], tc_row_name((uint32_t)(i + 1), (list).names[i], &len), &len) != 0) goto oom; \
     }
     NAMES(1, genre)
     for (i = 0; i < artist.n; i++) {
         size_t len = 0;
 
-        if (rowlist_add(&rows[2], artist_row((uint32_t)(i + 1), artist.names[i], &len), &len) != 0) {
+        if (rowlist_add(&rows[2], tc_row_artist((uint32_t)(i + 1), artist.names[i], &len), &len) != 0) {
             goto oom;
         }
     }
     for (i = 0; i < album.n; i++) {
         size_t len = 0;
 
-        if (rowlist_add(&rows[3], album_row((uint32_t)(i + 1), album.artist[i], album.names[i], &len), &len) != 0) {
+        if (rowlist_add(&rows[3], tc_row_album((uint32_t)(i + 1), album.artist[i], album.names[i], &len), &len) != 0) {
             goto oom;
         }
     }
@@ -1232,7 +1397,7 @@ int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, si
     for (i = 0; i < plan->nplaylists; i++) {
         size_t len = 0;
 
-        if (rowlist_add(&rows[7], playlist_row((uint32_t)(i + 1), (uint32_t)i, plan->playlists[i].name, &len), &len) != 0) {
+        if (rowlist_add(&rows[7], tc_row_playlist((uint32_t)(i + 1), (uint32_t)i, plan->playlists[i].name, &len), &len) != 0) {
             goto oom;
         }
     }
@@ -1240,7 +1405,7 @@ int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, si
         for (k = 0; k < plan->playlists[i].ntracks; k++) {
             size_t len = 0;
 
-            if (rowlist_add(&rows[8], entry_row((uint32_t)(k + 1), (uint32_t)(plan->playlists[i].tracks[k] + 1), (uint32_t)(i + 1), &len), &len) != 0) {
+            if (rowlist_add(&rows[8], tc_row_entry((uint32_t)(k + 1), (uint32_t)(plan->playlists[i].tracks[k] + 1), (uint32_t)(i + 1), &len), &len) != 0) {
                 goto oom;
             }
         }
@@ -1248,7 +1413,7 @@ int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl_bytes, si
     for (i = 0; i < artwork.n; i++) {
         size_t len = 0;
 
-        if (rowlist_add(&rows[13], name_row((uint32_t)(i + 1), artwork.aux[i], &len), &len) != 0) {
+        if (rowlist_add(&rows[13], tc_row_name((uint32_t)(i + 1), artwork.aux[i], &len), &len) != 0) {
             goto oom;
         }
     }
@@ -1474,7 +1639,7 @@ out:
         rowlist_free(&rows[i]);
     }
     if (have_ttpl) {
-        track_template_free(&ttpl);
+        tc_track_template_free(&ttpl);
     }
     if (have_tpl) {
         tc_pdb_free(&tpl);

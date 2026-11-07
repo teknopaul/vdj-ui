@@ -62,8 +62,19 @@ void tc_pdb_free(struct tc_pdb *f);
 /* the present rows of every page of the table `type`, walking its chain; *n rows; malloc'd array of pointers into f */
 const struct tc_pdb_row **tc_pdb_table_rows(const struct tc_pdb *f, uint32_t type, size_t *n);
 
+/* page geometry and copies, for the code that edits a parsed file (rbappend.c) */
+size_t tc_pdb_index_span(size_t slots);                     /* bytes the row index takes at the end of a page with this many slots */
+size_t tc_pdb_heap_bytes(const struct tc_pdb_page *p);      /* total bytes of the rows of the page */
+size_t tc_pdb_present_rows(const struct tc_pdb_page *p);
+void tc_pdb_page_free(struct tc_pdb_page *p);               /* frees the contents of a page, not the struct; leaves it zeroed */
+int tc_pdb_clone(const struct tc_pdb *s, struct tc_pdb *d); /* a deep copy; 0, or -1 when out of memory */
+
 /* DeviceSQL string: short ASCII, long ASCII, or UTF-16LE for anything else. Appends to out as a malloc'd string. */
 uint8_t *tc_devsql_string(const char *utf8, size_t *len);
+
+/* Reads the DeviceSQL string at byte `at` of a row (short ASCII, 0x40 long ASCII or 0x90 UTF-16LE) as a malloc'd UTF-8 string. 0, or -1 when it
+ * does not fit in the row, has an unknown kind or memory ran out; *end (optional) is the offset just after the string. */
+int tc_devsql_decode(const uint8_t *row, size_t rowlen, size_t at, char **utf8, size_t *end);
 
 /* ---- the builder ---- */
 
@@ -103,8 +114,37 @@ struct tc_built_pdb {
     int data_pages;
 };
 
+/* ---- row encoders (each returns a malloc'd row padded to a multiple of 4 with a UTF-16 string on a 4 byte boundary; NULL when out of memory) ---- */
+
+#define TC_TRACK_FIXED 94           /* bytes of a track row before its 21 string offsets */
+#define TC_TRACK_SLOTS 21
+
+struct tc_track_template {
+    uint8_t fixed[TC_TRACK_FIXED];
+    uint8_t *strings[TC_TRACK_SLOTS];
+    size_t string_len[TC_TRACK_SLOTS];
+    char default_date[32];
+};
+
+/* the first present track row of a database: its unknown bytes are copied into every new track row. 1 on success, 0 when it has no usable row */
+int tc_track_template_load(const struct tc_pdb *t, struct tc_track_template *out);
+void tc_track_template_free(struct tc_track_template *t);
+
+uint8_t *tc_row_track(const struct tc_track_template *tpl, const struct tc_plan_track *t, uint32_t id, uint32_t genre_id, uint32_t album_id,
+                      uint32_t artist_id, uint32_t label_id, uint32_t artwork_id, const char *analyze_path, size_t *len);
+uint8_t *tc_row_name(uint32_t id, const char *name, size_t *len);                       /* genres, labels, artwork paths */
+uint8_t *tc_row_artist(uint32_t id, const char *name, size_t *len);
+uint8_t *tc_row_album(uint32_t id, uint32_t artist_id, const char *name, size_t *len);
+uint8_t *tc_row_playlist(uint32_t id, uint32_t sort_order, const char *name, size_t *len);
+uint8_t *tc_row_entry(uint32_t index, uint32_t track_id, uint32_t playlist_id, size_t *len);
+
 /* 0, or -1 with err (unusable template, a row that cannot be laid out, out of memory) */
 int tc_pdb_build(const struct tc_export_plan *plan, const uint8_t *tpl, size_t tpl_len, struct tc_built_pdb *out, char *err, size_t errsz);
 void tc_built_pdb_free(struct tc_built_pdb *b);
+
+/* Where the deck looks for the analysis of a track: /PIONEER/USBANLZ/P<partition>/<slot>/ANLZ<counter>.DAT is a function of the track's database
+ * path (rekordbox's own rule, doc/trakcrate/usbanalz-hashing.md). */
+uint32_t tc_analyze_slot(const char *path);      /* H mod 200003 */
+unsigned tc_analyze_partition(uint32_t slot);    /* 0..127 */
 
 #endif /* TC_RBPDB_H */

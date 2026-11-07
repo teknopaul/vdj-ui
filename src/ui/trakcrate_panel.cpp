@@ -58,6 +58,7 @@
 #include "trakcrate_tree_widget.h"
 #include "trakcrate_job.h"
 #include "trakcrate_jobs_strip.h"
+#include "mounted_sticks.h"
 #include "trakcrate_track_model.h"
 
 namespace vdj {
@@ -936,11 +937,34 @@ void TrakcratePanel::onExportFinished(int id)
     ExportJob* job = exportJob(id);
     if (!job) return;
     const std::shared_ptr<trakcrate::ExportResult> result = job->result;
-    const QString dest = job->dest, registerName = job->registerName;
+    const QString dest = job->dest, registerName = job->registerName, addedPlaylist = job->playlist;
+    const std::shared_ptr<trakcrate::AddResult> addResult = job->addResult;
     job->runner->deleteLater();
     jobsStrip_->removeJob(id);
     exports_.erase(std::remove_if(exports_.begin(), exports_.end(), [id](const std::unique_ptr<ExportJob>& e) { return e->id == id; }), exports_.end());
     updateExportUi();
+    if (addResult) {                                          // "Add to rekordbox": the library is not touched, so there is nothing to refresh or register
+        const trakcrate::AddResult& r = *addResult;
+        QString summary, detail;
+        if (r.ok) {
+            summary = QStringLiteral("Added playlist \"%1\" to %2: %3 new track(s), %4 already there (%5 file(s), %6 MiB); the old database is %7 and a copy is in %8")
+                          .arg(addedPlaylist, dest).arg(r.newTracks).arg(r.existingTracks).arg(r.filesCopied).arg(qint64(r.bytesWritten >> 20))
+                          .arg(QString::fromStdString(r.backupOnDrive), QString::fromStdString(r.backupCopy));
+        } else {
+            summary = r.cancelled ? QStringLiteral("Add to rekordbox cancelled: the pendrive is as it was")
+                                  : QStringLiteral("Add to rekordbox failed: %1").arg(QString::fromStdString(r.error));
+            if (r.switched) summary += QStringLiteral(" (the new database is in place)");
+            if (!r.orphans.empty()) summary += QStringLiteral("; %1 file(s) added to the pendrive could not be removed").arg(r.orphans.size());
+            if (!r.backupCopy.empty()) detail += QStringLiteral("A copy of the old database is in %1\n").arg(QString::fromStdString(r.backupCopy));
+        }
+        for (const std::string& w : r.warnings) detail += QString::fromStdString(w) + QLatin1Char('\n');
+        exportLog_ << summary;
+        while (exportLog_.size() > 20) exportLog_.removeFirst();
+        progressLabel_->setText(summary);
+        progressLabel_->setToolTip(exportLog_.size() > 1 ? detail + QLatin1Char('\n') + exportLog_.join(QLatin1Char('\n')) : detail);
+        emit exportFinished(summary, r.ok, dest);
+        return;
+    }
     refresh();
     QString summary;
     bool ok = false;
@@ -984,7 +1008,7 @@ void TrakcratePanel::onExportProgress(int id, int done, int total, const QString
     job->done = done;
     job->total = total;
     // the database write cannot be interrupted (it must be whole to be of use)
-    if (current.endsWith(QStringLiteral("rekordbox/export.pdb")) && !job->writingDatabase) {
+    if ((current.endsWith(QStringLiteral("rekordbox/export.pdb")) || current.endsWith(QStringLiteral("rekordbox/export.pdb.new")) || current.startsWith(QStringLiteral("Switching database"))) && !job->writingDatabase) {
         job->writingDatabase = true;
         jobsStrip_->setCancellable(id, false);
     }
@@ -1171,6 +1195,77 @@ bool TrakcratePanel::exportDrive(trakcrate::ExportOptions opts, const QString& r
     return runner->start(QStringLiteral("Export"), [result, lib, opts](const std::atomic<bool>& cancel, const TrakcrateJobRunner::Progress& progress) {
         *result = trakcrate::exportDrive(lib, opts, progress, &cancel);
     });
+}
+
+bool TrakcratePanel::addToRekordbox(const QString& playlist, const QString& stickRoot, bool allowUnanalysed, QString* err)
+{
+    auto no = [&](const QString& m) { if (err) *err = m; return false; };
+    if (!lib_.isOpen() || jobs_->busy()) return no(QStringLiteral("Another job is running."));
+    for (const auto& e : exports_)                       // two jobs on one pendrive would damage each other
+        if (trakcrate::destinationsOverlap(e->dest.toStdString(), stickRoot.toStdString())) return no(QStringLiteral("Something is already being written to that pendrive."));
+    QFile tpl(QStringLiteral(":/trakcrate/template-export.pdb"));
+    if (!tpl.open(QIODevice::ReadOnly)) return no(QStringLiteral("The template database is missing."));
+    trakcrate::AddOptions opts;
+    opts.base.playlists = {playlist.toStdString()};
+    opts.base.dest = stickRoot.toStdString();
+    opts.base.templatePdb.assign(tpl.readAll().constData(), size_t(tpl.size()));
+    opts.base.allowUnanalysed = allowUnanalysed;
+    opts.base.encodeArtwork = [](const std::string& src, int size, std::string* jpeg, std::string* e) {
+        QString msg;
+        const QByteArray out = encodeArtworkJpeg(QByteArray(src.data(), int(src.size())), size, &msg);
+        if (out.isEmpty()) { *e = msg.toStdString(); return false; }
+        jpeg->assign(out.constData(), size_t(out.size()));
+        return true;
+    };
+    analysis_.reset(); bpm_.reset(); rb_.reset();
+    report_.reset();
+    auto job = std::make_unique<ExportJob>();
+    job->id = nextExportId_++;
+    job->result = std::make_shared<trakcrate::ExportResult>();
+    job->addResult = std::make_shared<trakcrate::AddResult>();
+    job->dest = stickRoot;
+    job->playlist = playlist;
+    job->runner = new TrakcrateJobRunner(this);
+    const int id = job->id;
+    std::shared_ptr<trakcrate::AddResult> result = job->addResult;
+    const trakcrate::Library lib = lib_;
+    connect(job->runner, &TrakcrateJobRunner::progress, this, [this, id](int d, int t, const QString& cur) { onExportProgress(id, d, t, cur); });
+    connect(job->runner, &TrakcrateJobRunner::finished, this, [this, id](const QString&, bool) { onExportFinished(id); });
+    TrakcrateJobRunner* runner = job->runner;
+    exports_.push_back(std::move(job));
+    const QString base = QFileInfo(stickRoot).fileName().isEmpty() ? stickRoot : QFileInfo(stickRoot).fileName();
+    jobsStrip_->addJob(id, QStringLiteral("Add to %1").arg(base));
+    updateExportUi();
+    return runner->start(QStringLiteral("Add to rekordbox"), [result, lib, opts](const std::atomic<bool>& cancel, const TrakcrateJobRunner::Progress& progress) {
+        *result = trakcrate::addToDrive(lib, opts, progress, &cancel);
+    });
+}
+
+int TrakcratePanel::unanalysedInPlaylist(const QString& playlist) const
+{
+    int n = 0;
+    for (const trakcrate::fs::path& d : lib_.playlistTracks(playlist.toStdString())) {
+        trakcrate::Waveform w;
+        if (!trakcrate::loadWaveform(d, &w)) ++n;
+    }
+    return n;
+}
+
+void TrakcratePanel::addToRekordboxDialog(const QString& playlist, const QString& stickRoot)
+{
+    const int total = int(lib_.playlistTracks(playlist.toStdString()).size());
+    if (total == 0) { QMessageBox::information(this, QStringLiteral("Add to rekordbox"), QStringLiteral("The playlist \"%1\" is empty.").arg(playlist)); return; }
+    bool allow = false;
+    const int un = unanalysedInPlaylist(playlist);
+    if (un > 0) {
+        if (QMessageBox::question(this, QStringLiteral("Add to rekordbox"),
+                                  QStringLiteral("%1 of %2 track(s) in \"%3\" are not analysed (no beat grid or waveform). Add them anyway? The deck will show a flat waveform and no beat grid for them.")
+                                      .arg(un).arg(total).arg(playlist),
+                                  QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes) return;
+        allow = true;
+    }
+    QString err;
+    if (!addToRekordbox(playlist, stickRoot, allow, &err)) QMessageBox::warning(this, QStringLiteral("Add to rekordbox"), err);
 }
 
 // ---- analysis ---------------------------------------------------------------------------------------------------------------------
@@ -1634,11 +1729,24 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
     }
     QMenu* addMenu = nullptr;
     QAction *delFolder = nullptr, *delList = nullptr, *physical = nullptr, *folderOut = nullptr, *delDrive = nullptr, *renDrive = nullptr, *up = nullptr, *down = nullptr, *removeEntry = nullptr;
-    std::map<QAction*, QString> targets, driveSettings;
+    std::map<QAction*, QString> targets, driveSettings, rbSticks;
     if (kind == QLatin1String("folder") || kind == QLatin1String("playlist")) {
         addMenu = menu.addMenu(QStringLiteral("Add to pendrive"));
         for (const std::string& d : lib_.listDrives()) targets[addMenu->addAction(QString::fromStdString(d))] = QString::fromStdString(d);
         if (addMenu->isEmpty()) addMenu->addAction(QStringLiteral("(no pendrives yet)"))->setEnabled(false);
+        if (kind == QLatin1String("playlist")) {
+            // mounted rekordbox pendrives, looked up each time the submenu opens (a stick plugged in while the menu is open is found on the next opening)
+            QMenu* rbMenu = menu.addMenu(QStringLiteral("Add to rekordbox"));
+            auto fill = [this, rbMenu, &rbSticks]() {
+                rbMenu->clear();
+                rbSticks.clear();
+                for (const RekordboxStick& s : listRekordboxSticks(volumes_)) rbSticks[rbMenu->addAction(s.label)] = s.root;
+                if (rbMenu->isEmpty()) rbMenu->addAction(QStringLiteral("(no rekordbox pendrive mounted)"))->setEnabled(false);
+            };
+            fill();
+            connect(rbMenu, &QMenu::aboutToShow, rbMenu, fill);
+            rbMenu->setEnabled(idle);
+        }
         menu.addSeparator();
         if (kind == QLatin1String("folder")) { delFolder = menu.addAction(QStringLiteral("Delete folder...")); delFolder->setEnabled(idle); }
         else { delList = menu.addAction(QStringLiteral("Delete playlist...")); delList->setEnabled(idle); }
@@ -1717,6 +1825,8 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
             ok = deleteSettingsSet(set, &e);
         }
         if (!ok) QMessageBox::warning(this, QStringLiteral("trakcrate"), e);
+    } else if (rbSticks.count(chosen)) {
+        addToRekordboxDialog(name, rbSticks[chosen]);
     } else if (targets.count(chosen)) {
         if (!addToPendrive(targets[chosen], kind, name, &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
     } else if (chosen == delFolder) deleteFolderDialog(name);

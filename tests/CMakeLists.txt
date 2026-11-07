@@ -371,3 +371,15 @@ add_executable(vdj-ui-sync-aligner-test test_sync_aligner.cpp)
 target_link_libraries(vdj-ui-sync-aligner-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-sync-aligner-test COMMAND vdj-ui-sync-aligner-test)
 set_tests_properties(vdj-ui-sync-aligner-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-pdb-append-test test_trakcrate_pdb_append.cpp)
+target_compile_definitions(vdj-ui-trakcrate-pdb-append-test PRIVATE
+    TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate"
+    TRAKCRATE_REFERENCES="${CMAKE_SOURCE_DIR}/references/libcdj")
+target_link_libraries(vdj-ui-trakcrate-pdb-append-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-pdb-append-test COMMAND vdj-ui-trakcrate-pdb-append-test)
+
+add_executable(vdj-ui-trakcrate-drive-add-test test_trakcrate_drive_add.cpp)
+target_compile_definitions(vdj-ui-trakcrate-drive-add-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
+target_link_libraries(vdj-ui-trakcrate-drive-add-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-drive-add-test COMMAND vdj-ui-trakcrate-drive-add-test)

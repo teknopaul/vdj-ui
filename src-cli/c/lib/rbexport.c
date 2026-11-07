@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include "rbexport.h"
+#include "rbexport_internal.h"
 
 #include <cdj/anlz.h>
 #include <ctype.h>
@@ -120,12 +121,7 @@ void tc_rb_folder_name(const char *name, const char *fallback, char *out, size_t
 
 /* ---- small helpers ---- */
 
-struct strlist {
-    char **v;
-    size_t n, cap;
-};
-
-static int sl_add(struct strlist *l, const char *s)
+int tcx_sl_add(struct strlist *l, const char *s)
 {
     if (l->n == l->cap) {
         size_t nc = l->cap ? l->cap * 2 : 16;
@@ -145,7 +141,7 @@ static int sl_add(struct strlist *l, const char *s)
     return 0;
 }
 
-static void sl_free(struct strlist *l)
+void tcx_sl_free(struct strlist *l)
 {
     size_t i;
 
@@ -156,9 +152,7 @@ static void sl_free(struct strlist *l)
     memset(l, 0, sizeof *l);
 }
 
-static int sl_addf(struct strlist *l, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-
-static int sl_addf(struct strlist *l, const char *fmt, ...)
+int tcx_sl_addf(struct strlist *l, const char *fmt, ...)
 {
     char buf[1024];
     va_list ap;
@@ -166,10 +160,10 @@ static int sl_addf(struct strlist *l, const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(buf, sizeof buf, fmt, ap);
     va_end(ap);
-    return sl_add(l, buf);
+    return tcx_sl_add(l, buf);
 }
 
-static void today(char *out, size_t sz)
+void tcx_today(char *out, size_t sz)
 {
     time_t t = time(NULL);
     struct tm tm;
@@ -178,7 +172,7 @@ static void today(char *out, size_t sz)
     strftime(out, sz, "%Y-%m-%d", &tm);
 }
 
-static void lower_into(const char *s, char *out, size_t sz)
+void tcx_lower_into(const char *s, char *out, size_t sz)
 {
     size_t i;
 
@@ -196,26 +190,6 @@ static const char *kv_or(const tc_kvdoc *d, const char *key, const char *def)
 }
 
 /* ---- the gathered tracks ---- */
-
-struct gtrack {
-    char *dir, audio[PATH_MAX], canonical[PATH_MAX];
-    tc_kvdoc *meta, *source, *grid_doc;
-    struct tc_cuemarks cues;
-    struct tc_waveform wave;
-    int have_wave;
-    struct tc_beatgrid grid;
-    double duration_ms;
-    struct tc_anlz_cue hot[3];
-    size_t nhot;
-    uint8_t *art;
-    size_t art_len;
-    char art_key[65];
-    uint64_t audio_bytes;
-    /* owned strings of the plan track */
-    char *title, *artist, *album, *genre, *comment, *file_name, *file_path, *audio_hash, art_path[96];
-    char date[16];
-    struct tc_plan_track plan;
-};
 
 static void gtrack_free(struct gtrack *t)
 {
@@ -236,16 +210,7 @@ static void gtrack_free(struct gtrack *t)
     free(t->audio_hash);
 }
 
-struct gathered {
-    struct gtrack *tracks;
-    size_t ntracks, cap;
-    struct tc_plan_playlist *lists;
-    size_t **list_tracks;
-    size_t nlists;
-    struct strlist problems;
-};
-
-static void gathered_free(struct gathered *g)
+void tcx_gathered_free(struct gathered *g)
 {
     size_t i;
 
@@ -258,7 +223,7 @@ static void gathered_free(struct gathered *g)
     }
     free(g->list_tracks);
     free(g->lists);
-    sl_free(&g->problems);
+    tcx_sl_free(&g->problems);
 }
 
 static char *xdup(const char *s)
@@ -266,8 +231,105 @@ static char *xdup(const char *s)
     return strdup(s != NULL ? s : "");
 }
 
+/* Same size and the same first and last megabyte: the two files are taken to be the same recording (reading all of a big file twice from a slow
+ * stick for every track already on it would cost more than the copy it saves). */
+static int same_audio(const char *a, const char *b)
+{
+    static uint8_t p[1 << 20], q[1 << 20];
+    struct stat sa, sb;
+    FILE *x, *y;
+    const uint64_t chunk = (uint64_t)1 << 20;
+    uint64_t n, at[2];
+    int i, same = 1;
+
+    if (stat(a, &sa) != 0 || stat(b, &sb) != 0 || sa.st_size != sb.st_size) {
+        return 0;
+    }
+    n = (uint64_t)sa.st_size;
+    x = fopen(a, "rb");
+    y = fopen(b, "rb");
+    if (x == NULL || y == NULL) {
+        if (x != NULL) {
+            fclose(x);
+        }
+        if (y != NULL) {
+            fclose(y);
+        }
+        return 0;
+    }
+    at[0] = 0;
+    at[1] = n > chunk ? n - chunk : 0;
+    for (i = 0; i < 2 && same; i++) {
+        size_t want = (size_t)(n < chunk ? n : chunk), r1, r2;
+
+        if (fseeko(x, (off_t)at[i], SEEK_SET) != 0 || fseeko(y, (off_t)at[i], SEEK_SET) != 0) {
+            same = 0;
+            break;
+        }
+        r1 = fread(p, 1, want, x);
+        r2 = fread(q, 1, want, y);
+        same = r1 == r2 && memcmp(p, q, r1) == 0;
+    }
+    fclose(x);
+    fclose(y);
+    return same;
+}
+
+/* 0 = the path is free, 1 = the drive has a row for it and the file is this audio, 2 = the file is there and is this audio but has no row, 3 = something
+ * else is there (another recording, or a row whose file is missing): choose another name. */
+static int classify_on_drive(const struct tcx_seed *s, const char *full, const char *audio, uint64_t bytes)
+{
+    char on_disk[PATH_MAX], lower[PATH_MAX];
+    struct stat sb;
+    size_t k;
+    int there;
+
+    snprintf(on_disk, sizeof on_disk, "%s%s", s->drive, full);
+    there = stat(on_disk, &sb) == 0 && S_ISREG(sb.st_mode);
+    tcx_lower_into(full, lower, sizeof lower);
+    for (k = 0; k < s->db->ntracks; k++) {
+        if (strcmp(s->db->track_lower[k], lower) == 0) {
+            return (there && s->db->tracks[k].file_size == (uint32_t)bytes && same_audio(audio, on_disk)) ? 1 : 3;
+        }
+    }
+    if (there) {
+        return same_audio(audio, on_disk) ? 2 : 3;
+    }
+    return 0;
+}
+
+/* FAT folders are case insensitive and the first spelling of an artist or album folder is reused: looks at one earlier path
+ * (/Contents/<artist>/<album>/<file>) and adopts its spelling of the folders where they match ours, if none was adopted before. */
+static void adopt_spelling(const char *file_path, char *adir, int *have_artist, char *aldir, int *have_album)
+{
+    char prev[PATH_MAX], *sa, *sb;
+
+    if (strncmp(file_path, "/Contents/", 10) != 0) {
+        return;
+    }
+    snprintf(prev, sizeof prev, "%s", file_path + 10);
+    sa = strchr(prev, '/');
+    if (sa == NULL) {
+        return;
+    }
+    *sa = '\0';
+    sb = strchr(sa + 1, '/');
+    if (sb == NULL || strcasecmp(prev, adir) != 0) {
+        return;
+    }
+    *sb = '\0';
+    if (!*have_artist) {
+        snprintf(adir, PATH_MAX, "%s", prev);
+        *have_artist = 1;
+    }
+    if (!*have_album && strcasecmp(sa + 1, aldir) == 0) {
+        snprintf(aldir, PATH_MAX, "%s", sa + 1);
+        *have_album = 1;
+    }
+}
+
 /* loads one track directory; 0 ok, 1 skipped with a problem recorded, -1 out of memory */
-static int load_track(struct gathered *g, const char *dir, const char *list_name, const struct tc_export_opts *o, struct gtrack *t)
+static int load_track(struct gathered *g, const char *dir, const char *list_name, const struct tc_export_opts *o, const struct tcx_seed *seed, struct gtrack *t)
 {
     char path[PATH_MAX], rel[PATH_MAX], ext[16], lower[PATH_MAX], stem[NAME_MAX + 1], folder[NAME_MAX + 1], full[PATH_MAX], tmp[PATH_MAX];
     char *text;
@@ -287,31 +349,31 @@ static int load_track(struct gathered *g, const char *dir, const char *list_name
         return -1;
     }
     if (stat(dir, &sb) != 0 || !S_ISDIR(sb.st_mode)) {
-        sl_addf(&g->problems, "%s: not a track folder: %s", list_name, dir);
+        tcx_sl_addf(&g->problems, "%s: not a track folder: %s", list_name, dir);
         return 1;
     }
     if (!tc_find_audio(dir, t->audio, sizeof t->audio)) {
-        sl_addf(&g->problems, "no audio file in %s", dir);
+        tcx_sl_addf(&g->problems, "no audio file in %s", dir);
         return 1;
     }
     if (stat(t->audio, &sb) != 0) {
-        sl_addf(&g->problems, "%s: cannot read the audio file", dir);
+        tcx_sl_addf(&g->problems, "%s: cannot read the audio file", dir);
         return 1;
     }
     t->audio_bytes = (uint64_t)sb.st_size;
     snprintf(path, sizeof path, "%s/meta.txt", dir);
     if (tc_kv_load(path, &t->meta, &existed) != 0) {
-        sl_addf(&g->problems, "%s: cannot read meta.txt: %s", list_name, strerror(errno));
+        tcx_sl_addf(&g->problems, "%s: cannot read meta.txt: %s", list_name, strerror(errno));
         return 1;
     }
     snprintf(path, sizeof path, "%s/source.txt", dir);
     if (tc_kv_load(path, &t->source, NULL) != 0) {
-        sl_addf(&g->problems, "%s: cannot read source.txt: %s", list_name, strerror(errno));
+        tcx_sl_addf(&g->problems, "%s: cannot read source.txt: %s", list_name, strerror(errno));
         return 1;
     }
     snprintf(path, sizeof path, "%s/beatgrid.txt", dir);
     if (tc_kv_load(path, &t->grid_doc, NULL) != 0) {
-        sl_addf(&g->problems, "%s: cannot read beatgrid.txt: %s", list_name, strerror(errno));
+        tcx_sl_addf(&g->problems, "%s: cannot read beatgrid.txt: %s", list_name, strerror(errno));
         return 1;
     }
     snprintf(path, sizeof path, "%s/cuemarks.txt", dir);
@@ -323,7 +385,7 @@ static int load_track(struct gathered *g, const char *dir, const char *list_name
             return -1;
         }
     } else if (errno != ENOENT) {
-        sl_addf(&g->problems, "%s: cannot read cuemarks.txt: %s", list_name, strerror(errno));
+        tcx_sl_addf(&g->problems, "%s: cannot read cuemarks.txt: %s", list_name, strerror(errno));
         return 1;
     }
 
@@ -372,7 +434,7 @@ static int load_track(struct gathered *g, const char *dir, const char *list_name
     if (strlen(imported) >= 10) {
         snprintf(t->date, sizeof t->date, "%.10s", imported);
     } else {
-        today(t->date, sizeof t->date);
+        tcx_today(t->date, sizeof t->date);
     }
     tc_beatgrid_from(t->grid_doc, &t->grid);
     bpm_tag = tc_kv_get_double(t->meta, "bpm_tag", 0);
@@ -385,28 +447,18 @@ static int load_track(struct gathered *g, const char *dir, const char *list_name
         size_t k;
 
         snprintf(ext, sizeof ext, "%s", dot != NULL ? dot : "");
-        lower_into(ext, ext, sizeof ext);
+        tcx_lower_into(ext, ext, sizeof ext);
         /* rekordbox's layout, Contents/<artist>/<album>/<file>, from the tags; FAT folders are case insensitive and the first spelling is reused */
         tc_rb_folder_name(t->artist, "UnknownArtist", adir, sizeof adir);
         tc_rb_folder_name(t->album, "UnknownAlbum", aldir, sizeof aldir);
-        for (k = 0; k < g->ntracks; k++) {
-            char prev[PATH_MAX], *sa, *sb;
+        {
+            int have_artist = 0, have_album = 0;
 
-            snprintf(prev, sizeof prev, "%s", g->tracks[k].file_path + strlen("/Contents/"));
-            sa = strchr(prev, '/');
-            if (sa == NULL) {
-                continue;
+            for (k = 0; seed != NULL && k < seed->db->ntracks && !have_album; k++) {
+                adopt_spelling(seed->db->tracks[k].file_path, adir, &have_artist, aldir, &have_album);
             }
-            *sa = '\0';
-            sb = strchr(sa + 1, '/');
-            if (sb == NULL || strcasecmp(prev, adir) != 0) {
-                continue;
-            }
-            *sb = '\0';
-            snprintf(adir, sizeof adir, "%s", prev);
-            if (strcasecmp(sa + 1, aldir) == 0) {
-                snprintf(aldir, sizeof aldir, "%s", sa + 1);
-                break;
+            for (k = 0; k < g->ntracks && !have_album; k++) {
+                adopt_spelling(g->tracks[k].file_path, adir, &have_artist, aldir, &have_album);
             }
         }
         tc_fat_safe_name(stem, fat_stem, sizeof fat_stem);
@@ -415,12 +467,16 @@ static int load_track(struct gathered *g, const char *dir, const char *list_name
         for (j = 2;; j++) {
             int used = 0;
 
-            lower_into(full, lower, sizeof lower);
+            tcx_lower_into(full, lower, sizeof lower);
             for (i = 0; i < g->ntracks && !used; i++) {
                 char other[PATH_MAX];
 
-                lower_into(g->tracks[i].file_path, other, sizeof other);
+                tcx_lower_into(g->tracks[i].file_path, other, sizeof other);
                 used = strcmp(other, lower) == 0;
+            }
+            if (!used && seed != NULL) {
+                t->on_stick = classify_on_drive(seed, full, t->audio, t->audio_bytes);
+                used = t->on_stick == 3;
             }
             if (!used) {
                 break;
@@ -441,8 +497,8 @@ static int load_track(struct gathered *g, const char *dir, const char *list_name
         t->have_wave = tc_waveform_parse(wbytes, wlen, &t->wave) == 0;
         free(text);
     }
-    if (!t->have_wave && !o->allow_unanalysed) {
-        sl_addf(&g->problems, "not analysed: %s (%s)", stem, dir);
+    if (!t->have_wave && !o->allow_unanalysed && t->on_stick != 1) {
+        tcx_sl_addf(&g->problems, "not analysed: %s (%s)", stem, dir);
     }
 
     for (i = 0; i < t->cues.n; i++) {
@@ -471,7 +527,7 @@ static int load_track(struct gathered *g, const char *dir, const char *list_name
             }
         }
     }
-    if (o->include_artwork) {
+    if (o->include_artwork && t->on_stick != 1) {
         static const char *names[] = { "artwork.jpg", "artwork.jpeg", "artwork.png" };
 
         for (i = 0; i < 3; i++) {
@@ -504,13 +560,13 @@ static int need_list_slot(struct gathered *g)
     return 0;
 }
 
-static int gather(const struct tc_export_list *lists, size_t nlists, const struct tc_export_opts *o, struct gathered *g)
+int tcx_gather(const struct tc_export_list *lists, size_t nlists, const struct tc_export_opts *o, const struct tcx_seed *seed, struct gathered *g)
 {
     size_t li, di, i;
 
     memset(g, 0, sizeof *g);
     if (nlists == 0) {
-        sl_add(&g->problems, "no playlist chosen");
+        tcx_sl_add(&g->problems, "no playlist chosen");
     }
     for (li = 0; li < nlists; li++) {
         const struct tc_export_list *src = &lists[li];
@@ -549,7 +605,7 @@ static int gather(const struct tc_export_list *lists, size_t nlists, const struc
                     g->tracks = nt;
                     g->cap = nc;
                 }
-                rc = load_track(g, src->dirs[di], src->name, o, &t);
+                rc = load_track(g, src->dirs[di], src->name, o, seed, &t);
                 if (rc < 0) {
                     gtrack_free(&t);
                     free(idx);
@@ -571,8 +627,8 @@ static int gather(const struct tc_export_list *lists, size_t nlists, const struc
         g->list_tracks[g->nlists] = idx;
         g->nlists++;
     }
-    /* the limits of the decks, reported first so that they are never cut off the list of problems */
-    {
+    /* the limits of the decks, reported first so that they are never cut off the list of problems (adding to a drive counts the whole database instead) */
+    if (seed == NULL) {
         const char **ar = calloc(g->ntracks ? g->ntracks : 1, sizeof *ar), **al = calloc(g->ntracks ? g->ntracks : 1, sizeof *al);
         size_t na = 0, nb = 0;
         char msg[2048], *line, *nl;
@@ -608,7 +664,7 @@ static int gather(const struct tc_export_list *lists, size_t nlists, const struc
                 keep[nkeep++] = line;
             }
             for (k = nkeep; k-- > 0;) {                      /* each goes to the front, so the list ends up in order */
-                if (sl_add(&g->problems, keep[k]) != 0) {
+                if (tcx_sl_add(&g->problems, keep[k]) != 0) {
                     return -1;
                 }
                 {
@@ -624,6 +680,7 @@ static int gather(const struct tc_export_list *lists, size_t nlists, const struc
     {
         char (*keys)[65] = calloc(g->ntracks ? g->ntracks : 1, sizeof *keys);
         size_t nk = 0, k;
+        const uint32_t art_base = seed != NULL ? seed->db->max_id[13] : 0;      /* adding: the numbering continues after the drive's own artwork */
 
         if (keys == NULL) {
             return -1;
@@ -637,7 +694,7 @@ static int gather(const struct tc_export_list *lists, size_t nlists, const struc
                 if (k == nk) {
                     snprintf(keys[nk++], 65, "%s", t->art_key);
                 }
-                tc_artwork_path((uint32_t)(k + 1), t->art_path, sizeof t->art_path);
+                tc_artwork_path((uint32_t)(k + 1) + art_base, t->art_path, sizeof t->art_path);
             }
             t->plan.title = t->title;
             t->plan.artist = t->artist;
@@ -657,7 +714,7 @@ static int gather(const struct tc_export_list *lists, size_t nlists, const struc
     return 0;
 }
 
-static uint64_t estimate_metadata(const struct gathered *g)
+uint64_t tcx_estimate_metadata(const struct gathered *g)
 {
     uint64_t n = 400000;                                    /* database, settings, support files, pages */
     size_t i;
@@ -673,7 +730,7 @@ static uint64_t estimate_metadata(const struct gathered *g)
 
 /* ---- staging and copying ---- */
 
-static int write_staged(const char *stage, const char *rel, const void *data, size_t len, char *err, size_t errsz)
+int tcx_write_staged(const char *stage, const char *rel, const void *data, size_t len, char *err, size_t errsz)
 {
     char full[PATH_MAX], dir[PATH_MAX], *slash;
 
@@ -690,7 +747,7 @@ static int write_staged(const char *stage, const char *rel, const void *data, si
     return 0;
 }
 
-static int pick_staging_base(const struct tc_export_opts *o, char *out, size_t outsz, int *tmpfs, const struct tc_export_opts *warn_to)
+int tcx_pick_staging_base(const struct tc_export_opts *o, char *out, size_t outsz, int *tmpfs, const struct tc_export_opts *warn_to)
 {
     const char *x;
 
@@ -718,23 +775,13 @@ static int pick_staging_base(const struct tc_export_opts *o, char *out, size_t o
     return 0;
 }
 
-struct outfile {
-    char *rel;
-    char *src;              /* path on disk, or NULL when mem is used */
-    const uint8_t *mem;
-    size_t mem_len;
-    char hash[65];          /* known before the copy for staged files, learnt during it for audio */
-    int hash_known;
-    int audio;              /* a track's audio file */
-};
-
-static int hex_digest_file(const char *path, char hex[65])
+int tcx_hex_digest_file(const char *path, char hex[65])
 {
     return tc_sha256_file(path, hex);
 }
 
 /* link mode: a symbolic link to the real file */
-static int link_one(const char *dest, struct outfile *f, char *err, size_t errsz)
+int tcx_link_one(const char *dest, struct outfile *f, char *err, size_t errsz)
 {
     char out[PATH_MAX], dir[PATH_MAX], real[PATH_MAX], *slash;
 
@@ -751,7 +798,7 @@ static int link_one(const char *dest, struct outfile *f, char *err, size_t errsz
     return 0;
 }
 
-static int copy_one(const char *dest, struct outfile *f, uint64_t *total, char *err, size_t errsz)
+int tcx_copy_one(const char *dest, struct outfile *f, uint64_t *total, char *err, size_t errsz)
 {
     char out[PATH_MAX], dir[PATH_MAX], *slash;
     int fd, in = -1, ok = 1;
@@ -875,12 +922,191 @@ static int collect_files(const char *base, const char *rel, struct strlist *out)
                 closedir(d);
                 return -1;
             }
-        } else if (S_ISREG(sb.st_mode) && sl_add(out, r) != 0) {
+        } else if (S_ISREG(sb.st_mode) && tcx_sl_add(out, r) != 0) {
             closedir(d);
             return -1;
         }
     }
     closedir(d);
+    return 0;
+}
+
+/* Builds the analysis files and the artwork of the tracks of g (only those with only[i] set when `only` is given) in the staging folder. The analysis
+ * files go to analyze_paths[i] (one per track of g, as the database names them); the paths of the .DAT files staged are appended to *anlz_rel, in track
+ * order. 0, or -1 with the complete message in errout. */
+int tcx_stage_track_files(const struct gathered *g, const struct tc_export_opts *o, char *const *analyze_paths, const char *only, const char *stage,
+                          struct strlist *anlz_rel, char *errout, size_t errsz)
+{
+    char e[1024] = "";
+    size_t i;
+
+#define SFAIL(...) do { snprintf(errout, errsz, __VA_ARGS__); return -1; } while (0)
+    for (i = 0; i < g->ntracks; i++) {
+        struct gtrack *t = &g->tracks[i];
+        struct tc_anlz_track d;
+        struct tc_waveform w = t->wave, rendered;
+        struct tc_anlz_beat *beats = NULL;
+        uint16_t *sub = NULL, *flat5 = NULL;
+        uint8_t *flat3 = NULL, *pwv4 = NULL, flat_pwav[TC_WAVE_PREVIEW_COLUMNS] = { 0 }, flat_pwv2[TC_WAVE_TINY_COLUMNS] = { 0 };
+        size_t nbeats = 0;
+        uint8_t *dat = NULL, *ext = NULL;
+        size_t dat_len = 0, ext_len = 0;
+        int have_rendered = 0, ok;
+        char path[PATH_MAX];
+
+        if (only != NULL && !only[i]) {
+            continue;
+        }
+        memset(&rendered, 0, sizeof rendered);
+        tcx_progress(o, "stage", (int)i, (int)g->ntracks, t->file_path);
+        if (!t->have_wave) {                                /* allow_unanalysed: a flat waveform of the right length */
+            size_t cols = (size_t)(t->duration_ms * TC_WAVE_COLUMNS_PER_SECOND / 1000.0) + 1;
+            char m[300];
+
+            memset(&w, 0, sizeof w);
+            flat3 = calloc(cols, 1);
+            flat5 = calloc(cols, sizeof *flat5);
+            if (flat3 == NULL || flat5 == NULL) {
+                free(flat3);
+                free(flat5);
+                SFAIL("out of memory");
+            }
+            w.pwv3 = flat3;
+            w.pwv5 = flat5;
+            w.columns = cols;
+            memcpy(w.pwav, flat_pwav, sizeof w.pwav);
+            memcpy(w.pwv2, flat_pwv2, sizeof w.pwv2);
+            snprintf(m, sizeof m, "not analysed, flat waveform and no beat grid: %s", t->title);
+            if (o->warn != NULL) {
+                o->warn(o->ud, m);
+            }
+        }
+        /* PWV4 comes from the true waveform: its layout is only partly understood, so it gets no spikes */
+        pwv4 = o->include_pwv4 ? tc_anlz_pwv4_from(w.pwv5, w.columns) : NULL;
+        if (o->cue.enabled && t->cues.n > 0) {
+            if (tc_cuerender(&w, &t->cues, t->duration_ms, &o->cue, &rendered) != 0) {
+                free(flat3);
+                free(flat5);
+                free(pwv4);
+                SFAIL("out of memory");
+            }
+            have_rendered = 1;
+        }
+        if (tc_anlz_beats_from_grid(&t->grid, t->duration_ms, &beats, &sub, &nbeats) != 0) {
+            free(flat3);
+            free(flat5);
+            free(pwv4);
+            if (have_rendered) {
+                tc_waveform_free(&rendered);
+            }
+            SFAIL("out of memory");
+        }
+        memset(&d, 0, sizeof d);
+        d.audio_path = t->file_path;
+        d.include_pvbr = o->include_pvbr;
+        d.include_pwv5 = o->include_pwv5;
+        d.beats = beats;
+        d.nbeats = nbeats;
+        d.beat_sub_us = sub;
+        d.pwav = have_rendered ? rendered.pwav : w.pwav;
+        d.pwv2 = have_rendered ? rendered.pwv2 : w.pwv2;
+        d.pwv3 = have_rendered ? rendered.pwv3 : w.pwv3;
+        d.pwv5 = have_rendered ? rendered.pwv5 : w.pwv5;
+        d.columns = w.columns;
+        d.pwv5_extra = w.pwv5_extra;
+        d.pwv4 = pwv4;
+        d.hot_cues = t->hot;
+        d.nhot = t->nhot;
+        ok = tc_anlz_build(&d, &dat, &dat_len, &ext, &ext_len, e, sizeof e) == 0;
+        free(beats);
+        free(sub);
+        free(flat3);
+        free(flat5);
+        free(pwv4);
+        if (have_rendered) {
+            tc_waveform_free(&rendered);
+        }
+        if (!ok) {
+            SFAIL("analysis files for %s: %s", t->title, e);
+        }
+        /* PIONEER/USBANLZ/Pxxx/yyyyyyyy/ANLZ0000.DAT */
+        snprintf(path, sizeof path, "%s", analyze_paths[i] + 1);
+        if (tcx_write_staged(stage, path, dat, dat_len, e, sizeof e) != 0) {
+            free(dat);
+            free(ext);
+            SFAIL("staging: %s", e);
+        }
+        tcx_sl_add(anlz_rel, path);
+        snprintf(path + strlen(path) - 3, 4, "EXT");
+        if (tcx_write_staged(stage, path, ext, ext_len, e, sizeof e) != 0) {
+            free(dat);
+            free(ext);
+            SFAIL("staging: %s", e);
+        }
+        free(dat);
+        free(ext);
+    }
+    if (o->include_artwork) {
+        struct strlist done_keys = { NULL, 0, 0 };
+
+        for (i = 0; i < g->ntracks; i++) {
+            struct gtrack *t = &g->tracks[i];
+            uint8_t *jpeg;
+            size_t jl, k;
+
+            if ((only != NULL && !only[i]) || !t->art_key[0]) {
+                continue;
+            }
+            for (k = 0; k < done_keys.n && strcmp(done_keys.v[k], t->art_key) != 0; k++) {
+            }
+            if (k < done_keys.n) {
+                continue;
+            }
+            tcx_sl_add(&done_keys, t->art_key);
+            if (tc_artwork_jpeg(t->art, t->art_len, TC_ARTWORK_SIZE, &jpeg, &jl, e, sizeof e) != 0) {
+                tcx_sl_free(&done_keys);
+                SFAIL("artwork of %s: %s", t->title, e);
+            }
+            if (tcx_write_staged(stage, t->art_path + 1, jpeg, jl, e, sizeof e) != 0) {
+                free(jpeg);
+                tcx_sl_free(&done_keys);
+                SFAIL("staging: %s", e);
+            }
+            free(jpeg);
+        }
+        tcx_sl_free(&done_keys);
+    }
+    return 0;
+#undef SFAIL
+}
+
+/* checks the staged .DAT and .EXT of one track: they parse, are whole and name the track's path. 0, or -1 with the message in err */
+int tcx_verify_staged_anlz(const char *stage, const char *dat_rel, const char *file_path, char *err, size_t errsz)
+{
+    int e;
+
+    for (e = 0; e < 2; e++) {
+        char rel[PATH_MAX], full[PATH_MAX];
+        anlz_t *a = NULL;
+        const char *path = NULL;
+        int good;
+
+        snprintf(rel, sizeof rel, "%s", dat_rel);
+        if (e == 1) {
+            snprintf(rel + strlen(rel) - 3, 4, "EXT");
+        }
+        snprintf(full, sizeof full, "%s/%s", stage, rel);
+        if (anlz_open_file(full, &a) != ANLZ_OK) {
+            snprintf(err, errsz, "staged analysis file does not parse: %s", rel);
+            return -1;
+        }
+        good = !anlz_is_damaged(a) && anlz_file_len_ok(a) && anlz_path(a, &path) == ANLZ_OK && strcmp(file_path, path) == 0;
+        anlz_close(a);
+        if (!good) {
+            snprintf(err, errsz, "staged analysis file is wrong: %s", rel);
+            return -1;
+        }
+    }
     return 0;
 }
 
@@ -898,7 +1124,7 @@ static void emit_first(void *ud, const char *m)
     }
 }
 
-static void progress(const struct tc_export_opts *o, const char *phase, int done, int total, const char *cur)
+void tcx_progress(const struct tc_export_opts *o, const char *phase, int done, int total, const char *cur)
 {
     if (o->progress != NULL) {
         o->progress(o->ud, phase, done, total, cur);
@@ -967,7 +1193,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             }
         }
     }
-    if (gather(lists, nlists, o, &g) != 0) {
+    if (tcx_gather(lists, nlists, o, NULL, &g) != 0) {
         FAIL("out of memory");
     }
     if (g.problems.n > 0) {
@@ -991,7 +1217,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
     for (i = 0; i < g.ntracks; i++) {
         res->audio_bytes += g.tracks[i].audio_bytes;
     }
-    res->meta_bytes = estimate_metadata(&g);
+    res->meta_bytes = tcx_estimate_metadata(&g);
     if (o->dry_run) {
         goto out;
     }
@@ -1018,7 +1244,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             }
         }
     }
-    pick_staging_base(o, base, sizeof base, &res->staged_on_tmpfs, o);
+    tcx_pick_staging_base(o, base, sizeof base, &res->staged_on_tmpfs, o);
     snprintf(stage, sizeof stage, "%s/trakcrate-export.XXXXXX", base);
     if (mkdtemp(stage) == NULL) {
         stage[0] = '\0';
@@ -1044,7 +1270,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
     plan.ntracks = g.ntracks;
     plan.playlists = g.lists;
     plan.nplaylists = g.nlists;
-    progress(o, "stage", 0, (int)g.ntracks, "export.pdb");
+    tcx_progress(o, "stage", 0, (int)g.ntracks, "export.pdb");
     if (tc_pdb_build(&plan, o->tpl, o->tpl_len, &built, err, sizeof err) != 0) {
         FAIL("database: %s", err);
     }
@@ -1064,137 +1290,10 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             FAIL("the database does not say what the plan says: %s", first);
         }
     }
-    for (i = 0; i < g.ntracks; i++) {
-        struct gtrack *t = &g.tracks[i];
-        struct tc_anlz_track d;
-        struct tc_waveform w = t->wave, rendered;
-        struct tc_anlz_beat *beats = NULL;
-        uint16_t *sub = NULL, *flat5 = NULL;
-        uint8_t *flat3 = NULL, *pwv4 = NULL, flat_pwav[TC_WAVE_PREVIEW_COLUMNS] = { 0 }, flat_pwv2[TC_WAVE_TINY_COLUMNS] = { 0 };
-        size_t nbeats = 0;
-        uint8_t *dat = NULL, *ext = NULL;
-        size_t dat_len = 0, ext_len = 0;
-        int have_rendered = 0, ok;
-        char path[PATH_MAX];
-
-        memset(&rendered, 0, sizeof rendered);
-        progress(o, "stage", (int)i, (int)g.ntracks, t->file_path);
-        if (!t->have_wave) {                                /* allow_unanalysed: a flat waveform of the right length */
-            size_t cols = (size_t)(t->duration_ms * TC_WAVE_COLUMNS_PER_SECOND / 1000.0) + 1;
-            char m[300];
-
-            memset(&w, 0, sizeof w);
-            flat3 = calloc(cols, 1);
-            flat5 = calloc(cols, sizeof *flat5);
-            if (flat3 == NULL || flat5 == NULL) {
-                free(flat3);
-                free(flat5);
-                FAIL("out of memory");
-            }
-            w.pwv3 = flat3;
-            w.pwv5 = flat5;
-            w.columns = cols;
-            memcpy(w.pwav, flat_pwav, sizeof w.pwav);
-            memcpy(w.pwv2, flat_pwv2, sizeof w.pwv2);
-            snprintf(m, sizeof m, "not analysed, flat waveform and no beat grid: %s", t->title);
-            if (o->warn != NULL) {
-                o->warn(o->ud, m);
-            }
-        }
-        /* PWV4 comes from the true waveform: its layout is only partly understood, so it gets no spikes */
-        pwv4 = o->include_pwv4 ? tc_anlz_pwv4_from(w.pwv5, w.columns) : NULL;
-        if (o->cue.enabled && t->cues.n > 0) {
-            if (tc_cuerender(&w, &t->cues, t->duration_ms, &o->cue, &rendered) != 0) {
-                free(flat3);
-                free(flat5);
-                free(pwv4);
-                FAIL("out of memory");
-            }
-            have_rendered = 1;
-        }
-        if (tc_anlz_beats_from_grid(&t->grid, t->duration_ms, &beats, &sub, &nbeats) != 0) {
-            free(flat3);
-            free(flat5);
-            free(pwv4);
-            if (have_rendered) {
-                tc_waveform_free(&rendered);
-            }
-            FAIL("out of memory");
-        }
-        memset(&d, 0, sizeof d);
-        d.audio_path = t->file_path;
-        d.include_pvbr = o->include_pvbr;
-        d.include_pwv5 = o->include_pwv5;
-        d.beats = beats;
-        d.nbeats = nbeats;
-        d.beat_sub_us = sub;
-        d.pwav = have_rendered ? rendered.pwav : w.pwav;
-        d.pwv2 = have_rendered ? rendered.pwv2 : w.pwv2;
-        d.pwv3 = have_rendered ? rendered.pwv3 : w.pwv3;
-        d.pwv5 = have_rendered ? rendered.pwv5 : w.pwv5;
-        d.columns = w.columns;
-        d.pwv5_extra = w.pwv5_extra;
-        d.pwv4 = pwv4;
-        d.hot_cues = t->hot;
-        d.nhot = t->nhot;
-        ok = tc_anlz_build(&d, &dat, &dat_len, &ext, &ext_len, err, sizeof err) == 0;
-        free(beats);
-        free(sub);
-        free(flat3);
-        free(flat5);
-        free(pwv4);
-        if (have_rendered) {
-            tc_waveform_free(&rendered);
-        }
-        if (!ok) {
-            FAIL("analysis files for %s: %s", t->title, err);
-        }
-        /* PIONEER/USBANLZ/Pxxx/yyyyyyyy/ANLZ0000.DAT */
-        snprintf(path, sizeof path, "%s", built.analyze_paths[i] + 1);
-        if (write_staged(stage, path, dat, dat_len, err, sizeof err) != 0) {
-            free(dat);
-            free(ext);
-            FAIL("staging: %s", err);
-        }
-        sl_add(&anlz_rel, path);
-        snprintf(path + strlen(path) - 3, 4, "EXT");
-        if (write_staged(stage, path, ext, ext_len, err, sizeof err) != 0) {
-            free(dat);
-            free(ext);
-            FAIL("staging: %s", err);
-        }
-        free(dat);
-        free(ext);
-    }
-    if (o->include_artwork) {
-        struct strlist done_keys = { NULL, 0, 0 };
-
-        for (i = 0; i < g.ntracks; i++) {
-            struct gtrack *t = &g.tracks[i];
-            uint8_t *jpeg;
-            size_t jl, k;
-
-            if (!t->art_key[0]) {
-                continue;
-            }
-            for (k = 0; k < done_keys.n && strcmp(done_keys.v[k], t->art_key) != 0; k++) {
-            }
-            if (k < done_keys.n) {
-                continue;
-            }
-            sl_add(&done_keys, t->art_key);
-            if (tc_artwork_jpeg(t->art, t->art_len, TC_ARTWORK_SIZE, &jpeg, &jl, err, sizeof err) != 0) {
-                sl_free(&done_keys);
-                FAIL("artwork of %s: %s", t->title, err);
-            }
-            if (write_staged(stage, t->art_path + 1, jpeg, jl, err, sizeof err) != 0) {
-                free(jpeg);
-                sl_free(&done_keys);
-                FAIL("staging: %s", err);
-            }
-            free(jpeg);
-        }
-        sl_free(&done_keys);
+    if (tcx_stage_track_files(&g, o, (char *const *)built.analyze_paths, NULL, stage, &anlz_rel, err, sizeof err) != 0) {
+        snprintf(res->error, sizeof res->error, "%s", err);
+        rc = -1;
+        goto out;
     }
     if (o->include_settings) {
         size_t dl, ml;
@@ -1207,17 +1306,17 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
         if (o->mysetting != NULL) {
             ml = o->my_len;
         }
-        if (write_staged(stage, "PIONEER/DEVSETTING.DAT", dv, dl, err, sizeof err) != 0 ||
-            write_staged(stage, "PIONEER/MYSETTING.DAT", mv, ml, err, sizeof err) != 0) {
+        if (tcx_write_staged(stage, "PIONEER/DEVSETTING.DAT", dv, dl, err, sizeof err) != 0 ||
+            tcx_write_staged(stage, "PIONEER/MYSETTING.DAT", mv, ml, err, sizeof err) != 0) {
             FAIL("staging: %s", err);
         }
         {
             size_t l1, l2, l3;
             const uint8_t *dj = tc_default_djprofile(&l1), *rf = tc_default_rbfltr(&l2), *ee = tc_default_exportext(&l3);
 
-            if (write_staged(stage, "PIONEER/djprofile.nxs", dj, l1, err, sizeof err) != 0 ||
-                write_staged(stage, "PIONEER/rekordbox/RBFLTR.DAT", rf, l2, err, sizeof err) != 0 ||
-                write_staged(stage, "PIONEER/rekordbox/exportExt.pdb", ee, l3, err, sizeof err) != 0) {
+            if (tcx_write_staged(stage, "PIONEER/djprofile.nxs", dj, l1, err, sizeof err) != 0 ||
+                tcx_write_staged(stage, "PIONEER/rekordbox/RBFLTR.DAT", rf, l2, err, sizeof err) != 0 ||
+                tcx_write_staged(stage, "PIONEER/rekordbox/exportExt.pdb", ee, l3, err, sizeof err) != 0) {
                 FAIL("staging: %s", err);
             }
             {
@@ -1228,7 +1327,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
                 if (um == NULL) {
                     FAIL("out of memory");
                 }
-                rc4 = write_staged(stage, "PIONEER/USBANLZ/USBMNG.DAT", um, l4, err, sizeof err);
+                rc4 = tcx_write_staged(stage, "PIONEER/USBANLZ/USBMNG.DAT", um, l4, err, sizeof err);
                 free(um);
                 if (rc4 != 0) {
                     FAIL("staging: %s", err);
@@ -1236,33 +1335,16 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             }
         }
     }
-    if (write_staged(stage, "PIONEER/rekordbox/export.pdb", built.bytes, built.len, err, sizeof err) != 0) {
+    if (tcx_write_staged(stage, "PIONEER/rekordbox/export.pdb", built.bytes, built.len, err, sizeof err) != 0) {
         FAIL("staging: %s", err);
     }
 
     /* ---- verify the staged tree before anything touches the destination */
     for (i = 0; i < anlz_rel.n; i++) {
-        int e;
-
-        for (e = 0; e < 2; e++) {
-            char rel[PATH_MAX], full[PATH_MAX];
-            anlz_t *a = NULL;
-            const char *path = NULL;
-            int good;
-
-            snprintf(rel, sizeof rel, "%s", anlz_rel.v[i]);
-            if (e == 1) {
-                snprintf(rel + strlen(rel) - 3, 4, "EXT");
-            }
-            snprintf(full, sizeof full, "%s/%s", stage, rel);
-            if (anlz_open_file(full, &a) != ANLZ_OK) {
-                FAIL("staged analysis file does not parse: %s", rel);
-            }
-            good = !anlz_is_damaged(a) && anlz_file_len_ok(a) && anlz_path(a, &path) == ANLZ_OK && strcmp(g.tracks[i].file_path, path) == 0;
-            anlz_close(a);
-            if (!good) {
-                FAIL("staged analysis file is wrong: %s", rel);
-            }
+        if (tcx_verify_staged_anlz(stage, anlz_rel.v[i], g.tracks[i].file_path, err, sizeof err) != 0) {
+            snprintf(res->error, sizeof res->error, "%s", err);
+            rc = -1;
+            goto out;
         }
     }
     if (o->include_settings) {
@@ -1323,7 +1405,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             free(f.src);
             FAIL("out of memory");
         }
-        if (hex_digest_file(full, f.hash) != 0) {
+        if (tcx_hex_digest_file(full, f.hash) != 0) {
             free(f.rel);
             free(f.src);
             FAIL("cannot read %s", full);
@@ -1346,22 +1428,22 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
     }
 
     if (!o->include_settings) {
-        sl_add(&variant, "no DEVSETTING.DAT / MYSETTING.DAT");
+        tcx_sl_add(&variant, "no DEVSETTING.DAT / MYSETTING.DAT");
     }
     if (!o->include_artwork) {
-        sl_add(&variant, "no artwork");
+        tcx_sl_add(&variant, "no artwork");
     }
     if (!o->include_pvbr) {
-        sl_add(&variant, "no PVBR tag");
+        tcx_sl_add(&variant, "no PVBR tag");
     }
     if (!o->include_pwv4) {
-        sl_add(&variant, "no PWV4 tag");
+        tcx_sl_add(&variant, "no PWV4 tag");
     }
     if (!o->include_pwv5) {
-        sl_add(&variant, "no PWV5 tag");
+        tcx_sl_add(&variant, "no PWV5 tag");
     }
     if (o->allow_unanalysed) {
-        sl_add(&variant, "unanalysed tracks allowed");
+        tcx_sl_add(&variant, "unanalysed tracks allowed");
     }
     total = (int)nfiles + 1 + extra;
 
@@ -1371,8 +1453,8 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
     }
     wrote_any = 1;
 #define STEP(f) do { \
-        progress(o, "copy", done, total, (f)->rel); \
-        if (((o->link_audio && (f)->audio) ? link_one(o->dest, (f), err, sizeof err) : copy_one(o->dest, (f), &res->bytes_written, err, sizeof err)) != 0) { snprintf(res->error, sizeof res->error, "%s", err); rc = -1; goto out; } \
+        tcx_progress(o, "copy", done, total, (f)->rel); \
+        if (((o->link_audio && (f)->audio) ? tcx_link_one(o->dest, (f), err, sizeof err) : tcx_copy_one(o->dest, (f), &res->bytes_written, err, sizeof err)) != 0) { snprintf(res->error, sizeof res->error, "%s", err); rc = -1; goto out; } \
         done++; \
     } while (0)
     for (i = 0; i < nfiles; i++) {
@@ -1397,7 +1479,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             }
             sl += (size_t)snprintf(sums + sl, scap - sl, "%s  %s\n", f->hash, f->rel);
         }
-        today(date, sizeof date);
+        tcx_today(date, sizeof date);
         mn = strlen(date) + 4096;
         for (i = 0; i < g.nlists; i++) {
             mn += strlen(g.lists[i].name) + 4;
@@ -1445,7 +1527,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             close(fd);
         }
     }
-    progress(o, "copy", done, total, "");
+    tcx_progress(o, "copy", done, total, "");
     res->files = (int)nfiles + 1 + extra;
 
     if (o->verify && !o->link_audio) {
@@ -1458,7 +1540,7 @@ int tc_export(const struct tc_export_list *lists, size_t nlists, const struct tc
             if (!o->write_manifest && k == nfiles) {
                 f = &pdb_file;
             }
-            progress(o, "verify", (int)k, (int)count, f->rel);
+            tcx_progress(o, "verify", (int)k, (int)count, f->rel);
             snprintf(full, sizeof full, "%s/%s", o->dest, f->rel);
             if (tc_sha256_file(full, h) != 0 || strcmp(h, f->hash) != 0) {
                 FAIL("verification failed for %s", f->rel);
@@ -1500,9 +1582,9 @@ out:
     if (have_built) {
         tc_built_pdb_free(&built);
     }
-    sl_free(&staged);
-    sl_free(&anlz_rel);
-    sl_free(&variant);
-    gathered_free(&g);
+    tcx_sl_free(&staged);
+    tcx_sl_free(&anlz_rel);
+    tcx_sl_free(&variant);
+    tcx_gathered_free(&g);
     return rc;
 }

@@ -47,7 +47,7 @@ Kinds of page seen:
 
 Index pages in the 7 track file: table type, then body `own-number, first-data-page, 0x03ffffff, 0, 0x1fff0002(?), ...` followed by `0x1ffffff8`
 fillers up to byte 0xfec; header `u20 = 0x1fff`, `numLarge = 0x1fff`, `u24 = 0x3ec`. In the 2195 track file the tracks index page holds many more
-entries (pairs like `0x110052`, offsets such as `0xa98`) that look like a per-row directory; **not decoded**. For a small export (one data page per
+entries (pairs like `0x110052`, offsets such as `0xa98`) that look like a per-row directory; **decoded later**: a count and `(page << 3) | 3` entries, one per page with deleted rows (`pdb-append-notes.md`). For a small export (one data page per
 table) a writer can copy the small pattern and patch the page numbers (Phase 6 does this from a template).
 
 ### Data page (verified)

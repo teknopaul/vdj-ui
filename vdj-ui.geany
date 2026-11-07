@@ -27,10 +27,13 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=1
+current_page=5
 FILE_NAME_0=3666;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fsync-improvements.prompt.md;0;4
-FILE_NAME_1=461;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Frefactor-recommendations.md;0;4
-FILE_NAME_2=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fdoc%2Fsync-timing.md;0;3
+FILE_NAME_1=1213;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Frefactor-recommendations.md;0;4
+FILE_NAME_2=1858;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fexport-ui-improvements.prompt.md;0;4
+FILE_NAME_3=9433;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Fadd-to-rekordbox_PLAN.md;0;4
+FILE_NAME_4=140;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fviewing-settings.prompt.md;0;4
+FILE_NAME_5=46598;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Flibcdj-anlz-parser_PLAN.md;0;3
 
 [VTE]
 last_dir=/home/teknopaul

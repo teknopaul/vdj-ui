@@ -13,6 +13,7 @@ int cmd_sha256(int argc, char **argv);
 int cmd_kv(int argc, char **argv);
 int cmd_analyse(int argc, char **argv);
 int cmd_export(int argc, char **argv);
+int cmd_add_to_drive(int argc, char **argv);
 int cmd_verify(int argc, char **argv);
 int cmd_settings_check(int argc, char **argv);
 int cmd_pdb(int argc, char **argv);
@@ -27,6 +28,7 @@ static const struct helper_cmd commands[] = {
     { "kv", cmd_kv, "get, set or unset a key of a key/value file (meta.txt ...)" },
     { "analyse", cmd_analyse, "beat grid, waveform and loudness of one track directory" },
     { "export", cmd_export, "build a rekordbox format drive from lists of track directories" },
+    { "add-to-drive", cmd_add_to_drive, "add a playlist to the database of a rekordbox pendrive that already has one" },
     { "verify", cmd_verify, "check a rekordbox format drive with libcdj's readers" },
     { "settings-check", cmd_settings_check, "check the CRC of DEVSETTING.DAT / MYSETTING.DAT files" },
     { "pdb", cmd_pdb, "tables or pages of an export.pdb as TSV" },

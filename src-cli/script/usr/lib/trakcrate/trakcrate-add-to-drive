@@ -1,0 +1,137 @@
+#!/bin/bash
+#
+# trakcrate add-to-drive PLAYLIST TARGET: add a playlist to the database of a rekordbox pendrive that already has one
+#
+set -eu
+. "${TRAKCRATE_LIBEXEC:?run through the trakcrate wrapper}/common.sh"
+
+usage='Usage: trakcrate add-to-drive [options] PLAYLIST TARGET
+
+Adds the playlist (playlists/PLAYLIST) of the library to the pendrive TARGET, which already has PIONEER/rekordbox/export.pdb (made by rekordbox or by
+"trakcrate export"), without rebuilding its database: tracks the pendrive already holds are referenced (nothing is copied for them), new audio, artwork
+and analysis files are added, and the database gets the new rows. Nothing that exists is changed except the database itself, which is replaced last: the
+new one is written as export.pdb.new, export.pdb becomes export.pdb.bak (older copies rotate to .bak.2 and .bak.3) and export.pdb.new becomes export.pdb.
+A pendrive pulled between those two renames has export.pdb.bak and export.pdb.new: rename export.pdb.new to export.pdb. Before anything is written the old
+database is copied to /var/tmp/rekordbox-edit-backup-export.<date>.pdb (--backup-dir); trakcrate never deletes that copy. Settings files, USBMNG.DAT and
+exportExt.pdb are not touched, nor is the library.
+
+Refused, with nothing changed: a pendrive that has no export.pdb or also has exportLibrary.db (the newer rekordbox format), a database that fails the
+checks (doc/trakcrate/pdb-append-notes.md), a playlist name the pendrive already has (exact or ignoring case), tracks that are not analysed (unless
+--allow-unanalysed), more tracks, artists or albums than the decks take. Interrupt (Ctrl-C) cancels until the database is switched and removes what was added.
+
+  --tmpdir DIR          where the staging folder goes (default /dev/shm, $XDG_RUNTIME_DIR, the system temp folder)
+  --backup-dir DIR      where the copy of the old export.pdb goes (default /var/tmp)
+  --exclude-art         no artwork for the new tracks
+  --raise-limits        apply the limits of newer decks (20000 tracks, 16000 artists, 16000 albums) instead of 10000 of each
+  --allow-unanalysed    tracks without analysis get a flat waveform and no beat grid instead of refusing
+  --no-cuemarks         do not draw cuemarks as spikes into the waveforms; --cuemark-width N, --cuemark-green, --cuemark-hot
+  --template FILE       another template export.pdb (default $TRAKCRATE_DATA/template-export.pdb)
+  --no-pvbr --no-pwv4 --no-pwv5    leave a piece out of the new analysis files (compatibility testing)
+  -n, --dry-run         check everything and report what would be added, write nothing (no backup copy either)
+  --progress-fd N       JSON events on file descriptor N (cli-interface.md)
+
+Output (--format tsv, json, jsonl): target, playlist, new, existing, files, bytes, backup, status. Exit status 1 on failure. Options: --format FORMAT,
+--library DIR, -q, -v'
+tc_help_or_summary "add a playlist to a rekordbox pendrive's database" "$usage" "$@"
+
+declare -a args=() hflags=()
+progress_fd=
+while [ $# -gt 0 ]; do
+    if tc_common_opt "$@"; then
+        shift "$tc_shift"
+        continue
+    fi
+    case $1 in
+        --tmpdir|--tmpdir=*|--backup-dir|--backup-dir=*|--template|--template=*|--cuemark-width|--cuemark-width=*|--stop-at|--stop-at=*)
+            name=${1%%=*}
+            tc_opt_value "$name" "$@"
+            hflags+=("$name" "$tc_value")
+            shift "$tc_shift"
+            ;;
+        --raise-limits|--allow-unanalysed|--no-cuemarks|--cuemark-green|--cuemark-hot|--no-pvbr|--no-pwv4|--no-pwv5)
+            hflags+=("$1"); shift ;;
+        --exclude-art|--no-artwork) hflags+=(--no-artwork); shift ;;
+        --progress-fd|--progress-fd=*)
+            tc_opt_value --progress-fd "$@"
+            [[ $tc_value =~ ^[0-9]+$ ]] || tc_usage_err "--progress-fd needs a file descriptor number"
+            progress_fd=$tc_value
+            shift "$tc_shift"
+            ;;
+        --) shift; args+=("$@"); break ;;
+        -*) tc_usage_err "unknown option '$1'" ;;
+        *) args+=("$1"); shift ;;
+    esac
+done
+if [ "${#args[@]}" -ne 2 ]; then
+    tc_usage_err "usage: trakcrate add-to-drive PLAYLIST TARGET"
+fi
+if [ -n "$progress_fd" ] && [ ! -e "/proc/self/fd/$progress_fd" ]; then
+    tc_usage_err "--progress-fd $progress_fd is not open"
+fi
+tc_library
+format=${TRAKCRATE_FORMAT:-text}
+name=${args[0]}
+target=${args[1]}
+tc_safe_name "$name" || tc_usage_err "bad playlist name '$name'"
+pdir=$tc_lib/playlists/$name
+[ -d "$pdir" ] || tc_die "no such playlist: $name"
+[ -d "$target" ] || tc_die "the pendrive is not available: $target"
+
+work=$(mktemp -d "${TMPDIR:-/tmp}/trakcrate-add.XXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+
+declare -a dirs=()
+tc_playlist_dirs "$pdir" dirs
+: > "$work/lists"
+if [ "${#dirs[@]}" -eq 0 ]; then
+    tc_die "the playlist $name is empty"
+fi
+for d in "${dirs[@]}"; do
+    [ -d "$d" ] || tc_die "playlist $name has a dangling entry"
+    printf '%s\t%s\n' "$name" "$d" >> "$work/lists"
+done
+
+dry=${TRAKCRATE_DRY_RUN:-}
+hflags+=(--drive "$target")
+if [ -n "$dry" ]; then hflags+=(--dry-run); fi
+if [ -n "$progress_fd" ]; then
+    printf '{"event":"start","command":"add-to-drive","total":0}\n' >&"$progress_fd"
+    hflags+=(--progress-fd "$progress_fd")
+fi
+started=$(date +%s%3N)
+rc=0
+"$TRAKCRATE_HELPER" add-to-drive "${hflags[@]}" < "$work/lists" > "$work/out" 2> "$work/err" || rc=$?
+if [ -s "$work/err" ]; then
+    cat "$work/err" >&2
+fi
+if [ "$rc" -ne 0 ]; then
+    if [ -n "$progress_fd" ]; then
+        printf '{"event":"done","ok":0,"skipped":0,"failed":1,"elapsed_ms":%s}\n' "$(($(date +%s%3N) - started))" >&"$progress_fd"
+    fi
+    if [ "$rc" -eq 2 ]; then exit 2; fi
+    exit 1
+fi
+IFS=$'\t' read -r r_target r_name r_new r_old r_files r_bytes r_switched r_backup r_bak r_audio r_meta < "$work/out"
+if [ -n "$progress_fd" ]; then
+    printf '{"event":"done","ok":%s,"skipped":%s,"failed":0,"elapsed_ms":%s}\n' "$r_new" "$r_old" "$(($(date +%s%3N) - started))" >&"$progress_fd"
+fi
+status=ok
+if [ -n "$dry" ]; then status=dry-run; fi
+case $format in
+    tsv)
+        printf 'target\tplaylist\tnew\texisting\tfiles\tbytes\tbackup\tstatus\n'
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$r_target" "$r_name" "$r_new" "$r_old" "$r_files" "$r_bytes" "$r_backup" "$status" ;;
+    json|jsonl)
+        rec='{"target":'$(tc_json_str "$r_target")',"playlist":'$(tc_json_str "$r_name")',"new":'$r_new',"existing":'$r_old',"files":'$r_files',"bytes":'$r_bytes',"backup":'$(tc_json_str "$r_backup")',"status":"'$status'"}'
+        if [ "$format" = json ]; then printf '[%s]\n' "$rec"; else printf '%s\n' "$rec"; fi ;;
+    paths) printf '%s\n' "$r_target" ;;
+    *)
+        if [ -n "$dry" ]; then
+            printf 'would add playlist "%s" to %s: %s new tracks, %s already on the pendrive (%s MiB of audio, about %s MiB of metadata)\n' "$r_name" "$r_target" \
+                "$r_new" "$r_old" "$((r_audio >> 20))" "$((r_meta >> 20))"
+        else
+            printf 'added playlist "%s" to %s: %s new tracks, %s already on the pendrive; %s files, %s MiB\n' "$r_name" "$r_target" "$r_new" "$r_old" "$r_files" \
+                "$((r_bytes >> 20))"
+            printf 'the old database is kept as %s and %s on the pendrive\n' "$r_backup" "$r_bak"
+        fi ;;
+esac

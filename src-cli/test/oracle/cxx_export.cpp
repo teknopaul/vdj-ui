@@ -23,6 +23,7 @@ int main(int argc, char** argv)
     ss << t.rdbuf();
     o.templatePdb = ss.str();
     o.dest = argv[2];
+    o.writeManifest = true;                        // the C helper always writes SHA256SUMS and the manifest
     bool art = true;
     for (int i = 3; i < argc; ++i)
         if (!std::strcmp(argv[i], "--no-artwork")) art = false;
