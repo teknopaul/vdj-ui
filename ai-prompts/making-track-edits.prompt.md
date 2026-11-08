@@ -50,7 +50,7 @@ Loops must be exactly bars but can start on any beat.
 
 Click avoidance algos to support
 
-- `cut`'
+- `cut`
 - `cross`
 - `fadeout`
 

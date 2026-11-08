@@ -27,6 +27,7 @@ Built from the ground up in C/C++. Provides many of the features of <span style=
   - Export 1 or more pendrives connected to the computer, so real CDJ/XDJ can play tracks from a Linux PC.
   - Export folders of music on the PC, as if it was a pendrive, but without pendrive hardware.
   - Read remote pendrives on playing CDJ/XDJ decks
+  - Import live beatgrid and cue point changes from playing CDJ/XDJ over the network
   - Control the MIDI hardware with a gaming controller, midi controller or spare XDJ deck in midi controller mode
 - **DJ Tools**
   - Output audio to a DJ mixer from
@@ -39,9 +40,22 @@ Built from the ground up in C/C++. Provides many of the features of <span style=
   - Play loops
   - DR-6S - simple 4/4 drum machine
   - LADSPA FX for all DJ Tools, inc Allen & Heath like Xone filter.
+- **Track editing**
+  - Create personal edits (remixes) of tracks, e.g. create clubby/dubby edits by removing break downs and adding loops.
+  - Similar approach to using Audacity to edit audio tracks but making use of the rekordbox beat grid, providing DJ focused options, and automating technicalities such as finding zero crossing and avoiding clicks at edit points.
+  - Ability to cut sections from tracks, using the beat grid, with options for how to perfom the cut, not just a simple cut and join.
+    - `cut` - click free cut n join
+    - `crossfade` - more gentle cross fades across the cut n join
+    - `fadeout` - fade out before the cut n join
+    - `tail overlap` - play the tail of the removed section over the join point
+    - `early cut` - cut before the exact beat grid point but maintaining bar structure
+  - All edit types have preview to select the type that fits best and tweak parameters of the edit being performed before saving the audio
+  - Ability to loop sections with similar options for the joins
+  - Ability to cut out loops based on the beat grid for use in Samplers
+  
 
-N.B. while you can play music off the PC on physical decks, VDJ does not have a Traktor like player for DJing audio on the PC
-This software is a companion to real CDJ/XDJ decks, not an alternative.
+N.B. while you can play music off the PC on physical decks, VDJ does not have a Traktor like player for DJing audio on the PC.  
+This software is a companion to real CDJ/XDJ decks, not an alternative.  
 For Linux DJ software for mixing audio see [Mixxx](https://github.com/mixxxdj/mixxx)
 
 ## Building
@@ -184,14 +198,14 @@ Connect it to the *vdj-midi-in* ALSA port that the deck maps use (*Config > Inst
 automatically with `midi_input_djtoolz=<device key>` in the `[instruments]` section of the config). The *Controller: Tools / DR-6S* box in the
 DJ Tools panel picks what the strips drive, one mode at a time:
 
-| control | Tools mode (strip n = tool n, the F1..F12 order) | DR-6S mode (strip n = voice n: BD SD SY CL HH OH) |
-|---|---|---|
-| mute | the tool's on / off | the voice on / off (a muted voice is dimmed; Alt+click or middle click on a voice button does the same) |
-| solo | the green button (1 bar / Fire) | - |
-| rec / select | next / previous sample in the folder | - |
-| knob | offset, -40 ms .. +40 ms (middle = 0); FX tool: its *knob* control | the voice's offset |
-| fader | the tool's volume 0-127; FX tool: its *fader* control | the voice's volume |
-| track back / forward | - | previous / next drum kit |
+| control              | Tools mode (strip n = tool n, the F1..F12 order)                   | DR-6S mode (strip n = voice n: BD SD SY CL HH OH)                                                       |
+|----------------------|--------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| mute                 | the tool's on / off                                                | the voice on / off (a muted voice is dimmed; Alt+click or middle click on a voice button does the same) |
+| solo                 | the green button (1 bar / Fire)                                    | -                                                                                                       |
+| rec / select         | next / previous sample in the folder                               | -                                                                                                       |
+| knob                 | offset, -40 ms .. +40 ms (middle = 0); FX tool: its *knob* control | the voice's offset                                                                                      |
+| fader                | the tool's volume 0-127; FX tool: its *fader* control              | the voice's volume                                                                                      |
+| track back / forward | -                                                                  | previous / next drum kit                                                                                |
 
 With several DR-6S tools the one you touched last is driven (else the first). Faders and knobs use **pickup**: after a mode change, a preset
 load or a change made with the mouse they do nothing until they reach the value on screen, so the sound never jumps. A voice mute is saved with
@@ -298,6 +312,12 @@ vdj-ui connected to the Prolink Network syncing ALSA Midi sequencer to a physica
 Screenshot of the Trakcrate database UI, showing Folders and editable Playlists.
 
 ![screeshot trakcrate](img/screenshot-trakcrate.png) 
+
+## Track edit
+
+Screenshot of creating a remix of a track with track edit features.
+
+![screeshot track edit](img/screenshot-track-edit.png) 
 
 ## Home setup
 

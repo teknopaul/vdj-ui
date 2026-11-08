@@ -13,7 +13,7 @@ Code: `src/trakcrate/edit_plan.*` (regions, planning), `edit_render.*` (the audi
    - Both are drawn as 25% bands with their number. Bars are either cut or looped, never both; overlapping regions and touching cuts are refused with a message (make touching cuts one cut).
 3. Select a region (click its band or the list) and set its **click avoidance** below. Every change is undoable (Ctrl+Z); Delete removes the selected region. The regions are kept only while the track stays loaded.
 4. The line under the list shows the new length ("Edit: 5:42 -> 4:51") or why the edit cannot be rendered.
-5. A click on the waveform (not a drag) sets the blue **play marker**, snapped to the nearest beat; it is a position in the original track. **Space** on the waveform (or **Preview...**) plays the edit from the marker, in the editor itself, no window; Space again stops. A time line (the green playhead) moves across the waveform showing where in the original the edit is, so it jumps back at every loop repeat and over every cut. The edit is rendered the first time (a message says so) and again only after you change it; changing a region while it plays stops the preview. A marker inside a cut starts just after the cut. **Preview region** plays just the selected cut or loop, from 2 bars before it to 2 bars after it. Nothing is saved.
+5. A click on the waveform (not a drag) sets the blue **play marker**, snapped to the nearest beat; it is a position in the original track. **Space** (while Edit track is on and the focus is anywhere in the editor except a text field; it takes the key from the sequencer's play / pause) or **Preview...** plays the edit from the marker, in the editor itself, no window; Space again stops. A time line (the green playhead) moves across the waveform showing where in the original the edit is, so it jumps back at every loop repeat and over every cut. The edit is rendered the first time (a message says so) and again only after you change it; changing a region while it plays stops the preview. A marker inside a cut starts just after the cut. **Preview region** plays just the selected cut or loop, from 2 bars before it to 2 bars after it. Nothing is saved.
 6. **Render...** saves it (below).
 
 ## Click avoidance
@@ -22,7 +22,7 @@ A cut of `[a,b)` joins the audio before `a` to the audio from `b`; each repeat o
 
 | algo | parameter | what it does | cuts | loops |
 |------|-----------|--------------|------|-------|
-| `cut` | fade 5, 10, 20 or 50 ms | raw join with just enough fade out before and fade in after | yes | yes |
+| `cut` | fade 5, 10, 20 or 50 ms (default 10) | raw join with just enough fade out before and fade in after | yes | yes |
 | `cross` | 1/2, 1 or 2 beats | the beats before the join crossfade (equal power) from the cut audio into the audio before the rejoin point; length and bar alignment are unchanged | yes | yes |
 | `fadeout` | 1/2, 1 or 2 beats | the last beats before the join fade to silence, the next part starts hard (5 ms fade in), so the beat drops in with emphasis | yes | yes |
 | `tailoverlap` | 0, 1, 2 or 4 beats | like `cut` (5 ms), and the first beats of the removed range (a reverb tail) are played over the start of the beats that come afterwards. 0 is the same as `cut`. It is the DJ's job to choose places where this does not double the kicks | yes | no |
@@ -54,3 +54,7 @@ Cut a loop out of the track as a sample for Acid. Select a loop region, or drag 
 ## Not done
 
 Variable tempo grids, non 4/4 bars, saving the region list (it can only be rebuilt by hand from the `.txt`), carrying cuemarks into an edit, and artwork in the output audio file.
+
+## Fade lengths worth knowing
+
+The fades that are not configurable are all 5 ms: the fade in after a `fadeout`, both fades of `tailoverlap` (its fade out only when the tail is 0 beats), and the fallback of `cross` when there is no audio before the join (a loop at the very start). The configurable `cut` fade is applied from the join onwards, so a long one softens the first kick after a cut: use 5 ms there if the weight of that kick matters. Moving the fade so that it ends on the beat is a possible later change.

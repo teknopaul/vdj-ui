@@ -8,7 +8,7 @@
 | 4 | Editor UI regions | complete |
 | 5 | Preview and render dialogs | complete |
 | 6 | Acid loops | complete |
-| 7 | Docs and listening test | pending |
+| 7 | Docs and listening test | complete |
 
 ## Review notes
 
@@ -89,3 +89,14 @@ Files for review:
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/trakcrate_edit_loop_dialog.cpp`
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/trakcrate/edit_job.cpp`
 - `/home/teknopaul/bzr_workspace/vdj-ui/src/ui/trakcrate_edit_panel.cpp`
+
+### Phase 7 — Docs and listening test
+
+⚠ listening test: the user judged it good enough; they found the 20 ms tailoverlap fade-in too long (now 5 ms) and may still want the cut fade to end on the beat
+
+⚠ Acid has not been tried with an exported loop
+
+⚠ the preview dialog was replaced by inline playback (Space, moving time line)
+
+Files for review:
+- `/home/teknopaul/bzr_workspace/vdj-ui/doc/trakcrate/track-edits.md`
