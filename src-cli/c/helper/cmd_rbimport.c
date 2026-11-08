@@ -427,7 +427,7 @@ int cmd_rbtrack(int argc, char **argv)
 
             anlz_beat_at(&bg, 0, &first);
             g.bpm = first.bpm_x100 / 100.0;
-            g.first_beat_us = (long long)first.time_ms * 1000 + first.sub_ms_us;
+            g.first_beat_us = (long long)first.time_signed_ms * 1000 + first.sub_ms_us;
             g.confidence = -1;
             snprintf(g.analyser, sizeof g.analyser, "rekordbox");
             for (i = 1; i < bg.count && !variable; i++) {

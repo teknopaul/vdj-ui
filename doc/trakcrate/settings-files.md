@@ -25,17 +25,17 @@ In the GUI library they live in **settings sets** (`user-settings/<set>/`, forma
 
 Same container. All integers little endian.
 
-| Offset | Size | Content                                                                 |
-|--------|------|-------------------------------------------------------------------------|
-| 0x00   | 4    | `0x60`: length of the header (strings below)                            |
-| 0x04   | 32   | brand: `PIONEER DJ` (DEVSETTING) or `PIONEER` (MYSETTING), NUL padded    |
-| 0x24   | 32   | `rekordbox`                                                             |
-| 0x44   | 32   | version: `4.5.0` (DEVSETTING) or `0.001` (MYSETTING)                    |
-| 0x64   | 4    | payload length: `0x20` (DEVSETTING), `0x28` (MYSETTING)                 |
-| 0x68   | 4    | magic `78 56 34 12` (0x12345678)                                        |
-| 0x6c   | n    | payload (the two settings blocks differ; see below)                     |
-| len-4  | 2    | CRC16 of bytes from 0x68 up to the CRC                                  |
-| len-2  | 2    | `00 00` padding                                                         |
+| Offset | Size | Content                                                               |
+|--------|------|-----------------------------------------------------------------------|
+| 0x00   | 4    | `0x60`: length of the header (strings below)                          |
+| 0x04   | 32   | brand: `PIONEER DJ` (DEVSETTING) or `PIONEER` (MYSETTING), NUL padded |
+| 0x24   | 32   | `rekordbox`                                                           |
+| 0x44   | 32   | version: `4.5.0` (DEVSETTING) or `0.001` (MYSETTING)                  |
+| 0x64   | 4    | payload length: `0x20` (DEVSETTING), `0x28` (MYSETTING)               |
+| 0x68   | 4    | magic `78 56 34 12` (0x12345678)                                      |
+| 0x6c   | n    | payload (the two settings blocks differ; see below)                   |
+| len-4  | 2    | CRC16 of bytes from 0x68 up to the CRC                                |
+| len-2  | 2    | `00 00` padding                                                       |
 
 **CRC verified:** CRC-16/XMODEM (poly 0x1021, init 0, no reflection) over `[0x68, len-4)`, stored little endian. It matched both files (0x3bba and 0x2181). So a modified file can be regenerated correctly.
 
@@ -47,13 +47,13 @@ Players apply MYSETTING when the drive is loaded, so changing bytes changes play
 
 ## djprofile.nxs (160 bytes)
 
-| Offset | Size | Content                                                                                                   | Status                          |
-|--------|------|-----------------------------------------------------------------------------------------------------------|---------------------------------|
-| 0x00   | 4    | `00 42 d7 c3`                                                                                             | unknown                         |
-| 0x04   | 8    | big endian milliseconds since 1970 (`0x18bde67e7e9` = 2023-11-17 17:50:33 UTC), the profile's date        | plausible, not proven           |
-| 0x0c   | 16   | zeros                                                                                                     |                                 |
-| 0x1c   | 4    | `a2 3f 2b 74`                                                                                             | **unknown** (see below)         |
-| 0x20   | 128  | user name, UTF-8, NUL terminated, zero padded (the sample reads `teknopaul teknopaul`)                    | name proven by the sample       |
+| Offset | Size | Content                                                                                            | Status                    |
+|--------|------|----------------------------------------------------------------------------------------------------|---------------------------|
+| 0x00   | 4    | `00 42 d7 c3`                                                                                      | unknown                   |
+| 0x04   | 8    | big endian milliseconds since 1970 (`0x18bde67e7e9` = 2023-11-17 17:50:33 UTC), the profile's date | plausible, not proven     |
+| 0x0c   | 16   | zeros                                                                                              |                           |
+| 0x1c   | 4    | `a2 3f 2b 74`                                                                                      | **unknown** (see below)   |
+| 0x20   | 128  | user name, UTF-8, NUL terminated, zero padded (the sample reads `teknopaul teknopaul`)             | name proven by the sample |
 
 - This is the profile for the NXS-era players (the player shows who exported the drive).
 - Every copy on this machine (7 files, from `/transfer/cdj64`, `/var/tmp/rekordbox-*`, `libcdj`, `/var/vdj`) is byte identical (md5 `5eeea5ef...`): **there is one sample**, from one person. Without a second sample with another name the structure of the name field (one string? "login full name"? where the checksum goes) cannot be confirmed.
@@ -67,6 +67,22 @@ Different container: starts `FMAI`, a header length, then three space padded 32 
 
 - The device model and firmware are recorded: it is written for a specific player (XDJ-700 firmware 1.13 here), so it is probably a cache or filter list produced when that player was linked. It may be per-device, and not safe to copy blindly. Needs a second sample from another drive.
 - Probably optional.
+
+## MYSETTING2.DAT (148 bytes) and DJMMYSETTING.DAT (160 bytes): read only (2026-11-07)
+
+Two more files that rekordbox 6 writes next to the others in `PIONEER/`; not part of a settings set and not written by exports (a deck that needs them
+falls back to its own defaults; nothing here has been tried on hardware). Layouts and option names are from rekordcrate's `setting.rs`, offsets and CRCs
+were checked on its 37 one-option-per-file samples (`tests/fixtures/rekordcrate/`, `TestTrakcrateSettings::newerSettingsFilesFromRekordbox6`).
+`describeSettingsFile` shows them (`SettingsKind::MySetting2`, `DjmMySetting`); `verifyMySetting2File` / `verifyDjmMySettingFile` check them.
+
+| File             | Payload (length at 0x64)                                                         | Options (absolute offsets)                                                                                                                                                                                                                                                                                        | CRC-16/XMODEM, stored LE at the end, then two zero bytes |
+|------------------|----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|
+| MYSETTING2.DAT   | 0x28 = 40 bytes from 0x68, no magic                                              | 0x68 vinyl speed adjust, 0x69 jog display mode, 0x6a pad/button brightness, 0x6b jog LCD brightness, 0x6c waveform divisions, 0x72 waveform / phase meter, 0x74 beat jump beat value; 0x6d-0x71, 0x75-0x8f zero; 0x73 is 0x81                                                                                     | over 0x68 up to the CRC (like MYSETTING.DAT)             |
+| DJMMYSETTING.DAT | 0x34 = 52 bytes from 0x68: magic 0x12345678, block id 1, 0x20, options from 0x74 | 0x74 channel fader curve, 0x75 crossfader curve, 0x76 headphones pre EQ, 0x77 mono split, 0x78 beat FX quantize, 0x79 mic low cut, 0x7a talk over mode, 0x7b talk over level, 0x7c MIDI channel, 0x7d MIDI button type, 0x7e display brightness, 0x7f indicator brightness, 0x80 long fader curve; 0x81-0x9b zero | **the whole file** from byte 0 up to the CRC             |
+
+The DJMMYSETTING checksum covering the header is new to us: the two older files only cover the payload. Decision on writing them: **not for now**. No
+deck of ours reads them (the MYSETTING2 options are CDJ-3000 era), and the five file settings set would have to grow two files and a copy-from-drive
+step; the decoders are there when that changes.
 
 ## To do
 

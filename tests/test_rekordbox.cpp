@@ -622,8 +622,8 @@ void TestRekordbox::analysisHasTheBeatGrid()
             QVERIFY(a.beats[k].ms > a.beats[k - 1].ms);                          // strictly increasing
             QCOMPARE(int(a.beats[k].number), (int(a.beats[k - 1].number) % 4) + 1); // 1 2 3 4 1 2 ...
         }
-        QCOMPARE(quint32(a.beats.first().ms), a.firstBeatMs);
-        QCOMPARE(quint32(a.beats.last().ms), a.lastBeatMs);
+        QCOMPARE(quint32(qMax(0.0, a.beats.first().ms)), a.firstBeatMs);          // a moved grid can start before 0: firstBeatMs is clamped
+        QCOMPARE(quint32(qMax(0.0, a.beats.last().ms)), a.lastBeatMs);
         // the grid's spacing is the tempo
         const double beatMs = (a.beats.last().ms - a.beats.first().ms) / (a.beats.size() - 1);
         QVERIFY(qAbs(60000.0 / beatMs - a.avgBpm) < 0.01);

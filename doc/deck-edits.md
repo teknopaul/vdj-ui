@@ -14,6 +14,14 @@ Plan: `.planning/plans/deck-edits-copy-back_PLAN.md` (see its REVISION section).
 5. A preview lists, per track, what changes (BPM and first beat shift, or cues added / moved / removed), tracks that are not in the library, and
    ambiguous ones (skipped). Ok writes.
 
+### Copy back everything (restoring a library from the stick it was imported from)
+
+Right click the **top item** of a database (a deck's or a pendrive folder): **Copy back all beatgrids** / **Copy back all cue points**, for every track of
+the database. One preview and one confirmation for the whole run (details list every track). Tracks imported from that drive are matched first by the path
+they were imported from (`imported_from` in `source.txt`), so the same names in two folders are no problem. Grids imported before the grid shift was
+understood (see below) are corrected by this. In "all cue points" a track that has **no** cue points on the stick keeps the library's cue points
+(single copy back replaces them).
+
 ## What is written
 
 Per matched library track, only `beatgrid.txt` and/or `cuemarks.txt`, plus `source.txt` (`origin.beatgrid` / `origin.cues` = `edited`,
@@ -35,9 +43,9 @@ PCOB/PCO2; nothing else changed on the stick except the two pdb sequence bytes. 
 is not changed, and its microsecond fractions belong to the unshifted grid (they are dropped for a shifted grid). The sign for a move to an earlier
 position is assumed (two's complement), not yet seen on a deck.
 
-libcdj's `anlz_beat_at()` does not know the shift: `src/trakcrate/pqtz_offset.h` reads it, and the viewer's waveform (`track_analysis.cpp`), the copy
-back (`deck_edits.cpp`) and the drive import apply it. When libcdj learns it, drop the helper or the shift is applied twice.
-Fixture: `tests/fixtures/deck-grid-move/`.
+libcdj's `anlz_beat_at()` applies the shift (`anlz_beatgrid_t.shift_ms`, fractions dropped for a shifted grid), so the viewer's waveform, the copy back
+(`deck_edits.cpp`), the drive import and the dbserver all get the moved grid without extra code. Negative values are confirmed by the libcdj fixture
+`P014_00001A7A` (-230). Fixture: `tests/fixtures/deck-grid-move/`.
 
 ## Not done / unknown
 

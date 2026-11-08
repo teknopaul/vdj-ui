@@ -35,6 +35,7 @@ struct AnlzCue {
 struct AnlzTrackData {
     std::string audioPath;                       // PPTH: "/Contents/Folder/song.mp3"
     std::vector<AnlzBeat> beats;                 // PQTZ; empty = a track without a grid
+    int16_t gridShiftMs = 0;                     // PQTZ header 0x12: moves every beat (a deck saves a moved grid start there); 0 in an export
     std::vector<uint16_t> beatSubUs;             // PQT2 fractions, one per beat (microseconds after the ms); empty = zeros
     std::vector<uint8_t> pwav;                   // 400 (preview)
     std::vector<uint8_t> pwv2;                   // 100

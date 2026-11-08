@@ -50,7 +50,6 @@ bool sameReply(const Message& ours, const Message& deck)
     for (size_t i = 0; i < ours.args.size(); ++i) {
         const Arg& a = ours.args[i];
         const Arg& b = deck.args[i];
-        if (ours.type == 0x4602 && i == 4) continue;          // the deck sends junk here (0 and 0xffffff5a seen)
         if (a.kind != Arg::Blob || b.kind != Arg::Blob) {
             if (!(a == b)) return false;
             continue;

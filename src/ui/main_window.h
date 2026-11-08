@@ -100,7 +100,7 @@ private:
     void setupStatusBar();
     void setupShortcuts();
     void setupDemoDecks();
-    void copyBackFromDeck(int what, const QList<TrackInfo>& tracks);   // viewer right click: deck edits into the trakcrate library
+    void copyBackFromDeck(int what, const QList<TrackInfo>& tracks, bool all);   // viewer right click: deck edits into the trakcrate library
     void setupDemoTrackBrowser();
     void startDemoClocks();
     void setupDebugPanel();

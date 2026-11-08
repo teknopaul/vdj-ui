@@ -1284,6 +1284,19 @@ vdj-ui-trakcrate-pdb-build-test/fast:
 .PHONY : vdj-ui-trakcrate-pdb-build-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-pdb-tables-test
+
+# Build rule for target.
+vdj-ui-trakcrate-pdb-tables-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-pdb-tables-test
+.PHONY : vdj-ui-trakcrate-pdb-tables-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-tables-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-tables-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-trakcrate-anlz-roundtrip-test
 
 # Build rule for target.
@@ -2974,6 +2987,32 @@ vdj-ui-trakcrate-pdb-build-test_autogen/fast:
 .PHONY : vdj-ui-trakcrate-pdb-build-test_autogen/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-trakcrate-pdb-tables-test_autogen
+
+# Build rule for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-trakcrate-pdb-tables-test_autogen
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-trakcrate-anlz-roundtrip-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -3498,6 +3537,8 @@ help:
 	@echo "... vdj-ui-trakcrate-pdb-build-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test_autogen"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-rbimport-test_autogen"
 	@echo "... vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-scripts-test_autogen"
@@ -3587,6 +3628,7 @@ help:
 	@echo "... vdj-ui-trakcrate-pdb-append-test"
 	@echo "... vdj-ui-trakcrate-pdb-build-test"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test"
 	@echo "... vdj-ui-trakcrate-rbimport-test"
 	@echo "... vdj-ui-trakcrate-scripts-test"
 	@echo "... vdj-ui-trakcrate-settings-test"

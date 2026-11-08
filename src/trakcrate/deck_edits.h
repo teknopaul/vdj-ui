@@ -4,7 +4,6 @@
 #include "library.h"
 #include "track.h"
 
-#include "pqtz_offset.h"
 
 #include <cdj/anlz.h>
 
@@ -18,7 +17,7 @@ namespace trakcrate {
 
 // ---- decoding, shared with the drive import (rb_import.cpp) ----
 // The first tempo of the grid of an opened ANLZ file (trakcrate keeps one constant tempo); *variable is set when the tempo changes within the track.
-bool gridFromAnlz(anlz_track_t* a, BeatGrid* grid, bool* variable, int offsetMs = 0);   // offsetMs: pqtzGridOffsetMs() of the file
+bool gridFromAnlz(anlz_track_t* a, BeatGrid* grid, bool* variable);
 // All cue points, memory cues and loops as cuemarks (the beat column is filled from the grid when it has one).
 std::vector<Cuemark> cuesFromAnlz(anlz_track_t* a, const BeatGrid& grid);
 
@@ -36,6 +35,7 @@ DeckAnalysis readDeckAnalysis(const fs::path& root, const std::string& analyzePa
 // ---- which library track is it ----
 struct LibraryEntry {
     fs::path dir;
+    std::string importedPath;              // source.txt imported_from without the drive name: "/Contents/A/B/x.mp3" (tracks imported from a drive)
     std::string title, artist, stem;       // stem: the track folder's name, the exporter's file name under Contents/ is made from it
 };
 std::vector<LibraryEntry> indexLibrary(const Library& lib);
@@ -43,6 +43,7 @@ std::vector<LibraryEntry> indexLibrary(const Library& lib);
 struct DeckTrackKey {
     std::string title, artist;
     std::string fileStem;                  // file name of the audio on the deck without the extension
+    std::string filePath;                  // the database's path of the audio, "/Contents/A/B/x.mp3"
 };
 struct Match {
     fs::path dir;                          // empty when there is no single match
@@ -69,6 +70,7 @@ CueDiff diffCues(const Track& t, const DeckAnalysis& deck);
 struct CopyBackOptions {
     bool grid = false, cues = false;
     bool dryRun = false;
+    bool skipEmptyCues = false;            // bulk copy back: a deck without any cue point does not wipe the library's cues
     std::string from;                      // recorded in source.txt, for example "deck 2" 
 };
 struct CopyBackResult {

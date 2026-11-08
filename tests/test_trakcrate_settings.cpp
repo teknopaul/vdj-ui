@@ -56,6 +56,70 @@ private:
     }
 
 private slots:
+    // rekordcrate's sample files (tests/fixtures/rekordcrate): one file per option value, made by rekordbox 6
+    void newerSettingsFilesFromRekordbox6()
+    {
+        const fs::path root = fs::path(REKORDCRATE_FIXTURES);
+        const fs::path demo = root / "complete_export/demo_tracks/PIONEER";
+        std::string err;
+        QVERIFY2(verifyMySetting2File(slurp(demo / "MYSETTING2.DAT"), &err), err.c_str());
+        QVERIFY2(verifyDjmMySettingFile(slurp(demo / "DJMMYSETTING.DAT"), &err), err.c_str());
+        QVERIFY(!verifyMySetting2File(slurp(demo / "DJMMYSETTING.DAT")));           // each refuses the other
+        QVERIFY(!verifyDjmMySettingFile(slurp(demo / "MYSETTING2.DAT")));
+        std::string broken = slurp(demo / "MYSETTING2.DAT");
+        broken[0x74] = char(0x86);                                                   // an option changed without the CRC
+        QVERIFY(!verifyMySetting2File(broken, &err));
+        QCOMPARE(err, std::string("CRC mismatch"));
+
+        // every sample passes its check, and the viewer names the option the file is named after
+        struct Case { const char* dir; const char* field; const char* value; } cases[] = {
+            {"mysetting2/beatjumpbeatvalue_64", "Beat Jump Beat Value", "64 Beat"},
+            {"mysetting2/beatjumpbeatvalue_half", "Beat Jump Beat Value", "1/2 Beat"},
+            {"mysetting2/jogdisplaymode_artwork", "Jog Display Mode", "Artwork"},
+            {"mysetting2/joglcdbrightness_5", "Jog LCD Brightness", "5"},
+            {"mysetting2/padbuttonbrightness_4", "Pad/Button Brightness", "4"},
+            {"mysetting2/vinylspeedadjust_release", "Vinyl Speed Adjust", "Release"},
+            {"mysetting2/waveform_phasemeter", "Waveform / Phase Meter", "Phase Meter"},
+            {"mysetting2/waveformdivisions_timescale", "Waveform Divisions", "Time Scale"},
+            {"djmmysetting/chfadercurve_steepbottom", "Channel Fader Curve", "Steep Bottom"},
+            {"djmmysetting/chfadercurvelong_linear", "Channel Fader Curve (long fader)", "Linear"},
+            {"djmmysetting/crossfadercurve_slowcut", "Crossfader Curve", "Slow Cut"},
+            {"djmmysetting/headphones_monosplit_monosplit", "Headphones Mono Split", "Mono Split"},
+            {"djmmysetting/headphones_preeq_preeq", "Headphones Pre EQ", "Pre EQ"},
+            {"djmmysetting/beatfxquantize_off", "Beat FX Quantize", "Off"},
+            {"djmmysetting/miclowcut_off", "Mic Low Cut", "Off"},
+            {"djmmysetting/talkover_mode_normal", "Talk Over Mode", "Normal"},
+            {"djmmysetting/talkover_level_6", "Talk Over Level", "-6dB"},
+            {"djmmysetting/midi_ch_16", "MIDI Channel", "16"},
+            {"djmmysetting/midi_buttontype_trigger", "MIDI Button Type", "Trigger"},
+            {"djmmysetting/mixer_brightness_display_white", "Mixer Display Brightness", "White"},
+            {"djmmysetting/mixer_brightness_indicator_1", "Mixer Indicator Brightness", "1"},
+        };
+        for (const Case& c : cases) {
+            const bool djm = std::string(c.dir).rfind("djm", 0) == 0;
+            const fs::path file = root / c.dir / (djm ? "DJMMYSETTING.DAT" : "MYSETTING2.DAT");
+            const std::string bytes = slurp(file);
+            QVERIFY2(!bytes.empty(), c.dir);
+            QVERIFY2(djm ? verifyDjmMySettingFile(bytes, &err) : verifyMySetting2File(bytes, &err), (std::string(c.dir) + ": " + err).c_str());
+            bool found = false;
+            for (const SettingsRow& r : describeSettingsFile(djm ? SettingsKind::DjmMySetting : SettingsKind::MySetting2, bytes)) {
+                if (r.field != c.field) continue;
+                found = true;
+                QVERIFY2(r.known, c.dir);
+                QCOMPARE(r.value, std::string(c.value));
+            }
+            QVERIFY2(found, c.dir);
+        }
+        SettingsKind k;
+        QVERIFY(settingsKindForName("MYSETTING2.DAT", &k) && k == SettingsKind::MySetting2);
+        QVERIFY(settingsKindForName("DJMMYSETTING.DAT", &k) && k == SettingsKind::DjmMySetting);
+        QCOMPARE(std::string(settingsKindName(SettingsKind::DjmMySetting)), std::string("DJMMYSETTING.DAT"));
+
+        // the rekordbox 6 demo defaults: nothing unnamed in the option rows
+        for (const SettingsRow& r : describeSettingsFile(SettingsKind::MySetting2, slurp(demo / "MYSETTING2.DAT")))
+            if (r.field == "Beat Jump Beat Value") QCOMPARE(r.value, std::string("16 Beat"));
+    }
+
     void init() { tmp_ = makeTempDir("trakcrate-settings-test"); QVERIFY(!tmp_.empty()); }
     void cleanup() { std::error_code ec; fs::remove_all(tmp_, ec); }
 

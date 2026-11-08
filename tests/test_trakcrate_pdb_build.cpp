@@ -4,6 +4,7 @@
 
 #include "trakcrate/fsutil.h"
 #include "trakcrate/pdb_build.h"
+#include "trakcrate/pdb_rows.h"
 #include "trakcrate/sha256.h"
 
 #include <cstring>
@@ -91,6 +92,8 @@ private slots:
 
     void stringEncodings();
     void emptyAndSmallPlans();
+    void fileTypeFollowsTheExtension();
+    void autoloadHotcuesString();
     void multiPageTables();
     void unicodeAndLongStrings();
     void analyzePathRuleMatchesRealRekordboxDrives();
@@ -111,6 +114,17 @@ void TestTrakcratePdbBuild::stringEncodings()
     std::string s126(126, 'x');
     QCOMPARE(encodeDeviceSqlString(s126).size(), size_t(127));             // longest short string
     QCOMPARE(uint8_t(encodeDeviceSqlString(s126)[0]), uint8_t(0xFF));
+    {   // rekordbox's ISRC form (0x90, 0x03, ASCII, NUL) decodes as the code, not as UTF-16
+        const std::string isrc("\x90\x12\x00\x00\x03" "GBAHT0500594" "\x00", 18);
+        std::string out;
+        size_t end = 0;
+        QVERIFY(decodeDeviceSqlString(isrc, 0, &out, &end));
+        QCOMPARE(out, std::string("GBAHT0500594"));
+        QCOMPARE(end, size_t(18));
+        const std::string text("\x90\x0a\x00\x00" "a\0b\0c\0", 10);
+        QVERIFY(decodeDeviceSqlString(text, 0, &out));
+        QCOMPARE(out, std::string("abc"));
+    }
     std::string s127(127, 'x');
     std::string l = encodeDeviceSqlString(s127);
     QCOMPARE(uint8_t(l[0]), uint8_t(0x40));                                // long ASCII: 0x40, u16 total (with the 4 byte header), 0
@@ -124,6 +138,52 @@ void TestTrakcratePdbBuild::stringEncodings()
     QCOMPARE(emoji.substr(4), std::string("\x3C\xD8\xA7\xDF", 4));
     QCOMPARE(uint8_t(encodeDeviceSqlString("tab\there")[0]), uint8_t(0x90));   // control characters take the UTF-16 form too
     QCOMPARE(encodeDeviceSqlString(std::string(10000, 'y')).size(), size_t(500 + 4));   // capped
+}
+
+void TestTrakcratePdbBuild::fileTypeFollowsTheExtension()
+{
+    QCOMPARE(rekordboxFileType("a.mp3"), 1);
+    QCOMPARE(rekordboxFileType("a.M4A"), 4);
+    QCOMPARE(rekordboxFileType("a.flac"), 5);
+    QCOMPARE(rekordboxFileType("a.wav"), 0x0b);
+    QCOMPARE(rekordboxFileType("a.aiff"), 0x0c);
+    QCOMPARE(rekordboxFileType("a.AIF"), 0x0c);
+    QCOMPARE(rekordboxFileType("a.ogg"), -1);
+    QCOMPARE(rekordboxFileType("noextension"), -1);
+
+    ExportPlan p = plan(3, 0);
+    p.tracks[0].fileName = "x.aiff";
+    p.tracks[1].fileName = "x.m4a";
+    p.tracks[2].fileName = "x.wav";
+    BuiltPdb b;
+    buildAndVerify(p, &b);
+    PdbFile f;
+    QVERIFY(parsePdb(b.bytes, &f));
+    const std::vector<const PdbRow*> rows = tableRows(f, 0);
+    QCOMPARE(rows.size(), size_t(3));
+    auto type = [&](size_t i) { return int(uint8_t(rows[i]->bytes[90]) | uint8_t(rows[i]->bytes[91]) << 8); };
+    QCOMPARE(type(0), 0x0c);
+    QCOMPARE(type(1), 4);
+    QCOMPARE(type(2), 0x0b);
+}
+
+void TestTrakcratePdbBuild::autoloadHotcuesString()
+{
+    ExportPlan p = plan(2, 0);
+    p.tracks[1].autoloadHotcues = false;
+    BuiltPdb b;
+    buildAndVerify(p, &b);
+    PdbFile f;
+    QVERIFY(parsePdb(b.bytes, &f));
+    const std::vector<const PdbRow*> rows = tableRows(f, 0);
+    QCOMPARE(rows.size(), size_t(2));
+    auto slot7 = [&](size_t i) {
+        const std::string& r = rows[i]->bytes;
+        const size_t ofs = size_t(uint8_t(r[kTrackFixed + 2 * kStrAutoloadHotcues])) | size_t(uint8_t(r[kTrackFixed + 2 * kStrAutoloadHotcues + 1])) << 8;
+        return r.substr(ofs, 3);
+    };
+    QCOMPARE(slot7(0), std::string("\x07ON", 3));
+    QCOMPARE(slot7(1).substr(0, 1), std::string("\x03", 1));
 }
 
 void TestTrakcratePdbBuild::emptyAndSmallPlans()

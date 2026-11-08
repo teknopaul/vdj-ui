@@ -286,6 +286,7 @@ target_link_libraries(vdj-ui-trakcrate-library-test PRIVATE ${QT_TEST} vdj-trakc
 add_test(NAME vdj-ui-trakcrate-library-test COMMAND vdj-ui-trakcrate-library-test)
 
 add_executable(vdj-ui-trakcrate-settings-test test_trakcrate_settings.cpp)
+target_compile_definitions(vdj-ui-trakcrate-settings-test PRIVATE REKORDCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/rekordcrate")
 target_link_libraries(vdj-ui-trakcrate-settings-test PRIVATE ${QT_TEST} vdj-trakcrate)
 add_test(NAME vdj-ui-trakcrate-settings-test COMMAND vdj-ui-trakcrate-settings-test)
 
@@ -314,6 +315,13 @@ add_executable(vdj-ui-trakcrate-pdb-build-test test_trakcrate_pdb_build.cpp)
 target_compile_definitions(vdj-ui-trakcrate-pdb-build-test PRIVATE TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/trakcrate")
 target_link_libraries(vdj-ui-trakcrate-pdb-build-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-pdb-build-test COMMAND vdj-ui-trakcrate-pdb-build-test)
+
+add_executable(vdj-ui-trakcrate-pdb-tables-test test_trakcrate_pdb_tables.cpp)
+target_compile_definitions(vdj-ui-trakcrate-pdb-tables-test PRIVATE
+    TRAKCRATE_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+    TRAKCRATE_REFERENCES="${CMAKE_SOURCE_DIR}/references/libcdj")
+target_link_libraries(vdj-ui-trakcrate-pdb-tables-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-pdb-tables-test COMMAND vdj-ui-trakcrate-pdb-tables-test)
 
 add_executable(vdj-ui-trakcrate-anlz-roundtrip-test test_trakcrate_anlz_roundtrip.cpp)
 target_compile_definitions(vdj-ui-trakcrate-anlz-roundtrip-test PRIVATE

@@ -53,6 +53,7 @@
 #include <QIcon>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QProgressDialog>
 #include <QFontDialog>
 #include <QDialogButtonBox>
 #include <QProcess>
@@ -459,7 +460,7 @@ void MainWindow::connectDeckSignals()
     });
     QObject::connect(trackBrowser_, &TrackBrowser::previewRequested, playerPanel_, &PlayerPanel::loadTrack);
     QObject::connect(trackBrowser_, &TrackBrowser::copyBackRequested, this,
-                     [this](TrackBrowser::CopyBack what, const QList<TrackInfo>& tracks) { copyBackFromDeck(int(what), tracks); });
+                     [this](TrackBrowser::CopyBack what, const QList<TrackInfo>& tracks, bool all) { copyBackFromDeck(int(what), tracks, all); });
     QObject::connect(playerPanel_, &PlayerPanel::status, this, [this](const QString& msg) {
         statusBar()->showMessage(msg, 5000);
     });
@@ -1573,7 +1574,7 @@ void MainWindow::setupDemoDecks()
 
 // Right click "Copy back beatgrid / cue points" in the rekordbox viewer: the grids and cues of these tracks, as the viewer has them (use "Refresh
 // from deck" first for a deck), replace those of the matching trakcrate library tracks. Previewed, then confirmed; the old files are snapshotted.
-void MainWindow::copyBackFromDeck(int what, const QList<TrackInfo>& tracks)
+void MainWindow::copyBackFromDeck(int what, const QList<TrackInfo>& tracks, bool all)
 {
     const QString title = QStringLiteral("Copy back");
     const bool grid = what == int(TrackBrowser::CopyBack::BeatGrid);
@@ -1585,13 +1586,21 @@ void MainWindow::copyBackFromDeck(int what, const QList<TrackInfo>& tracks)
     trakcrate::CopyBackOptions opts;
     opts.grid = grid;
     opts.cues = !grid;
+    opts.skipEmptyCues = all;                 // restoring a whole stick: tracks without cues there keep the library's
     opts.from = trackBrowser_->isRemote() ? QStringLiteral("deck %1").arg(trackBrowser_->remotePlayerId()).toStdString() : std::string("rekordbox drive");
 
     struct Item { trakcrate::DeckAnalysis deck; trakcrate::Match match; QString name; QString problem; trakcrate::CopyBackResult preview; };
     QList<Item> items;
     const auto index = trakcrate::indexLibrary(tcPanel_->library());
-    QApplication::setOverrideCursor(Qt::WaitCursor);
+    QProgressDialog progress(QStringLiteral("Reading the %1 of %2 track(s)...").arg(kind).arg(tracks.size()), QStringLiteral("Cancel"), 0, tracks.size(), this);
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setMinimumDuration(400);
+    int n = 0;
     for (const TrackInfo& info : tracks) {
+        progress.setValue(n++);
+        QApplication::processEvents();
+        if (progress.wasCanceled())
+            return;
         Item it;
         QString artist;
         for (const auto& f : info.fields)
@@ -1605,8 +1614,10 @@ void MainWindow::copyBackFromDeck(int what, const QList<TrackInfo>& tracks)
             else if (grid && !it.deck.hasGrid) it.problem = QStringLiteral("no beat grid on the deck");
         }
         if (it.problem.isEmpty()) {
+            QString deckPath = info.audioPath;                        // root + the database's path
+            if (deckPath.startsWith(info.root)) deckPath.remove(0, info.root.size());
             it.match = trakcrate::matchLibraryTrack(index, { info.title.toStdString(), artist.toStdString(),
-                                                              QFileInfo(info.audioPath).completeBaseName().toStdString() });
+                                                              QFileInfo(info.audioPath).completeBaseName().toStdString(), deckPath.toStdString() });
             if (it.match.dir.empty())
                 it.problem = it.match.candidates.empty() ? QStringLiteral("not in the library")
                                                          : QStringLiteral("%1 library tracks match, not copied").arg(it.match.candidates.size());
@@ -1619,7 +1630,7 @@ void MainWindow::copyBackFromDeck(int what, const QList<TrackInfo>& tracks)
         }
         items.append(it);
     }
-    QApplication::restoreOverrideCursor();
+    progress.setValue(tracks.size());
 
     QStringList lines;
     int changes = 0;
@@ -1645,9 +1656,15 @@ void MainWindow::copyBackFromDeck(int what, const QList<TrackInfo>& tracks)
         QMessageBox::information(this, title, QStringLiteral("Nothing to copy back.\n\n%1").arg(lines.join('\n')));
         return;
     }
+    int skipped = 0;
+    for (const Item& it : items) skipped += !it.problem.isEmpty();
     QMessageBox box(QMessageBox::Question, title,
-                    QStringLiteral("Copy back the %1 of %2 track(s) into the trakcrate library?\nThe old files are kept in each track's .trakcrate-history.")
-                        .arg(kind).arg(changes),
+                    QStringLiteral("Copy back the %1 of %2 track(s) into the trakcrate library?%3\n\nOnly the %1 (and its origin in source.txt) is replaced; nothing else of a track changes, "
+                                   "and the old files are kept in each track's .trakcrate-history.%4")
+                        .arg(kind).arg(changes)
+                        .arg(all ? QStringLiteral("\n%1 of the %2 tracks of this database changed, %3 not copied (not in the library, ambiguous or unreadable).")
+                                       .arg(changes).arg(items.size()).arg(skipped) : QString())
+                        .arg(all && !grid ? QStringLiteral("\nTracks without cue points on this database keep their cue points.") : QString()),
                     QMessageBox::Ok | QMessageBox::Cancel, this);
     box.setDetailedText(lines.join('\n'));
     if (box.exec() != QMessageBox::Ok)

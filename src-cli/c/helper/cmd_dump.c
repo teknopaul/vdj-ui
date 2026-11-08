@@ -270,13 +270,13 @@ int cmd_anlz(int argc, char **argv)
 
             if (g.count > 0) {
                 anlz_beat_at(&g, 0, &b);
-                printf("beats\tcount=%u\tfirst_bpm_x100=%u\tfirst_ms=%u\n", g.count, b.bpm_x100, b.time_ms);
+                printf("beats\tcount=%u\tfirst_bpm_x100=%u\tfirst_ms=%d\tgrid_shift_ms=%d\n", g.count, b.bpm_x100, b.time_signed_ms, (int)g.shift_ms);
             } else {
                 printf("beats\tcount=0\n");
             }
             for (i = 0; beats && i < g.count; i++) {
                 anlz_beat_at(&g, (uint32_t)i, &b);
-                printf("beat\t%u\t%u\t%u\n", b.beat_number, b.bpm_x100, b.time_ms);
+                printf("beat\t%u\t%u\t%d\n", b.beat_number, b.bpm_x100, b.time_signed_ms);
             }
         }
         for (a = 0; a < 2; a++) {

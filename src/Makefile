@@ -2861,6 +2861,30 @@ trakcrate/pdb_build.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_build.cpp.s
 .PHONY : trakcrate/pdb_build.cpp.s
 
+trakcrate/pdb_tables.o: trakcrate/pdb_tables.cpp.o
+.PHONY : trakcrate/pdb_tables.o
+
+# target to build an object file
+trakcrate/pdb_tables.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_tables.cpp.o
+.PHONY : trakcrate/pdb_tables.cpp.o
+
+trakcrate/pdb_tables.i: trakcrate/pdb_tables.cpp.i
+.PHONY : trakcrate/pdb_tables.i
+
+# target to preprocess a source file
+trakcrate/pdb_tables.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_tables.cpp.i
+.PHONY : trakcrate/pdb_tables.cpp.i
+
+trakcrate/pdb_tables.s: trakcrate/pdb_tables.cpp.s
+.PHONY : trakcrate/pdb_tables.s
+
+# target to generate assembly for a file
+trakcrate/pdb_tables.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/pdb_tables.cpp.s
+.PHONY : trakcrate/pdb_tables.cpp.s
+
 trakcrate/pdb_writer.o: trakcrate/pdb_writer.cpp.o
 .PHONY : trakcrate/pdb_writer.o
 
@@ -5282,6 +5306,9 @@ help:
 	@echo "... trakcrate/pdb_build.o"
 	@echo "... trakcrate/pdb_build.i"
 	@echo "... trakcrate/pdb_build.s"
+	@echo "... trakcrate/pdb_tables.o"
+	@echo "... trakcrate/pdb_tables.i"
+	@echo "... trakcrate/pdb_tables.s"
 	@echo "... trakcrate/pdb_writer.o"
 	@echo "... trakcrate/pdb_writer.i"
 	@echo "... trakcrate/pdb_writer.s"

@@ -13,7 +13,8 @@
 namespace vdj {
 namespace db {
 
-// 0x4602: 20 byte head, then 16 bytes per beat (u16 LE beat in bar, u16 LE bpm*100, u32 LE ms, 8 x 0xff).
+// 0x4602: 20 byte head, then 16 bytes per beat (u16 LE beat in bar, u16 LE bpm*100, u32 LE ms, 8 x 0xff). The times are the .DAT entries without
+// the grid shift (grid.shift_ms), which goes into the reply's fifth argument.
 std::vector<uint8_t> beatGridBlob(const anlz_beatgrid_t& grid);
 
 // 0x4402: 400 x (height, whiteness) from PWAV, then the 100 byte PWV2 tiny preview. Empty when PWAV is missing.

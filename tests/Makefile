@@ -1004,6 +1004,20 @@ vdj-ui-trakcrate-pdb-build-test/fast:
 .PHONY : vdj-ui-trakcrate-pdb-build-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-trakcrate-pdb-tables-test: tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/rule
+.PHONY : vdj-ui-trakcrate-pdb-tables-test
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-tables-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-tables-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-trakcrate-anlz-roundtrip-test.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-trakcrate-anlz-roundtrip-test.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-trakcrate-anlz-roundtrip-test.dir/rule
@@ -2822,6 +2836,34 @@ vdj-ui-trakcrate-pdb-build-test_autogen: tests/CMakeFiles/vdj-ui-trakcrate-pdb-b
 vdj-ui-trakcrate-pdb-build-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-build-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-build-test_autogen.dir/build
 .PHONY : vdj-ui-trakcrate-pdb-build-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen: tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/rule
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen
+
+# fast build rule for target.
+vdj-ui-trakcrate-pdb-tables-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test_autogen.dir/build
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/fast
 
 # Convenience name for target.
 tests/CMakeFiles/vdj-ui-trakcrate-anlz-roundtrip-test_autogen_timestamp_deps.dir/rule:
@@ -4847,6 +4889,30 @@ test_trakcrate_pdb_roundtrip.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-roundtrip-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-roundtrip-test.dir/test_trakcrate_pdb_roundtrip.cpp.s
 .PHONY : test_trakcrate_pdb_roundtrip.cpp.s
 
+test_trakcrate_pdb_tables.o: test_trakcrate_pdb_tables.cpp.o
+.PHONY : test_trakcrate_pdb_tables.o
+
+# target to build an object file
+test_trakcrate_pdb_tables.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/test_trakcrate_pdb_tables.cpp.o
+.PHONY : test_trakcrate_pdb_tables.cpp.o
+
+test_trakcrate_pdb_tables.i: test_trakcrate_pdb_tables.cpp.i
+.PHONY : test_trakcrate_pdb_tables.i
+
+# target to preprocess a source file
+test_trakcrate_pdb_tables.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/test_trakcrate_pdb_tables.cpp.i
+.PHONY : test_trakcrate_pdb_tables.cpp.i
+
+test_trakcrate_pdb_tables.s: test_trakcrate_pdb_tables.cpp.s
+.PHONY : test_trakcrate_pdb_tables.s
+
+# target to generate assembly for a file
+test_trakcrate_pdb_tables.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/test_trakcrate_pdb_tables.cpp.s
+.PHONY : test_trakcrate_pdb_tables.cpp.s
+
 test_trakcrate_rbimport.o: test_trakcrate_rbimport.cpp.o
 .PHONY : test_trakcrate_rbimport.o
 
@@ -6575,6 +6641,30 @@ vdj-ui-trakcrate-pdb-roundtrip-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-roundtrip-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-roundtrip-test.dir/vdj-ui-trakcrate-pdb-roundtrip-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-trakcrate-pdb-roundtrip-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.o: vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.i: vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.s: vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-pdb-tables-test.dir/vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-trakcrate-rbimport-test_autogen/mocs_compilation.o: vdj-ui-trakcrate-rbimport-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-trakcrate-rbimport-test_autogen/mocs_compilation.o
 
@@ -6822,6 +6912,8 @@ help:
 	@echo "... vdj-ui-trakcrate-pdb-build-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test_autogen"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-rbimport-test_autogen"
 	@echo "... vdj-ui-trakcrate-rbimport-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-trakcrate-scripts-test_autogen"
@@ -6898,6 +6990,7 @@ help:
 	@echo "... vdj-ui-trakcrate-pdb-append-test"
 	@echo "... vdj-ui-trakcrate-pdb-build-test"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test"
 	@echo "... vdj-ui-trakcrate-rbimport-test"
 	@echo "... vdj-ui-trakcrate-scripts-test"
 	@echo "... vdj-ui-trakcrate-settings-test"
@@ -7106,6 +7199,9 @@ help:
 	@echo "... test_trakcrate_pdb_roundtrip.o"
 	@echo "... test_trakcrate_pdb_roundtrip.i"
 	@echo "... test_trakcrate_pdb_roundtrip.s"
+	@echo "... test_trakcrate_pdb_tables.o"
+	@echo "... test_trakcrate_pdb_tables.i"
+	@echo "... test_trakcrate_pdb_tables.s"
 	@echo "... test_trakcrate_rbimport.o"
 	@echo "... test_trakcrate_rbimport.i"
 	@echo "... test_trakcrate_rbimport.s"
@@ -7322,6 +7418,9 @@ help:
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-trakcrate-pdb-roundtrip-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-trakcrate-pdb-tables-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-trakcrate-rbimport-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-trakcrate-rbimport-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-trakcrate-rbimport-test_autogen/mocs_compilation.s"

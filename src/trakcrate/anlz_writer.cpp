@@ -53,11 +53,11 @@ void ppth(std::string& out, const std::string& path)
     tag(out, "PPTH", hb, p);
 }
 
-void pqtz(std::string& out, const std::vector<AnlzBeat>& beats)
+void pqtz(std::string& out, const std::vector<AnlzBeat>& beats, int16_t shiftMs)
 {
     std::string hb;
     be32(hb, 0);
-    be32(hb, 0x00080000);                            // unknown, the same in every real file
+    be32(hb, 0x00080000 | uint16_t(shiftMs));   // 0x0008 unknown, the same in every real file; low half = grid shift
     be32(hb, uint32_t(beats.size()));
     std::string body;
     for (const AnlzBeat& b : beats) { be16(body, b.number); be16(body, b.bpmX100); be32(body, b.timeMs); }
@@ -194,7 +194,7 @@ bool buildAnlz(const AnlzTrackData& d, AnlzFiles* out, std::string* err)
         if (d.pvbr.size() == 401) { body.clear(); for (uint32_t w : d.pvbr) be32(body, w); }
         tag(dat, "PVBR", hb, body);
     }
-    pqtz(dat, d.beats);
+    pqtz(dat, d.beats, d.gridShiftMs);
     {
         std::string hb;
         be32(hb, 400); be32(hb, 0x00010000);

@@ -15,6 +15,14 @@ uint16_t crc16Xmodem(const void* data, size_t len);
 // True for a well formed settings file: size, header length, payload length, magic and CRC all agree. err says which check failed.
 bool verifySettingsFile(const std::string& bytes, std::string* err = nullptr);
 
+// MYSETTING2.DAT (rekordbox 6, newer players) and DJMMYSETTING.DAT (the mixer), from rekordcrate's sample files (tests/fixtures/rekordcrate):
+// the same 0x60 byte header, payload length at 0x64 and trailing CRC + two zero bytes, but
+//   MYSETTING2.DAT:   payload length 0x28 = the 40 option bytes from 0x68 (no magic); the CRC covers the bytes from 0x68 up to the CRC;
+//   DJMMYSETTING.DAT: payload length 0x34 = magic 0x12345678, block id 1, 0x20 and the options from 0x74; the CRC covers the WHOLE file up to the CRC.
+// Both verified over 37 sample files. The viewer shows them; exports do not write them (see doc/trakcrate/settings-files.md).
+bool verifyMySetting2File(const std::string& bytes, std::string* err = nullptr);
+bool verifyDjmMySettingFile(const std::string& bytes, std::string* err = nullptr);
+
 // Recomputes the CRC of a settings file after its payload was changed. False if the file is not the right shape.
 bool fixSettingsCrc(std::string* bytes);
 

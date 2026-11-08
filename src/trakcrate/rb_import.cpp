@@ -422,7 +422,7 @@ RbImportReport importRekordboxDrive(const Library& lib, const fs::path& rootIn, 
             if (!rt.analyzePath.empty() && anlz_track_open(root.string().c_str(), rt.analyzePath.c_str(), &a.t) == ANLZ_OK && a.t) {
                 BeatGrid g;
                 bool variable = false;
-                if (opts.beatgrid && gridFromAnlz(a.t, &g, &variable, pqtzGridOffsetMs(root.string().c_str(), rt.analyzePath.c_str()))) {
+                if (opts.beatgrid && gridFromAnlz(a.t, &g, &variable)) {
                     t.grid.addComment("trakcrate beatgrid (from rekordbox)");
                     t.hasGrid = true;
                     setBeatGrid(t.grid, g);

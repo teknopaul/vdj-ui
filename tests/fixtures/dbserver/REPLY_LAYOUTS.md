@@ -31,7 +31,7 @@ Track title items (type 4): arg8 = `01000000`, arg11 = `100`, others 0 (arg1 = 0
 | `2002` metadata | DMST (M=01 or 05), trackId | `4000 (2002, 0b)`; render returns 11 items, below |
 | `2102` **undocumented, carries the AUDIO FILE PATH** | DMST (M=08), trackId | `4000 (2102, 6)`; render returns 6 items, below |
 | `2004` waveform preview | DMST M=08, 3, trackId, 0, (blob omitted) | `4402 (2004, 0, 384, blob900)` |
-| `2204` beat grid | DMST M=08, trackId | `4602 (2204, 0, len, blob, 0)` (note the extra 5th arg 0) |
+| `2204` beat grid | DMST M=08, trackId | `4602 (2204, 0, len, blob, shift)` (note the extra 5th arg: the grid shift, see below) |
 | `2504` **undocumented** | DMST M=08, trackId | `4502 (2504, 0, 644, blob1604)` mostly zeros |
 | `2904` waveform detail | DMST M=01, trackId, 0 | `4a02 (2904, 0, len, blob)` |
 | `2b04` extended cues | DMST M=08, trackId, 0 | `4e02 (2b04, 0, len, blob, count)` |
@@ -64,7 +64,9 @@ captures show the NFS side separately).
 
 ## Binary blobs (decoded by comparing with the ANLZ files of the same tracks; all reproduced byte for byte by `src/dbserver/db_blobs.cpp` except the noted bytes)
 
-- Beat grid (`2204` -> `4602 (2204, 0, len, blob, junk)`): the 5th arg is junk from the deck (0 and `ffffff5a` seen); we send 0.
+- Beat grid (`2204` -> `4602 (2204, 0, len, blob, shift)`): the 5th arg is the **grid shift** of the track's .DAT (PQTZ header 0x12, signed ms, sent sign
+  extended): `ffffff5a` = -166 is the track P064/00013152 whose PQTZ header says `0xff5a`, 0 for the others. Found 2026-11-07 when libcdj learned the shift
+  (this was called junk before). The blob holds the .DAT entries unshifted; the client adds the shift.
   Blob: head `00 00 08 00`, u32 LE beat count, u32 LE count*16, u32 LE `1`, u32 LE **heap pointer** (`0ceea950`, `0ceeeab4`; meaningless, we send 0),
   then per beat 16 bytes: u16 LE beat in bar, u16 LE bpm*100, u32 LE time ms (= the .DAT PQTZ entry), 8 x `ff`.
 - Waveform preview (`2004` -> `4402`): 900 bytes: for each of the 400 PWAV bytes `b`: `b & 0x1f` (height) then `b >> 5` (whiteness); then the 100 PWV2 bytes.

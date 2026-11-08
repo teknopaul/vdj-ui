@@ -225,6 +225,7 @@ add_library(vdj-trakcrate STATIC
     trakcrate/pdb_writer.cpp
     trakcrate/ext_pdb.cpp
     trakcrate/pdb_build.cpp
+    trakcrate/pdb_tables.cpp
     trakcrate/pdb_append.cpp
     trakcrate/anlz_writer.cpp
     trakcrate/mp3_index.cpp

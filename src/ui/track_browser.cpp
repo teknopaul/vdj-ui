@@ -145,10 +145,12 @@ QList<ExportTrack> TrackBrowser::playlistTracks(const QTreeWidgetItem* item) con
 void TrackBrowser::showContextMenu(const QPoint& pos)
 {
     QTreeWidgetItem* item = tree_->itemAt(pos);
-    if (item && !item->parent() && remote_) {     // the top item of a deck's database
+    if (item && !item->parent() && (remote_ || hasPdb_)) {     // the top item of a database
         QMenu menu(this);
-        QAction* refreshAct = menu.addAction(QStringLiteral("Refresh from deck"));
-        if (menu.exec(tree_->viewport()->mapToGlobal(pos)) == refreshAct) {
+        QAction* refreshAct = remote_ ? menu.addAction(QStringLiteral("Refresh from deck")) : nullptr;
+        if (refreshAct) menu.addSeparator();
+        addCopyBackActions(menu, dbTracks_, true);
+        if (menu.exec(tree_->viewport()->mapToGlobal(pos)) == refreshAct && refreshAct) {
             QString err;
             if (!refreshFromDeck(&err) && !err.isEmpty())
                 QMessageBox::warning(this, QStringLiteral("Refresh from deck"), err);
@@ -191,14 +193,14 @@ void TrackBrowser::showContextMenu(const QPoint& pos)
         exportPlaylistInteractive(playlists_[idx].name, playlists_[idx].tracks);
 }
 
-void TrackBrowser::addCopyBackActions(QMenu& menu, const QList<TrackInfo>& tracks)
+void TrackBrowser::addCopyBackActions(QMenu& menu, const QList<TrackInfo>& tracks, bool all)
 {
-    QAction* grid = menu.addAction(QStringLiteral("Copy back beatgrid"));
-    QAction* cues = menu.addAction(QStringLiteral("Copy back cue points"));
+    QAction* grid = menu.addAction(all ? QStringLiteral("Copy back all beatgrids") : QStringLiteral("Copy back beatgrid"));
+    QAction* cues = menu.addAction(all ? QStringLiteral("Copy back all cue points") : QStringLiteral("Copy back cue points"));
     grid->setEnabled(!tracks.isEmpty());
     cues->setEnabled(!tracks.isEmpty());
-    connect(grid, &QAction::triggered, this, [this, tracks]() { emit copyBackRequested(CopyBack::BeatGrid, tracks); });
-    connect(cues, &QAction::triggered, this, [this, tracks]() { emit copyBackRequested(CopyBack::CuePoints, tracks); });
+    connect(grid, &QAction::triggered, this, [this, tracks, all]() { emit copyBackRequested(CopyBack::BeatGrid, tracks, all); });
+    connect(cues, &QAction::triggered, this, [this, tracks, all]() { emit copyBackRequested(CopyBack::CuePoints, tracks, all); });
 }
 
 void TrackBrowser::exportPlaylistInteractive(const QString& name, const QList<ExportTrack>& tracks)

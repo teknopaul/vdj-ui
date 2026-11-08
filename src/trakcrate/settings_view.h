@@ -8,7 +8,7 @@
 // fields; bytes whose meaning is not known are listed as such (known == false) so nothing looks understood that is not.
 namespace trakcrate {
 
-enum class SettingsKind { DevSetting, MySetting, Djprofile, Rbfltr, ExportExt };
+enum class SettingsKind { DevSetting, MySetting, Djprofile, Rbfltr, ExportExt, MySetting2, DjmMySetting };
 
 // The kind of a set's file by its on disk name ("DEVSETTING.DAT"); false for any other name.
 bool settingsKindForName(const std::string& fileName, SettingsKind* out);

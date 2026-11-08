@@ -28,8 +28,12 @@ void setLe32(std::vector<uint8_t>& o, size_t at, uint32_t v)
 
 } // namespace
 
-std::vector<uint8_t> beatGridBlob(const anlz_beatgrid_t& g)
+std::vector<uint8_t> beatGridBlob(const anlz_beatgrid_t& shifted)
 {
+    // A deck serves the entries of the .DAT as they are and tells the grid shift (PQTZ header 0x12) in the fifth argument of the reply, so the times
+    // here must not include it (anlz_beat_at() adds it).
+    anlz_beatgrid_t g = shifted;
+    g.shift_ms = 0;
     std::vector<uint8_t> b;
     b.reserve(20 + size_t(g.count) * 16);
     b.insert(b.end(), {0x00, 0x00, 0x08, 0x00});      // constant in every capture

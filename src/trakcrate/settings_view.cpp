@@ -14,7 +14,8 @@ bool settingsKindForName(const std::string& n, SettingsKind* out)
 {
     static const std::pair<const char*, SettingsKind> k[] = {{"DEVSETTING.DAT", SettingsKind::DevSetting}, {"MYSETTING.DAT", SettingsKind::MySetting},
                                                               {"djprofile.nxs", SettingsKind::Djprofile}, {"RBFLTR.DAT", SettingsKind::Rbfltr},
-                                                              {"exportExt.pdb", SettingsKind::ExportExt}};
+                                                              {"exportExt.pdb", SettingsKind::ExportExt}, {"MYSETTING2.DAT", SettingsKind::MySetting2},
+                                                              {"DJMMYSETTING.DAT", SettingsKind::DjmMySetting}};
     for (const auto& e : k)
         if (n == e.first) { *out = e.second; return true; }
     return false;
@@ -28,6 +29,8 @@ const char* settingsKindName(SettingsKind k)
     case SettingsKind::Djprofile: return "djprofile.nxs";
     case SettingsKind::Rbfltr: return "RBFLTR.DAT";
     case SettingsKind::ExportExt: return "exportExt.pdb";
+    case SettingsKind::MySetting2: return "MYSETTING2.DAT";
+    case SettingsKind::DjmMySetting: return "DJMMYSETTING.DAT";
     }
     return "";
 }
@@ -216,6 +219,89 @@ static void describeSetting(SettingsKind kind, const std::string& b, std::vector
         if (spans[i].at + spans[i].len <= b.size()) rows->push_back({spanName(spans[i].at, spans[i].len), hexBytes(b, spans[i].at, spans[i].len), spans[i].note, false});
 }
 
+// ---- MYSETTING2.DAT and DJMMYSETTING.DAT: newer player preferences and the mixer's ------------------------------------------------------
+// Option codes from rekordcrate's setting.rs, offsets and checksums verified on its 37 one-option-per-file samples.
+
+static const SettingOption kVinylSpeed[] = {{0x80, "Touch & Release"}, {0x81, "Touch"}, {0x82, "Release"}};
+static const SettingOption kJogDisplay[] = {{0x80, "Auto"}, {0x81, "Info"}, {0x82, "Simple"}, {0x83, "Artwork"}};
+static const SettingOption kPadBrightness[] = {{0x81, "1"}, {0x82, "2"}, {0x83, "3"}, {0x84, "4"}};
+static const SettingOption kWaveformDivisions[] = {{0x80, "Time Scale"}, {0x81, "Phrase"}};
+static const SettingOption kWaveformPhase[] = {{0x80, "Waveform"}, {0x81, "Phase Meter"}};
+static const SettingOption kBeatJump[] = {{0x80, "1/2 Beat"}, {0x81, "1 Beat"}, {0x82, "2 Beat"}, {0x83, "4 Beat"},
+                                          {0x84, "8 Beat"}, {0x85, "16 Beat"}, {0x86, "32 Beat"}, {0x87, "64 Beat"}};
+static const SettingOption kChannelFader[] = {{0x80, "Steep Top"}, {0x81, "Linear"}, {0x82, "Steep Bottom"}};
+static const SettingOption kCrossfader[] = {{0x80, "Constant Power"}, {0x81, "Slow Cut"}, {0x82, "Fast Cut"}};
+static const SettingOption kPostPreEq[] = {{0x80, "Post EQ"}, {0x81, "Pre EQ"}};
+static const SettingOption kStereoMono[] = {{0x80, "Stereo"}, {0x81, "Mono Split"}};
+static const SettingOption kTalkOverMode[] = {{0x80, "Advanced"}, {0x81, "Normal"}};
+static const SettingOption kTalkOverLevel[] = {{0x80, "-24dB"}, {0x81, "-18dB"}, {0x82, "-12dB"}, {0x83, "-6dB"}};
+static const SettingOption kMidiChannel[] = {{0x80, "1"}, {0x81, "2"}, {0x82, "3"}, {0x83, "4"}, {0x84, "5"}, {0x85, "6"}, {0x86, "7"}, {0x87, "8"},
+                                             {0x88, "9"}, {0x89, "10"}, {0x8a, "11"}, {0x8b, "12"}, {0x8c, "13"}, {0x8d, "14"}, {0x8e, "15"}, {0x8f, "16"}};
+static const SettingOption kToggleTrigger[] = {{0x80, "Toggle"}, {0x81, "Trigger"}};
+static const SettingOption kMixerDisplay[] = {{0x80, "White"}, {0x81, "1"}, {0x82, "2"}, {0x83, "3"}, {0x84, "4"}, {0x85, "5"}};
+static const SettingOption kMixerIndicator[] = {{0x80, "1"}, {0x81, "2"}, {0x82, "3"}};
+static const SettingOption kLongFader[] = {{0x80, "Exponential"}, {0x81, "Smooth"}, {0x82, "Linear"}};
+
+static const SettingField kMy2Fields[] = {
+    {0x68, "Vinyl Speed Adjust", OPTIONS(kVinylSpeed), nullptr},
+    {0x69, "Jog Display Mode", OPTIONS(kJogDisplay), nullptr},
+    {0x6a, "Pad/Button Brightness", OPTIONS(kPadBrightness), nullptr},
+    {0x6b, "Jog LCD Brightness", OPTIONS(kBrightness5), nullptr},
+    {0x6c, "Waveform Divisions", OPTIONS(kWaveformDivisions), nullptr},
+    {0x72, "Waveform / Phase Meter", OPTIONS(kWaveformPhase), nullptr},
+    {0x74, "Beat Jump Beat Value", OPTIONS(kBeatJump), nullptr},
+};
+static const UnknownSpan kMy2Unknown[] = {{0x6d, 5, "zero in the samples"}, {0x73, 1, "0x81 in the samples"}, {0x75, 27, "zero in the samples"}};
+
+static const SettingField kDjmFields[] = {
+    {0x74, "Channel Fader Curve", OPTIONS(kChannelFader), nullptr},
+    {0x75, "Crossfader Curve", OPTIONS(kCrossfader), nullptr},
+    {0x76, "Headphones Pre EQ", OPTIONS(kPostPreEq), nullptr},
+    {0x77, "Headphones Mono Split", OPTIONS(kStereoMono), nullptr},
+    {0x78, "Beat FX Quantize", OPTIONS(kOffOn), nullptr},
+    {0x79, "Mic Low Cut", OPTIONS(kOffOn), nullptr},
+    {0x7a, "Talk Over Mode", OPTIONS(kTalkOverMode), nullptr},
+    {0x7b, "Talk Over Level", OPTIONS(kTalkOverLevel), nullptr},
+    {0x7c, "MIDI Channel", OPTIONS(kMidiChannel), nullptr},
+    {0x7d, "MIDI Button Type", OPTIONS(kToggleTrigger), nullptr},
+    {0x7e, "Mixer Display Brightness", OPTIONS(kMixerDisplay), nullptr},
+    {0x7f, "Mixer Indicator Brightness", OPTIONS(kMixerIndicator), nullptr},
+    {0x80, "Channel Fader Curve (long fader)", OPTIONS(kLongFader), nullptr},
+};
+static const UnknownSpan kDjmUnknown[] = {{0x6c, 8, "block id 1 and 0x20 in the samples"}, {0x81, 27, "zero in the samples"}};
+
+static void describeNewSetting(SettingsKind kind, const std::string& b, std::vector<SettingsRow>* rows)
+{
+    const bool djm = kind == SettingsKind::DjmMySetting;
+    std::string why;
+    const bool ok = djm ? verifyDjmMySettingFile(b, &why) : verifyMySetting2File(b, &why);
+    rows->push_back({"file check", ok ? "ok" : "damaged", ok ? "size, header and CRC agree" : why, true});
+    if (b.size() < 0x70) return;
+    rows->push_back({"brand", textField(b, 0x04, 32), "", true});
+    rows->push_back({"program", textField(b, 0x24, 32), "", true});
+    rows->push_back({"version", textField(b, 0x44, 32), "", true});
+    rows->push_back({"payload length", hex(le32(b, 0x64), 2), "", true});
+    const size_t expected = djm ? 0xa0 : 0x94;
+    if (b.size() != expected || le32(b, 0) != 0x60) {
+        rows->push_back({"settings", "", "the file does not have the shape of " + std::string(settingsKindName(kind)), false});
+        return;
+    }
+    const size_t crcAt = b.size() - 4;
+    rows->push_back({"crc", hex(uint16_t(uint8_t(b[crcAt]) | uint8_t(b[crcAt + 1]) << 8), 4), djm ? "CRC-16/XMODEM over the whole file before it" : "CRC-16/XMODEM over 0x68 up to it", true});
+    const SettingField* fields = djm ? kDjmFields : kMy2Fields;
+    const size_t nFields = djm ? sizeof kDjmFields / sizeof kDjmFields[0] : sizeof kMy2Fields / sizeof kMy2Fields[0];
+    for (size_t i = 0; i < nFields; ++i) {
+        const uint8_t v = (uint8_t)b[fields[i].at];
+        bool known = false;
+        const std::string label = optionLabel(fields[i], v, &known);
+        rows->push_back({fields[i].name, label, hex(v, 2), known});
+    }
+    const UnknownSpan* spans = djm ? kDjmUnknown : kMy2Unknown;
+    const size_t nSpans = djm ? sizeof kDjmUnknown / sizeof kDjmUnknown[0] : sizeof kMy2Unknown / sizeof kMy2Unknown[0];
+    for (size_t i = 0; i < nSpans; ++i)
+        rows->push_back({spanName(spans[i].at, spans[i].len), hexBytes(b, spans[i].at, spans[i].len), spans[i].note, false});
+}
+
 static void describeDjprofile(const std::string& b, std::vector<SettingsRow>* rows)
 {
     DjProfile p;
@@ -280,6 +366,8 @@ std::vector<SettingsRow> describeSettingsFile(SettingsKind kind, const std::stri
     case SettingsKind::Djprofile: describeDjprofile(bytes, &rows); break;
     case SettingsKind::Rbfltr: describeRbfltr(bytes, &rows); break;
     case SettingsKind::ExportExt: describePdb(bytes, &rows); break;
+    case SettingsKind::MySetting2:
+    case SettingsKind::DjmMySetting: describeNewSetting(kind, bytes, &rows); break;
     }
     return rows;
 }

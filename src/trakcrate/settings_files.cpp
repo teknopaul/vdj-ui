@@ -47,6 +47,32 @@ bool verifySettingsFile(const std::string& bytes, std::string* err)
     return true;
 }
 
+// Shared by the two newer files: header length, payload length and size agree, the CRC (over [crcFrom, crcAt)) and the zero padding are right.
+static bool verifyNewSettings(const std::string& b, size_t payloadLen, size_t crcFrom, std::string* err)
+{
+    auto bad = [&](const char* m) { if (err) *err = m; return false; };
+    if (b.size() != 0x68 + payloadLen + 4) return bad("unexpected file size");
+    if (le32(b, 0) != 0x60) return bad("unexpected header length");
+    if (le32(b, 0x64) != payloadLen) return bad("unexpected payload length");
+    if (b[b.size() - 2] != 0 || b[b.size() - 1] != 0) return bad("missing zero padding");
+    const size_t at = b.size() - 4;
+    const uint16_t want = uint16_t(uint8_t(b[at]) | uint8_t(b[at + 1]) << 8);
+    if (want != crc16Xmodem(b.data() + crcFrom, at - crcFrom)) return bad("CRC mismatch");
+    return true;
+}
+
+bool verifyMySetting2File(const std::string& bytes, std::string* err) { return verifyNewSettings(bytes, 0x28, 0x68, err); }
+
+bool verifyDjmMySettingFile(const std::string& bytes, std::string* err)
+{
+    if (!verifyNewSettings(bytes, 0x34, 0, err)) return false;
+    if (le32(bytes, 0x68) != 0x12345678) {
+        if (err) *err = "bad magic";
+        return false;
+    }
+    return true;
+}
+
 bool fixSettingsCrc(std::string* bytes)
 {
     const size_t at = crcOffset(*bytes, nullptr);

@@ -38,14 +38,14 @@ constexpr double kTolMs = 1.0;
 
 } // namespace
 
-bool gridFromAnlz(anlz_track_t* a, BeatGrid* grid, bool* variable, int offsetMs)
+bool gridFromAnlz(anlz_track_t* a, BeatGrid* grid, bool* variable)
 {
     anlz_beatgrid_t bg;
     if (anlz_track_beatgrid(a, &bg) != ANLZ_OK || bg.count == 0) return false;
     anlz_beat_t first, b;
     anlz_beat_at(&bg, 0, &first);
     grid->bpm = first.bpm_x100 / 100.0;
-    grid->firstBeatUs = offsetMs ? ((long long)first.time_ms + offsetMs) * 1000 : (long long)first.time_ms * 1000 + first.sub_ms_us;
+    grid->firstBeatUs = (long long)first.time_signed_ms * 1000 + first.sub_ms_us;
     bool var = false;
     for (uint32_t i = 1; i < bg.count && !var; ++i)
         if (anlz_beat_at(&bg, i, &b) && b.bpm_x100 != first.bpm_x100) var = true;
@@ -85,7 +85,7 @@ DeckAnalysis readDeckAnalysis(const fs::path& root, const std::string& analyzePa
         return d;
     }
     d.ok = true;
-    d.hasGrid = gridFromAnlz(a, &d.grid, &d.variableTempo, pqtzGridOffsetMs(root.string().c_str(), analyzePath.c_str()));
+    d.hasGrid = gridFromAnlz(a, &d.grid, &d.variableTempo);
     d.cues = cuesFromAnlz(a, d.hasGrid ? d.grid : BeatGrid());
     anlz_track_close(a);
     return d;
@@ -104,6 +104,11 @@ std::vector<LibraryEntry> indexLibrary(const Library& lib)
                 const KvDoc m = KvDoc::parse(text);
                 e.title = m.get("title");
                 e.artist = m.get("artist");
+            }
+            if (readFile(e.dir / "source.txt", &text)) {
+                const std::string from = KvDoc::parse(text).get("imported_from");      // "KINGSTON:/Contents/A/B/x.mp3"
+                const size_t colon = from.find(':');
+                if (colon != std::string::npos) e.importedPath = from.substr(colon + 1);
             }
             out.push_back(std::move(e));
         }
@@ -128,6 +133,8 @@ Match matchLibraryTrack(const std::vector<LibraryEntry>& index, const DeckTrackK
     auto sameName = [&](const LibraryEntry& e) { return !title.empty() && lower(e.title) == title; };
     auto sameArtist = [&](const LibraryEntry& e) { return lower(e.artist) == artist; };
     auto sameStem = [&](const LibraryEntry& e) { return !stem.empty() && lower(e.stem) == stem; };
+    const std::string path = lower(key.filePath);
+    if (!path.empty() && pick("path on the drive it was imported from", [&](const LibraryEntry& e) { return lower(e.importedPath) == path; })) return m;
     if (pick("title, artist and file name", [&](const LibraryEntry& e) { return sameName(e) && sameArtist(e) && sameStem(e); })) return m;
     if (pick("title and artist", [&](const LibraryEntry& e) { return sameName(e) && sameArtist(e); })) return m;
     if (pick("file name", sameStem)) return m;
@@ -183,8 +190,9 @@ CopyBackResult applyDeckEdits(const fs::path& trackDir, const DeckAnalysis& deck
     if (!loadTrack(trackDir, &t, &r.error)) return r;
     const bool doGrid = opts.grid && deck.hasGrid;
     if (opts.grid) r.grid = diffGrid(t, deck);        // also filled when nothing changes: the preview shows both sides
-    if (opts.cues) r.cues = diffCues(t, deck);
-    r.changed = (doGrid && r.grid.changed) || (opts.cues && r.cues.changed);
+    const bool doCues = opts.cues && !(opts.skipEmptyCues && deck.cues.empty());
+    if (doCues) r.cues = diffCues(t, deck);
+    r.changed = (doGrid && r.grid.changed) || (doCues && r.cues.changed);
     r.ok = true;
     if (!r.changed || opts.dryRun) return r;
 
@@ -202,7 +210,7 @@ CopyBackResult applyDeckEdits(const fs::path& trackDir, const DeckAnalysis& deck
         const double periodMs = 60000.0 / deck.grid.bpm;
         for (Cuemark& m : t.cuemarks.marks) m.beat = (m.ms - deck.grid.firstBeatUs / 1000.0) / periodMs;
     }
-    if (opts.cues && r.cues.changed) {
+    if (doCues && r.cues.changed) {
         const BeatGrid g = t.hasGrid ? beatGridFrom(t.grid) : BeatGrid();
         const double periodMs = g.empty() ? 0 : 60000.0 / g.bpm;
         t.cuemarks.marks = deck.cues;
@@ -214,7 +222,7 @@ CopyBackResult applyDeckEdits(const fs::path& trackDir, const DeckAnalysis& deck
         t.source.set("cues_from", opts.from + " " + isoNow());
     }
     const bool good = (!(doGrid && r.grid.changed) || saveBeatGrid(t, &r.error)) &&
-                      (!(opts.cues && r.cues.changed) || saveCuemarks(t, &r.error)) && saveSource(t, &r.error);
+                      (!(doCues && r.cues.changed) || saveCuemarks(t, &r.error)) && saveSource(t, &r.error);
     if (!good) r.ok = false;
     return r;
 }

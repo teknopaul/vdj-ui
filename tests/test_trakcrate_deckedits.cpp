@@ -76,6 +76,27 @@ private slots:
         QCOMPARE(d.cues[0].ms, 443.0);
     }
 
+    void matchByImportedPathAndKeepCues()
+    {
+        const fs::path a = makeTrack("one", "Uno", "Ana");
+        makeTrack("two", "Uno", "Ana");                               // same tags: only the path tells them apart
+        Track t;
+        QVERIFY(loadTrack(a, &t));
+        t.source.set("imported_from", "KINGSTON:/Contents/X/Y/one.mp3");
+        QVERIFY(saveSource(t));
+        Match m = matchLibraryTrack(indexLibrary(lib_), { "Uno", "Ana", "zzz", "/Contents/X/Y/ONE.mp3" });
+        QCOMPARE(m.dir.string(), a.string());
+        QVERIFY(m.how.find("path") != std::string::npos);
+
+        DeckAnalysis deck;                                            // a deck without any cue: bulk mode keeps the library's
+        deck.ok = true;
+        CopyBackOptions o;
+        o.cues = true; o.skipEmptyCues = true;
+        QVERIFY(!applyDeckEdits(a, deck, o).changed);
+        o.skipEmptyCues = false;
+        QVERIFY(applyDeckEdits(a, deck, o).changed);                  // a single copy back deliberately removes them
+    }
+
     void diffAndApply()
     {
         const fs::path d = makeTrack("one", "Uno", "Ana");

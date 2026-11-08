@@ -375,11 +375,12 @@ HandlerResult DbHandler::handle(const Message& req, Session& s) const
         break;
     case ReqBeatGrid: {         // (DMST, track id)
         std::vector<uint8_t> blob;
+        int32_t shiftMs = 0;                                    // the grid shift of the .DAT, sign extended (0xffffff5a for -166)
         if (auto a = lib_.analysis(num(req, 1))) {
             anlz_beatgrid_t g{};
-            if (a->beatGrid(&g) && g.count > 0) blob = beatGridBlob(g);
+            if (a->beatGrid(&g) && g.count > 0) { blob = beatGridBlob(g); shiftMs = g.shift_ms; }
         }
-        r.replies.push_back(binaryReply(req, RepBeatGrid, blob, {Arg::number(0)}));
+        r.replies.push_back(binaryReply(req, RepBeatGrid, blob, {Arg::number(uint32_t(shiftMs))}));
         break;
     }
     case ReqWaveformPreview: {  // (DMST, 3 or 4, track id, 0, blob omitted)

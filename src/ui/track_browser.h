@@ -54,7 +54,7 @@ public:
 signals:
     // Right click "Copy back beatgrid" / "Copy back cue points" on a playlist or on track(s): the deck's edits of these
     // tracks should go into the trakcrate library. The browser knows nothing about trakcrate; the main window handles it.
-    void copyBackRequested(TrackBrowser::CopyBack what, const QList<TrackInfo>& tracks);
+    void copyBackRequested(TrackBrowser::CopyBack what, const QList<TrackInfo>& tracks, bool all);   // all: every track of the database
     void trackSelected(int playerId, const QString& title, const QString& artist,
                        const QString& bpm, const QString& key);
     // Double click on a track: load it in the preview player.
@@ -63,7 +63,7 @@ signals:
 
 private:
     void showContextMenu(const QPoint& pos);
-    void addCopyBackActions(QMenu& menu, const QList<TrackInfo>& tracks);
+    void addCopyBackActions(QMenu& menu, const QList<TrackInfo>& tracks, bool all = false);
     void exportPlaylistInteractive(const QString& name, const QList<ExportTrack>& tracks);
     void populateItem(QTreeWidgetItem* parent, const QString& path, int depth);
 

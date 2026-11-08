@@ -1,6 +1,7 @@
 #ifndef TRAKCRATE_PDB_BUILD_H
 #define TRAKCRATE_PDB_BUILD_H
 
+#include "pdb_tables.h"
 #include "pdb_writer.h"
 
 #include <set>
@@ -25,6 +26,7 @@ struct PlanTrack {
     uint32_t discNumber = 0, year = 0, sampleDepth = 16, durationSecs = 0, playCount = 0;
     uint8_t rating = 0;              // 0..5
     uint8_t colorId = 0;
+    bool autoloadHotcues = true;     // string slot 7 "ON": the deck loads the hot cues when the track is loaded (all our exports did so far)
 };
 
 struct PlanPlaylist {
@@ -35,7 +37,12 @@ struct PlanPlaylist {
 struct ExportPlan {
     std::vector<PlanTrack> tracks;
     std::vector<PlanPlaylist> playlists;     // all at the top level of the tree
+    std::vector<MenuSetting> menu;           // the player's browse menu (table 17); empty = the template's
 };
+
+// The track row's file type (u16 at 90): 1 MP3, 4 M4A, 5 FLAC, 0x0b WAV, 0x0c AIFF (rekordbox's own values; rekordcrate's enum names them,
+// our corpus shows 1, 5 and 11). -1 for an extension the deck does not play: the row then keeps the template's value.
+int rekordboxFileType(const std::string& fileName);
 
 struct BuiltPdb {
     std::string bytes;

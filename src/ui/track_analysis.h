@@ -34,7 +34,7 @@ struct TrackAnalysis {
     int beatCount = 0;              // 0 for a track rekordbox has not analysed
     double avgBpm = 0.0;
     QVector<AnalysisBeat> beats;    // the whole grid, in time order (empty when not analysed)
-    quint32 firstBeatMs = 0, lastBeatMs = 0;
+    quint32 firstBeatMs = 0, lastBeatMs = 0;      // clamped at 0; the beats keep their exact (possibly negative) times
     QList<AnalysisCue> cues;        // memory points first, then hot cues A, B, C ...
 
     quint32 lengthMs() const;       // from the detail waveform, else the last beat

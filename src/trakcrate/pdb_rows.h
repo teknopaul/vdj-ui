@@ -15,6 +15,16 @@ namespace trakcrate {
 // The strings of a track row: 21 slots in the order the template row stores them.
 constexpr int kTrackFixed = 94, kTrackSlots = 21;
 
+// What each slot holds (names from rekordcrate's track row, checked against a rekordbox 6 export and our LMMS one; see UNKNOWN_BYTES.md).
+// Slots we do not write keep the template's value.
+enum TrackString {
+    kStrIsrc = 0, kStrLyricist, kStrExportCounter, kStrUnknown3, kStrUnknown4,      // 2: "3", "4", "6": changes when the track is exported or edited
+    kStrMessage, kStrPublishInfo, kStrAutoloadHotcues,                              // 6 and 7: "ON" or empty
+    kStrUnknown5, kStrUnknown6,
+    kStrDateAdded, kStrReleaseDate, kStrMixName, kStrUnknown7, kStrAnalyzePath, kStrAnalyzeDate,
+    kStrComment, kStrTitle, kStrUnknown8, kStrFileName, kStrFilePath
+};
+
 struct TrackTemplate {
     std::string fixed;                         // 94 bytes
     std::string strings[kTrackSlots];          // default encoded strings per slot

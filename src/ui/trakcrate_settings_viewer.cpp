@@ -117,6 +117,8 @@ bool TrakcrateSettingsViewer::read(const QString& set, const QString& file, std:
     case trakcrate::SettingsKind::Djprofile: *bytes = trakcrate::defaultDjprofile(); break;
     case trakcrate::SettingsKind::Rbfltr: *bytes = trakcrate::defaultRbfltr(); break;
     case trakcrate::SettingsKind::ExportExt: *bytes = trakcrate::defaultExportExt(); break;
+    case trakcrate::SettingsKind::MySetting2:        // not part of a set: nothing built in
+    case trakcrate::SettingsKind::DjmMySetting: return false;
     }
     *builtIn = true;
     return true;

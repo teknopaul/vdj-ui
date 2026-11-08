@@ -155,7 +155,12 @@ bool decodeDeviceSqlString(const std::string& row, size_t at, std::string* utf8,
         const size_t total = size_t(uint8_t(row[at + 1])) | size_t(uint8_t(row[at + 2])) << 8;       // including the 4 byte header
         if (total < 4 || at + total > row.size()) return false;
         const size_t n = total - 4;
-        if (kind == 0x40) {
+        // ISRC: rekordbox stores a track's ISRC as 0x90, 0x03, the ASCII code and a NUL (not UTF-16)
+        bool isrc = kind == 0x90 && n >= 2 && uint8_t(row[at + 4]) == 0x03 && row[at + 3 + n] == '\0';
+        for (size_t i = 1; isrc && i + 1 < n; ++i) isrc = uint8_t(row[at + 4 + i]) >= 0x20 && uint8_t(row[at + 4 + i]) < 0x7f;
+        if (isrc) {
+            utf8->assign(row, at + 5, n - 2);
+        } else if (kind == 0x40) {
             utf8->assign(row, at + 4, n);
         } else {
             if (n % 2) return false;
@@ -270,8 +275,21 @@ bool loadTrackTemplate(const PdbFile& t, TrackTemplate* out)
         out->strings[i] = r.substr(ofs, len);
     }
     // slot 10 holds the date added: "2026-09-20" in short ASCII form
-    out->defaultDate = out->strings[10].size() > 1 ? out->strings[10].substr(1) : std::string("2000-01-01");
+    out->defaultDate = out->strings[kStrDateAdded].size() > 1 ? out->strings[kStrDateAdded].substr(1) : std::string("2000-01-01");
     return true;
+}
+
+int rekordboxFileType(const std::string& fileName)
+{
+    const size_t dot = fileName.find_last_of('.');
+    std::string ext = dot == std::string::npos ? std::string() : fileName.substr(dot);
+    for (char& c : ext) c = char(std::tolower(static_cast<unsigned char>(c)));
+    if (ext == ".mp3") return 1;
+    if (ext == ".m4a") return 4;
+    if (ext == ".flac") return 5;
+    if (ext == ".wav") return 0x0b;
+    if (ext == ".aiff" || ext == ".aif") return 0x0c;
+    return -1;
 }
 
 std::string trackRow(const TrackTemplate& tpl, const PlanTrack& t, uint32_t id, uint32_t genreId, uint32_t albumId, uint32_t artistId,
@@ -301,24 +319,23 @@ std::string trackRow(const TrackTemplate& tpl, const PlanTrack& t, uint32_t id, 
     fixed[88] = char(t.colorId);
     fixed[89] = char(t.rating);
     {
-        std::string ext = t.fileName.substr(t.fileName.find_last_of('.') == std::string::npos ? t.fileName.size() : t.fileName.find_last_of('.'));
-        for (char& c : ext) c = char(std::tolower(static_cast<unsigned char>(c)));
-        const int type = ext == ".mp3" ? 1 : ext == ".flac" ? 5 : ext == ".wav" ? 11 : -1;     // as in real exports; else the template's
-        if (type >= 0) put16(fixed, 90, uint16_t(type));
+        const int type = rekordboxFileType(t.fileName);
+        if (type >= 0) put16(fixed, 90, uint16_t(type));                  // else the template's
     }
 
     const std::string date = t.dateAdded.empty() ? tpl.defaultDate : t.dateAdded;
     std::string s[kTrackSlots];
     for (int i = 0; i < kTrackSlots; ++i) s[i] = tpl.strings[i];
-    s[10] = encodeDeviceSqlString(date);
-    s[11] = encodeDeviceSqlString(std::string());
-    s[12] = encodeDeviceSqlString(t.mixName);
-    s[14] = encodeDeviceSqlString(analyzePath);
-    s[15] = encodeDeviceSqlString(date);
-    s[16] = encodeDeviceSqlString(t.comment);
-    s[17] = encodeDeviceSqlString(t.title);
-    s[19] = encodeDeviceSqlString(t.fileName);
-    s[20] = encodeDeviceSqlString(t.filePath);
+    s[kStrAutoloadHotcues] = encodeDeviceSqlString(t.autoloadHotcues ? "ON" : "");
+    s[kStrDateAdded] = encodeDeviceSqlString(date);
+    s[kStrReleaseDate] = encodeDeviceSqlString(std::string());
+    s[kStrMixName] = encodeDeviceSqlString(t.mixName);
+    s[kStrAnalyzePath] = encodeDeviceSqlString(analyzePath);
+    s[kStrAnalyzeDate] = encodeDeviceSqlString(date);
+    s[kStrComment] = encodeDeviceSqlString(t.comment);
+    s[kStrTitle] = encodeDeviceSqlString(t.title);
+    s[kStrFileName] = encodeDeviceSqlString(t.fileName);
+    s[kStrFilePath] = encodeDeviceSqlString(t.filePath);
 
     std::string row = fixed + std::string(size_t(kTrackSlots) * 2, '\0');
     for (int i = 0; i < kTrackSlots; ++i) {
@@ -481,6 +498,7 @@ bool buildPdb(const ExportPlan& plan, const std::string& templateBytes, BuiltPdb
                 if (n == tt.lastPage || p.next == n) break;
                 n = p.next;
             }
+            if (type == kPdbTableMenu && !plan.menu.empty()) applyMenuSettings(&data, plan.menu);
         } else {
             auto it = rows.find(type);
             if (it != rows.end() && !it->second.empty()) {

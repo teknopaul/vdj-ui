@@ -171,6 +171,7 @@ static int cmd_anlz(const char *dir)
     d.audio_path = audio;
     if (anlz_beatgrid(a, &g) == ANLZ_OK) {
         nbeats = g.count;
+        g.shift_ms = 0;                         /* the writer takes the raw entries; a real file may carry a grid shift in the header */
         anlz_beatgrid_attach_sub_ms(&g, x);
         beats = calloc(nbeats ? nbeats : 1, sizeof *beats);
         sub = calloc(nbeats ? nbeats : 1, sizeof *sub);

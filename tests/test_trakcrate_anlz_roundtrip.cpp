@@ -65,6 +65,8 @@ bool readReal(const std::string& dat, const std::string& ext, AnlzTrackData* d)
     d->audioPath = path ? path : "";
     anlz_beatgrid_t g;
     if (anlz_beatgrid(a, &g) == ANLZ_OK) {
+        d->gridShiftMs = g.shift_ms;                 // the writer takes the raw entries and the shift apart
+        g.shift_ms = 0;
         anlz_beatgrid_attach_sub_ms(&g, x);
         for (uint32_t i = 0; i < g.count; ++i) {
             anlz_beat_t b;
@@ -135,13 +137,6 @@ private:
                     std::string ha = a[i].headerBody, hb = b[i].headerBody;
                     ha.replace(0x2c - 12, 4, 4, '\0');
                     QVERIFY2(ha == hb, qPrintable(where + ": header"));
-                    QVERIFY2(a[i].body == b[i].body, qPrintable(where + ": body"));
-                    continue;
-                }
-                if (a[i].name == "PQTZ") {                            // the low half of the second header word varies in 2 of 14 real files (0xff1a, 0xff5a)
-                    std::string ha = a[i].headerBody;
-                    ha.replace(6, 2, 2, '\0');
-                    QVERIFY2(ha == b[i].headerBody, qPrintable(where + ": header words"));
                     QVERIFY2(a[i].body == b[i].body, qPrintable(where + ": body"));
                     continue;
                 }
