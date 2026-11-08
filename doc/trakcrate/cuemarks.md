@@ -48,19 +48,30 @@ track-master-copy/<folder>/<track>/cuemarks.txt
 - Unlimited count; sorted by position; two marks within 1 column of each other (6.7 ms) are merged in the render.
 - Provenance in the header like `vocals.md`: `origin: generated|edited|imported`. Imported rekordbox memory points and hot cues can be converted to cuemarks (`import-from-rekordbox.md`), keeping their `hot` assignment.
 
+## Loops
+
+A cuemark can carry a loop: an extra column `loop_end_ms=<ms>` after the colour column (the rekordbox import and "copy back" write the same column). Other extra columns are kept.
+
+- Allowed lengths are 1/2, 1, 2, 4, 8, 16 and 32 beats. The end is `start + beats x 60000 / bpm` of the constant grid, so the start may be anywhere but the end is a fixed number of beats later.
+- Creating a loop, and doubling or halving one, needs a beat grid. Removing a loop and moving or deleting the mark do not. A mark that moves takes its loop along (same length).
+- A loop imported from a deck can have another length (say 3 beats). It is kept as it is until it is doubled or halved: the length is first snapped to the nearest allowed one (by ratio, a tie goes to the shorter), then moved one step.
+- A loop that would end after the end of the track is refused.
+- **Export:** a mark that holds a hot cue letter A-C and has a loop is written as a **loop** hot cue (`PCPT`/`PCP2` loop flag, end time, and for the lengths we make the beat count in `PCP2`); the end is clamped to the track length. A memory point with a loop is not exported (memory points are not exported at all). **Not yet seen on a deck**: the first hardware check is that the pad shows and plays the loop, and that copying it back gives the same `loop_end_ms=`. **VBR mp3, deck test 1 (2026-11-08):** the first export played the loop correctly when called on the deck but did not draw it on the waveform: we had left the loop end's frame and byte offset at 0. After loops were made on the deck for the same file, its ANLZ files (kept in `tests/fixtures/deck-vbr-loops/`) show the layout: the last four words of the `PCPT` entry are pairs, start and end in 1/75 s (`0x772`/`0x8cd` for 25425/30041 ms, exactly `ms x 75 / 1000`), then start and end as byte offsets (`0xd4160`/`0xfc480`). The exporter now fills the end half (`loopBytePos`) and `test_trakcrate_anlz_roundtrip` checks the deck's bytes. The deck's byte offsets are one to three frames away from `Mp3Index::offsetAtMs` (and not from the Xing TOC), so the deck has its own rule; ours is still a real frame boundary. The `PCP2` entry has no byte offsets for a loop (44 byte form, `0008 0001` = 8 beats). Still to be confirmed on the deck: that the re-exported loop is now drawn.
+- Code: `cuemark_edit.{h,cpp}` (`setCuemarkLoop`, `scaleCuemarkLoop`, `clearCuemarkLoop`, `cuemarkLoopEnd`, `precedingCuemark`).
+
 ## Rendering into the waveforms (export only)
 
 The master copy keeps the **true** waveform. The exporter applies the marks on a copy when it writes the ANLZ files, so changing or removing a cuemark never needs a re-analysis and the master is never "polluted".
 
 For each cuemark at time `t`:
 
-| Tag  | Columns                                  | What is written                                                          |
-|------|------------------------------------------|--------------------------------------------------------------------------|
-| PWV5 (colour detail, 150/s) | column `round(t * 150)`, 2 columns wide by default (about 13 ms) | default: height 31, red 7, green 7, blue 7 (white); optional green: red 0, green 7, blue 0 |
-| PWV4 (colour preview, 1200 total) | column `t / duration * 1200`   | max height; the layout of this tag is only partly understood, so copy the byte pattern of the loudest white-looking real column, or leave PWV4 untouched until tested (the PWV3/PWV5/PWAV spikes still show) |
-| PWV3 (mono detail, 150/s)   | same columns as PWV5                      | height 31, whiteness 7 (bright), the mono equivalent of the line         |
-| PWAV (mono preview, 400)    | column `t / duration * 400`               | height 31, whiteness 7                                                   |
-| PWV2 (tiny preview, 100)    | column `t / duration * 100`               | height 15                                                                |
+| Tag                               | Columns                                                          | What is written                                                                                                                                                                                              |
+|-----------------------------------|------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| PWV5 (colour detail, 150/s)       | column `round(t * 150)`, 2 columns wide by default (about 13 ms) | default: height 31, red 7, green 7, blue 7 (white); optional green: red 0, green 7, blue 0                                                                                                                   |
+| PWV4 (colour preview, 1200 total) | column `t / duration * 1200`                                     | max height; the layout of this tag is only partly understood, so copy the byte pattern of the loudest white-looking real column, or leave PWV4 untouched until tested (the PWV3/PWV5/PWAV spikes still show) |
+| PWV3 (mono detail, 150/s)         | same columns as PWV5                                             | height 31, whiteness 7 (bright), the mono equivalent of the line                                                                                                                                             |
+| PWAV (mono preview, 400)          | column `t / duration * 400`                                      | height 31, whiteness 7                                                                                                                                                                                       |
+| PWV2 (tiny preview, 100)          | column `t / duration * 100`                                      | height 15                                                                                                                                                                                                    |
 
 Design points:
 - **A line replaces the waveform in that column.** Making it 1 column wide on the detail wave hides almost nothing, and the DJ is not trying to read a transient 6.7 ms wide. 2 columns is easier to see. Option `--cuemark-width N` and a `--cuemark-style` (replace, or only tint the column and keep its height, an alternative that hides nothing but is less visible).

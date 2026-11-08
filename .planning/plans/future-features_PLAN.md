@@ -865,19 +865,19 @@ geany-progress done 14 \
 
 ## Summary
 
-| Phase | Feature | Complexity |
-|-------|---------|------------|
-| 1 | About dialog, VDJ deck tint, NIC persistence | Small |
-| 2 | VDJ master BPM ramp UI | Small–Medium |
-| 3 | Auto-IP script & status widget | Small |
-| 4 | .deb packaging with icon and proper deps | Small |
-| 5 | Crash stability (double free) | Medium |
-| 6 | Passive monitor mode | Medium |
-| 7 | Rekordbox track browser (PDB, pendrive) | Large |
-| 8 | Rekordbox metadata viewer (waveform, cues) | Medium |
-| 9 | Rekordbox metadata edit (safe page-level writes) | Large |
-| 10 | Pendrive cloning & batch title fix | Medium |
-| 11 | DJ HUD second-monitor window | Medium |
-| 12 | Playlist history & session export | Medium |
-| 13 | MIDI routing (ALSA sequencer) | Medium–Large |
-| 14 | Session audio recording to MP3 | Large |
+| Phase | Feature                                          | Complexity   |
+|-------|--------------------------------------------------|--------------|
+| 1     | About dialog, VDJ deck tint, NIC persistence     | Small        |
+| 2     | VDJ master BPM ramp UI                           | Small–Medium |
+| 3     | Auto-IP script & status widget                   | Small        |
+| 4     | .deb packaging with icon and proper deps         | Small        |
+| 5     | Crash stability (double free)                    | Medium       |
+| 6     | Passive monitor mode                             | Medium       |
+| 7     | Rekordbox track browser (PDB, pendrive)          | Large        |
+| 8     | Rekordbox metadata viewer (waveform, cues)       | Medium       |
+| 9     | Rekordbox metadata edit (safe page-level writes) | Large        |
+| 10    | Pendrive cloning & batch title fix               | Medium       |
+| 11    | DJ HUD second-monitor window                     | Medium       |
+| 12    | Playlist history & session export                | Medium       |
+| 13    | MIDI routing (ALSA sequencer)                    | Medium–Large |
+| 14    | Session audio recording to MP3                   | Large        |

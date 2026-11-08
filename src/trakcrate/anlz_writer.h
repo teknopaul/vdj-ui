@@ -30,6 +30,7 @@ struct AnlzCue {
     // (status words, descending order, the 88 byte PCP2 entry, time in 1/75 s and the byte offset), the others as the older sample files have them.
     bool seek = false;
     uint32_t bytePos = 0;
+    uint32_t loopBytePos = 0;        // the same for the loop end (a VBR mp3 loop: the end half of the last pair of words in the PCPT entry, as a deck writes it)
 };
 
 struct AnlzTrackData {

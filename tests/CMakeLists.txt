@@ -396,3 +396,26 @@ add_executable(vdj-ui-trakcrate-deckedits-test test_trakcrate_deckedits.cpp)
 target_compile_definitions(vdj-ui-trakcrate-deckedits-test PRIVATE DECK_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/deck-grid-move")
 target_link_libraries(vdj-ui-trakcrate-deckedits-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-deckedits-test COMMAND vdj-ui-trakcrate-deckedits-test)
+
+add_executable(vdj-ui-trakcrate-edit-plan-test test_trakcrate_edit_plan.cpp)
+target_link_libraries(vdj-ui-trakcrate-edit-plan-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-edit-plan-test COMMAND vdj-ui-trakcrate-edit-plan-test)
+
+add_executable(vdj-ui-trakcrate-edit-render-test test_trakcrate_edit_render.cpp)
+target_link_libraries(vdj-ui-trakcrate-edit-render-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-edit-render-test COMMAND vdj-ui-trakcrate-edit-render-test)
+
+add_executable(vdj-ui-trakcrate-edit-output-test test_trakcrate_edit_output.cpp)
+target_link_libraries(vdj-ui-trakcrate-edit-output-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-edit-output-test COMMAND vdj-ui-trakcrate-edit-output-test)
+set_tests_properties(vdj-ui-trakcrate-edit-output-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-edit-ui-test test_trakcrate_edit_ui.cpp)
+target_link_libraries(vdj-ui-trakcrate-edit-ui-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-edit-ui-test COMMAND vdj-ui-trakcrate-edit-ui-test)
+set_tests_properties(vdj-ui-trakcrate-edit-ui-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-edit-dialogs-test test_trakcrate_edit_dialogs.cpp)
+target_link_libraries(vdj-ui-trakcrate-edit-dialogs-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-edit-dialogs-test COMMAND vdj-ui-trakcrate-edit-dialogs-test)
+set_tests_properties(vdj-ui-trakcrate-edit-dialogs-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

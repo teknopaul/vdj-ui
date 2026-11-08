@@ -29,6 +29,11 @@ private slots:
     void playerLoadSeek();
     void splitArithmetic();
     void jumpScheduling();
+    void loopFadeArithmetic();
+    void loopState();
+    void cuePressPlan();
+    void cueButtonsToggleLoops();
+    void loopWrapsWhilePlaying();
     void deviceList();
     void playbackRuns();
     void panelCuesAndBpm();
@@ -219,6 +224,169 @@ void TestAudio::jumpScheduling()
     p.seekAtMs(p.positionMs() + 60000, 100);
     p.stop();
     QVERIFY(!p.hasPendingJump());
+}
+
+void TestAudio::loopFadeArithmetic()
+{
+    // no loop end ahead and no fade in running: untouched
+    std::vector<qint16> a(2000 * 2, 10000);
+    int pos = -1;
+    applyLoopFades(a.data(), 2000, 2, -1.0, -1, kLoopFadeOutFrames, kLoopFadeInFrames, &pos);
+    QVERIFY(std::all_of(a.begin(), a.end(), [](qint16 v) { return v == 10000; }));
+
+    // the end is 1500 frames ahead and the wrap falls there: full volume until 882 frames before it, then a straight ramp to 0
+    std::vector<qint16> b(2000 * 2, 10000);
+    pos = -1;
+    applyLoopFades(b.data(), 2000, 2, 1500.0, 1500, kLoopFadeOutFrames, kLoopFadeInFrames, &pos);
+    QCOMPARE(int(b[size_t(618) * 2]), 10000);                                  // 1500 - 882
+    QVERIFY(b[size_t(619) * 2] < 10000);                                       // inside the 882 frame ramp
+    for (int k = 620; k < 1500; ++k)
+        QVERIFY(b[size_t(k) * 2] <= b[size_t(k - 1) * 2]);                     // never rises
+    QVERIFY(b[size_t(1499) * 2] < 20);                                         // about silent at the cut
+    QCOMPARE(int(b[size_t(1499) * 2]), int(b[size_t(1499) * 2 + 1]));          // both channels alike
+    // from the wrap: 5 ms (220 frames) ramp up from 0 to full
+    QCOMPARE(int(b[size_t(1500) * 2]), 0);
+    for (int k = 1501; k < 1720; ++k)
+        QVERIFY(b[size_t(k) * 2] >= b[size_t(k - 1) * 2]);
+    QCOMPARE(int(b[size_t(1720) * 2]), 10000);
+    QCOMPARE(int(b[size_t(1999) * 2]), 10000);
+
+    // a wrap at the end of a chunk: the fade in goes on in the next one
+    std::vector<qint16> c(1000 * 2, 10000), d(1000 * 2, 10000);
+    pos = -1;
+    applyLoopFades(c.data(), 1000, 2, 900.0, 900, kLoopFadeOutFrames, kLoopFadeInFrames, &pos);
+    QCOMPARE(pos, 100);
+    applyLoopFades(d.data(), 1000, 2, -1.0, -1, kLoopFadeOutFrames, kLoopFadeInFrames, &pos);
+    QVERIFY(d[0] > c[size_t(999) * 2]);                                        // keeps rising across the boundary
+    QVERIFY(d[size_t(119) * 2] < 10000);                                       // still ramping one frame before
+    QCOMPARE(int(d[size_t(120) * 2]), 10000);                                  // 220 frames after the wrap
+}
+
+void TestAudio::loopState()
+{
+    QTemporaryDir dir;
+    AudioPlayer p;
+    QVERIFY(!p.setLoop(0, 1000));                                              // nothing loaded
+    QVERIFY(p.load(writeWav(dir.path(), 3, 220.0)));
+    QVERIFY(!p.hasLoop());
+    QVERIFY(!p.setLoop(1000, 1010));                                           // under 25 ms
+    QVERIFY(!p.setLoop(2500, 3500));                                           // past the end of the 3 s track
+    QVERIFY(!p.setLoop(-5, 500));
+    QVERIFY(p.setLoop(1000, 1500));
+    QVERIFY(p.hasLoop());
+    p.seekMs(2000);                                                            // the owner decides: seeking keeps it
+    QVERIFY(p.hasLoop());
+    p.pause();
+    QVERIFY(p.hasLoop());
+    p.clearLoop();
+    QVERIFY(!p.hasLoop());
+    QVERIFY(p.setLoop(1000, 1500));
+    p.stop();
+    QVERIFY(!p.hasLoop());
+    QVERIFY(p.setLoop(1000, 1500));
+    QVERIFY(p.load(writeWav(dir.path(), 2, 330.0)));
+    QVERIFY(!p.hasLoop());
+}
+
+void TestAudio::cuePressPlan()
+{
+    AnalysisCue plain;
+    plain.timeMs = 1000;
+    AnalysisCue loop;
+    loop.timeMs = 2000;
+    loop.loop = true;
+    loop.loopEndMs = 4000;
+    PlayerPanel::CuePlan p = PlayerPanel::planCuePress(plain, false);
+    QVERIFY(p.seek && p.loop == PlayerPanel::LoopChange::Leave);
+    p = PlayerPanel::planCuePress(plain, true);                       // a plain cue is never "its loop is running"
+    QVERIFY(p.seek && p.loop == PlayerPanel::LoopChange::Leave);
+    p = PlayerPanel::planCuePress(loop, false);
+    QVERIFY(p.seek && p.loop == PlayerPanel::LoopChange::Enter);
+    p = PlayerPanel::planCuePress(loop, true);                        // pressed again: only stop looping, do not move
+    QVERIFY(!p.seek && p.loop == PlayerPanel::LoopChange::Leave);
+    loop.loopEndMs = 2000;                                            // a loop with no length is a plain cue
+    p = PlayerPanel::planCuePress(loop, false);
+    QVERIFY(p.seek && p.loop == PlayerPanel::LoopChange::Leave);
+}
+
+void TestAudio::cueButtonsToggleLoops()
+{
+    QTemporaryDir dir;
+    PlayerPanel panel;
+    TrackInfo info;
+    info.title = "Tone";
+    info.audioPath = writeWav(dir.path(), 6, 330.0);
+    QVERIFY(panel.loadTrack(info));
+    TrackAnalysis a;
+    a.valid = true;
+    AnalysisCue b, c, m;
+    b.hotCue = 2; b.timeMs = 1000; b.loop = true; b.loopEndMs = 2000;
+    c.hotCue = 3; c.timeMs = 3000; c.loop = true; c.loopEndMs = 4000;
+    m.timeMs = 500;                                                   // a memory point without a loop
+    a.cues = {m, b, c};
+    panel.setAnalysisForTest(a);
+    QCOMPARE(panel.cueButtons().size(), 3);
+    AudioPlayer* pl = panel.player();
+    QVERIFY(!pl->hasLoop());
+
+    panel.cueButtons()[1]->click();                                   // B: jump to it and loop
+    QVERIFY(std::abs(pl->positionMs() - 1000) < 1);
+    QVERIFY(pl->hasLoop());
+    QVERIFY(panel.cueButtons()[1]->isChecked());
+    pl->seekMs(1400);                                                 // somewhere inside the loop
+    panel.cueButtons()[1]->click();                                   // B again: stop looping, do not move
+    QVERIFY(!pl->hasLoop());
+    QVERIFY(std::abs(pl->positionMs() - 1400) < 1);
+    QVERIFY(!panel.cueButtons()[1]->isChecked());
+    panel.cueButtons()[1]->click();                                   // a third press jumps back and loops again
+    QVERIFY(pl->hasLoop());
+    QVERIFY(std::abs(pl->positionMs() - 1000) < 1);
+
+    panel.cueButtons()[2]->click();                                   // C: leave B's loop and enter C's
+    QVERIFY(pl->hasLoop());
+    QVERIFY(std::abs(pl->positionMs() - 3000) < 1);
+    QVERIFY(panel.cueButtons()[2]->isChecked() && !panel.cueButtons()[1]->isChecked());
+
+    panel.cueButtons()[0]->click();                                   // a cue without a loop: jump there, loop off
+    QVERIFY(!pl->hasLoop());
+    QVERIFY(std::abs(pl->positionMs() - 500) < 1);
+
+    panel.cueButtons()[1]->click();
+    QVERIFY(pl->hasLoop());
+    emit panel.waveform()->seekRequested(5000);                       // a click on the waveform leaves the loop
+    QVERIFY(!pl->hasLoop());
+    QVERIFY(!panel.cueButtons()[1]->isChecked());
+
+    panel.cueButtons()[2]->click();
+    QVERIFY(pl->hasLoop());
+    pl->stop();                                                       // stop forgets it (the button is disabled while stopped)
+    QVERIFY(!pl->hasLoop());
+}
+
+void TestAudio::loopWrapsWhilePlaying()
+{
+    QTemporaryDir dir;
+    AudioPlayer p;
+    QVERIFY(p.load(writeWav(dir.path(), 4, 220.0)));
+    QSignalSpy errors(&p, &AudioPlayer::deviceError);
+    QVERIFY(p.setLoop(500, 900));                                              // 400 ms
+    p.seekMs(500);
+    p.play();
+    QTest::qWait(300);
+    if (errors.count())
+        QSKIP("no audio output available");
+    // 1.5 s is nearly four laps: the position never gets past the end by more than the estimate's slack
+    double maxPos = 0;
+    for (int i = 0; i < 30; ++i) {
+        QTest::qWait(50);
+        maxPos = std::max(maxPos, p.positionMs());
+    }
+    QVERIFY2(maxPos < 900 + 60, qPrintable(QString::number(maxPos)));
+    QVERIFY(p.positionMs() >= 480);
+    p.clearLoop();                                                             // leaving the loop: it plays on past the end
+    QTest::qWait(700);
+    QVERIFY2(p.positionMs() > 1000, qPrintable(QString::number(p.positionMs())));
+    p.stop();
 }
 
 void TestAudio::deviceList()

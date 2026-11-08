@@ -3,6 +3,7 @@
 
 #include <QImage>
 #include <QList>
+#include <functional>
 #include <QString>
 #include <QWidget>
 #include "track_analysis.h"
@@ -17,6 +18,24 @@ struct WaveCuemark {
     double ms = 0;
     QString label;
     char hot = 0;
+    double loopEndMs = 0;                        // > ms: the mark loops to here, drawn as a shaded band
+};
+
+// A region of a DJ edit (doc/trakcrate/track-edits.md): a cut (dark grey) or a loop (yellow), drawn as a 25% band with its number.
+struct WaveEditRegion {
+    double startMs = 0, endMs = 0;
+    bool loop = false;
+    int number = 0;
+    QString text;                                // after the number: "x4 cross", ...
+};
+
+// What the context menu offers about loops at a point (the owner knows the grid and the marks; trakcrate::loopMenuState). Indexes: -1 = not offered.
+struct WaveLoopMenu {
+    int endLoopFor = -1;
+    int insideLoop = -1;
+    bool canDouble = false, canHalf = false;
+    int removeLoopFor = -1;
+    bool needsGrid = false;
 };
 
 // The colour waveform of a track (PWV5, else the PWAV preview) with its beat grid and cue points drawn over it.
@@ -81,12 +100,29 @@ public:
     int cuemarkAt(int x) const;                  // index of the mark within kHitPx of x, or -1
     int selectedCuemark() const { return selected_; }
     void setSelectedCuemark(int i);
+    // Asked by the context menu: what loop entries to show at this time / mark. Without it there are none.
+    void setLoopMenuProvider(std::function<WaveLoopMenu(double ms, int hit)> f) { loopMenu_ = std::move(f); }
 
     // Beat grid editing: dragging moves the beat lines (they follow the pointer, the result is reported on release), Left/Right nudge by 1 ms
     // (Shift 10 ms, Ctrl 0.1 ms), B or the context menu says "beat 1 here". Cuemark editing and grid editing are exclusive; grid editing wins.
     void setGridEditing(bool on);
     bool gridEditing() const { return gridEditing_; }
     static constexpr double kGridStepMs = 1.0;
+
+    // Edit regions (an interactive widget only): the widget shows the list it is given. In region mode a left drag selects a range that snaps to the beats
+    // (always, the edit points follow the grid exactly) and reports it on release; a click on a band selects that region. The owner makes regions from ranges.
+    void setEditRegions(const QList<WaveEditRegion>& regions);
+    void setEditRegionSelected(int index);
+    void setRegionEditing(bool on);
+    bool regionEditing() const { return regionEditing_; }
+    const QList<WaveEditRegion>& editRegions() const { return regions_; }
+    int editRegionSelected() const { return regionSelected_; }
+    void clearEditRange();
+    // The point a preview starts from (ms, drawn as a blue line with a flag); a click in region mode sets it, snapped to the beats. Negative hides it.
+    void setPreviewPoint(double ms);
+    double previewPoint() const { return previewMs_; }
+    double snappedToBeat(double ms) const;       // the nearest beat of the grid (ms unchanged without one)
+    int editRegionAt(double ms) const;           // the region containing ms, or -1
 
     static const QColor kCuemarkColor;           // green
     static constexpr int kHitPx = 5;
@@ -109,7 +145,14 @@ signals:
     void cuemarkMoved(int index, double ms);
     void cuemarkRemoved(int index);
     void cuemarkHotChanged(int index, int hot);  // hot: 0, or 'A'..'C'
+    void cuemarkLoopEnded(int index, double ms); // "End loop here": the loop of mark `index` ends at ms (the owner quantizes it)
+    void cuemarkLoopScaled(int index, bool doubleIt);
+    void cuemarkLoopRemoved(int index);
     void cuemarkSelected(int index);
+    void editRangeSelected(double startMs, double endMs);   // region mode: a dragged range, snapped to beats, start < end
+    void editRegionClicked(int index);
+    void previewToggleRequested();                            // region mode: Space, play / stop the preview from the play marker
+    void previewPointSet(double ms);                          // region mode: a click (not a drag) landed here, snapped to the nearest beat
     void gridNudged(double deltaMs);             // the grid was dragged or nudged by this much (negative = earlier)
     void gridBeatOneRequested(double ms);        // the nearest beat should land on ms
 
@@ -132,6 +175,7 @@ private:
     void paintBeats(QPainter& p, double t0, double span);
     void paintCues(QPainter& p);
     void paintCuemarks(QPainter& p);
+    void paintEditRegions(QPainter& p);
     void paintPlayhead(QPainter& p);
     int nearestBeat(double ms) const;
 
@@ -148,12 +192,22 @@ private:
     double dragStart_ = 0.0;
 
     QList<WaveCuemark> cuemarks_;
+    std::function<WaveLoopMenu(double, int)> loopMenu_;
     bool editing_ = false;
     Snap snap_ = Snap::Beat;
     int selected_ = -1;
     int markDrag_ = -1;                          // the mark being dragged
     double markDragMs_ = 0.0;
     int hoverX_ = -1;
+
+    QList<WaveEditRegion> regions_;
+    int regionSelected_ = -1;
+    bool regionEditing_ = false;
+    bool rangeDrag_ = false;
+    int rangePressX_ = 0;
+    double rangeA_ = 0, rangeB_ = 0;             // the dragged range (ms, snapped), valid while rangeDrag_ or a range is shown
+    bool rangeShown_ = false;
+    double previewMs_ = -1;
 
     bool gridEditing_ = false;
     bool gridDrag_ = false;

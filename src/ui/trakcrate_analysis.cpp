@@ -4,6 +4,7 @@
 
 #include "trakcrate/analysis.h"
 #include "trakcrate/analysis_wave.h"
+#include "trakcrate/cuemark_edit.h"
 #include "trakcrate/track.h"
 
 namespace vdj {
@@ -52,6 +53,18 @@ TrackAnalysis trakcrateTrackAnalysis(const QString& trackDir)
         for (const trakcrate::Cuemark& m : t.cuemarks.marks) {
             AnalysisCue c;
             c.timeMs = quint32(std::max(0.0, m.ms));
+            double endMs = 0;
+            if (trakcrate::cuemarkLoopEnd(m, &endMs)) {
+                c.loop = true;
+                c.loopEndMs = quint32(endMs + 0.5);
+                // the length as a fraction of beats, only for the lengths the editor makes (a deck's odd loop shows its end time alone)
+                const double beats = trakcrate::cuemarkLoopBeats(m, g);
+                if (beats > 0 && std::fabs(trakcrate::snapLoopBeats(beats) - beats) < 0.02) {
+                    const double s = trakcrate::snapLoopBeats(beats);
+                    c.loopNum = s < 1 ? 1 : int(s);
+                    c.loopDen = s < 1 ? 2 : 1;
+                }
+            }
             if (m.hot >= 'A' && m.hot <= 'C') { c.hotCue = m.hot - 'A' + 1; hot.append(c); }
             else memory.append(c);
         }

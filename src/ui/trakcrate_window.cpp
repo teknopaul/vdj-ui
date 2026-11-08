@@ -30,6 +30,7 @@ TrakcrateWindow::TrakcrateWindow(QWidget* parent) : QMainWindow(parent)
 
     editor_ = new TrakcrateTrackEditor;
     editor_->setConfig(config_);
+    editor_->setLibraryProvider([this]() -> const trakcrate::Library* { return panel_->hasLibrary() ? &panel_->library() : nullptr; });
     editor_->setScripts(panel_->scripts());
     editorDock_ = new QDockWidget(QStringLiteral("trakcrate track"), this);
     editorDock_->setObjectName(QStringLiteral("trakcrateTrackDock"));

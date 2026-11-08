@@ -164,12 +164,19 @@ PlayerPanel::PlayerPanel(QWidget* parent)
             emit status(QStringLiteral("No beat grid: cue quantize unavailable"));
         }
     });
-    connect(player_, &AudioPlayer::jumped, this, [this](double) { emit status(QString()); });
+    connect(player_, &AudioPlayer::jumped, this, [this](double) {
+        emit status(QString());
+        applyPendingLoop();                                 // the queued jump into a loop has landed
+    });
     connect(stop_, &QPushButton::clicked, this, [this]() {
         cancelPendingPlay();
+        clearLoopState();
         player_->stop();
     });
-    connect(waveform_, &WaveformWidget::seekRequested, player_, &AudioPlayer::seekMs);
+    connect(waveform_, &WaveformWidget::seekRequested, this, [this](double ms) {
+        clearLoopState();                                   // a click on the waveform leaves the loop
+        player_->seekMs(ms);
+    });
     connect(bpmDown_, &QPushButton::clicked, this, [this]() { setTargetBpm(targetBpm_ - kBpmStep); });
     connect(bpmUp_, &QPushButton::clicked, this, [this]() { setTargetBpm(targetBpm_ + kBpmStep); });
     connect(bpmLock_, &QPushButton::toggled, this, [this](bool on) { if (on && targetBpm_ > 0) heldBpm_ = targetBpm_; });
@@ -179,7 +186,11 @@ PlayerPanel::PlayerPanel(QWidget* parent)
         time_->setText(QStringLiteral("%1 / %2").arg(mmss(ms), mmss(player_->lengthMs())));
         updatePhase(ms);
     });
-    connect(player_, &AudioPlayer::stateChanged, this, [this](int) { updateButtons(); });
+    connect(player_, &AudioPlayer::stateChanged, this, [this](int st) {
+        if (st == AudioPlayer::Stopped && (pendingLoop_ || activeLoopStart_ >= 0.0))
+            clearLoopState();
+        updateButtons();
+    });
     connect(player_, &AudioPlayer::deviceError, this, &PlayerPanel::status);
     updateButtons();
     updateBpmLabel();
@@ -230,6 +241,7 @@ void PlayerPanel::reloadTrakcrateAnalysis(const QString& trackDir)
     setBeatGrid();                                        // the beat clock follows the new grid at once
     originalBpm_ = analysis_.avgBpm > 0 ? analysis_.avgBpm : originalBpm_;
     rebuildCueButtons();
+    refreshActiveLoop();
     updateBpmLabel();
 }
 
@@ -237,6 +249,8 @@ bool PlayerPanel::loadImpl(const TrackInfo& info, const TrackAnalysis* given)
 {
     const double lockedBpm = bpmLock_->isChecked() ? heldBpm_ : 0.0;       // BPM lock: the new track plays at the BPM of the old one
     cancelPendingPlay();
+    pendingLoop_ = false;
+    activeLoopStart_ = -1.0;
     player_->unload();
     analysis_ = TrackAnalysis();
     setBeatGrid();
@@ -305,6 +319,7 @@ void PlayerPanel::setAnalysisForTest(const TrackAnalysis& analysis)
 {
     analysis_ = analysis;
     setBeatGrid();
+    rebuildCueButtons();
 }
 
 void PlayerPanel::updatePhase(double ms)
@@ -401,7 +416,7 @@ void PlayerPanel::keyPressEvent(QKeyEvent* e)
         if (e->key() == Qt::Key_Q) {
             quantize_->toggle();
         } else if (const AnalysisCue* c = hotCueForKey(analysis_.cues, e->key())) {
-            jumpToCue(double(c->timeMs));
+            cueActivated(*c);
         } else {
             emit status(QStringLiteral("No cue %1").arg(QChar('A' + e->key() - Qt::Key_A)));
         }
@@ -465,7 +480,97 @@ void PlayerPanel::playClicked()
     emit status(QStringLiteral("Play queued on the sequencer's beat (%1 ms)").arg(qRound(wait)));
 }
 
+PlayerPanel::CuePlan PlayerPanel::planCuePress(const AnalysisCue& cue, bool itsLoopIsRunning)
+{
+    CuePlan p;
+    if (!cue.loop || cue.loopEndMs <= cue.timeMs) {
+        p.loop = LoopChange::Leave;
+    } else if (itsLoopIsRunning) {
+        p.seek = false;
+        p.loop = LoopChange::Leave;
+    } else {
+        p.loop = LoopChange::Enter;
+    }
+    return p;
+}
+
+void PlayerPanel::clearLoopState()
+{
+    pendingLoop_ = false;
+    activeLoopStart_ = -1.0;
+    player_->clearLoop();
+    updateCueButtonStates();
+}
+
+void PlayerPanel::applyPendingLoop()
+{
+    if (!pendingLoop_)
+        return;
+    pendingLoop_ = false;
+    if (player_->setLoop(pendingLoopStart_, pendingLoopEnd_)) {
+        activeLoopStart_ = pendingLoopStart_;
+    } else {
+        activeLoopStart_ = -1.0;
+        emit status(QStringLiteral("This loop cannot be played (shorter than 25 ms or past the end of the audio)"));
+    }
+    updateCueButtonStates();
+}
+
+void PlayerPanel::cueActivated(const AnalysisCue& c)
+{
+    const CuePlan plan = planCuePress(c, activeLoopStart_ >= 0.0 && activeLoopStart_ == double(c.timeMs));
+    if (!plan.seek) {                                   // the same loop cue again: stop looping, keep playing from here
+        player_->cancelJump();
+        pendingLoop_ = false;
+        player_->clearLoop();
+        activeLoopStart_ = -1.0;
+        updateCueButtonStates();
+        emit status(QStringLiteral("Loop off"));
+        return;
+    }
+    pendingLoop_ = false;
+    if (plan.loop == LoopChange::Enter) {
+        pendingLoop_ = true;
+        pendingLoopStart_ = double(c.timeMs);
+        pendingLoopEnd_ = double(c.loopEndMs);
+    }
+    player_->clearLoop();                               // the old loop ends with this press
+    activeLoopStart_ = -1.0;
+    startJump(double(c.timeMs));
+    if (pendingLoop_ && !player_->hasPendingJump())     // landed at once: no `jumped` signal comes
+        applyPendingLoop();
+    updateCueButtonStates();
+}
+
+void PlayerPanel::refreshActiveLoop()
+{
+    if (activeLoopStart_ < 0.0)
+        return;
+    for (const AnalysisCue& c : analysis_.cues) {
+        if (c.loop && double(c.timeMs) == activeLoopStart_ && player_->setLoop(double(c.timeMs), double(c.loopEndMs))) {
+            updateCueButtonStates();
+            return;
+        }
+    }
+    clearLoopState();                                   // the cue moved or lost its loop in the editor
+}
+
+void PlayerPanel::updateCueButtonStates()
+{
+    for (int i = 0; i < cueButtons_.size() && i < analysis_.cues.size(); ++i) {
+        const double t = double(analysis_.cues[i].timeMs);
+        cueButtons_[i]->setChecked((activeLoopStart_ >= 0.0 && t == activeLoopStart_) || (pendingLoop_ && t == pendingLoopStart_));
+    }
+}
+
 void PlayerPanel::jumpToCue(double cueMs)
+{
+    if (pendingLoop_ || activeLoopStart_ >= 0.0)
+        clearLoopState();
+    startJump(cueMs);
+}
+
+void PlayerPanel::startJump(double cueMs)
 {
     if (player_->state() == AudioPlayer::Playing) {
         const double wait = sequencerGridWaitMs();
@@ -513,6 +618,8 @@ void PlayerPanel::setTargetBpm(double bpm)
     const double lo = originalBpm_ * 0.5, hi = originalBpm_ * 2.0;
     targetBpm_ = std::clamp(std::round(bpm * 100.0) / 100.0, lo, hi);
     player_->setTempo(targetBpm_ / originalBpm_);
+    if (pendingLoop_ && !player_->hasPendingJump())         // a tempo change cancels a queued jump, and with it the loop waiting for it
+        pendingLoop_ = false, updateCueButtonStates();
     updateBpmLabel();
 }
 
@@ -553,19 +660,22 @@ void PlayerPanel::rebuildCueButtons()
         auto* b = new QPushButton(label, this);
         b->setStyleSheet(QStringLiteral(
             "QPushButton { background: #f4d963; color: black; font-weight: bold; border: 1px solid #b59a2a; border-radius: 3px; padding: 0px; }"
-            "QPushButton:pressed { background: #d9bd45; }"));
+            "QPushButton:pressed { background: #d9bd45; }"
+            "QPushButton:checked { background: #ff9a1f; border-color: #b35f00; }"));
         QString tip = QStringLiteral("%1 (%2)").arg(
-            c.loop ? QStringLiteral("Loop: jump to the start of the loop") : QStringLiteral("Jump to this cue point"), mmss(c.timeMs));
+            c.loop ? QStringLiteral("Loop: jump to the start of the loop and loop it; press again to stop looping") : QStringLiteral("Jump to this cue point"), mmss(c.timeMs));
         if (c.hotCue >= 1 && c.hotCue <= 3)
             tip += QStringLiteral(", key %1").arg(QChar('a' + c.hotCue - 1));
         b->setToolTip(tip);
         b->setFocusPolicy(Qt::NoFocus);
         b->setFixedSize(26, 22);
-        const quint32 t = c.timeMs;
-        connect(b, &QPushButton::clicked, this, [this, t]() { jumpToCue(double(t)); });
+        b->setCheckable(true);                              // checked = its loop is running (set by updateCueButtonStates, not by the click)
+        const AnalysisCue cue = c;
+        connect(b, &QPushButton::clicked, this, [this, cue]() { cueActivated(cue); });
         cueLayout_->insertWidget(cueLayout_->count() - 1, b);
         cueButtons_.append(b);
     }
+    updateCueButtonStates();
 }
 
 } // namespace vdj

@@ -126,7 +126,8 @@ void TrackDetails::setTrack(const TrackInfo& info)
         for (const AnalysisCue& c : analysis_.cues) {
             QString line = QStringLiteral("%1  %2").arg(c.hotCue ? c.letter() : QStringLiteral("mem"), 3).arg(mmss(c.timeMs));
             if (c.loop)
-                line += QStringLiteral("  loop %1 beats to %2").arg(c.loopBeats(), 0, 'g', 4).arg(mmss(c.loopEndMs));
+                line += c.loopBeats() > 0 ? QStringLiteral("  loop %1 beats to %2").arg(c.loopBeats(), 0, 'g', 4).arg(mmss(c.loopEndMs))
+                                          : QStringLiteral("  loop to %1").arg(mmss(c.loopEndMs));
             lines << line;
         }
         addRow(QStringLiteral("Cues"), lines.isEmpty() ? QStringLiteral("none") : lines.join('\n'));

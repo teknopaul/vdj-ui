@@ -1,4 +1,7 @@
-# Player enhancements
+# Trakcrate edit
+
+We need to enhance the trakcrate edit window to support making remixes/edits of tracks.
+
 
 ## Cut out acid loops
 
@@ -6,20 +9,11 @@ We need to be able to make 4 beat loops for acid from existing tracks with beat 
 
 the start of the loop sample should be on a zero crossing
 The end of the loop should be exactly 4 beats per the BPM of the track
-the tail of the sample should be faded out over 30ms so it does not click
+the tail of the sample should be faded out over a few ms so it does not click
 the sample should be saved as a WAV with the BPM in the metadata for loading in acid.
 
 The user should be able to choose a folder to store the loop and from then on the app should remember that folder as the default
 
-## Sync a track to the playing decks
-
-Need so support Copy BPM (from VDJ if playing or from MASTER if there is one)
-Need to time-stretch the whole track to the new BPM (it might take a while)
-Need to support Quantized Play | start
-Need to support a Sync button that aligns to the beat grid
-Need to support the 4 nudge buttons that 
-Need to support offset.
-Ideally support looping for 1 2 or 4 or 8 bars but only if we can do it without audio clicks.
 
 ## Making DJ edits
 

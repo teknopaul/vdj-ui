@@ -2565,6 +2565,7 @@ QDockWidget* MainWindow::trakcrateDock()
     });
     connect(tcPanel_, &TrakcratePanel::status, this, [this](const QString& m) { statusBar()->showMessage(m, 6000); });
     tcEditor_->setConfig(config_);
+    tcEditor_->setLibraryProvider([this]() -> const trakcrate::Library* { return tcPanel_->hasLibrary() ? &tcPanel_->library() : nullptr; });
     tcEditor_->setScripts(tcPanel_->scripts());
     connect(tcPanel_->scripts(), &ScriptManager::ran, this, [this] {
         if (playerPanel_) playerPanel_->reloadTrakcrateAnalysis(playerPanel_->trakcrateDir());        // the deck takes up a changed grid or cuemarks

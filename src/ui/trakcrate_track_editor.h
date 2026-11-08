@@ -4,6 +4,7 @@
 #include <QString>
 #include <QWidget>
 
+#include "trakcrate/edit_job.h"
 #include "trakcrate/track.h"
 
 #include <functional>
@@ -16,13 +17,16 @@ class QListWidget;
 class QLineEdit;
 class QPushButton;
 class QUndoStack;
+class QEvent;
 
 namespace vdj {
 
 class ArtworkView;
 class ScriptManager;
+class EditPreviewer;
 class ConfigManager;
 class StarRatingWidget;
+class TrakcrateEditPanel;
 class WaveformWidget;
 
 // The per track editor (doc/trakcrate/track-editor.md): the track loaded in the player, with its artwork, facts, a star rating and a comment.
@@ -36,6 +40,17 @@ public:
 
     void setScripts(ScriptManager* scripts);        // the Scripts menu of the loaded track
     void setConfig(ConfigManager* config);          // remembers the chosen image editor
+    // The open trakcrate library, asked for when an edit is rendered (null: edits can only be saved as files).
+    void setLibraryProvider(std::function<const trakcrate::Library*()> f) { library_ = std::move(f); }
+    // DJ edits (trakcrate_edit_panel.h). Preview plays inside the editor, no window: Space (or the Preview buttons) toggles playback from the play marker
+    // and a time line moves across the waveform. Render... opens the save dialog; a rendered library edit emits trackChanged(its folder).
+    void previewEdit(double startMs = -1, double stopMs = -1);          // toggle; positions in the original, -1: from the start / to the end
+    EditPreviewer* previewer() const { return previewer_; }
+    // Space toggles the preview while the edit mode is on and the focus is in the editor (the application wide Space shortcut of the sequencer must not get it).
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void openEditRender();
+    void openLoopExport(int startBeat, int lenBeats);          // the Export loop... dialog (acid sample)
+    trakcrate::EditRequest editRequest() const;
     ArtworkView* artworkView() const { return art_; }
     void setTrack(const QString& trackDir);        // empty: no track
     void clear() { setTrack(QString()); }
@@ -54,11 +69,17 @@ public:
     bool removeCuemark(int index);
     bool setCuemarkHot(int index, char hot);                           // 'A'..'C', 0 clears
     bool setCuemarkLabel(int index, const QString& label);
+    // Loops (doc/trakcrate/cuemarks.md): creating and resizing need a beat grid, removing does not.
+    bool setLoopEnd(int index, double ms);                             // the click point, quantized to an allowed length
+    bool scaleLoop(int index, bool doubleIt);
+    bool removeLoop(int index);
     int cuemarkCount() const;
     WaveformWidget* waveform() const { return wave_; }
     QScrollBar* waveScrollBar() const { return waveScroll_; }
     QListWidget* cuemarkList() const { return markList_; }
     QPushButton* editMarksButton() const { return editMarks_; }
+    QPushButton* editRegionsButton() const { return editRegions_; }      // DJ edits: cut and loop regions (trakcrate_edit_panel.h)
+    TrakcrateEditPanel* editPanel() const { return editPanel_; }
     QComboBox* snapBox() const { return snapBox_; }
 
     // Beat grid nudging (doc/trakcrate/track-editor.md). Every change rewrites beatgrid.txt (origin "edited") and the beat columns that depend on it,
@@ -102,6 +123,11 @@ private:
     void reload();
 
     QString dir_;
+    std::function<const trakcrate::Library*()> library_;
+    ConfigManager* config_ = nullptr;
+    trakcrate::EditRenderCache editCache_;
+    EditPreviewer* previewer_ = nullptr;
+    std::string lastEditKey_;                       // the edit the preview was started for: a change stops it
     QUndoStack* undo_;
     QLabel* title_;
     ArtworkView* art_;
@@ -121,6 +147,10 @@ private:
     std::function<bool(const QString&)> confirmGrid_;
     WaveformWidget* wave_;
     QPushButton* editMarks_;
+    QPushButton* editRegions_;
+    bool dockWasFloating_ = false;
+    void popOut(bool on);
+    TrakcrateEditPanel* editPanel_;
     QComboBox* snapBox_;
     QListWidget* markList_;
     QPushButton* undoButton_;

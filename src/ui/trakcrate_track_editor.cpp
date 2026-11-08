@@ -1,6 +1,13 @@
 #include "trakcrate_track_editor.h"
 
+#include <QAbstractSpinBox>
+#include <QApplication>
 #include <QComboBox>
+#include <QKeyEvent>
+#include <QTextEdit>
+#include <QDockWidget>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QLabel>
@@ -11,6 +18,7 @@
 #include <QListWidget>
 #include <QPixmap>
 #include <QPushButton>
+#include <QShortcut>
 #include <QUndoCommand>
 #include <QUndoStack>
 #include <QScrollBar>
@@ -24,6 +32,10 @@
 #include "trakcrate/grid_edit.h"
 #include "trakcrate/track.h"
 #include "trakcrate_analysis.h"
+#include "trakcrate_edit_panel.h"
+#include "trakcrate_edit_loop_dialog.h"
+#include "trakcrate_edit_previewer.h"
+#include "trakcrate_edit_render_dialog.h"
 #include "trakcrate_scripts.h"
 #include "waveform_widget.h"
 
@@ -118,11 +130,16 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     wave_->setMinimumHeight(90);
     editMarks_ = new QPushButton(QStringLiteral("Edit cuemarks"));
     editMarks_->setCheckable(true);
-    editMarks_->setToolTip(QStringLiteral("Double click adds a cuemark (Alt: free position), drag moves it, right click for the menu, M adds at the play position, Delete removes"));
+    editMarks_->setToolTip(QStringLiteral("Double click adds a cuemark (Alt: free position), drag moves it, right click for the menu (loops: End loop here, Double / Half loop, Remove loop; they need a beat grid), M adds at the play position, Delete removes"));
     snapBox_ = new QComboBox;
     snapBox_->addItem(QStringLiteral("Snap to beat"), int(WaveformWidget::Snap::Beat));
     snapBox_->addItem(QStringLiteral("Snap to bar"), int(WaveformWidget::Snap::Bar));
     snapBox_->addItem(QStringLiteral("Free"), int(WaveformWidget::Snap::None));
+    editRegions_ = new QPushButton(QStringLiteral("Edit track"));
+    editRegions_->setCheckable(true);
+    editRegions_->setToolTip(QStringLiteral("Make a DJ edit: drag on the waveform to select bars (they snap to the beat grid), then Cut or Loop them; nothing is written until you render"));
+    editPanel_ = new TrakcrateEditPanel(undo_);
+    editPanel_->setVisible(false);
     gridEdit_ = new QPushButton(QStringLiteral("Edit grid"));
     gridEdit_->setCheckable(true);
     gridEdit_->setToolTip(QStringLiteral("Drag the waveform to move the beat grid; Left/Right nudge 1 ms (Shift 10 ms, Ctrl 0.1 ms); B or the right click menu sets beat 1 at the pointer"));
@@ -168,6 +185,7 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     auto* markRow = new QHBoxLayout;
     markRow->addWidget(editMarks_);
     markRow->addWidget(snapBox_);
+    markRow->addWidget(editRegions_);
     markRow->addStretch(1);
     col->addLayout(markRow);
     col->addWidget(markList_);
@@ -189,11 +207,50 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     gridRow->addWidget(gridReadout_);
     gridRow->addStretch(1);
     col->addLayout(gridRow);
+    col->addWidget(editPanel_);
+    connect(editRegions_, &QPushButton::toggled, this, [this](bool on) {
+        if (on && editPanel_->isEnabled() == false) {
+            emit status(QStringLiteral("A beat grid is needed to make an edit"));
+            editRegions_->setChecked(false);
+            return;
+        }
+        if (on) { editMarks_->setChecked(false); gridEdit_->setChecked(false); }
+        wave_->setRegionEditing(on);
+        editPanel_->setVisible(on);
+        if (!on) previewer_->stop();
+        popOut(on);
+    });
+    connect(wave_, &WaveformWidget::editRangeSelected, editPanel_, &TrakcrateEditPanel::setRange);
+    connect(wave_, &WaveformWidget::editRegionClicked, editPanel_, &TrakcrateEditPanel::selectRegion);
+    connect(editPanel_, &TrakcrateEditPanel::rangeConsumed, wave_, &WaveformWidget::clearEditRange);
+    previewer_ = new EditPreviewer(&editCache_, this);
+    qApp->installEventFilter(this);
+    connect(editPanel_, &TrakcrateEditPanel::previewRequested, this, [this](double a, double b) { previewEdit(a, b); });
+    connect(wave_, &WaveformWidget::previewToggleRequested, this, [this] { previewEdit(editPanel_->previewStart(), -1); });
+    connect(previewer_, &EditPreviewer::status, this, &TrakcrateTrackEditor::status);
+    connect(previewer_, &EditPreviewer::stateChanged, this, [this](bool playing) { if (!playing) wave_->setPlayPosition(-1); });
+    connect(previewer_, &EditPreviewer::positionChanged, this, [this](double ms) {
+        wave_->setPlayPosition(ms);                                    // the time line, on the original's waveform
+        const double span = wave_->viewSpan();
+        if (span > 0 && (ms < wave_->viewStart() || ms > wave_->viewStart() + span)) wave_->setView(ms - span * 0.1, span);
+    });
+    connect(wave_, &WaveformWidget::previewPointSet, editPanel_, &TrakcrateEditPanel::setPreviewStart);
+    connect(editPanel_, &TrakcrateEditPanel::loopExportRequested, this, [this](int a, int n) { openLoopExport(a, n); });
+    connect(editPanel_, &TrakcrateEditPanel::renderRequested, this, [this] { openEditRender(); });
+    connect(editPanel_, &TrakcrateEditPanel::status, this, &TrakcrateTrackEditor::status);
+    connect(editPanel_, &TrakcrateEditPanel::regionsChanged, this, [this] {
+        wave_->setEditRegions(editPanel_->waveRegions());
+        wave_->setEditRegionSelected(editPanel_->selected());
+        wave_->setPreviewPoint(editPanel_->previewStart());
+        if (previewer_->isPlaying() || previewer_->isBusy()) {
+            if (trakcrate::requestKey(editRequest()) != lastEditKey_) previewer_->stop();      // the edit changed under the preview
+        }
+    });
     connect(gridEdit_, &QPushButton::toggled, this, [this](bool on) {
-        if (on) editMarks_->setChecked(false);
+        if (on) { editMarks_->setChecked(false); editRegions_->setChecked(false); }
         wave_->setGridEditing(on);
     });
-    connect(editMarks_, &QPushButton::toggled, this, [this](bool on) { if (on) gridEdit_->setChecked(false); });
+    connect(editMarks_, &QPushButton::toggled, this, [this](bool on) { if (on) { gridEdit_->setChecked(false); editRegions_->setChecked(false); } });
     connect(wave_, &WaveformWidget::gridNudged, this, [this](double ms) { nudgeGrid(ms); });
     connect(wave_, &WaveformWidget::gridBeatOneRequested, this, [this](double ms) { setBeatOneAt(ms); });
 
@@ -206,6 +263,18 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
     connect(wave_, &WaveformWidget::cuemarkMoved, this, [this](int i, double ms) { moveCuemark(i, ms); });
     connect(wave_, &WaveformWidget::cuemarkRemoved, this, [this](int i) { removeCuemark(i); });
     connect(wave_, &WaveformWidget::cuemarkHotChanged, this, [this](int i, int hot) { setCuemarkHot(i, char(hot)); });
+    connect(wave_, &WaveformWidget::cuemarkLoopEnded, this, [this](int i, double ms) { setLoopEnd(i, ms); });
+    connect(wave_, &WaveformWidget::cuemarkLoopScaled, this, [this](int i, bool d) { scaleLoop(i, d); });
+    connect(wave_, &WaveformWidget::cuemarkLoopRemoved, this, [this](int i) { removeLoop(i); });
+    wave_->setLoopMenuProvider([this](double ms, int hit) {
+        WaveLoopMenu m;
+        trakcrate::Track t;
+        if (dir_.isEmpty() || !trakcrate::loadTrack(dir_.toStdString(), &t)) return m;
+        const trakcrate::LoopMenuState s = trakcrate::loopMenuState(t.cuemarks, trakcrate::beatGridFrom(t.grid), ms, hit, double(t.meta.getInt("duration_ms", 0)));
+        m.endLoopFor = s.endLoopFor; m.insideLoop = s.insideLoop; m.canDouble = s.canDouble; m.canHalf = s.canHalf;
+        m.removeLoopFor = s.removeLoopFor; m.needsGrid = s.needsGrid;
+        return m;
+    });
     connect(wave_, &WaveformWidget::cuemarkSelected, this, [this](int i) { markList_->setCurrentRow(i); });
     connect(markList_, &QListWidget::currentRowChanged, wave_, &WaveformWidget::setSelectedCuemark);
     connect(markList_, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem*) {
@@ -220,6 +289,15 @@ TrakcrateTrackEditor::TrakcrateTrackEditor(QWidget* parent) : QWidget(parent)
 
     connect(stars_, &StarRatingWidget::ratingChanged, this, [this](int n) { setRating(n); });
     connect(comment_, &QLineEdit::editingFinished, this, &TrakcrateTrackEditor::commentCommitted);
+    // Ctrl+Z / Ctrl+Shift+Z (Ctrl+Y) anywhere in the editor; a text field that has focus keeps its own undo
+    for (const QKeySequence& k : {QKeySequence(Qt::CTRL | Qt::Key_Z), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), QKeySequence(Qt::CTRL | Qt::Key_Y)}) {
+        auto* sc = new QShortcut(k, this);
+        sc->setContext(Qt::WidgetWithChildrenShortcut);
+        const bool undo = k == QKeySequence(Qt::CTRL | Qt::Key_Z);
+        connect(sc, &QShortcut::activated, undo_, [this, undo]() { if (undo) undo_->undo(); else undo_->redo(); });
+    }
+    undoButton_->setToolTip(QStringLiteral("Undo the last edit of this track (Ctrl+Z)"));
+    redoButton_->setToolTip(QStringLiteral("Redo (Ctrl+Shift+Z or Ctrl+Y)"));
     connect(undoButton_, &QPushButton::clicked, undo_, &QUndoStack::undo);
     connect(redoButton_, &QPushButton::clicked, undo_, &QUndoStack::redo);
     connect(undo_, &QUndoStack::canUndoChanged, undoButton_, &QPushButton::setEnabled);
@@ -250,7 +328,87 @@ void TrakcrateTrackEditor::setScripts(ScriptManager* scripts)
     ratingRow_->insertWidget(ratingRow_->indexOf(undoButton_), button);
 }
 
-void TrakcrateTrackEditor::setConfig(ConfigManager* config) { art_->setConfig(config); }
+void TrakcrateTrackEditor::setConfig(ConfigManager* config)
+{
+    config_ = config;
+    art_->setConfig(config);
+}
+
+trakcrate::EditRequest TrakcrateTrackEditor::editRequest() const
+{
+    trakcrate::EditRequest r;
+    r.trackDir = dir_.toStdString();
+    trakcrate::Track t;
+    if (!dir_.isEmpty() && trakcrate::loadTrack(r.trackDir, &t)) r.grid = trakcrate::beatGridFrom(t.grid);
+    r.regions = editPanel_->regions();
+    return r;
+}
+
+bool TrakcrateTrackEditor::eventFilter(QObject* watched, QEvent* event)
+{
+    const QEvent::Type t = event->type();
+    if ((t != QEvent::ShortcutOverride && t != QEvent::KeyPress) || !editRegions_->isChecked()) return QWidget::eventFilter(watched, event);
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() != Qt::Key_Space || (ke->modifiers() & ~Qt::KeypadModifier) || ke->isAutoRepeat()) return QWidget::eventFilter(watched, event);
+    QWidget* f = QApplication::focusWidget();
+    if (!f || (f != this && !isAncestorOf(f))) return QWidget::eventFilter(watched, event);
+    if (qobject_cast<QLineEdit*>(f) || qobject_cast<QAbstractSpinBox*>(f) || qobject_cast<QTextEdit*>(f)) return QWidget::eventFilter(watched, event);   // typing a space
+    if (auto* cb = qobject_cast<QComboBox*>(f)) if (cb->isEditable()) return QWidget::eventFilter(watched, event);
+    if (t == QEvent::ShortcutOverride) {
+        event->accept();                                              // keeps the application shortcut (the sequencer's play / pause) from taking the key
+        return false;
+    }
+    previewEdit(editPanel_->previewStart(), -1);
+    return true;
+}
+
+void TrakcrateTrackEditor::previewEdit(double startMs, double stopMs)
+{
+    if (dir_.isEmpty()) return;
+    const trakcrate::EditRequest r = editRequest();
+    lastEditKey_ = trakcrate::requestKey(r);
+    previewer_->toggle(r, startMs, stopMs);
+}
+
+void TrakcrateTrackEditor::openLoopExport(int startBeat, int lenBeats)
+{
+    if (dir_.isEmpty()) return;
+    const trakcrate::EditRequest r = editRequest();
+    if (r.grid.empty()) return;
+    EditLoopDialog dlg(r.trackDir, r.grid, startBeat, lenBeats, &editCache_, config_, this);
+    connect(&dlg, &EditLoopDialog::exported, this, [this](const QString& file) { emit status(QStringLiteral("Saved loop %1").arg(file)); });
+    dlg.exec();
+}
+
+// Editing a track needs room: the dock the editor sits in pops out as a window across the whole width of the screen, and goes back when the mode ends.
+void TrakcrateTrackEditor::popOut(bool on)
+{
+    QDockWidget* dock = nullptr;
+    for (QWidget* w = parentWidget(); w && !dock; w = w->parentWidget()) dock = qobject_cast<QDockWidget*>(w);
+    if (!dock) return;
+    if (on) {
+        dockWasFloating_ = dock->isFloating();
+        dock->setFloating(true);
+        const QScreen* screen = dock->screen() ? dock->screen() : QGuiApplication::primaryScreen();
+        const QRect avail = screen->availableGeometry();
+        const int h = std::min(avail.height(), std::max(dock->height(), 640));
+        dock->setGeometry(avail.x(), avail.y() + (avail.height() - h) / 2, avail.width(), h);
+        dock->raise();
+    } else if (!dockWasFloating_) {
+        dock->setFloating(false);
+    }
+}
+
+void TrakcrateTrackEditor::openEditRender()
+{
+    if (dir_.isEmpty() || editPanel_->regions().empty()) return;
+    EditRenderDialog dlg(editRequest(), &editCache_, library_ ? library_() : nullptr, config_, this);
+    connect(&dlg, &EditRenderDialog::created, this, [this](const QString& trackDir, const QString& message) {
+        emit status(message);
+        if (!trackDir.isEmpty()) emit trackChanged(trackDir);          // the library views refresh
+    });
+    dlg.exec();
+}
 
 int TrakcrateTrackEditor::rating() const { return stars_->rating(); }
 QString TrakcrateTrackEditor::comment() const { return comment_->text(); }
@@ -258,14 +416,20 @@ QString TrakcrateTrackEditor::comment() const { return comment_->text(); }
 void TrakcrateTrackEditor::setTrack(const QString& trackDir)
 {
     const bool newTrack = trackDir != dir_;
-    if (newTrack) undo_->clear();                        // history belongs to one track
+    if (newTrack) {
+        undo_->clear();                                  // history belongs to one track
+        editPanel_->resetRegions();                      // and so do the regions of an edit
+        previewer_->stop();
+        editCache_ = trakcrate::EditRenderCache();
+    }
     dir_ = trackDir;
     const bool on = !dir_.isEmpty();
     stars_->setEditable(on);
     stars_->setEnabled(on);
     editMarks_->setEnabled(on);
     gridEdit_->setEnabled(on);
-    if (!on) { editMarks_->setChecked(false); gridEdit_->setChecked(false); }
+    editRegions_->setEnabled(on);
+    if (!on) { editMarks_->setChecked(false); gridEdit_->setChecked(false); editRegions_->setChecked(false); }
     if (newTrack || !on) sessionKnown_ = false;
     comment_->setEnabled(on);
     undoButton_->setEnabled(undo_->canUndo());
@@ -286,6 +450,7 @@ void TrakcrateTrackEditor::reload()
         wave_->clear();
         markList_->clear();
         gridReadout_->clear();
+        editPanel_->setTrack(trakcrate::BeatGrid(), 0);
         return;
     }
     QString title = QString::fromStdString(t.title());
@@ -300,6 +465,7 @@ void TrakcrateTrackEditor::reload()
         a.cues.clear();                                    // the cuemarks are drawn by the widget itself, in green
         wave_->setAnalysis(a);
         showMarks();
+        editPanel_->setTrack(trakcrate::beatGridFrom(t.grid), a.lengthMs());
         if (!sessionKnown_) {                              // the grid as it is now is what Revert goes back to
             trakcrate::Track g;
             if (trakcrate::loadTrack(dir_.toStdString(), &g)) {
@@ -360,10 +526,13 @@ void TrakcrateTrackEditor::showMarks()
             w.ms = m.ms;
             w.label = QString::fromStdString(m.label);
             w.hot = m.hot;
+            double endMs = 0;
+            if (trakcrate::cuemarkLoopEnd(m, &endMs)) w.loopEndMs = endMs;
             marks.append(w);
             const qint64 ms = qint64(m.ms + 0.5);
-            markList_->addItem(QStringLiteral("%1  %2:%3.%4  %5%6").arg(++n).arg(ms / 60000).arg(ms / 1000 % 60, 2, 10, QLatin1Char('0'))
-                                   .arg(ms % 1000, 3, 10, QLatin1Char('0')).arg(w.label, m.hot ? QStringLiteral("  [%1]").arg(QChar(m.hot)) : QString()));
+            markList_->addItem(QStringLiteral("%1  %2:%3.%4  %5%6%7").arg(++n).arg(ms / 60000).arg(ms / 1000 % 60, 2, 10, QLatin1Char('0'))
+                                   .arg(ms % 1000, 3, 10, QLatin1Char('0')).arg(w.label, m.hot ? QStringLiteral("  [%1]").arg(QChar(m.hot)) : QString(),
+                                           w.loopEndMs > 0 ? QStringLiteral("  loop to %1.%2").arg(qint64(w.loopEndMs) / 1000 / 60).arg(qint64(w.loopEndMs) / 1000 % 60, 2, 10, QLatin1Char('0')) : QString()));
         }
     }
     wave_->setCuemarks(marks);
@@ -484,7 +653,9 @@ bool TrakcrateTrackEditor::addCuemark(double ms, const QString& label)
     trakcrate::Track t;
     if (dir_.isEmpty() || !trakcrate::loadTrack(dir_.toStdString(), &t)) return false;
     trakcrate::CuemarkFile f = t.cuemarks;
-    if (trakcrate::addCuemark(&f, trakcrate::beatGridFrom(t.grid), ms, label.toStdString()) < 0) return false;
+    const int at = trakcrate::addCuemark(&f, trakcrate::beatGridFrom(t.grid), ms, label.toStdString());
+    if (at < 0) return false;
+    if (const char hot = trakcrate::freeHotLetter(f)) f.marks[size_t(at)].hot = hot;       // the first three marks are the hot cues A, B, C (keys a, b, c)
     return pushMarks(f, QStringLiteral("Add cuemark"));
 }
 
@@ -513,6 +684,43 @@ bool TrakcrateTrackEditor::setCuemarkHot(int index, char hot)
     trakcrate::CuemarkFile f = t.cuemarks;
     if (!trakcrate::setCuemarkHot(&f, index, hot)) return false;
     return pushMarks(f, QStringLiteral("Hot cue"));
+}
+
+bool TrakcrateTrackEditor::setLoopEnd(int index, double ms)
+{
+    trakcrate::Track t;
+    if (dir_.isEmpty() || !trakcrate::loadTrack(dir_.toStdString(), &t)) return false;
+    const trakcrate::BeatGrid g = trakcrate::beatGridFrom(t.grid);
+    if (g.empty()) { emit status(QStringLiteral("A loop needs a beat grid")); return false; }
+    trakcrate::CuemarkFile f = t.cuemarks;
+    if (!trakcrate::endCuemarkLoopAt(&f, g, index, ms, double(t.meta.getInt("duration_ms", 0)))) {
+        emit status(QStringLiteral("No loop there: it must be at least a quarter beat long and end inside the track"));
+        return false;
+    }
+    return pushMarks(f, QStringLiteral("End loop"));
+}
+
+bool TrakcrateTrackEditor::scaleLoop(int index, bool doubleIt)
+{
+    trakcrate::Track t;
+    if (dir_.isEmpty() || !trakcrate::loadTrack(dir_.toStdString(), &t)) return false;
+    const trakcrate::BeatGrid g = trakcrate::beatGridFrom(t.grid);
+    if (g.empty()) { emit status(QStringLiteral("A loop needs a beat grid")); return false; }
+    trakcrate::CuemarkFile f = t.cuemarks;
+    if (!trakcrate::scaleCuemarkLoop(&f, g, index, doubleIt, double(t.meta.getInt("duration_ms", 0)))) {
+        emit status(QStringLiteral("The loop cannot be made %1 (1/2 to 32 beats, inside the track)").arg(doubleIt ? QStringLiteral("longer") : QStringLiteral("shorter")));
+        return false;
+    }
+    return pushMarks(f, doubleIt ? QStringLiteral("Double loop") : QStringLiteral("Half loop"));
+}
+
+bool TrakcrateTrackEditor::removeLoop(int index)
+{
+    trakcrate::Track t;
+    if (dir_.isEmpty() || !trakcrate::loadTrack(dir_.toStdString(), &t)) return false;
+    trakcrate::CuemarkFile f = t.cuemarks;
+    if (!trakcrate::clearCuemarkLoop(&f, index)) return false;
+    return pushMarks(f, QStringLiteral("Remove loop"));
 }
 
 bool TrakcrateTrackEditor::setCuemarkLabel(int index, const QString& label)

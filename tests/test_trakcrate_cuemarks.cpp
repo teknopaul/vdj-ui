@@ -257,6 +257,204 @@ private slots:
         std::error_code ec;
         fs::remove_all(tmp, ec);
     }
+    void loopRoundTripKeepsOtherExtras()
+    {
+        CuemarkFile f = parseCuemarks("# c\n1\t0\tx\tA\t-\tloop_end_ms=500\tfoo=1\n");
+        double end = 0;
+        QVERIFY(cuemarkLoopEnd(f.marks[0], &end));
+        QCOMPARE(end, 500.0);
+        QCOMPARE(serialiseCuemarks(f), std::string("# c\n1.0\t0.0\tx\tA\t-\tloop_end_ms=500\tfoo=1\n"));
+        QVERIFY(!cuemarkLoopEnd(parseCuemarks("1\t100\t\t-\t-\tloop_end_ms=50\n").marks[0]));     // not after the mark
+    }
+
+    void snapLoopBeatsTable()
+    {
+        QCOMPARE(snapLoopBeats(0.3), 0.5);
+        QCOMPARE(snapLoopBeats(0.7), 0.5);                  // 0.7 is nearer 0.5 than 1 by ratio
+        QCOMPARE(snapLoopBeats(0.75), 1.0);
+        QCOMPARE(snapLoopBeats(2.5), 2.0);
+        QCOMPARE(snapLoopBeats(3.0), 4.0);
+        QCOMPARE(snapLoopBeats(40), 32.0);
+        QCOMPARE(snapLoopBeats(0), 0.5);
+        QCOMPARE(snapLoopBeats(std::sqrt(2.0)), 1.0);       // exact tie on the log scale: the shorter
+    }
+
+    void setScaleClearLoop()
+    {
+        BeatGrid g; g.bpm = 120; g.firstBeatUs = 0;         // 500 ms a beat
+        CuemarkFile f;
+        f.marks.push_back(mark(1000, 'A'));
+        f.marks[0].extra.push_back("foo=1");
+        QVERIFY(setCuemarkLoop(&f, g, 0, 3.0));             // snapped to 4
+        double end = 0;
+        QVERIFY(cuemarkLoopEnd(f.marks[0], &end));
+        QCOMPARE(end, 3000.0);
+        QCOMPARE(cuemarkLoopBeats(f.marks[0], g), 4.0);
+        QVERIFY(scaleCuemarkLoop(&f, g, 0, true));
+        QCOMPARE(cuemarkLoopBeats(f.marks[0], g), 8.0);
+        QVERIFY(scaleCuemarkLoop(&f, g, 0, false));
+        QVERIFY(scaleCuemarkLoop(&f, g, 0, false));
+        QCOMPARE(cuemarkLoopBeats(f.marks[0], g), 2.0);
+        QVERIFY(setCuemarkLoop(&f, g, 0, 32));
+        QVERIFY(!scaleCuemarkLoop(&f, g, 0, true));         // already the longest
+        QVERIFY(setCuemarkLoop(&f, g, 0, 0.5));
+        QVERIFY(!scaleCuemarkLoop(&f, g, 0, false));        // and the shortest
+        QVERIFY(clearCuemarkLoop(&f, 0));
+        QVERIFY(!cuemarkLoopEnd(f.marks[0]));
+        QCOMPARE(f.marks[0].extra.size(), size_t(1));       // foo=1 stays
+        QVERIFY(!clearCuemarkLoop(&f, 0));
+        QVERIFY(!scaleCuemarkLoop(&f, g, 0, true));         // no loop
+    }
+
+    void oddImportedLoopIsSnappedWhenScaled()
+    {
+        BeatGrid g; g.bpm = 120;
+        CuemarkFile f;
+        f.marks.push_back(mark(0));
+        f.marks[0].extra.push_back("loop_end_ms=1500");     // 3 beats
+        QVERIFY(scaleCuemarkLoop(&f, g, 0, false));         // 3 -> 4 -> half = 2
+        QCOMPARE(cuemarkLoopBeats(f.marks[0], g), 2.0);
+    }
+
+    void loopNeedsGridAndRoomInTheTrack()
+    {
+        CuemarkFile f;
+        f.marks.push_back(mark(1000));
+        QVERIFY(!setCuemarkLoop(&f, BeatGrid(), 0, 4));     // no grid
+        QVERIFY(!cuemarkLoopEnd(f.marks[0]));
+        BeatGrid g; g.bpm = 120;
+        QVERIFY(!setCuemarkLoop(&f, g, 0, 4, 2500));        // would end at 3000
+        QVERIFY(!setCuemarkLoop(&f, g, 5, 4));              // bad index
+        QVERIFY(setCuemarkLoop(&f, g, 0, 4, 3000));
+        QVERIFY(clearCuemarkLoop(&f, 0));                   // removing needs no grid
+    }
+
+    void movingAMarkMovesItsLoop()
+    {
+        BeatGrid g; g.bpm = 120;
+        CuemarkFile f;
+        f.marks.push_back(mark(1000));
+        QVERIFY(setCuemarkLoop(&f, g, 0, 2));               // 1000..2000
+        const int i = moveCuemark(&f, g, 0, 1250);
+        QCOMPARE(i, 0);
+        double end = 0;
+        QVERIFY(cuemarkLoopEnd(f.marks[0], &end));
+        QCOMPARE(end, 2250.0);
+        QCOMPARE(f.marks[0].ms, 1250.0);
+        QVERIFY(setCuemarkHot(&f, 0, 'B'));
+        QVERIFY(setCuemarkLabel(&f, 0, "x"));
+        QVERIFY(cuemarkLoopEnd(f.marks[0]));                // hot and label edits keep it
+    }
+
+    void precedingMark()
+    {
+        CuemarkFile f;
+        f.marks = {mark(100), mark(500), mark(900)};
+        QCOMPARE(precedingCuemark(f, 50), -1);
+        QCOMPARE(precedingCuemark(f, 100), -1);             // strictly before
+        QCOMPARE(precedingCuemark(f, 600), 1);
+        QCOMPARE(precedingCuemark(f, 5000), 2);
+    }
+    void endLoopAtQuantizesTheClick()
+    {
+        BeatGrid g; g.bpm = 120;
+        CuemarkFile f;
+        f.marks.push_back(mark(1000));
+        QVERIFY(endCuemarkLoopAt(&f, g, 0, 3100));          // 4.2 beats -> 4
+        QCOMPARE(cuemarkLoopBeats(f.marks[0], g), 4.0);
+        QVERIFY(!endCuemarkLoopAt(&f, g, 0, 1050));         // 0.1 beat: too close to the cue
+        QVERIFY(!endCuemarkLoopAt(&f, BeatGrid(), 0, 3100));
+        CuemarkFile h;
+        h.marks.push_back(mark(1000));
+        QVERIFY(!endCuemarkLoopAt(&h, g, 0, 40000, 10000)); // 32 beats (16 s) would pass the end of a 10 s track
+        QVERIFY(endCuemarkLoopAt(&h, g, 0, 1300));          // 0.6 beat -> 1/2
+        QCOMPARE(cuemarkLoopBeats(h.marks[0], g), 0.5);
+    }
+
+    void loopMenuStates()
+    {
+        BeatGrid g; g.bpm = 120;
+        CuemarkFile f;
+        f.marks = {mark(1000), mark(10000)};
+        LoopMenuState s = loopMenuState(f, g, 500, -1);                    // before every mark
+        QCOMPARE(s.endLoopFor, -1);
+        s = loopMenuState(f, g, 5000, -1);
+        QCOMPARE(s.endLoopFor, 0);                                         // the cue directly before
+        QCOMPARE(s.insideLoop, -1);
+        QVERIFY(setCuemarkLoop(&f, g, 0, 4));                              // 1000..3000
+        s = loopMenuState(f, g, 5000, -1);
+        QCOMPARE(s.endLoopFor, -1);                                        // the preceding cue already loops
+        s = loopMenuState(f, g, 2000, -1);
+        QCOMPARE(s.insideLoop, 0);
+        QVERIFY(s.canDouble && s.canHalf);
+        QCOMPARE(s.endLoopFor, -1);
+        s = loopMenuState(f, g, 1000, 0);                                  // on the looped mark
+        QCOMPARE(s.removeLoopFor, 0);
+        QCOMPARE(s.insideLoop, -1);
+        s = loopMenuState(f, g, 10000, 1);                                 // on a mark without a loop: nothing loop related
+        QCOMPARE(s.removeLoopFor, -1);
+        QCOMPARE(s.endLoopFor, -1);
+        QVERIFY(setCuemarkLoop(&f, g, 0, 32));
+        s = loopMenuState(f, g, 2000, -1);
+        QVERIFY(!s.canDouble && s.canHalf);
+        s = loopMenuState(f, BeatGrid(), 2000, -1);                        // no grid: the entries are there but disabled
+        QVERIFY(s.needsGrid);
+        QVERIFY(!s.canDouble && !s.canHalf);
+        s = loopMenuState(f, BeatGrid(), 1000, 0);
+        QCOMPARE(s.removeLoopFor, 0);                                      // removing needs no grid
+        QVERIFY(!s.needsGrid);
+    }
+    void hotCueLoopsAreExportedAsLoops()
+    {
+        fs::path tmp = makeTempDir("trakcrate-cuemarks-loop");
+        QVERIFY(!tmp.empty());
+        Library lib;
+        QVERIFY(Library::create(tmp / "lib") && Library::open(tmp / "lib", &lib));
+        DecodedPcm p = tcwav::clicks(120, 0.1, 10);
+        tcwav::writeWavMono(tmp / "src/Set/alpha.wav", tcwav::mono(p), p.sampleRate);
+        ImportOptions io;
+        io.analyse = true;
+        QVERIFY(importFolder(lib, tmp / "src/Set", io).ok);
+        const fs::path dir = lib.trackDir("Set", "alpha");
+        Track t;
+        QVERIFY(loadTrack(dir, &t));
+        const BeatGrid g = beatGridFrom(t.grid);
+        QVERIFY(!g.empty());
+        t.cuemarks.marks = {mark(1000, 'A'), mark(5000, 'B'), mark(8000)};
+        t.cuemarks.marks[0].extra.push_back("loop_end_ms=3000");           // 4 beats at 120 BPM
+        t.cuemarks.marks[2].extra.push_back("loop_end_ms=8500");           // a memory point with a loop: not exported
+        t.hasCuemarks = true;
+        QVERIFY(saveCuemarks(t));
+        ExportOptions o;
+        o.playlists = {"Set"};
+        o.dest = tmp / "out";
+        o.templatePdb = slurp(std::string(TRAKCRATE_FIXTURES) + "/pdb/export7.pdb");
+        o.stagingBase = tmp / "staging";
+        o.encodeArtwork = fakeEncoder;
+        fs::create_directories(o.stagingBase);
+        ExportResult r = exportDrive(lib, o);
+        QVERIFY2(r.ok, r.error.c_str());
+        const std::string pdb = slurp(tmp / "out/PIONEER/rekordbox/export.pdb");
+        std::string analyze;
+        pdb_parse(reinterpret_cast<const uint8_t*>(pdb.data()), uint32_t(pdb.size()), [](const pdb_track_t* tr, void* ud) { *static_cast<std::string*>(ud) = tr->analyze_path; return 0; }, &analyze);
+        anlz_track_t* a = nullptr;
+        QCOMPARE(int(anlz_track_open((tmp / "out").c_str(), analyze.c_str(), &a)), int(ANLZ_OK));
+        anlz_cue_list_t cues;
+        QCOMPARE(int(anlz_track_cues(a, ANLZ_CUES_HOT, &cues)), int(ANLZ_OK));
+        QCOMPARE(int(cues.count), 2);
+        const anlz_cue_t* ca = cues.cues[0].hot_cue == 1 ? &cues.cues[0] : &cues.cues[1];
+        const anlz_cue_t* cb = cues.cues[0].hot_cue == 1 ? &cues.cues[1] : &cues.cues[0];
+        QVERIFY(ca->is_loop);
+        QCOMPARE(int(ca->time_ms), 1000);
+        QCOMPARE(int(ca->loop_time_ms), 3000);
+        QCOMPARE(int(ca->loop_num), 4);
+        QCOMPARE(int(ca->loop_den), 1);
+        QVERIFY(!cb->is_loop);
+        anlz_cue_list_free(&cues);
+        anlz_track_close(a);
+        std::error_code ec;
+        fs::remove_all(tmp, ec);
+    }
 };
 
 QTEST_APPLESS_MAIN(TestTrakcrateCuemarks)

@@ -12,14 +12,14 @@ Edit one track while it is loaded in the player. The library-wide pane (`gui.md`
 
 ## First version: what is editable
 
-| Function                | How                                                                                                                      |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Nudge the beat grid     | buttons/keys and mouse drag on the waveform (see below)                                                                  |
-| Insert a cuemark        | mouse on the waveform                                                                                                    |
-| Delete a cuemark        | mouse on the waveform                                                                                                    |
-| Rating 0-5 stars        | click on a star row in the track view                                                                                    |
-| Comment                 | text field in the track view                                                                                             |
-| Artwork                 | shown in the track view; "Edit in..." opens a graphical editor                                                            |
+| Function            | How                                                            |
+|---------------------|----------------------------------------------------------------|
+| Nudge the beat grid | buttons/keys and mouse drag on the waveform (see below)        |
+| Insert a cuemark    | mouse on the waveform                                          |
+| Delete a cuemark    | mouse on the waveform                                          |
+| Rating 0-5 stars    | click on a star row in the track view                          |
+| Comment             | text field in the track view                                   |
+| Artwork             | shown in the track view; "Edit in..." opens a graphical editor |
 
 Not in the first version: editing hot cues and loops, BPM entry, key, full metadata form, vocals regions. They follow in later phases (`gui.md` lists them).
 
@@ -40,15 +40,21 @@ The grid is a constant-tempo line `t_i = t0 + i * 60000/bpm` (`beat-grid.md`). N
 On the waveform (details view and the popup `WaveformWindow`):
 
 - **Insert**: double click, or right click "Add cuemark here", or key `M` at the playhead. The position **snaps to the nearest beat by default** (hold Alt for free time, setting `snap beat|bar|none` in the toolbar), and a snap guide line shows where it will land before the click.
+- **Hot cue letters**: a new mark takes the first free letter of A, B, C (so the first three marks are the player's keys `a`, `b`, `c` and, on export, the deck's hot cues A-C); later marks are plain memory points (button `M`). Change it any time with the context menu. Marks made before this have no letter until you give one.
 - **Move**: drag a mark; shift snaps to bars; the time is displayed while dragging.
 - **Delete**: right click "Delete", or click a mark and press Delete; confirmed only for undo-less situations (undo is always available, so no prompt).
 - **Label**: double click a mark to type a label (optional).
 - **Hot cue assignment** (A, B, C) via context menu on a mark (the three the decks can really store; at most one mark per letter).
+- **Loops** (a mark with `loop_end_ms=`, `cuemarks.md`): a loop is drawn as a band of 25% of the mark's colour from the mark to the loop end.
+  - Right click after a mark that has no loop (the mark directly before the click): **End loop here**. The end is quantized to 1/2, 1, 2, 4, 8, 16 or 32 beats of the grid; a click closer than a quarter beat, or a loop past the end of the track, is refused with a message.
+  - Right click inside a loop: **Double loop** / **Half loop** (disabled at 32 / 1/2 beats).
+  - Right click a mark with a loop: **Remove loop**; the mark is a plain cue again and takes a new end.
+  - Creating and resizing loops needs a beat grid (the entries are disabled and say so). Adding, moving and deleting cue marks still works on a track without a grid, and so does removing a loop. Everything goes through undo.
 - Marks are drawn in the editor as green vertical lines (the exported rendering is a white spike, `cuemarks.md`; the editor can show both: line, plus a hint of "export look" in a preview toggle).
 - Hit testing: a mark is grabbed within a few pixels; marks too close at the current zoom are listed in a small popup menu on click.
 - The existing interactions (wheel zoom, drag pan, hover readout, double click fits track) are kept; cuemark editing uses an edit-mode toggle in the toolbar so a double click means one thing at a time.
 - Audition: clicking a mark in the list jumps the deck's playhead to it.
-- Every change saves to `cuemarks.txt` (origin `edited`), through the undo stack.
+- Every change saves to `cuemarks.txt` (origin `edited`), through the undo stack. Undo and Redo are the buttons next to the rating stars, and Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y anywhere in the editor (a text field with focus keeps its own undo). The history belongs to one track.
 
 ## Track view: rating and comment
 
@@ -116,3 +122,7 @@ On the waveform (details view and the popup `WaveformWindow`):
 - A change made by an external editor (in place or by renaming a temporary file over it) is noticed by a file watch plus a 1.5 s poll; the picture reloads and the artwork group is marked `edited`.
 - Qt-free operations are in `src/trakcrate/artwork_edit.*`; `.desktop` parsing and command building are in `src/ui/artwork_launcher.*`.
 - Not tried: a real editor, and flatpak/snap editors (the library must be reachable by the sandbox).
+
+## DJ edits
+
+Cutting and looping bars into a new version of the track, and cutting loops out for Acid: see `track-edits.md`.

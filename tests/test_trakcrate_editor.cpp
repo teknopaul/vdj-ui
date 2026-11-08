@@ -10,6 +10,7 @@
 #include "trakcrate_wav.h"
 #include "ui/player_panel.h"
 #include "ui/star_rating_widget.h"
+#include "trakcrate/cuemark_edit.h"
 #include "ui/trakcrate_analysis.h"
 #include "ui/trakcrate_track_editor.h"
 #include "ui/waveform_widget.h"
@@ -53,9 +54,12 @@ private slots:
     void loadingWritesNothing();
     void noTrackMeansDisabled();
     void analysisFromTheMaster();
+    void analysisCarriesLoops();
     void playerLoadsAMasterTrack();
     void cuemarksAreEditedWrittenAndUndone();
     void waveformEditModeReportsWhatTheUserDid();
+    void loopBandIsDrawn();
+    void loopEditsGoThroughUndo();
     void scrollBarPansTheZoomedWaveform();
 };
 
@@ -195,6 +199,33 @@ void TestTrakcrateEditor::analysisFromTheMaster()
     QVERIFY(!trakcrateTrackAnalysis(QStringLiteral("/nonexistent")).valid);
 }
 
+void TestTrakcrateEditor::analysisCarriesLoops()
+{
+    tc::Track t;
+    QVERIFY(tc::loadTrack(dir_.toStdString(), &t));
+    t.hasCuemarks = true;
+    t.cuemarks.marks.clear();
+    tc::Cuemark a; a.ms = 1000; a.hot = 'B'; a.extra.push_back("loop_end_ms=3000");        // 4 beats at 120 BPM
+    tc::Cuemark b; b.ms = 5000; b.extra.push_back("loop_end_ms=5250");                     // half a beat
+    tc::Cuemark c; c.ms = 6000; c.extra.push_back("loop_end_ms=7750");                     // 3.5 beats: not one of the lengths
+    tc::Cuemark d; d.ms = 9000;
+    t.cuemarks.marks = {a, b, c, d};
+    QVERIFY(tc::saveCuemarks(t));
+    const TrackAnalysis an = trakcrateTrackAnalysis(dir_);
+    QCOMPARE(an.cues.size(), 4);                                                           // memory points first, then B
+    QCOMPARE(an.cues[3].hotCue, 2);
+    QVERIFY(an.cues[3].loop);
+    QCOMPARE(an.cues[3].loopEndMs, quint32(3000));
+    QCOMPARE(an.cues[3].loopBeats(), 4.0);
+    QVERIFY(an.cues[0].loop);
+    QCOMPARE(an.cues[0].loopEndMs, quint32(5250));
+    QCOMPARE(an.cues[0].loopBeats(), 0.5);
+    QVERIFY(an.cues[1].loop);
+    QCOMPARE(an.cues[1].loopEndMs, quint32(7750));
+    QCOMPARE(an.cues[1].loopBeats(), 0.0);                                                 // odd length: the end is all we say
+    QVERIFY(!an.cues[2].loop);
+}
+
 void TestTrakcrateEditor::playerLoadsAMasterTrack()
 {
     PlayerPanel panel;
@@ -257,6 +288,76 @@ void TestTrakcrateEditor::cuemarksAreEditedWrittenAndUndone()
     ed.undoStack()->redo();
     QCOMPARE(ed.cuemarkCount(), 1);
     Q_UNUSED(before);
+}
+
+void TestTrakcrateEditor::loopBandIsDrawn()
+{
+    tc::Track t;
+    QVERIFY(tc::loadTrack(dir_.toStdString(), &t));
+    t.hasCuemarks = true;
+    tc::Cuemark m; m.ms = 2000; m.extra.push_back("loop_end_ms=4000");
+    t.cuemarks.marks = {m};
+    QVERIFY(tc::saveCuemarks(t));
+    TrakcrateTrackEditor ed;
+    ed.setTrack(dir_);
+    ed.resize(600, 500);
+    ed.show();
+    WaveformWidget* w = ed.waveform();
+    QCOMPARE(w->cuemarks().size(), 1);
+    QCOMPARE(w->cuemarks()[0].loopEndMs, 4000.0);
+    const QImage with = w->grab().toImage();
+    QList<WaveCuemark> plain = w->cuemarks();
+    plain[0].loopEndMs = 0;
+    w->setCuemarks(plain);
+    const QImage without = w->grab().toImage();
+    const int inside = (w->timeX(2000) + w->timeX(4000)) / 2, after = w->timeX(4000) + 15, y = w->height() / 2;
+    QVERIFY(with.pixel(inside, y) != without.pixel(inside, y));                       // shaded between the start and the end
+    QCOMPARE(with.pixel(after, y), without.pixel(after, y));
+    QCOMPARE(with.pixel(w->timeX(2000) - 15, y), without.pixel(w->timeX(2000) - 15, y));
+}
+
+void TestTrakcrateEditor::loopEditsGoThroughUndo()
+{
+    TrakcrateTrackEditor ed;
+    ed.setTrack(dir_);
+    QVERIFY(ed.addCuemark(2000));
+    QVERIFY(ed.addCuemark(6000));
+    QVERIFY(ed.addCuemark(4000));
+    QVERIFY(ed.addCuemark(8000));
+    {
+        tc::Track t; tc::loadTrack(dir_.toStdString(), &t);                            // A, B, C in the order they were made; the fourth has none
+        QCOMPARE(t.cuemarks.marks[0].hot, 'A');
+        QCOMPARE(t.cuemarks.marks[2].hot, 'B');
+        QCOMPARE(t.cuemarks.marks[1].hot, 'C');
+        QCOMPARE(t.cuemarks.marks[3].hot, char(0));
+    }
+    for (int i = 0; i < 3; ++i) ed.undoStack()->undo();
+    QCOMPARE(tc::freeHotLetter([this] { tc::Track t; tc::loadTrack(dir_.toStdString(), &t); return t.cuemarks; }()), 'B');
+    QVERIFY(ed.setLoopEnd(0, 4100));                                                   // 120 BPM: 4.2 beats -> 4
+    auto marks = [this] { tc::Track t; tc::loadTrack(dir_.toStdString(), &t); return t.cuemarks.marks; };
+    double end = 0;
+    QVERIFY(tc::cuemarkLoopEnd(marks()[0], &end));
+    QCOMPARE(end, 4000.0);
+    QVERIFY(ed.scaleLoop(0, true));
+    QVERIFY(tc::cuemarkLoopEnd(marks()[0], &end));
+    QCOMPARE(end, 6000.0);
+    ed.undoStack()->undo();
+    QVERIFY(tc::cuemarkLoopEnd(marks()[0], &end));
+    QCOMPARE(end, 4000.0);
+    QVERIFY(ed.removeLoop(0));
+    QVERIFY(!tc::cuemarkLoopEnd(marks()[0]));
+    ed.undoStack()->undo();
+    QVERIFY(tc::cuemarkLoopEnd(marks()[0]));
+    ed.show();
+    QVERIFY(QTest::qWaitForWindowActive(&ed));
+    ed.waveform()->setFocus();
+    QTest::keyClick(ed.waveform(), Qt::Key_Z, Qt::ControlModifier);                    // Ctrl+Z undoes the loop, Ctrl+Shift+Z redoes it
+    QVERIFY(!tc::cuemarkLoopEnd(marks()[0]));
+    QTest::keyClick(ed.waveform(), Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
+    QVERIFY(tc::cuemarkLoopEnd(marks()[0]));
+    QSignalSpy st(&ed, &TrakcrateTrackEditor::status);
+    QVERIFY(!ed.setLoopEnd(0, 2010));                                                  // too close to the cue
+    QCOMPARE(st.count(), 1);
 }
 
 void TestTrakcrateEditor::scrollBarPansTheZoomedWaveform()

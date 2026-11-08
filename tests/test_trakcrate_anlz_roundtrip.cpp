@@ -312,6 +312,15 @@ void TestTrakcrateAnlz::vbrCuesMatchARealRekordboxExport()
     AnlzFiles g;
     QVERIFY(buildAnlz(o, &g));
     QVERIFY(!hex(g.dat).contains("00010000ffffffff010003e8"));
+
+    // a looping cue of a VBR mp3: the end goes in the end half of the (1/75 s, byte offset) pairs, as in the deck's own file (tests/fixtures/deck-vbr-loops)
+    AnlzTrackData l = d;
+    l.hotCues.clear();
+    AnlzCue lc; lc.hotCue = 2; lc.timeMs = 25425; lc.isLoop = true; lc.loopTimeMs = 30041; lc.seek = true; lc.bytePos = 0xd4160; lc.loopBytePos = 0xfc480;
+    l.hotCues.push_back(lc);
+    AnlzFiles lf;
+    QVERIFY(buildAnlz(l, &lf));
+    QVERIFY(hex(lf.dat).contains("020003e8" "00006351" "00007559" "00000772" "000008cd" "000d4160" "000fc480"));      // the deck's bytes for the same cue
 }
 
 void TestTrakcrateAnlz::invalidDataIsRefused()

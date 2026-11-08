@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+#include "trakcrate/cuemark_edit.h"
 #include "trakcrate/deck_edits.h"
 
 #include <fstream>
@@ -95,6 +96,26 @@ private slots:
         QVERIFY(!applyDeckEdits(a, deck, o).changed);
         o.skipEmptyCues = false;
         QVERIFY(applyDeckEdits(a, deck, o).changed);                  // a single copy back deliberately removes them
+    }
+
+    void deckLoopIsCopiedBack()
+    {
+        const fs::path d = makeTrack("loop", "Loop", "Ana");
+        DeckAnalysis deck;
+        deck.ok = deck.hasGrid = true;
+        deck.grid.bpm = 120;
+        deck.grid.firstBeatUs = 100000;
+        Cuemark c; c.ms = 2000; c.hot = 'B'; c.extra.push_back("loop_end_ms=4000");
+        deck.cues = { c };
+        CopyBackOptions o;
+        o.cues = true;
+        QVERIFY(applyDeckEdits(d, deck, o).ok);
+        QVERIFY(slurp(d / "cuemarks.txt").find("loop_end_ms=4000") != std::string::npos);
+        Track t;
+        QVERIFY(loadTrack(d, &t));
+        double end = 0;
+        QVERIFY(cuemarkLoopEnd(t.cuemarks.marks[0], &end));
+        QCOMPARE(end, 4000.0);
     }
 
     void diffAndApply()

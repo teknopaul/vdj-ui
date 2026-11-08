@@ -42,6 +42,14 @@ public:
     static bool isPlayerKey(const QKeyEvent* e);
     // The hot cue a/b/c (Qt::Key_A..Key_C) jumps to; null when the key is not one of them or the track has no such cue.
     static const AnalysisCue* hotCueForKey(const QList<AnalysisCue>& cues, int key);
+    // What pressing a cue does about loops. A cue with a loop whose loop is the running one only switches the looping off and does not move the
+    // play position; any other cue jumps (quantized) and enters its loop, or leaves the running loop when it has none.
+    enum class LoopChange { Keep, Enter, Leave };
+    struct CuePlan {
+        bool seek = true;
+        LoopChange loop = LoopChange::Leave;
+    };
+    static CuePlan planCuePress(const AnalysisCue& cue, bool itsLoopIsRunning);
     // True when handlePlayerKey would act on e: a player key and a track loaded (Space then stays the VDJ's play / pause otherwise).
     bool wantsPlayerKey(const QKeyEvent* e) const;
     // Do what e asks of the player; false (e untouched) when wantsPlayerKey is false. The trakcrate track list forwards its keys here.
@@ -108,7 +116,13 @@ private:
     void updateButtons();
     void rebuildCueButtons();
     void setBeatGrid();
-    void jumpToCue(double cueMs);
+    void jumpToCue(double cueMs);                // a plain jump: leaves any loop
+    void startJump(double cueMs);                // the (quantized / sequencer queued) jump itself
+    void cueActivated(const AnalysisCue& cue);   // a cue button or key: jump to it, and toggle / enter its loop
+    void applyPendingLoop();
+    void clearLoopState();
+    void refreshActiveLoop();                    // the analysis changed under a running loop
+    void updateCueButtonStates();
     bool isCueKey(const QKeyEvent* e) const;     // a, b, c, q with the player focused and a track loaded (not forwarded from the track list)
     void playClicked();
     void cancelPendingPlay();
@@ -137,6 +151,10 @@ private:
     QLabel* bpm_;
     QHBoxLayout* cueLayout_;
     QList<QPushButton*> cueButtons_;
+    // The loop of the cue last pressed: running (activeLoopStart_ >= 0, the cue's time) or waiting for its queued jump to land (pendingLoop_).
+    double activeLoopStart_ = -1.0;
+    bool pendingLoop_ = false;
+    double pendingLoopStart_ = 0.0, pendingLoopEnd_ = 0.0;
     QString trakcrateDir_;
     TrackAnalysis analysis_;
     double originalBpm_ = 0.0;

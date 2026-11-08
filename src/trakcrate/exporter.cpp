@@ -2,6 +2,7 @@
 
 #include "analysis.h"
 #include "anlz_writer.h"
+#include "cuemark_edit.h"
 #include "mp3_index.h"
 #include "artwork_paths.h"
 #include "natsort.h"
@@ -279,6 +280,20 @@ Gathered gather(const Library& lib, const ExportOptions& o, const GatherSeed* se
                     double at = std::max(0.0, c.ms);
                     if (t.durationMs > 0) at = std::min(at, t.durationMs);
                     a.timeMs = uint32_t(at + 0.5);
+                    double loopEnd = 0;
+                    if (cuemarkLoopEnd(c, &loopEnd)) {                 // a hot cue with a loop is a loop on the deck (not seen on a deck: doc/trakcrate/cuemarks.md)
+                        if (t.durationMs > 0) loopEnd = std::min(loopEnd, t.durationMs);
+                        if (loopEnd > at) {
+                            a.isLoop = true;
+                            a.loopTimeMs = uint32_t(loopEnd + 0.5);
+                            const double beats = cuemarkLoopBeats(c, beatGridFrom(t.track.grid));      // PCP2 also says how many beats, for the lengths we make
+                            if (beats > 0 && std::fabs(snapLoopBeats(beats) - beats) < 0.02) {
+                                const double sb = snapLoopBeats(beats);
+                                a.loopNum = uint16_t(sb < 1 ? 1 : int(sb));
+                                a.loopDen = uint16_t(sb < 1 ? 2 : 1);
+                            }
+                        }
+                    }
                     t.hot.push_back(a);
                 }
                 std::sort(t.hot.begin(), t.hot.end(), [](const AnlzCue& a, const AnlzCue& b) { return a.hotCue < b.hotCue; });
@@ -437,7 +452,11 @@ bool stageTrackFiles(const Gathered& g, const ExportOptions& o, const std::vecto
             const Mp3Index ix = indexMp3(t.audio);
             if (ix.ok && ix.vbr) {
                 d.pvbr = ix.pvbr();
-                for (AnlzCue& c : d.hotCues) { c.seek = true; c.bytePos = ix.offsetAtMs(c.timeMs); }
+                for (AnlzCue& c : d.hotCues) {
+                    c.seek = true;
+                    c.bytePos = ix.offsetAtMs(c.timeMs);
+                    if (c.isLoop) c.loopBytePos = ix.offsetAtMs(c.loopTimeMs);
+                }
             }
         }
         AnlzFiles f;

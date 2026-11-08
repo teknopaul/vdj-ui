@@ -27,11 +27,12 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=2
+current_page=4
 FILE_NAME_0=15109;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Frefactor-recommendations.md;0;4
 FILE_NAME_1=1906;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Frekordcrate-cross-analysis.md;0;4
-FILE_NAME_2=2030;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fcue-loops.prompt.md;0;4
-FILE_NAME_3=4209;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fmaking-acid-loops.prompt.md;0;2
+FILE_NAME_2=2031;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fcue-loops.prompt.md;0;4
+FILE_NAME_3=5455;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fmaking-track-edits.prompt.md;0;2
+FILE_NAME_4=1176;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fstudio-mix.prompt.md;0;4
 
 [VTE]
 last_dir=/home/teknopaul

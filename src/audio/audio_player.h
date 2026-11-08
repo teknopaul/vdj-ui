@@ -21,6 +21,15 @@ namespace vdj {
 // buffered output), good to well under a chunk.
 int splitAtTrigger(double posFrame, double tempo, double triggerFrame, int chunkFrames);
 
+// The click-safe edges of a loop. A chunk of `frames` stereo frames (interleaved qint16) is scaled in place:
+//  - before the wrap the gain falls linearly to 0 over the last fadeOutFrames before the loop end: framesToEnd is the number of output frames from the
+//    chunk start to the loop end (< 0 = no loop end ahead, no fade out);
+//  - from output frame wrapAt on (-1 = no wrap in this chunk) the audio is the loop start again and the gain rises linearly from 0 over fadeInFrames.
+// *fadeInPos counts the frames of the fade in done so far and carries over to the next chunk (>= fadeInFrames or < 0 = not fading in).
+constexpr int kLoopFadeOutFrames = 882;      // 20 ms at 44.1 kHz
+constexpr int kLoopFadeInFrames = 220;       // 5 ms
+void applyLoopFades(qint16* chunk, int frames, int channels, double framesToEnd, int wrapAt, int fadeOutFrames, int fadeInFrames, int* fadeInPos);
+
 // Previews one track on a local output device. A worker thread renders (tempo changed) audio and writes it to
 // PulseAudio/PipeWire; the GUI thread only sees the position through a timer.
 class AudioPlayer : public QObject {
@@ -56,6 +65,13 @@ public slots:
     // When the heard (source) position reaches triggerSourceMs, seek to targetMs, sample-accurately inside the render
     // chunk. A trigger already passed (or not playing) seeks at once. A newer request replaces the pending one.
     void seekAtMs(double triggerSourceMs, double targetMs);
+    // Loop [startMs, endMs): when the playing position reaches the end it goes back to the start, sample-accurately inside the render chunk, with a
+    // 20 ms fade out before the end and a 5 ms fade in after the start. False (and no loop) when it is shorter than 25 ms or outside the track.
+    // Seeking does not clear it (the owner decides: a jump into the loop keeps it); pause keeps it; stop, load and unload clear it. Playing from
+    // before the start plays on normally and loops once the end is reached; a position well past the end is outside the loop and plays on.
+    bool setLoop(double startMs, double endMs);
+    void clearLoop();
+    bool hasLoop() const;
     void cancelJump();                           // also done by stop, pause, seek, tempo change, load and unload
     void setTempo(double ratio);                 // 1.0 = original speed, key is kept
 
@@ -86,6 +102,9 @@ private:
     std::atomic<bool> jumped_{ false };
     bool pendingJump_ = false;                   // guarded by mutex_
     double jumpTriggerFrame_ = 0.0, jumpTargetFrame_ = 0.0;
+    bool looping_ = false;                       // guarded by mutex_
+    double loopStartFrame_ = 0.0, loopEndFrame_ = 0.0;
+    int fadeInPos_ = -1;                         // guarded by mutex_, see applyLoopFades
     QString failure_;                            // guarded by mutex_
     std::thread thread_;
     QTimer timer_;

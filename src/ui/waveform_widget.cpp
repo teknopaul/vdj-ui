@@ -14,6 +14,8 @@ namespace vdj {
 // where the waveform never reaches.
 const QColor WaveformWidget::kCueColor(255, 224, 0);
 const QColor WaveformWidget::kCuemarkColor(0, 230, 80);
+// A loop band is 25% of its line colour, in both views.
+static const int kLoopBandAlpha = 64;
 const QColor WaveformWidget::kBeatColor(255, 255, 255);
 const QColor WaveformWidget::kBarColor(255, 40, 40);
 
@@ -183,6 +185,95 @@ void WaveformWidget::setCuemarkEditing(bool on)
     update();
 }
 
+void WaveformWidget::setEditRegions(const QList<WaveEditRegion>& regions)
+{
+    regions_ = regions;
+    if (regionSelected_ >= regions_.size()) regionSelected_ = -1;
+    update();
+}
+
+void WaveformWidget::setEditRegionSelected(int index)
+{
+    regionSelected_ = (index >= 0 && index < regions_.size()) ? index : -1;
+    update();
+}
+
+void WaveformWidget::setRegionEditing(bool on)
+{
+    regionEditing_ = on;
+    rangeDrag_ = false;
+    rangeShown_ = false;
+    if (interactive_) setCursor(on ? Qt::CrossCursor : Qt::OpenHandCursor);
+    update();
+}
+
+void WaveformWidget::setPreviewPoint(double ms)
+{
+    previewMs_ = ms;
+    update();
+}
+
+void WaveformWidget::clearEditRange()
+{
+    rangeDrag_ = false;
+    rangeShown_ = false;
+    update();
+}
+
+double WaveformWidget::snappedToBeat(double ms) const
+{
+    ms = std::clamp(ms, 0.0, std::max(0.0, lengthMs()));
+    const int i = nearestBeat(ms);
+    return i >= 0 ? analysis_.beats[i].ms : ms;
+}
+
+int WaveformWidget::editRegionAt(double ms) const
+{
+    for (int i = 0; i < regions_.size(); ++i)
+        if (ms >= regions_[i].startMs && ms < regions_[i].endMs) return i;
+    return -1;
+}
+
+void WaveformWidget::paintEditRegions(QPainter& p)
+{
+    const int H = height();
+    p.setRenderHint(QPainter::Antialiasing, false);
+    const QColor cutColor(110, 110, 120);
+    for (int i = 0; i < regions_.size(); ++i) {
+        const WaveEditRegion& r = regions_[i];
+        const int x0 = timeX(r.startMs), x1 = timeX(r.endMs);
+        if (x1 < -2 || x0 > width() + 2) continue;
+        QColor c = r.loop ? kCueColor : cutColor;
+        const bool sel = i == regionSelected_;
+        QColor fill = c;
+        fill.setAlpha(kLoopBandAlpha);                                           // 25%
+        p.fillRect(QRect(x0, 0, std::max(2, x1 - x0), H), fill);
+        p.setPen(QPen(c, sel ? 3 : 1));
+        p.drawLine(x0, 0, x0, H);
+        p.drawLine(x1, 0, x1, H);
+        p.setPen(r.loop ? Qt::black : Qt::white);
+        const QString label = QString::number(r.number) + (r.text.isEmpty() ? QString() : QStringLiteral(" ") + r.text);
+        const QRect box(x0 + 2, 0, std::max(14, std::min(x1 - x0 - 2, 160)), 14);
+        p.fillRect(box, c);
+        p.drawText(box, Qt::AlignLeft | Qt::AlignVCenter, label);
+    }
+    if (previewMs_ >= 0) {
+        const int x = timeX(previewMs_);
+        const QColor c(40, 170, 255);
+        p.setPen(QPen(c, 2));
+        p.drawLine(x, 0, x, H);
+        p.fillRect(QRect(x, H - 14, 26, 14), c);
+        p.setPen(Qt::black);
+        p.drawText(QRect(x + 2, H - 14, 24, 14), Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("play"));
+    }
+    if (rangeShown_ && rangeB_ > rangeA_) {
+        const int x0 = timeX(rangeA_), x1 = timeX(rangeB_);
+        p.fillRect(QRect(x0, 0, std::max(2, x1 - x0), H), QColor(255, 255, 255, 40));
+        p.setPen(QPen(Qt::white, 1, Qt::DashLine));
+        p.drawRect(QRect(x0, 0, std::max(2, x1 - x0), H - 1));
+    }
+}
+
 void WaveformWidget::setGridEditing(bool on)
 {
     gridEditing_ = on;
@@ -237,9 +328,16 @@ void WaveformWidget::paintCuemarks(QPainter& p)
         const WaveCuemark& m = cuemarks_[i];
         const double ms = (i == markDrag_) ? markDragMs_ : m.ms;
         const int x = timeX(ms);
-        if (x < -6 || x > width() + 6) continue;
+        const bool loops = m.loopEndMs > m.ms;
+        if (x > width() + 6 || (!loops && x < -6) || (loops && timeX(m.loopEndMs + (ms - m.ms)) < -6)) continue;
         const bool sel = i == selected_;
         p.setRenderHint(QPainter::Antialiasing, false);
+        if (m.loopEndMs > m.ms) {                                               // 25% of the line colour, under the line
+            QColor band = kCuemarkColor;
+            band.setAlpha(kLoopBandAlpha);
+            const int endX = timeX(m.loopEndMs + (ms - m.ms));                  // a dragged mark takes its loop along
+            p.fillRect(QRect(x, 0, std::max(2, endX - x), H), band);
+        }
         p.fillRect(QRect(x - 1, 0, 3 + (sel ? 2 : 0), H), QColor(0, 0, 0, 110));
         p.setPen(QPen(kCuemarkColor, sel ? 3 : 2));
         p.drawLine(x, 0, x, H);
@@ -371,7 +469,7 @@ void WaveformWidget::paintCues(QPainter& p)
         const int x = cueX(c.timeMs);
         if (c.loop && c.loopEndMs > c.timeMs) {
             QColor band = kCueColor;
-            band.setAlpha(45);
+            band.setAlpha(kLoopBandAlpha);
             p.fillRect(QRect(x, 0, std::max(2, cueX(c.loopEndMs) - x), H), band);
         }
         if (x < -6 || x > width() + 6)
@@ -413,6 +511,7 @@ void WaveformWidget::paintEvent(QPaintEvent*)
     paintWaveform(p, t0, span);
     paintBeats(p, t0, span);
     paintCues(p);
+    paintEditRegions(p);
     paintCuemarks(p);
     paintPlayhead(p);
 }
@@ -451,6 +550,13 @@ void WaveformWidget::mousePressEvent(QMouseEvent* event)
         return;
     }
     setFocus();
+    if (regionEditing_ && lengthMs() > 0) {
+        rangeDrag_ = true;
+        rangePressX_ = int(event->position().x());
+        rangeA_ = rangeB_ = snappedToBeat(timeAt(rangePressX_));
+        rangeShown_ = false;
+        return;
+    }
     if (gridEditing_ && lengthMs() > 0) {
         gridDrag_ = true;
         gridDragX_ = int(event->position().x());
@@ -480,6 +586,17 @@ void WaveformWidget::mouseMoveEvent(QMouseEvent* event)
     }
     const int x = int(event->position().x());
     hoverX_ = x;
+    if (rangeDrag_) {
+        if (std::abs(x - rangePressX_) >= 4) {
+            const double a = snappedToBeat(timeAt(rangePressX_)), b = snappedToBeat(timeAt(x));
+            rangeA_ = std::min(a, b);
+            rangeB_ = std::max(a, b);
+            rangeShown_ = rangeB_ > rangeA_;
+            update();
+            emit hovered(QStringLiteral("range %1 ms").arg(rangeB_ - rangeA_, 0, 'f', 0));
+        }
+        return;
+    }
     if (gridDrag_) {
         const double span = viewSpan_ > 0 ? viewSpan_ : lengthMs();
         gridDragMs_ = double(x - gridDragX_) * span / std::max(1, width());
@@ -506,6 +623,21 @@ void WaveformWidget::mouseMoveEvent(QMouseEvent* event)
 
 void WaveformWidget::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (rangeDrag_ && event->button() == Qt::LeftButton) {
+        rangeDrag_ = false;
+        if (std::abs(int(event->position().x()) - rangePressX_) < 4) {            // a click, not a drag
+            rangeShown_ = false;
+            const int hit = editRegionAt(timeAt(rangePressX_));
+            previewMs_ = snappedToBeat(timeAt(rangePressX_));
+            update();
+            emit previewPointSet(previewMs_);
+            if (hit >= 0) emit editRegionClicked(hit);
+            return;
+        }
+        update();
+        if (rangeB_ > rangeA_) emit editRangeSelected(rangeA_, rangeB_);
+        return;
+    }
     if (gridDrag_ && event->button() == Qt::LeftButton) {
         const double d = gridDragMs_;
         gridDrag_ = false;
@@ -548,6 +680,10 @@ void WaveformWidget::keyPressEvent(QKeyEvent* event)
 {
     if (!interactive_) {
         QWidget::keyPressEvent(event);
+        return;
+    }
+    if (regionEditing_ && event->key() == Qt::Key_Space) {
+        emit previewToggleRequested();
         return;
     }
     if (gridEditing_ && lengthMs() > 0) {
@@ -597,13 +733,31 @@ void WaveformWidget::contextMenuEvent(QContextMenuEvent* event)
     }
     const int x = event->pos().x();
     const int hit = cuemarkAt(x);
+    const double atMs = timeAt(x);
+    const WaveLoopMenu lm = loopMenu_ ? loopMenu_(atMs, hit) : WaveLoopMenu();
     QMenu menu(this);
     QAction* add = menu.addAction(QStringLiteral("Add cuemark here"));
+    QAction* endLoop = nullptr;
+    QAction* dbl = nullptr;
+    QAction* half = nullptr;
+    QAction* rmLoop = nullptr;
+    const QString needGrid = QStringLiteral(" (needs a beat grid)");
+    if (lm.endLoopFor >= 0) {
+        endLoop = menu.addAction(QStringLiteral("End loop here") + (lm.needsGrid ? needGrid : QString()));
+        endLoop->setEnabled(!lm.needsGrid);
+    }
+    if (lm.insideLoop >= 0) {
+        dbl = menu.addAction(QStringLiteral("Double loop") + (lm.needsGrid ? needGrid : QString()));
+        half = menu.addAction(QStringLiteral("Half loop") + (lm.needsGrid ? needGrid : QString()));
+        dbl->setEnabled(lm.canDouble);
+        half->setEnabled(lm.canHalf);
+    }
     QAction* del = nullptr;
     QAction* hots[4] = {nullptr, nullptr, nullptr, nullptr};
     if (hit >= 0) {
         setSelectedCuemark(hit);
         menu.addSeparator();
+        if (lm.removeLoopFor >= 0) rmLoop = menu.addAction(QStringLiteral("Remove loop"));
         del = menu.addAction(QStringLiteral("Delete cuemark"));
         const char letters[3] = {'A', 'B', 'C'};
         for (int k = 0; k < 3; ++k) {
@@ -615,7 +769,11 @@ void WaveformWidget::contextMenuEvent(QContextMenuEvent* event)
     }
     QAction* chosen = menu.exec(event->globalPos());
     if (!chosen) return;
-    if (chosen == add) emit cuemarkAdded(snapped(timeAt(x)));
+    if (chosen == add) emit cuemarkAdded(snapped(atMs));
+    else if (chosen == endLoop) emit cuemarkLoopEnded(lm.endLoopFor, atMs);
+    else if (chosen == dbl) emit cuemarkLoopScaled(lm.insideLoop, true);
+    else if (chosen == half) emit cuemarkLoopScaled(lm.insideLoop, false);
+    else if (chosen == rmLoop) emit cuemarkLoopRemoved(lm.removeLoopFor);
     else if (chosen == del) emit cuemarkRemoved(hit);
     else for (int k = 0; k < 4; ++k)
         if (chosen == hots[k]) emit cuemarkHotChanged(hit, k < 3 ? 'A' + k : 0);

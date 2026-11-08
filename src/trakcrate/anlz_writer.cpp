@@ -97,10 +97,11 @@ void cueEntryPcpt(std::string& e, const AnlzCue& c)
         e += char((c.marker >> 16) & 0xFF); e += char((c.marker >> 8) & 0xFF); e += char(c.marker & 0xFF);
         be32(e, c.timeMs);
         be32(e, c.isLoop ? c.loopTimeMs : 0xffffffff);
+        // the last four words are pairs: start and end in 1/75 s, start and end as byte offsets (the end is 0 for a cue without a loop)
         be32(e, uint32_t(uint64_t(c.timeMs) * 75 / 1000));
-        be32(e, 0);
+        be32(e, c.isLoop ? uint32_t(uint64_t(c.loopTimeMs) * 75 / 1000) : 0);
         be32(e, c.bytePos);
-        be32(e, 0);
+        be32(e, c.isLoop ? c.loopBytePos : 0);
         return;
     }
     be32(e, 1);                                      // status: 1 in every sample
