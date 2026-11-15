@@ -27,12 +27,14 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=4
-FILE_NAME_0=15109;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Frefactor-recommendations.md;0;4
-FILE_NAME_1=1906;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-output%2Frekordcrate-cross-analysis.md;0;4
-FILE_NAME_2=2031;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fcue-loops.prompt.md;0;4
-FILE_NAME_3=5455;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fmaking-track-edits.prompt.md;0;2
-FILE_NAME_4=1176;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Fstudio-mix.prompt.md;0;4
+current_page=6
+FILE_NAME_0=412;C++;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fsrc%2Fvdj%2Fvdj_wrapper.cpp;0;4
+FILE_NAME_1=5573;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Fadj.c;0;4
+FILE_NAME_2=1467;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Fadj_cli.c;0;4
+FILE_NAME_3=4466;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Fadj_tui.c;0;4
+FILE_NAME_4=11187;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Flibadj.c;0;4
+FILE_NAME_5=6908;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Flibcdj%2Fsrc%2Fc%2Fcdj.c;0;4
+FILE_NAME_6=0;C++;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Flibcdj%2Fsrc%2Fc%2Fcdj.h;0;4
 
 [VTE]
 last_dir=/home/teknopaul

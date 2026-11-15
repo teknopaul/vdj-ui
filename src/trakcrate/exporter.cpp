@@ -402,7 +402,9 @@ fs::path pickStagingBase(const ExportOptions& o, bool* tmpfs, std::vector<std::s
     std::error_code ec;
     *tmpfs = false;
     if (!o.stagingBase.empty()) { *tmpfs = false; return o.stagingBase; }
-    for (const char* c : {"/dev/shm"}) if (fs::is_directory(c, ec) && ::access(c, W_OK) == 0) { *tmpfs = true; return c; }
+    // A Snap may not create files in /dev/shm itself (access() still says yes): its private $XDG_RUNTIME_DIR is a tmpfs too.
+    if (!std::getenv("SNAP"))
+        for (const char* c : {"/dev/shm"}) if (fs::is_directory(c, ec) && ::access(c, W_OK) == 0) { *tmpfs = true; return c; }
     if (const char* x = std::getenv("XDG_RUNTIME_DIR")) if (fs::is_directory(x, ec) && ::access(x, W_OK) == 0) { *tmpfs = true; return x; }
     warnings->push_back("no tmpfs available: staging in the system temp directory");
     return fs::temp_directory_path(ec);

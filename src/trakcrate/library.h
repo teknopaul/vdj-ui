@@ -14,6 +14,7 @@ namespace trakcrate {
 //   <root>/user-settings/<set>/                       named sets of the player support files (settings_sets.h)
 //   <root>/track-master-copy/<folder>/<track>/        audio, meta.txt, source.txt, beatgrid.txt, cuemarks.txt, artwork.jpg ...
 //   <root>/playlists/<name>/symlinks/000_<track>      symlinks to track folders; the numeric prefix is the order
+//   <root>/mixes/<path>.mix                           studio mixes (mix_file.h)
 //
 // A playlist is a playlists/<name> entry. Names given by callers are single path components (see isSafeName); anything else is refused.
 class Library {
@@ -31,6 +32,7 @@ public:
     fs::path playlistsDir() const { return root_ / "playlists"; }
     fs::path settingsDir() const { return root_ / "user-settings"; }
     fs::path drivesDir() const { return root_ / "drives"; }
+    fs::path mixesDir() const { return root_ / "mixes"; }          // studio mixes (*.mix, subfolders allowed); created on the first save
 
     // Folders and tracks, in natural order. A track is a directory inside a folder.
     std::vector<std::string> listFolders() const;

@@ -270,32 +270,36 @@ void setWaveforms(AnlzTrackData* d, const Waveform& w, bool includePwv4)
     d->pwv5 = w.pwv5;
     d->pwv4.clear();
     if (!includePwv4) return;
-    // PWV4 approximation (layout only partly understood): byte 0 the height 0..127, byte 1 about 255 minus it, bytes 2 and 3 follow the
-    // loudness, bytes 4 and 5 the green and blue weights. Built from the detail waveform, 1200 columns over the whole track.
+    // PWV4 approximation, fitted to the PWV4 / PWV5 pairs of a real rekordbox export: byte 0 the peak height 0..127, byte 1 255 minus it,
+    // bytes 2 to 5 four lower levels that follow the peak and the mean height of the column (the colour bands themselves are not recoverable).
+    // The old copy of the peak into bytes 2 and 3 and a constant 4 and 5 made the whole overview a flat blue block on the deck.
     const size_t cols = std::min(w.pwv3.size(), w.pwv5.size());       // the columns of PWV3; a longer PWV5 keeps its extra entries only in its own tag
     d->pwv4.assign(1200 * 6, 0);
     if (cols == 0) {
         for (size_t i = 0; i < 1200; ++i) d->pwv4[i * 6 + 1] = 255;
         return;
     }
+    auto clamp127 = [](double v) { return uint8_t(std::max(0.0, std::min(127.0, v))); };
     for (size_t i = 0; i < 1200; ++i) {
         size_t a = i * cols / 1200, b = std::max(a + 1, (i + 1) * cols / 1200);
         b = std::min(b, cols);
         if (a >= cols) a = cols - 1;
-        int h = 0, g = 0, bl = 0;
+        int hmax = 0;
+        double sum = 0;
         for (size_t k = a; k < b; ++k) {
-            h = std::max<int>(h, (w.pwv5[k] >> 2) & 0x1F);
-            g = std::max<int>(g, (w.pwv5[k] >> 10) & 7);
-            bl = std::max<int>(bl, (w.pwv5[k] >> 7) & 7);
+            const int h = (w.pwv5[k] >> 2) & 0x1F;
+            hmax = std::max(hmax, h);
+            sum += h;
         }
-        const int h127 = h * 127 / 31;
+        const double hmean = sum / double(b - a);
+        const uint8_t h127 = clamp127(hmax * 127.0 / 31.0);
         uint8_t* e = &d->pwv4[i * 6];
-        e[0] = uint8_t(h127);
+        e[0] = h127;
         e[1] = uint8_t(255 - h127);
-        e[2] = uint8_t(h127);
-        e[3] = uint8_t(h127);
-        e[4] = uint8_t(g * 127 / 7);
-        e[5] = uint8_t(bl * 127 / 7);
+        e[2] = clamp127(2.9 * hmax + 1.58 * hmean);
+        e[3] = clamp127(2.09 * hmax + 2.48 * hmean);
+        e[4] = clamp127(1.62 * hmax);
+        e[5] = clamp127(1.08 * hmax + 0.73 * hmean);
     }
 }
 

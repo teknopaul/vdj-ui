@@ -1,6 +1,7 @@
 #include "edit_output.h"
 
 #include "audio_probe.h"
+#include "mp3_writer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -219,106 +220,11 @@ bool writeWav(const fs::path& path, const DecodedPcm& pcm, double bpm, const Aud
 
 bool writeMp3(const fs::path& path, const DecodedPcm& pcm, int kbps, double bpm, const AudioTags& tags, std::string* err)
 {
-    struct Ctx {
-        AVFormatContext* oc = nullptr;
-        AVCodecContext* enc = nullptr;
-        AVFrame* frame = nullptr;
-        AVPacket* pkt = nullptr;
-        ~Ctx()
-        {
-            av_packet_free(&pkt);
-            av_frame_free(&frame);
-            avcodec_free_context(&enc);
-            if (oc) {
-                if (oc->pb) avio_closep(&oc->pb);
-                avformat_free_context(oc);
-            }
-        }
-    } c;
-    const std::string tmp = path.string() + ".part";
-    auto fail = [&](const std::string& m) {
-        if (err) *err = m;
-        std::error_code ec;
-        fs::remove(tmp, ec);
-        return false;
-    };
-    const AVCodec* codec = avcodec_find_encoder_by_name("libmp3lame");
-    if (!codec) return fail("this ffmpeg has no libmp3lame encoder");
-    int rc = avformat_alloc_output_context2(&c.oc, nullptr, "mp3", tmp.c_str());
-    if (rc < 0 || !c.oc) return fail("cannot set up the mp3 writer: " + avError(rc));
-    AVStream* st = avformat_new_stream(c.oc, nullptr);
-    c.enc = avcodec_alloc_context3(codec);
-    if (!st || !c.enc) return fail("out of memory");
-    AVSampleFormat fmt = codec->sample_fmts ? codec->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
-    for (const AVSampleFormat* f = codec->sample_fmts; f && *f != AV_SAMPLE_FMT_NONE; ++f)
-        if (*f == AV_SAMPLE_FMT_FLTP) fmt = *f;
-    if (fmt != AV_SAMPLE_FMT_FLTP && fmt != AV_SAMPLE_FMT_S16P && fmt != AV_SAMPLE_FMT_S32P) return fail("unsupported encoder sample format");
-    c.enc->sample_fmt = fmt;
-    c.enc->sample_rate = pcm.sampleRate;
-    c.enc->bit_rate = (int64_t)kbps * 1000;
-    av_channel_layout_default(&c.enc->ch_layout, 2);
-    c.enc->time_base = AVRational{1, pcm.sampleRate};
-    if ((rc = avcodec_open2(c.enc, codec, nullptr)) < 0) return fail("cannot open the mp3 encoder: " + avError(rc));
-    avcodec_parameters_from_context(st->codecpar, c.enc);
-    st->time_base = c.enc->time_base;
-
-    static const char* const kSkip[] = {"encoder", "bpm", "tbpm", "major_brand", "minor_version", "compatible_brands", "creation_time"};
-    for (const auto& kv : tags.tags) {
-        if (kv.second.empty() || std::find_if(std::begin(kSkip), std::end(kSkip), [&](const char* k) { return kv.first == k; }) != std::end(kSkip)) continue;
-        av_dict_set(&c.oc->metadata, kv.first.c_str(), kv.second.c_str(), 0);
-    }
-    if (bpm > 0) av_dict_set(&c.oc->metadata, "TBPM", num(std::round(bpm * 100) / 100, 2).c_str(), 0);
-
-    if ((rc = avio_open(&c.oc->pb, tmp.c_str(), AVIO_FLAG_WRITE)) < 0) return fail("cannot write " + tmp + ": " + avError(rc));
-    AVDictionary* opts = nullptr;
-    av_dict_set(&opts, "id3v2_version", "3", 0);
-    rc = avformat_write_header(c.oc, &opts);
-    av_dict_free(&opts);
-    if (rc < 0) return fail("cannot write the mp3 header: " + avError(rc));
-
-    c.frame = av_frame_alloc();
-    c.pkt = av_packet_alloc();
-    if (!c.frame || !c.pkt) return fail("out of memory");
-    const int fs_ = c.enc->frame_size > 0 ? c.enc->frame_size : 1152;
-    const size_t total = pcm.frames();
-    auto drain = [&]() -> bool {
-        for (;;) {
-            int r = avcodec_receive_packet(c.enc, c.pkt);
-            if (r == AVERROR(EAGAIN) || r == AVERROR_EOF) return true;
-            if (r < 0) return false;
-            av_packet_rescale_ts(c.pkt, c.enc->time_base, st->time_base);
-            c.pkt->stream_index = st->index;
-            r = av_interleaved_write_frame(c.oc, c.pkt);
-            if (r < 0) return false;
-        }
-    };
-    for (size_t at = 0; at < total; at += size_t(fs_)) {
-        const int n = int(std::min<size_t>(size_t(fs_), total - at));
-        av_frame_unref(c.frame);
-        c.frame->nb_samples = n;
-        c.frame->format = fmt;
-        c.frame->sample_rate = pcm.sampleRate;
-        av_channel_layout_copy(&c.frame->ch_layout, &c.enc->ch_layout);
-        c.frame->pts = (int64_t)at;
-        if (av_frame_get_buffer(c.frame, 0) < 0) return fail("out of memory");
-        for (int ch = 0; ch < 2; ++ch) {
-            for (int k = 0; k < n; ++k) {
-                const float v = std::max(-1.0f, std::min(1.0f, pcm.stereo[(at + size_t(k)) * 2 + size_t(ch)]));
-                if (fmt == AV_SAMPLE_FMT_FLTP) reinterpret_cast<float*>(c.frame->data[ch])[k] = v;
-                else if (fmt == AV_SAMPLE_FMT_S16P) reinterpret_cast<int16_t*>(c.frame->data[ch])[k] = int16_t(std::lrintf(v * 32767.0f));
-                else reinterpret_cast<int32_t*>(c.frame->data[ch])[k] = int32_t(std::llrintf(v * 2147483647.0f));
-            }
-        }
-        if (avcodec_send_frame(c.enc, c.frame) < 0 || !drain()) return fail("mp3 encoding failed");
-    }
-    avcodec_send_frame(c.enc, nullptr);
-    if (!drain()) return fail("mp3 encoding failed");
-    if ((rc = av_write_trailer(c.oc)) < 0) return fail("cannot finish the mp3: " + avError(rc));
-    avio_closep(&c.oc->pb);
-    std::error_code ec;
-    fs::rename(tmp, path, ec);
-    if (ec) return fail("cannot rename to " + path.string() + ": " + ec.message());
-    return true;
+    Mp3Writer w;
+    w.setBpm(bpm);
+    if (!w.open(path, kbps, false, tags, pcm.sampleRate, err)) return false;
+    if (!w.write(pcm.stereo.data(), pcm.frames(), err)) return false;       // the destructor removes the .part file
+    return w.close(err);
 }
 
 std::string nowIso()

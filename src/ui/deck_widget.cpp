@@ -63,8 +63,7 @@ DeckWidget::DeckWidget(int playerId, QWidget* parent)
             [this](int pid) { emit becomeMasterClicked(pid); });
     connect(controls_, &DeckControls::bpmFromMasterClicked, this,
             [this](int pid) { emit bpmFromMasterClicked(pid); });
-    connect(controls_, &DeckControls::broadcastBeatClicked, this,
-            [this](int pid, double bpm, int barPos) { emit broadcastBeatClicked(pid, bpm, barPos); });
+    connect(controls_, &DeckControls::asMasterDifflockChanged, this, &DeckWidget::asMasterDifflockChanged);
     connect(pitchSlider_, &PitchSlider::pitchChanged, this,
             [this](double pct) { emit pitchChanged(playerId_, pct); });
 

@@ -1,0 +1,87 @@
+# trakcrate-ui: the library window of vdj-ui as a strictly confined Snap (plan: .planning/plans/trakcrate-snap_PLAN.md).
+# Step 1 covers audio (audio-playback) and USB sticks (removable-media) only. No network plugs: the vdj-ui deck features stay in the deb.
+#
+# Build (from the repo root):  snapcraft --destructive-mode      (UNTESTED: snapcraft was not installed when this file was written)
+name: trakcrate-ui
+title: trakcrate
+base: core24
+adopt-info: trakcrate-ui
+summary: Organise DJ tracks and make rekordbox pendrives for Pioneer CDJ/XDJ decks
+description: |
+  The trakcrate library window: playlists, beat grids, waveforms, cue points, track editing and
+  export to rekordbox format pendrives. The library is the folder ~/trakcrate, shared with the
+  vdj-ui deb and the trakcrate command line tools.
+
+  Connect the USB interface to see pendrives:  sudo snap connect trakcrate-ui:removable-media
+grade: devel
+confinement: strict
+
+apps:
+  trakcrate-ui:
+    command: usr/bin/vdj-ui --trakcrate
+    extensions: [kde-neon-6]
+    plugs:
+      - home                # the library in the real home folder (visible files only)
+      - audio-playback      # track preview, via PulseAudio or PipeWire-pulse. The `alsa` plug is NOT needed: the library window only uses
+                            # libpulse (audio_player.cpp, audio_output.cpp). libasound is linked, but only the vdj-ui recorder and
+                            # MIDI sequencer open ALSA, and those are not reachable from `--trakcrate`.
+      - removable-media     # pendrives under /media and /run/media
+
+parts:
+  # libcdj and libvdj are not distro packages: built from the sibling libcdj tree (references/libcdj in this repo is a symlink to it).
+  # Its own `make install` writes to /usr, so build the two libraries and copy them (and the headers) by hand.
+  libcdj:
+    plugin: nil
+    source: references/libcdj
+    source-type: local
+    build-packages: [build-essential]
+    override-build: |
+      make -C "$CRAFT_PART_BUILD" target/libcdj.so target/libvdj.so
+      install -d "$CRAFT_PART_INSTALL/usr/lib" "$CRAFT_PART_INSTALL/usr/include/cdj"
+      install -m 755 "$CRAFT_PART_BUILD/target/libcdj.so" "$CRAFT_PART_INSTALL/usr/lib/libcdj.so"
+      install -m 755 "$CRAFT_PART_BUILD/target/libvdj.so" "$CRAFT_PART_INSTALL/usr/lib/libvdj.so"
+      cp -f "$CRAFT_PART_BUILD"/src/c/*.h "$CRAFT_PART_BUILD"/src/nfs/pdb.h "$CRAFT_PART_BUILD"/src/anlz/anlz.h "$CRAFT_PART_INSTALL/usr/include/cdj/"
+
+  trakcrate-ui:
+    after: [libcdj]
+    plugin: cmake
+    source: .
+    source-type: local
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DVDJ_SETCAP=OFF                  # the build must not call sudo
+      - -DVDJ_BUILD_TESTS=OFF
+      - -DCDJ_SOURCE_DIR=$CRAFT_PROJECT_DIR/parts/libcdj/src
+      - -DCMAKE_PREFIX_PATH=$CRAFT_STAGE/usr
+      - -DCMAKE_CXX_FLAGS=-I$CRAFT_STAGE/usr/include
+      - -DCMAKE_C_FLAGS=-I$CRAFT_STAGE/usr/include
+    build-packages:
+      - pkg-config
+      - qt6-base-dev
+      - libavformat-dev
+      - libavcodec-dev
+      - libavutil-dev
+      - libswresample-dev
+      - libpulse-dev
+      - libasound2-dev
+      - libsamplerate0-dev
+      - libaubio-dev
+      - librubberband-dev
+      - libsoundtouch-dev
+    stage-packages:
+      - libavformat60
+      - libavcodec60
+      - libavutil58
+      - libswresample4
+      - libpulse0
+      - libasound2t64
+      - libasound2-plugins
+      - libsamplerate0
+      - libaubio5
+      - librubberband2
+      - libsoundtouch1
+      - fonts-liberation
+    override-pull: |
+      craftctl default
+      craftctl set version="$(. ./version; echo "$VERSION")"

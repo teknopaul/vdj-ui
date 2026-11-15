@@ -29,6 +29,7 @@
 #include <QStorageInfo>
 #include <unistd.h>
 
+#include "trakcrate/real_home.h"
 #include "trakcrate/settings_sets.h"
 #include "trakcrate/usb_speed.h"
 #include <QSignalBlocker>
@@ -309,7 +310,7 @@ void TrakcrateExportDialog::selectPlaylist(const QString& name, bool on)
 
 void TrakcrateExportDialog::browse()
 {
-    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Destination folder"), dest_->text().isEmpty() ? QDir::homePath() : dest_->text());
+    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Destination folder"), dest_->text().isEmpty() ? QString::fromStdString(trakcrate::realHome().string()) : dest_->text());
     if (!dir.isEmpty()) setDestination(dir);
 }
 

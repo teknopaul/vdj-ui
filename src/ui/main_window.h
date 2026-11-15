@@ -168,7 +168,6 @@ private: // adopt the followed deck's BPM (one glide step per beat after a maste
     void startMasterSync();
     void startSyncTargetFromBar();
     void copyBpmFromMaster(int playerId);
-    void broadcastFromActiveDeck();
     int activeDeckIndex() const { return activeDeckIndex_; }
     int activeDeckId() const;
     void cycleActiveDeck();
@@ -236,6 +235,7 @@ private: // adopt the followed deck's BPM (one glide step per beat after a maste
     TrakcrateTrackEditor* tcEditor_ = nullptr;
     QDockWidget* tcEditorDock_ = nullptr;
     QAction* tcAction_ = nullptr;
+    class StudioMixWindow* mixWindow_ = nullptr;
     QAction* linkExportAction_ = nullptr;
     QMenu* exportMenu_ = nullptr;
     PendriveToolBar* pendriveBar_ = nullptr;

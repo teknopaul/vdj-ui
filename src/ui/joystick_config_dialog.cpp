@@ -19,7 +19,7 @@
 
 namespace vdj {
 
-static const char* kActions[] = { "play_pause", "sync", "master", "copy_bpm", "broadcast_beat" };
+static const char* kActions[] = { "play_pause", "sync", "master", "copy_bpm" };
 
 QList<JoystickInfo> JoystickConfigDialog::scanJoysticks()
 {

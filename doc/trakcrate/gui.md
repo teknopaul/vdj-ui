@@ -35,6 +35,15 @@ Left: folders of `track-master-copy` and the playlists (`playlists/*`). Centre: 
 - Import a real rekordbox pendrive (`import-rekordbox`) with a report dialog: counts, missing audio, conflicts.
 - Rescan when files change on disk (file system watcher, plus a Refresh button; large libraries must not be rescanned on every change event).
 
+### Where the library lives (implemented)
+
+The recommended place is `~/trakcrate`, a visible folder in the real home directory. It is the default of the command line tools, and the library window opens it when nothing is remembered and the folder exists. File dialogs start there too.
+
+- Everything that has to be shared is inside the library (tracks, playlists, `user-settings/`, `stretchers/`, the lock), so the deb, a Snap and the command line tools can all use one library. The lock stops two of them editing at once.
+- The window configuration and the stretch cache are not shared. They stay per install.
+- The Snap build is described in [snap.md](snap.md).
+- A Snap sees a private `$HOME`. The real one comes from `$SNAP_REAL_HOME` (see `src/trakcrate/real_home.h`), and the Snap `home` plug only covers visible folders, so do not put the library in a hidden folder.
+
 ### Track table
 - **Comment (implemented):** a Comment column (after Album): double click it, or press F2, to edit the text; Enter saves it to the track's `meta.txt` (`comment`), which the exporter writes to the drive's database, where the decks show it when the track is selected. The track editor has the same field, labelled, for the loaded track.
 - **Rating (implemented):** a Rating column and the details pane always show five stars, solid for the rating and hollow for the rest ("★★☆☆☆"; gold and grey, dark theme only). Clicking a star in the table sets it, the same star again clears it. The edit rewrites the track's `meta.txt` (`rating`, 0 to 5) and marks `meta` as `edited` in `source.txt`, in a folder or a playlist alike (a playlist row is a link to the same track folder). Sorting the column sorts by stars. These table edits are not on the editor's undo stack.
@@ -141,3 +150,7 @@ A mini player sits under the track list (`src/ui/trakcrate_preview_player.*`). I
 - **Right click:** Move to start, Move up, Move down, Move to end (on the selected rows).
 - **Virtual pendrives:** drag a list within its pendrive in the tree to put the lists in order (dropping on the pendrive itself puts it last).
 - The order is written at once (`NNN_` prefixes, `Library::moveEntries`); there is no "clear sorting" because the order is never lost.
+
+## Studio mix
+
+File > Studio mix... opens the window that turns a playlist into one mixed mp3: see [studio-mix.md](studio-mix.md).

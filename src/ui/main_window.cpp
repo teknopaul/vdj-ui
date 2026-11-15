@@ -1,4 +1,5 @@
 #include "main_window.h"
+#include "studio_mix_window.h"
 #include "audio/audio_player.h"
 #include "deck_area.h"
 #include "deck_widget.h"
@@ -117,6 +118,8 @@ MainWindow::MainWindow(QWidget* parent)
             clock_->setBpm(128.0);
     }
     network_ = new NetworkManager(this);
+    // beat packets for the real decks, on the sequencer's beat (ALSA echo events; called from the clock thread)
+    clock_->setBeatCallback([this](double bpm, int barPos) { network_->broadcastBeat(bpm, barPos); });
     // time every deck beat against the sequencer's beat as the packet arrives (for difflock)
     network_->setBeatProbe([this](double* ms) { return clock_ && clock_->beatOffsetMs(ms); });
     network_->setTickBeatProbe([this](double* ms) { return clock_ && clock_->beatOffsetTickMs(ms); });
@@ -524,11 +527,9 @@ void MainWindow::connectDeckSignals()
     QObject::connect(deckArea_, &DeckArea::bpmFromMasterClicked, this, [this](int pid) {
         copyBpmFromMaster(pid);
     });
-    QObject::connect(deckArea_, &DeckArea::broadcastBeatClicked, this,
-                     [this](int pid, double bpm, int barPos) {
-        network_->broadcastBeat(bpm, barPos);
-        auto* deck = deckAt(pid);
-        if (deck) deck->setBarPos(barPos);
+    QObject::connect(deckArea_, &DeckArea::asMasterDifflockChanged, this, [this](int ms) {
+        clock_->setAsMasterOffsetMs(ms);
+        config_->saveValue(QStringLiteral("dj"), QStringLiteral("as_master_difflock_ms"), QString::number(ms));
     });
     QObject::connect(deckArea_, &DeckArea::deckClicked, this, [this](int pid) {
         for (int i = 0; i < deckArea_->deckCount(); ++i) {
@@ -685,6 +686,22 @@ void MainWindow::setupMenus()
     tcAction_->setCheckable(true);
     tcAction_->setToolTip("Import audio folders into the trakcrate library and prepare pendrives");
     connect(tcAction_, &QAction::toggled, this, [this](bool on) { trakcrateDock()->setVisible(on); });
+
+    QAction* studioMixAction = view->addAction("Studio &mix...");
+    studioMixAction->setToolTip("Prepare a whole playlist of the trakcrate library as one mixed mp3");
+    connect(view, &QMenu::aboutToShow, this, [this, studioMixAction] {
+        const bool ok = tcPanel_ && tcPanel_->hasLibrary();
+        studioMixAction->setEnabled(ok);
+        studioMixAction->setToolTip(ok ? "Prepare a whole playlist of the trakcrate library as one mixed mp3" : "Open a trakcrate library first");
+    });
+    connect(studioMixAction, &QAction::triggered, this, [this] {
+        if (!mixWindow_)
+            mixWindow_ = new StudioMixWindow([this]() -> const trakcrate::Library* { return tcPanel_ && tcPanel_->hasLibrary() ? &tcPanel_->library() : nullptr; }, config_, this);
+        mixWindow_->setWindowFlag(Qt::Window, true);
+        mixWindow_->show();
+        mixWindow_->raise();
+        mixWindow_->activateWindow();
+    });
 
     recordAction_ = view->addAction("&Recording Panel");
     recordAction_->setIcon(glyphIcon(QStringLiteral("🔴")));
@@ -1530,6 +1547,10 @@ void MainWindow::setupDemoDecks()
         connect(bar, &DiffLockBar::targetChanged, this, [this](int ms) { difflock_.setTargetMs(ms); });
         connect(bar, &DiffLockBar::followMasterToggled, this, &MainWindow::setDiffLockFollowMaster);
         connect(bar, &DiffLockBar::calculatedBpmToggled, this, &MainWindow::setCalculatedBpm);
+        bool asMasterOk = false;
+        const int asMasterMs = config_->loadValue(QStringLiteral("dj"), QStringLiteral("as_master_difflock_ms")).toInt(&asMasterOk);
+        if (asMasterOk && master->controls()) master->controls()->setAsMasterDifflockMs(asMasterMs);
+        clock_->setAsMasterOffsetMs(master->controls() ? master->controls()->asMasterDifflockMs() : 0);
         calculatedBpm_ = config_->loadValue(QStringLiteral("dj"), QStringLiteral("sync_calculated_bpm")) == QLatin1String("1");
         bar->setCalculatedBpm(calculatedBpm_);
         connect(bar, &DiffLockBar::offClicked, this, &MainWindow::diffLockOff);
@@ -2259,22 +2280,13 @@ void MainWindow::updateSequencerPlayhead()
         d->beatGrid()->setSequencerBeats(beats);
         if (d->controls())
             d->controls()->setJumpsEnabled(clock_ && clock_->running());
-        // the bar position the VDJ sends on the link (broadcastBeat reads it from the controls) is the sequencer's
+        // the bar position the VDJ sends on the link (the beat packets carry it) is the sequencer's
         if (seqBarPos > 0 && d->controls() && d->controls()->barPos() != seqBarPos)
             d->setBarPos(seqBarPos);
         if (refreshFollowers && d->diffLockBar())
             d->diffLockBar()->setSequencerFollowers(followerNames_, clock_ && clock_->running());
         if (refreshFollowers)
             d->setSequencerBpm(clock_ ? clock_->effectiveBpm() : 0.0);
-    }
-}
-
-void MainWindow::broadcastFromActiveDeck()
-{
-    auto* deck = deckArea_->deckAt(activeDeckIndex_);
-    if (!deck) return;
-    if (deck->controls()) {
-        network_->broadcastBeat(deck->controls()->bpm(), deck->controls()->barPos());
     }
 }
 
@@ -2310,6 +2322,7 @@ void MainWindow::shutdown()
         joystick_->stop();
     if (clock_) {
         clock_->stop();
+        clock_->setBeatCallback(nullptr);
     }
     // Graceful shutdown: stop timers, disconnect network (stops managed
     // threads and closes sockets) and release any active NFS mounts.
@@ -2380,6 +2393,9 @@ void MainWindow::updateDeckOverlays(int pid, double bpm, int pitch, int flags,
           << QStringLiteral("pitch=%1").arg(pitch)
           << QStringLiteral("flags=0x%1").arg(flags, 0, 16)
           << QStringLiteral("master=%1 active=%2").arg(masterState).arg(active);
+    if (clock_ && isVdjRow(deck))
+        lines << QStringLiteral("master beat: %1 sent, last err %2 us, offset %3 ms")
+                     .arg(qulonglong(clock_->beatsSent())).arg(clock_->lastSendErrorNs() / 1000).arg(clock_->asMasterOffsetMs());
     deck->setDebugOverlay(lines);
     deck->setDebugMode(true);
 }

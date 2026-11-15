@@ -42,8 +42,18 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
     becomeMaster_ = new QPushButton("Master", this);
     copyBpm_ = new QPushButton("Copy BPM", this);
     copyBpm_->setToolTip(QStringLiteral("Copy the master's BPM to the VDJ. The BPM only: the beat does not move (Sync does both)"));
-    broadcastBeat_ = new QPushButton("Send Beat", this);
-    broadcastBeat_->setToolTip(QStringLiteral("Send this deck's BPM and bar position on the link"));
+    // Beat packets for the real decks go out by themselves, on the ALSA clock's beat; this is how far from that beat.
+    asMasterLabel_ = new QLabel("As master", this);
+    asMasterDiff_ = new QSpinBox(this);
+    asMasterDiff_->setRange(-500, 500);
+    asMasterDiff_->setSingleStep(1);
+    asMasterDiff_->setValue(0);
+    asMasterDiff_->setSuffix(QStringLiteral(" ms"));
+    const QString asMasterTip = QStringLiteral(
+        "as_master_difflock: how far the beat packets we send to the real decks are from our MIDI clock beat, in ms. "
+        "Positive: the packet is sent after the MIDI beat. Negative: before. Applies while real decks follow the VDJ.");
+    asMasterLabel_->setToolTip(asMasterTip);
+    asMasterDiff_->setToolTip(asMasterTip);
 
     auto* bpmLabel = new QLabel("BPM", this);
     bpmSpin_ = new QDoubleSpinBox(this);
@@ -82,7 +92,8 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
     setSyncState(SyncState::Off);
     layout->addWidget(becomeMaster_);
     layout->addWidget(copyBpm_);
-    layout->addWidget(broadcastBeat_);
+    layout->addWidget(asMasterLabel_);
+    layout->addWidget(asMasterDiff_);
     layout->addSpacing(8);
     layout->addWidget(bpmLabel);
     layout->addWidget(bpmSpin_);
@@ -113,13 +124,22 @@ DeckControls::DeckControls(int playerId, QWidget* parent)
     connect(copyBpm_, &QPushButton::clicked, this, [this]() {
         emit bpmFromMasterClicked(playerId_);
     });
-    connect(broadcastBeat_, &QPushButton::clicked, this, [this]() {
-        emit broadcastBeatClicked(playerId_, bpmSpin_->value(), barPosSpin_->value());
-    });
+    connect(asMasterDiff_, QOverload<int>::of(&QSpinBox::valueChanged), this, &DeckControls::asMasterDifflockChanged);
     connect(bpmSpin_, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
             [this](double v) {
         emit setBpmClicked(playerId_, v);
     });
+}
+
+int DeckControls::asMasterDifflockMs() const
+{
+    return asMasterDiff_->value();
+}
+
+void DeckControls::setAsMasterDifflockMs(int ms)
+{
+    QSignalBlocker block(asMasterDiff_);
+    asMasterDiff_->setValue(ms);
 }
 
 void DeckControls::setBpm(double bpm)
@@ -186,7 +206,8 @@ void DeckControls::setRemote(bool remote)
     sync_->setVisible(true);   // remote decks: Sync difflocks the VDJ sequencer to that deck
     setSyncState(syncState_);                        // refreshes the text and the tip for this kind of row
     becomeMaster_->setVisible(!remote);
-    broadcastBeat_->setVisible(!remote);
+    asMasterLabel_->setVisible(!remote);
+    asMasterDiff_->setVisible(!remote);
     bpmSpin_->setVisible(!remote);
     barPosSpin_->setVisible(!remote);
     bpmValueLabel_->setVisible(remote);

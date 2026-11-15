@@ -1181,6 +1181,30 @@ audio/sample_stretch.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/sample_stretch.cpp.s
 .PHONY : audio/sample_stretch.cpp.s
 
+audio/stream_player.o: audio/stream_player.cpp.o
+.PHONY : audio/stream_player.o
+
+# target to build an object file
+audio/stream_player.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/stream_player.cpp.o
+.PHONY : audio/stream_player.cpp.o
+
+audio/stream_player.i: audio/stream_player.cpp.i
+.PHONY : audio/stream_player.i
+
+# target to preprocess a source file
+audio/stream_player.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/stream_player.cpp.i
+.PHONY : audio/stream_player.cpp.i
+
+audio/stream_player.s: audio/stream_player.cpp.s
+.PHONY : audio/stream_player.s
+
+# target to generate assembly for a file
+audio/stream_player.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/audio/stream_player.cpp.s
+.PHONY : audio/stream_player.cpp.s
+
 audio/swing.o: audio/swing.cpp.o
 .PHONY : audio/swing.o
 
@@ -1852,6 +1876,30 @@ midi/joystick_seq_bridge.s: midi/joystick_seq_bridge.cpp.s
 midi/joystick_seq_bridge.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/joystick_seq_bridge.cpp.s
 .PHONY : midi/joystick_seq_bridge.cpp.s
+
+midi/master_beat_math.o: midi/master_beat_math.cpp.o
+.PHONY : midi/master_beat_math.o
+
+# target to build an object file
+midi/master_beat_math.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/master_beat_math.cpp.o
+.PHONY : midi/master_beat_math.cpp.o
+
+midi/master_beat_math.i: midi/master_beat_math.cpp.i
+.PHONY : midi/master_beat_math.i
+
+# target to preprocess a source file
+midi/master_beat_math.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/master_beat_math.cpp.i
+.PHONY : midi/master_beat_math.cpp.i
+
+midi/master_beat_math.s: midi/master_beat_math.cpp.s
+.PHONY : midi/master_beat_math.s
+
+# target to generate assembly for a file
+midi/master_beat_math.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/midi/master_beat_math.cpp.s
+.PHONY : midi/master_beat_math.cpp.s
 
 midi/midi_map_input.o: midi/midi_map_input.cpp.o
 .PHONY : midi/midi_map_input.o
@@ -2621,6 +2669,126 @@ trakcrate/default_files.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/default_files.cpp.s
 .PHONY : trakcrate/default_files.cpp.s
 
+trakcrate/edit_job.o: trakcrate/edit_job.cpp.o
+.PHONY : trakcrate/edit_job.o
+
+# target to build an object file
+trakcrate/edit_job.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_job.cpp.o
+.PHONY : trakcrate/edit_job.cpp.o
+
+trakcrate/edit_job.i: trakcrate/edit_job.cpp.i
+.PHONY : trakcrate/edit_job.i
+
+# target to preprocess a source file
+trakcrate/edit_job.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_job.cpp.i
+.PHONY : trakcrate/edit_job.cpp.i
+
+trakcrate/edit_job.s: trakcrate/edit_job.cpp.s
+.PHONY : trakcrate/edit_job.s
+
+# target to generate assembly for a file
+trakcrate/edit_job.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_job.cpp.s
+.PHONY : trakcrate/edit_job.cpp.s
+
+trakcrate/edit_library.o: trakcrate/edit_library.cpp.o
+.PHONY : trakcrate/edit_library.o
+
+# target to build an object file
+trakcrate/edit_library.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_library.cpp.o
+.PHONY : trakcrate/edit_library.cpp.o
+
+trakcrate/edit_library.i: trakcrate/edit_library.cpp.i
+.PHONY : trakcrate/edit_library.i
+
+# target to preprocess a source file
+trakcrate/edit_library.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_library.cpp.i
+.PHONY : trakcrate/edit_library.cpp.i
+
+trakcrate/edit_library.s: trakcrate/edit_library.cpp.s
+.PHONY : trakcrate/edit_library.s
+
+# target to generate assembly for a file
+trakcrate/edit_library.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_library.cpp.s
+.PHONY : trakcrate/edit_library.cpp.s
+
+trakcrate/edit_output.o: trakcrate/edit_output.cpp.o
+.PHONY : trakcrate/edit_output.o
+
+# target to build an object file
+trakcrate/edit_output.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_output.cpp.o
+.PHONY : trakcrate/edit_output.cpp.o
+
+trakcrate/edit_output.i: trakcrate/edit_output.cpp.i
+.PHONY : trakcrate/edit_output.i
+
+# target to preprocess a source file
+trakcrate/edit_output.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_output.cpp.i
+.PHONY : trakcrate/edit_output.cpp.i
+
+trakcrate/edit_output.s: trakcrate/edit_output.cpp.s
+.PHONY : trakcrate/edit_output.s
+
+# target to generate assembly for a file
+trakcrate/edit_output.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_output.cpp.s
+.PHONY : trakcrate/edit_output.cpp.s
+
+trakcrate/edit_plan.o: trakcrate/edit_plan.cpp.o
+.PHONY : trakcrate/edit_plan.o
+
+# target to build an object file
+trakcrate/edit_plan.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_plan.cpp.o
+.PHONY : trakcrate/edit_plan.cpp.o
+
+trakcrate/edit_plan.i: trakcrate/edit_plan.cpp.i
+.PHONY : trakcrate/edit_plan.i
+
+# target to preprocess a source file
+trakcrate/edit_plan.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_plan.cpp.i
+.PHONY : trakcrate/edit_plan.cpp.i
+
+trakcrate/edit_plan.s: trakcrate/edit_plan.cpp.s
+.PHONY : trakcrate/edit_plan.s
+
+# target to generate assembly for a file
+trakcrate/edit_plan.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_plan.cpp.s
+.PHONY : trakcrate/edit_plan.cpp.s
+
+trakcrate/edit_render.o: trakcrate/edit_render.cpp.o
+.PHONY : trakcrate/edit_render.o
+
+# target to build an object file
+trakcrate/edit_render.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_render.cpp.o
+.PHONY : trakcrate/edit_render.cpp.o
+
+trakcrate/edit_render.i: trakcrate/edit_render.cpp.i
+.PHONY : trakcrate/edit_render.i
+
+# target to preprocess a source file
+trakcrate/edit_render.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_render.cpp.i
+.PHONY : trakcrate/edit_render.cpp.i
+
+trakcrate/edit_render.s: trakcrate/edit_render.cpp.s
+.PHONY : trakcrate/edit_render.s
+
+# target to generate assembly for a file
+trakcrate/edit_render.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/edit_render.cpp.s
+.PHONY : trakcrate/edit_render.cpp.s
+
 trakcrate/exporter.o: trakcrate/exporter.cpp.o
 .PHONY : trakcrate/exporter.o
 
@@ -2765,6 +2933,150 @@ trakcrate/library.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/library.cpp.s
 .PHONY : trakcrate/library.cpp.s
 
+trakcrate/mix_compressor.o: trakcrate/mix_compressor.cpp.o
+.PHONY : trakcrate/mix_compressor.o
+
+# target to build an object file
+trakcrate/mix_compressor.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_compressor.cpp.o
+.PHONY : trakcrate/mix_compressor.cpp.o
+
+trakcrate/mix_compressor.i: trakcrate/mix_compressor.cpp.i
+.PHONY : trakcrate/mix_compressor.i
+
+# target to preprocess a source file
+trakcrate/mix_compressor.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_compressor.cpp.i
+.PHONY : trakcrate/mix_compressor.cpp.i
+
+trakcrate/mix_compressor.s: trakcrate/mix_compressor.cpp.s
+.PHONY : trakcrate/mix_compressor.s
+
+# target to generate assembly for a file
+trakcrate/mix_compressor.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_compressor.cpp.s
+.PHONY : trakcrate/mix_compressor.cpp.s
+
+trakcrate/mix_engine.o: trakcrate/mix_engine.cpp.o
+.PHONY : trakcrate/mix_engine.o
+
+# target to build an object file
+trakcrate/mix_engine.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_engine.cpp.o
+.PHONY : trakcrate/mix_engine.cpp.o
+
+trakcrate/mix_engine.i: trakcrate/mix_engine.cpp.i
+.PHONY : trakcrate/mix_engine.i
+
+# target to preprocess a source file
+trakcrate/mix_engine.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_engine.cpp.i
+.PHONY : trakcrate/mix_engine.cpp.i
+
+trakcrate/mix_engine.s: trakcrate/mix_engine.cpp.s
+.PHONY : trakcrate/mix_engine.s
+
+# target to generate assembly for a file
+trakcrate/mix_engine.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_engine.cpp.s
+.PHONY : trakcrate/mix_engine.cpp.s
+
+trakcrate/mix_eq.o: trakcrate/mix_eq.cpp.o
+.PHONY : trakcrate/mix_eq.o
+
+# target to build an object file
+trakcrate/mix_eq.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_eq.cpp.o
+.PHONY : trakcrate/mix_eq.cpp.o
+
+trakcrate/mix_eq.i: trakcrate/mix_eq.cpp.i
+.PHONY : trakcrate/mix_eq.i
+
+# target to preprocess a source file
+trakcrate/mix_eq.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_eq.cpp.i
+.PHONY : trakcrate/mix_eq.cpp.i
+
+trakcrate/mix_eq.s: trakcrate/mix_eq.cpp.s
+.PHONY : trakcrate/mix_eq.s
+
+# target to generate assembly for a file
+trakcrate/mix_eq.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_eq.cpp.s
+.PHONY : trakcrate/mix_eq.cpp.s
+
+trakcrate/mix_file.o: trakcrate/mix_file.cpp.o
+.PHONY : trakcrate/mix_file.o
+
+# target to build an object file
+trakcrate/mix_file.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_file.cpp.o
+.PHONY : trakcrate/mix_file.cpp.o
+
+trakcrate/mix_file.i: trakcrate/mix_file.cpp.i
+.PHONY : trakcrate/mix_file.i
+
+# target to preprocess a source file
+trakcrate/mix_file.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_file.cpp.i
+.PHONY : trakcrate/mix_file.cpp.i
+
+trakcrate/mix_file.s: trakcrate/mix_file.cpp.s
+.PHONY : trakcrate/mix_file.s
+
+# target to generate assembly for a file
+trakcrate/mix_file.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_file.cpp.s
+.PHONY : trakcrate/mix_file.cpp.s
+
+trakcrate/mix_model.o: trakcrate/mix_model.cpp.o
+.PHONY : trakcrate/mix_model.o
+
+# target to build an object file
+trakcrate/mix_model.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_model.cpp.o
+.PHONY : trakcrate/mix_model.cpp.o
+
+trakcrate/mix_model.i: trakcrate/mix_model.cpp.i
+.PHONY : trakcrate/mix_model.i
+
+# target to preprocess a source file
+trakcrate/mix_model.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_model.cpp.i
+.PHONY : trakcrate/mix_model.cpp.i
+
+trakcrate/mix_model.s: trakcrate/mix_model.cpp.s
+.PHONY : trakcrate/mix_model.s
+
+# target to generate assembly for a file
+trakcrate/mix_model.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_model.cpp.s
+.PHONY : trakcrate/mix_model.cpp.s
+
+trakcrate/mix_render.o: trakcrate/mix_render.cpp.o
+.PHONY : trakcrate/mix_render.o
+
+# target to build an object file
+trakcrate/mix_render.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_render.cpp.o
+.PHONY : trakcrate/mix_render.cpp.o
+
+trakcrate/mix_render.i: trakcrate/mix_render.cpp.i
+.PHONY : trakcrate/mix_render.i
+
+# target to preprocess a source file
+trakcrate/mix_render.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_render.cpp.i
+.PHONY : trakcrate/mix_render.cpp.i
+
+trakcrate/mix_render.s: trakcrate/mix_render.cpp.s
+.PHONY : trakcrate/mix_render.s
+
+# target to generate assembly for a file
+trakcrate/mix_render.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mix_render.cpp.s
+.PHONY : trakcrate/mix_render.cpp.s
+
 trakcrate/mp3_index.o: trakcrate/mp3_index.cpp.o
 .PHONY : trakcrate/mp3_index.o
 
@@ -2788,6 +3100,30 @@ trakcrate/mp3_index.s: trakcrate/mp3_index.cpp.s
 trakcrate/mp3_index.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mp3_index.cpp.s
 .PHONY : trakcrate/mp3_index.cpp.s
+
+trakcrate/mp3_writer.o: trakcrate/mp3_writer.cpp.o
+.PHONY : trakcrate/mp3_writer.o
+
+# target to build an object file
+trakcrate/mp3_writer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mp3_writer.cpp.o
+.PHONY : trakcrate/mp3_writer.cpp.o
+
+trakcrate/mp3_writer.i: trakcrate/mp3_writer.cpp.i
+.PHONY : trakcrate/mp3_writer.i
+
+# target to preprocess a source file
+trakcrate/mp3_writer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mp3_writer.cpp.i
+.PHONY : trakcrate/mp3_writer.cpp.i
+
+trakcrate/mp3_writer.s: trakcrate/mp3_writer.cpp.s
+.PHONY : trakcrate/mp3_writer.s
+
+# target to generate assembly for a file
+trakcrate/mp3_writer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/mp3_writer.cpp.s
+.PHONY : trakcrate/mp3_writer.cpp.s
 
 trakcrate/natsort.o: trakcrate/natsort.cpp.o
 .PHONY : trakcrate/natsort.o
@@ -3077,6 +3413,126 @@ trakcrate/sha256.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/sha256.cpp.s
 .PHONY : trakcrate/sha256.cpp.s
 
+trakcrate/stretch_cache.o: trakcrate/stretch_cache.cpp.o
+.PHONY : trakcrate/stretch_cache.o
+
+# target to build an object file
+trakcrate/stretch_cache.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_cache.cpp.o
+.PHONY : trakcrate/stretch_cache.cpp.o
+
+trakcrate/stretch_cache.i: trakcrate/stretch_cache.cpp.i
+.PHONY : trakcrate/stretch_cache.i
+
+# target to preprocess a source file
+trakcrate/stretch_cache.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_cache.cpp.i
+.PHONY : trakcrate/stretch_cache.cpp.i
+
+trakcrate/stretch_cache.s: trakcrate/stretch_cache.cpp.s
+.PHONY : trakcrate/stretch_cache.s
+
+# target to generate assembly for a file
+trakcrate/stretch_cache.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_cache.cpp.s
+.PHONY : trakcrate/stretch_cache.cpp.s
+
+trakcrate/stretch_engine.o: trakcrate/stretch_engine.cpp.o
+.PHONY : trakcrate/stretch_engine.o
+
+# target to build an object file
+trakcrate/stretch_engine.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_engine.cpp.o
+.PHONY : trakcrate/stretch_engine.cpp.o
+
+trakcrate/stretch_engine.i: trakcrate/stretch_engine.cpp.i
+.PHONY : trakcrate/stretch_engine.i
+
+# target to preprocess a source file
+trakcrate/stretch_engine.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_engine.cpp.i
+.PHONY : trakcrate/stretch_engine.cpp.i
+
+trakcrate/stretch_engine.s: trakcrate/stretch_engine.cpp.s
+.PHONY : trakcrate/stretch_engine.s
+
+# target to generate assembly for a file
+trakcrate/stretch_engine.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_engine.cpp.s
+.PHONY : trakcrate/stretch_engine.cpp.s
+
+trakcrate/stretch_engines.o: trakcrate/stretch_engines.cpp.o
+.PHONY : trakcrate/stretch_engines.o
+
+# target to build an object file
+trakcrate/stretch_engines.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_engines.cpp.o
+.PHONY : trakcrate/stretch_engines.cpp.o
+
+trakcrate/stretch_engines.i: trakcrate/stretch_engines.cpp.i
+.PHONY : trakcrate/stretch_engines.i
+
+# target to preprocess a source file
+trakcrate/stretch_engines.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_engines.cpp.i
+.PHONY : trakcrate/stretch_engines.cpp.i
+
+trakcrate/stretch_engines.s: trakcrate/stretch_engines.cpp.s
+.PHONY : trakcrate/stretch_engines.s
+
+# target to generate assembly for a file
+trakcrate/stretch_engines.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_engines.cpp.s
+.PHONY : trakcrate/stretch_engines.cpp.s
+
+trakcrate/stretch_external.o: trakcrate/stretch_external.cpp.o
+.PHONY : trakcrate/stretch_external.o
+
+# target to build an object file
+trakcrate/stretch_external.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_external.cpp.o
+.PHONY : trakcrate/stretch_external.cpp.o
+
+trakcrate/stretch_external.i: trakcrate/stretch_external.cpp.i
+.PHONY : trakcrate/stretch_external.i
+
+# target to preprocess a source file
+trakcrate/stretch_external.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_external.cpp.i
+.PHONY : trakcrate/stretch_external.cpp.i
+
+trakcrate/stretch_external.s: trakcrate/stretch_external.cpp.s
+.PHONY : trakcrate/stretch_external.s
+
+# target to generate assembly for a file
+trakcrate/stretch_external.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_external.cpp.s
+.PHONY : trakcrate/stretch_external.cpp.s
+
+trakcrate/stretch_probe.o: trakcrate/stretch_probe.cpp.o
+.PHONY : trakcrate/stretch_probe.o
+
+# target to build an object file
+trakcrate/stretch_probe.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_probe.cpp.o
+.PHONY : trakcrate/stretch_probe.cpp.o
+
+trakcrate/stretch_probe.i: trakcrate/stretch_probe.cpp.i
+.PHONY : trakcrate/stretch_probe.i
+
+# target to preprocess a source file
+trakcrate/stretch_probe.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_probe.cpp.i
+.PHONY : trakcrate/stretch_probe.cpp.i
+
+trakcrate/stretch_probe.s: trakcrate/stretch_probe.cpp.s
+.PHONY : trakcrate/stretch_probe.s
+
+# target to generate assembly for a file
+trakcrate/stretch_probe.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/stretch_probe.cpp.s
+.PHONY : trakcrate/stretch_probe.cpp.s
+
 trakcrate/track.o: trakcrate/track.cpp.o
 .PHONY : trakcrate/track.o
 
@@ -3124,6 +3580,30 @@ trakcrate/usb_speed.s: trakcrate/usb_speed.cpp.s
 trakcrate/usb_speed.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/usb_speed.cpp.s
 .PHONY : trakcrate/usb_speed.cpp.s
+
+trakcrate/xml_lite.o: trakcrate/xml_lite.cpp.o
+.PHONY : trakcrate/xml_lite.o
+
+# target to build an object file
+trakcrate/xml_lite.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/xml_lite.cpp.o
+.PHONY : trakcrate/xml_lite.cpp.o
+
+trakcrate/xml_lite.i: trakcrate/xml_lite.cpp.i
+.PHONY : trakcrate/xml_lite.i
+
+# target to preprocess a source file
+trakcrate/xml_lite.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/xml_lite.cpp.i
+.PHONY : trakcrate/xml_lite.cpp.i
+
+trakcrate/xml_lite.s: trakcrate/xml_lite.cpp.s
+.PHONY : trakcrate/xml_lite.s
+
+# target to generate assembly for a file
+trakcrate/xml_lite.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-trakcrate.dir/build.make src/CMakeFiles/vdj-trakcrate.dir/trakcrate/xml_lite.cpp.s
+.PHONY : trakcrate/xml_lite.cpp.s
 
 ui/artwork_launcher.o: ui/artwork_launcher.cpp.o
 .PHONY : ui/artwork_launcher.o
@@ -3629,6 +4109,30 @@ ui/drum_voice_selector.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/drum_voice_selector.cpp.s
 .PHONY : ui/drum_voice_selector.cpp.s
 
+ui/edit_prefs.o: ui/edit_prefs.cpp.o
+.PHONY : ui/edit_prefs.o
+
+# target to build an object file
+ui/edit_prefs.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/edit_prefs.cpp.o
+.PHONY : ui/edit_prefs.cpp.o
+
+ui/edit_prefs.i: ui/edit_prefs.cpp.i
+.PHONY : ui/edit_prefs.i
+
+# target to preprocess a source file
+ui/edit_prefs.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/edit_prefs.cpp.i
+.PHONY : ui/edit_prefs.cpp.i
+
+ui/edit_prefs.s: ui/edit_prefs.cpp.s
+.PHONY : ui/edit_prefs.s
+
+# target to generate assembly for a file
+ui/edit_prefs.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/edit_prefs.cpp.s
+.PHONY : ui/edit_prefs.cpp.s
+
 ui/hud_window.o: ui/hud_window.cpp.o
 .PHONY : ui/hud_window.o
 
@@ -3796,6 +4300,198 @@ ui/midi_monitor_dialog.s: ui/midi_monitor_dialog.cpp.s
 ui/midi_monitor_dialog.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/midi_monitor_dialog.cpp.s
 .PHONY : ui/midi_monitor_dialog.cpp.s
+
+ui/mix_canvas.o: ui/mix_canvas.cpp.o
+.PHONY : ui/mix_canvas.o
+
+# target to build an object file
+ui/mix_canvas.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_canvas.cpp.o
+.PHONY : ui/mix_canvas.cpp.o
+
+ui/mix_canvas.i: ui/mix_canvas.cpp.i
+.PHONY : ui/mix_canvas.i
+
+# target to preprocess a source file
+ui/mix_canvas.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_canvas.cpp.i
+.PHONY : ui/mix_canvas.cpp.i
+
+ui/mix_canvas.s: ui/mix_canvas.cpp.s
+.PHONY : ui/mix_canvas.s
+
+# target to generate assembly for a file
+ui/mix_canvas.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_canvas.cpp.s
+.PHONY : ui/mix_canvas.cpp.s
+
+ui/mix_filters.o: ui/mix_filters.cpp.o
+.PHONY : ui/mix_filters.o
+
+# target to build an object file
+ui/mix_filters.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_filters.cpp.o
+.PHONY : ui/mix_filters.cpp.o
+
+ui/mix_filters.i: ui/mix_filters.cpp.i
+.PHONY : ui/mix_filters.i
+
+# target to preprocess a source file
+ui/mix_filters.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_filters.cpp.i
+.PHONY : ui/mix_filters.cpp.i
+
+ui/mix_filters.s: ui/mix_filters.cpp.s
+.PHONY : ui/mix_filters.s
+
+# target to generate assembly for a file
+ui/mix_filters.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_filters.cpp.s
+.PHONY : ui/mix_filters.cpp.s
+
+ui/mix_filters_dialog.o: ui/mix_filters_dialog.cpp.o
+.PHONY : ui/mix_filters_dialog.o
+
+# target to build an object file
+ui/mix_filters_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_filters_dialog.cpp.o
+.PHONY : ui/mix_filters_dialog.cpp.o
+
+ui/mix_filters_dialog.i: ui/mix_filters_dialog.cpp.i
+.PHONY : ui/mix_filters_dialog.i
+
+# target to preprocess a source file
+ui/mix_filters_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_filters_dialog.cpp.i
+.PHONY : ui/mix_filters_dialog.cpp.i
+
+ui/mix_filters_dialog.s: ui/mix_filters_dialog.cpp.s
+.PHONY : ui/mix_filters_dialog.s
+
+# target to generate assembly for a file
+ui/mix_filters_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_filters_dialog.cpp.s
+.PHONY : ui/mix_filters_dialog.cpp.s
+
+ui/mix_previewer.o: ui/mix_previewer.cpp.o
+.PHONY : ui/mix_previewer.o
+
+# target to build an object file
+ui/mix_previewer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_previewer.cpp.o
+.PHONY : ui/mix_previewer.cpp.o
+
+ui/mix_previewer.i: ui/mix_previewer.cpp.i
+.PHONY : ui/mix_previewer.i
+
+# target to preprocess a source file
+ui/mix_previewer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_previewer.cpp.i
+.PHONY : ui/mix_previewer.cpp.i
+
+ui/mix_previewer.s: ui/mix_previewer.cpp.s
+.PHONY : ui/mix_previewer.s
+
+# target to generate assembly for a file
+ui/mix_previewer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_previewer.cpp.s
+.PHONY : ui/mix_previewer.cpp.s
+
+ui/mix_render_dialog.o: ui/mix_render_dialog.cpp.o
+.PHONY : ui/mix_render_dialog.o
+
+# target to build an object file
+ui/mix_render_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_render_dialog.cpp.o
+.PHONY : ui/mix_render_dialog.cpp.o
+
+ui/mix_render_dialog.i: ui/mix_render_dialog.cpp.i
+.PHONY : ui/mix_render_dialog.i
+
+# target to preprocess a source file
+ui/mix_render_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_render_dialog.cpp.i
+.PHONY : ui/mix_render_dialog.cpp.i
+
+ui/mix_render_dialog.s: ui/mix_render_dialog.cpp.s
+.PHONY : ui/mix_render_dialog.s
+
+# target to generate assembly for a file
+ui/mix_render_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_render_dialog.cpp.s
+.PHONY : ui/mix_render_dialog.cpp.s
+
+ui/mix_stretch_dock.o: ui/mix_stretch_dock.cpp.o
+.PHONY : ui/mix_stretch_dock.o
+
+# target to build an object file
+ui/mix_stretch_dock.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_stretch_dock.cpp.o
+.PHONY : ui/mix_stretch_dock.cpp.o
+
+ui/mix_stretch_dock.i: ui/mix_stretch_dock.cpp.i
+.PHONY : ui/mix_stretch_dock.i
+
+# target to preprocess a source file
+ui/mix_stretch_dock.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_stretch_dock.cpp.i
+.PHONY : ui/mix_stretch_dock.cpp.i
+
+ui/mix_stretch_dock.s: ui/mix_stretch_dock.cpp.s
+.PHONY : ui/mix_stretch_dock.s
+
+# target to generate assembly for a file
+ui/mix_stretch_dock.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_stretch_dock.cpp.s
+.PHONY : ui/mix_stretch_dock.cpp.s
+
+ui/mix_tree_dock.o: ui/mix_tree_dock.cpp.o
+.PHONY : ui/mix_tree_dock.o
+
+# target to build an object file
+ui/mix_tree_dock.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_tree_dock.cpp.o
+.PHONY : ui/mix_tree_dock.cpp.o
+
+ui/mix_tree_dock.i: ui/mix_tree_dock.cpp.i
+.PHONY : ui/mix_tree_dock.i
+
+# target to preprocess a source file
+ui/mix_tree_dock.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_tree_dock.cpp.i
+.PHONY : ui/mix_tree_dock.cpp.i
+
+ui/mix_tree_dock.s: ui/mix_tree_dock.cpp.s
+.PHONY : ui/mix_tree_dock.s
+
+# target to generate assembly for a file
+ui/mix_tree_dock.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_tree_dock.cpp.s
+.PHONY : ui/mix_tree_dock.cpp.s
+
+ui/mix_waveform.o: ui/mix_waveform.cpp.o
+.PHONY : ui/mix_waveform.o
+
+# target to build an object file
+ui/mix_waveform.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_waveform.cpp.o
+.PHONY : ui/mix_waveform.cpp.o
+
+ui/mix_waveform.i: ui/mix_waveform.cpp.i
+.PHONY : ui/mix_waveform.i
+
+# target to preprocess a source file
+ui/mix_waveform.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_waveform.cpp.i
+.PHONY : ui/mix_waveform.cpp.i
+
+ui/mix_waveform.s: ui/mix_waveform.cpp.s
+.PHONY : ui/mix_waveform.s
+
+# target to generate assembly for a file
+ui/mix_waveform.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/mix_waveform.cpp.s
+.PHONY : ui/mix_waveform.cpp.s
 
 ui/mounted_sticks.o: ui/mounted_sticks.cpp.o
 .PHONY : ui/mounted_sticks.o
@@ -4085,6 +4781,30 @@ ui/step_chooser.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/step_chooser.cpp.s
 .PHONY : ui/step_chooser.cpp.s
 
+ui/studio_mix_window.o: ui/studio_mix_window.cpp.o
+.PHONY : ui/studio_mix_window.o
+
+# target to build an object file
+ui/studio_mix_window.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/studio_mix_window.cpp.o
+.PHONY : ui/studio_mix_window.cpp.o
+
+ui/studio_mix_window.i: ui/studio_mix_window.cpp.i
+.PHONY : ui/studio_mix_window.i
+
+# target to preprocess a source file
+ui/studio_mix_window.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/studio_mix_window.cpp.i
+.PHONY : ui/studio_mix_window.cpp.i
+
+ui/studio_mix_window.s: ui/studio_mix_window.cpp.s
+.PHONY : ui/studio_mix_window.s
+
+# target to generate assembly for a file
+ui/studio_mix_window.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/studio_mix_window.cpp.s
+.PHONY : ui/studio_mix_window.cpp.s
+
 ui/swing_slider.o: ui/swing_slider.cpp.o
 .PHONY : ui/swing_slider.o
 
@@ -4252,6 +4972,102 @@ ui/trakcrate_bpm_dialog.s: ui/trakcrate_bpm_dialog.cpp.s
 ui/trakcrate_bpm_dialog.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_bpm_dialog.cpp.s
 .PHONY : ui/trakcrate_bpm_dialog.cpp.s
+
+ui/trakcrate_edit_loop_dialog.o: ui/trakcrate_edit_loop_dialog.cpp.o
+.PHONY : ui/trakcrate_edit_loop_dialog.o
+
+# target to build an object file
+ui/trakcrate_edit_loop_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_loop_dialog.cpp.o
+.PHONY : ui/trakcrate_edit_loop_dialog.cpp.o
+
+ui/trakcrate_edit_loop_dialog.i: ui/trakcrate_edit_loop_dialog.cpp.i
+.PHONY : ui/trakcrate_edit_loop_dialog.i
+
+# target to preprocess a source file
+ui/trakcrate_edit_loop_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_loop_dialog.cpp.i
+.PHONY : ui/trakcrate_edit_loop_dialog.cpp.i
+
+ui/trakcrate_edit_loop_dialog.s: ui/trakcrate_edit_loop_dialog.cpp.s
+.PHONY : ui/trakcrate_edit_loop_dialog.s
+
+# target to generate assembly for a file
+ui/trakcrate_edit_loop_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_loop_dialog.cpp.s
+.PHONY : ui/trakcrate_edit_loop_dialog.cpp.s
+
+ui/trakcrate_edit_panel.o: ui/trakcrate_edit_panel.cpp.o
+.PHONY : ui/trakcrate_edit_panel.o
+
+# target to build an object file
+ui/trakcrate_edit_panel.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_panel.cpp.o
+.PHONY : ui/trakcrate_edit_panel.cpp.o
+
+ui/trakcrate_edit_panel.i: ui/trakcrate_edit_panel.cpp.i
+.PHONY : ui/trakcrate_edit_panel.i
+
+# target to preprocess a source file
+ui/trakcrate_edit_panel.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_panel.cpp.i
+.PHONY : ui/trakcrate_edit_panel.cpp.i
+
+ui/trakcrate_edit_panel.s: ui/trakcrate_edit_panel.cpp.s
+.PHONY : ui/trakcrate_edit_panel.s
+
+# target to generate assembly for a file
+ui/trakcrate_edit_panel.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_panel.cpp.s
+.PHONY : ui/trakcrate_edit_panel.cpp.s
+
+ui/trakcrate_edit_previewer.o: ui/trakcrate_edit_previewer.cpp.o
+.PHONY : ui/trakcrate_edit_previewer.o
+
+# target to build an object file
+ui/trakcrate_edit_previewer.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_previewer.cpp.o
+.PHONY : ui/trakcrate_edit_previewer.cpp.o
+
+ui/trakcrate_edit_previewer.i: ui/trakcrate_edit_previewer.cpp.i
+.PHONY : ui/trakcrate_edit_previewer.i
+
+# target to preprocess a source file
+ui/trakcrate_edit_previewer.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_previewer.cpp.i
+.PHONY : ui/trakcrate_edit_previewer.cpp.i
+
+ui/trakcrate_edit_previewer.s: ui/trakcrate_edit_previewer.cpp.s
+.PHONY : ui/trakcrate_edit_previewer.s
+
+# target to generate assembly for a file
+ui/trakcrate_edit_previewer.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_previewer.cpp.s
+.PHONY : ui/trakcrate_edit_previewer.cpp.s
+
+ui/trakcrate_edit_render_dialog.o: ui/trakcrate_edit_render_dialog.cpp.o
+.PHONY : ui/trakcrate_edit_render_dialog.o
+
+# target to build an object file
+ui/trakcrate_edit_render_dialog.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_render_dialog.cpp.o
+.PHONY : ui/trakcrate_edit_render_dialog.cpp.o
+
+ui/trakcrate_edit_render_dialog.i: ui/trakcrate_edit_render_dialog.cpp.i
+.PHONY : ui/trakcrate_edit_render_dialog.i
+
+# target to preprocess a source file
+ui/trakcrate_edit_render_dialog.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_render_dialog.cpp.i
+.PHONY : ui/trakcrate_edit_render_dialog.cpp.i
+
+ui/trakcrate_edit_render_dialog.s: ui/trakcrate_edit_render_dialog.cpp.s
+.PHONY : ui/trakcrate_edit_render_dialog.s
+
+# target to generate assembly for a file
+ui/trakcrate_edit_render_dialog.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/ui/trakcrate_edit_render_dialog.cpp.s
+.PHONY : ui/trakcrate_edit_render_dialog.cpp.s
 
 ui/trakcrate_export_dialog.o: ui/trakcrate_export_dialog.cpp.o
 .PHONY : ui/trakcrate_export_dialog.o
@@ -5096,6 +5912,9 @@ help:
 	@echo "... audio/sample_stretch.o"
 	@echo "... audio/sample_stretch.i"
 	@echo "... audio/sample_stretch.s"
+	@echo "... audio/stream_player.o"
+	@echo "... audio/stream_player.i"
+	@echo "... audio/stream_player.s"
 	@echo "... audio/swing.o"
 	@echo "... audio/swing.i"
 	@echo "... audio/swing.s"
@@ -5180,6 +5999,9 @@ help:
 	@echo "... midi/joystick_seq_bridge.o"
 	@echo "... midi/joystick_seq_bridge.i"
 	@echo "... midi/joystick_seq_bridge.s"
+	@echo "... midi/master_beat_math.o"
+	@echo "... midi/master_beat_math.i"
+	@echo "... midi/master_beat_math.s"
 	@echo "... midi/midi_map_input.o"
 	@echo "... midi/midi_map_input.i"
 	@echo "... midi/midi_map_input.s"
@@ -5276,6 +6098,21 @@ help:
 	@echo "... trakcrate/default_files.o"
 	@echo "... trakcrate/default_files.i"
 	@echo "... trakcrate/default_files.s"
+	@echo "... trakcrate/edit_job.o"
+	@echo "... trakcrate/edit_job.i"
+	@echo "... trakcrate/edit_job.s"
+	@echo "... trakcrate/edit_library.o"
+	@echo "... trakcrate/edit_library.i"
+	@echo "... trakcrate/edit_library.s"
+	@echo "... trakcrate/edit_output.o"
+	@echo "... trakcrate/edit_output.i"
+	@echo "... trakcrate/edit_output.s"
+	@echo "... trakcrate/edit_plan.o"
+	@echo "... trakcrate/edit_plan.i"
+	@echo "... trakcrate/edit_plan.s"
+	@echo "... trakcrate/edit_render.o"
+	@echo "... trakcrate/edit_render.i"
+	@echo "... trakcrate/edit_render.s"
 	@echo "... trakcrate/exporter.o"
 	@echo "... trakcrate/exporter.i"
 	@echo "... trakcrate/exporter.s"
@@ -5294,9 +6131,30 @@ help:
 	@echo "... trakcrate/library.o"
 	@echo "... trakcrate/library.i"
 	@echo "... trakcrate/library.s"
+	@echo "... trakcrate/mix_compressor.o"
+	@echo "... trakcrate/mix_compressor.i"
+	@echo "... trakcrate/mix_compressor.s"
+	@echo "... trakcrate/mix_engine.o"
+	@echo "... trakcrate/mix_engine.i"
+	@echo "... trakcrate/mix_engine.s"
+	@echo "... trakcrate/mix_eq.o"
+	@echo "... trakcrate/mix_eq.i"
+	@echo "... trakcrate/mix_eq.s"
+	@echo "... trakcrate/mix_file.o"
+	@echo "... trakcrate/mix_file.i"
+	@echo "... trakcrate/mix_file.s"
+	@echo "... trakcrate/mix_model.o"
+	@echo "... trakcrate/mix_model.i"
+	@echo "... trakcrate/mix_model.s"
+	@echo "... trakcrate/mix_render.o"
+	@echo "... trakcrate/mix_render.i"
+	@echo "... trakcrate/mix_render.s"
 	@echo "... trakcrate/mp3_index.o"
 	@echo "... trakcrate/mp3_index.i"
 	@echo "... trakcrate/mp3_index.s"
+	@echo "... trakcrate/mp3_writer.o"
+	@echo "... trakcrate/mp3_writer.i"
+	@echo "... trakcrate/mp3_writer.s"
 	@echo "... trakcrate/natsort.o"
 	@echo "... trakcrate/natsort.i"
 	@echo "... trakcrate/natsort.s"
@@ -5333,12 +6191,30 @@ help:
 	@echo "... trakcrate/sha256.o"
 	@echo "... trakcrate/sha256.i"
 	@echo "... trakcrate/sha256.s"
+	@echo "... trakcrate/stretch_cache.o"
+	@echo "... trakcrate/stretch_cache.i"
+	@echo "... trakcrate/stretch_cache.s"
+	@echo "... trakcrate/stretch_engine.o"
+	@echo "... trakcrate/stretch_engine.i"
+	@echo "... trakcrate/stretch_engine.s"
+	@echo "... trakcrate/stretch_engines.o"
+	@echo "... trakcrate/stretch_engines.i"
+	@echo "... trakcrate/stretch_engines.s"
+	@echo "... trakcrate/stretch_external.o"
+	@echo "... trakcrate/stretch_external.i"
+	@echo "... trakcrate/stretch_external.s"
+	@echo "... trakcrate/stretch_probe.o"
+	@echo "... trakcrate/stretch_probe.i"
+	@echo "... trakcrate/stretch_probe.s"
 	@echo "... trakcrate/track.o"
 	@echo "... trakcrate/track.i"
 	@echo "... trakcrate/track.s"
 	@echo "... trakcrate/usb_speed.o"
 	@echo "... trakcrate/usb_speed.i"
 	@echo "... trakcrate/usb_speed.s"
+	@echo "... trakcrate/xml_lite.o"
+	@echo "... trakcrate/xml_lite.i"
+	@echo "... trakcrate/xml_lite.s"
 	@echo "... ui/artwork_launcher.o"
 	@echo "... ui/artwork_launcher.i"
 	@echo "... ui/artwork_launcher.s"
@@ -5402,6 +6278,9 @@ help:
 	@echo "... ui/drum_voice_selector.o"
 	@echo "... ui/drum_voice_selector.i"
 	@echo "... ui/drum_voice_selector.s"
+	@echo "... ui/edit_prefs.o"
+	@echo "... ui/edit_prefs.i"
+	@echo "... ui/edit_prefs.s"
 	@echo "... ui/hud_window.o"
 	@echo "... ui/hud_window.i"
 	@echo "... ui/hud_window.s"
@@ -5423,6 +6302,30 @@ help:
 	@echo "... ui/midi_monitor_dialog.o"
 	@echo "... ui/midi_monitor_dialog.i"
 	@echo "... ui/midi_monitor_dialog.s"
+	@echo "... ui/mix_canvas.o"
+	@echo "... ui/mix_canvas.i"
+	@echo "... ui/mix_canvas.s"
+	@echo "... ui/mix_filters.o"
+	@echo "... ui/mix_filters.i"
+	@echo "... ui/mix_filters.s"
+	@echo "... ui/mix_filters_dialog.o"
+	@echo "... ui/mix_filters_dialog.i"
+	@echo "... ui/mix_filters_dialog.s"
+	@echo "... ui/mix_previewer.o"
+	@echo "... ui/mix_previewer.i"
+	@echo "... ui/mix_previewer.s"
+	@echo "... ui/mix_render_dialog.o"
+	@echo "... ui/mix_render_dialog.i"
+	@echo "... ui/mix_render_dialog.s"
+	@echo "... ui/mix_stretch_dock.o"
+	@echo "... ui/mix_stretch_dock.i"
+	@echo "... ui/mix_stretch_dock.s"
+	@echo "... ui/mix_tree_dock.o"
+	@echo "... ui/mix_tree_dock.i"
+	@echo "... ui/mix_tree_dock.s"
+	@echo "... ui/mix_waveform.o"
+	@echo "... ui/mix_waveform.i"
+	@echo "... ui/mix_waveform.s"
 	@echo "... ui/mounted_sticks.o"
 	@echo "... ui/mounted_sticks.i"
 	@echo "... ui/mounted_sticks.s"
@@ -5459,6 +6362,9 @@ help:
 	@echo "... ui/step_chooser.o"
 	@echo "... ui/step_chooser.i"
 	@echo "... ui/step_chooser.s"
+	@echo "... ui/studio_mix_window.o"
+	@echo "... ui/studio_mix_window.i"
+	@echo "... ui/studio_mix_window.s"
 	@echo "... ui/swing_slider.o"
 	@echo "... ui/swing_slider.i"
 	@echo "... ui/swing_slider.s"
@@ -5480,6 +6386,18 @@ help:
 	@echo "... ui/trakcrate_bpm_dialog.o"
 	@echo "... ui/trakcrate_bpm_dialog.i"
 	@echo "... ui/trakcrate_bpm_dialog.s"
+	@echo "... ui/trakcrate_edit_loop_dialog.o"
+	@echo "... ui/trakcrate_edit_loop_dialog.i"
+	@echo "... ui/trakcrate_edit_loop_dialog.s"
+	@echo "... ui/trakcrate_edit_panel.o"
+	@echo "... ui/trakcrate_edit_panel.i"
+	@echo "... ui/trakcrate_edit_panel.s"
+	@echo "... ui/trakcrate_edit_previewer.o"
+	@echo "... ui/trakcrate_edit_previewer.i"
+	@echo "... ui/trakcrate_edit_previewer.s"
+	@echo "... ui/trakcrate_edit_render_dialog.o"
+	@echo "... ui/trakcrate_edit_render_dialog.i"
+	@echo "... ui/trakcrate_edit_render_dialog.s"
 	@echo "... ui/trakcrate_export_dialog.o"
 	@echo "... ui/trakcrate_export_dialog.i"
 	@echo "... ui/trakcrate_export_dialog.s"

@@ -1,5 +1,7 @@
 #include "trakcrate_edit_panel.h"
 
+#include <QGridLayout>
+
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -170,24 +172,17 @@ TrakcrateEditPanel::TrakcrateEditPanel(QUndoStack* undo, QWidget* parent) : QWid
     col->addLayout(row);
     col->addWidget(list_);
     params_ = new QWidget;
-    auto* pl = new QHBoxLayout(params_);
-    pl->setContentsMargins(0, 0, 0, 0);
-    pl->addWidget(new QLabel(QStringLiteral("Click avoidance")));
-    pl->addWidget(algoBox_);
-    pl->addWidget(paramBox_);
-    pl->addWidget(barsLabel_);
-    pl->addWidget(barsBox_);
-    pl->addWidget(timesLabel_);
-    pl->addWidget(timesSpin_);
+    paramsGrid_ = new QGridLayout(params_);
+    paramsGrid_->setContentsMargins(0, 0, 0, 0);
+    algoLabel_ = new QLabel(QStringLiteral("Click avoidance"));
     earlyRow_ = new QWidget;
-    auto* el = new QHBoxLayout(earlyRow_);
-    el->setContentsMargins(0, 0, 0, 0);
-    el->addWidget(shiftBox_);
-    el->addWidget(dirBox_);
-    el->addWidget(joinBox_);
-    el->addWidget(joinParamBox_);
-    pl->addWidget(earlyRow_);
-    pl->addStretch(1);
+    earlyLayout_ = new QHBoxLayout(earlyRow_);
+    earlyLayout_->setContentsMargins(0, 0, 0, 0);
+    earlyLayout_->addWidget(shiftBox_);
+    earlyLayout_->addWidget(dirBox_);
+    earlyLayout_->addWidget(joinBox_);
+    earlyLayout_->addWidget(joinParamBox_);
+    layoutParams(false);
     col->addWidget(params_);
     auto* outRow = new QHBoxLayout;
     outRow->addWidget(readout_, 1);
@@ -377,6 +372,47 @@ void TrakcrateEditPanel::refresh()
     updating_ = false;
 }
 
+// One wide row (the track editor), or three short rows for a narrow dock (the studio mix window).
+void TrakcrateEditPanel::layoutParams(bool narrow)
+{
+    for (QWidget* w : {static_cast<QWidget*>(algoLabel_), static_cast<QWidget*>(algoBox_), static_cast<QWidget*>(paramBox_), static_cast<QWidget*>(barsLabel_),
+                       static_cast<QWidget*>(barsBox_), static_cast<QWidget*>(timesLabel_), static_cast<QWidget*>(timesSpin_), earlyRow_})
+        paramsGrid_->removeWidget(w);
+    if (narrow) {
+        paramsGrid_->addWidget(algoLabel_, 0, 0);
+        paramsGrid_->addWidget(algoBox_, 0, 1);
+        paramsGrid_->addWidget(paramBox_, 0, 2);
+        paramsGrid_->addWidget(barsLabel_, 1, 0);
+        paramsGrid_->addWidget(barsBox_, 1, 1);
+        paramsGrid_->addWidget(timesLabel_, 2, 0);
+        paramsGrid_->addWidget(timesSpin_, 2, 1);
+        paramsGrid_->addWidget(earlyRow_, 3, 0, 1, 4);
+        earlyLayout_->setDirection(QBoxLayout::TopToBottom);
+        paramsGrid_->setColumnStretch(3, 1);
+    } else {
+        int c = 0;
+        for (QWidget* w : {static_cast<QWidget*>(algoLabel_), static_cast<QWidget*>(algoBox_), static_cast<QWidget*>(paramBox_), static_cast<QWidget*>(barsLabel_),
+                           static_cast<QWidget*>(barsBox_), static_cast<QWidget*>(timesLabel_), static_cast<QWidget*>(timesSpin_), earlyRow_})
+            paramsGrid_->addWidget(w, 0, c++);
+        earlyLayout_->setDirection(QBoxLayout::LeftToRight);
+        paramsGrid_->setColumnStretch(c, 1);
+    }
+}
+
+void TrakcrateEditPanel::setMixMode(bool on)
+{
+    layoutParams(on);
+    if (on) {                                            // a narrow dock: nothing may force the width
+        rangeLabel_->setWordWrap(true);
+        rangeLabel_->setMinimumWidth(40);
+        for (QComboBox* b : findChildren<QComboBox*>()) {
+            b->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+            b->setMinimumContentsLength(8);
+        }
+    }
+    for (QPushButton* b : {previewButton_, previewRegionButton_, renderButton_, loopExportButton_}) b->setVisible(!on);
+}
+
 void TrakcrateEditPanel::applyRegions(const std::vector<EditRegion>& regions, int selected)
 {
     regions_ = regions;
@@ -387,6 +423,10 @@ void TrakcrateEditPanel::applyRegions(const std::vector<EditRegion>& regions, in
 
 bool TrakcrateEditPanel::pushRegions(std::vector<EditRegion> after, int selectedAfter, const QString& text, bool mergeable)
 {
+    if (external_) {
+        emit regionsEdited(regions_, after, selectedAfter, text, mergeable);
+        return true;
+    }
     const int key = mergeable ? std::max(0, selected_) : -1;
     undo_->push(new EditRegionsCommand(this, regions_, selected_, std::move(after), selectedAfter, text, key));
     return true;

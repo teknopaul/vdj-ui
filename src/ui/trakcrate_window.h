@@ -11,6 +11,7 @@ class ConfigManager;
 class QuantizeSettings;
 class TrakcratePanel;
 class TrakcrateTrackEditor;
+class StudioMixWindow;
 
 // The trakcrate-only application (started as `trakcrate-ui`, or `vdj-ui --trakcrate`): the library view in a window of its own, without the
 // decks, the network, MIDI or audio sequencer of MainWindow. Its menus are built in setupMenus() and nowhere else, so what this view offers is
@@ -33,6 +34,7 @@ private:
     TrakcratePanel* panel_;
     TrakcrateTrackEditor* editor_;
     QDockWidget* editorDock_;
+    StudioMixWindow* mixWindow_ = nullptr;
 };
 
 } // namespace vdj

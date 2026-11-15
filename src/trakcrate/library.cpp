@@ -19,7 +19,7 @@ static bool fail(std::string* err, const std::string& msg)
 bool Library::create(const fs::path& root, std::string* err)
 {
     std::error_code ec;
-    for (const char* sub : {"track-master-copy", "playlists", "user-settings", "drives"}) {
+    for (const char* sub : {"track-master-copy", "playlists", "user-settings", "drives", "mixes"}) {
         fs::create_directories(root / sub, ec);
         if (ec) return fail(err, "cannot create " + (root / sub).string() + ": " + ec.message());
     }

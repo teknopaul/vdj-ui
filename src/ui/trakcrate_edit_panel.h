@@ -12,6 +12,8 @@
 #include "waveform_widget.h"
 
 class QComboBox;
+class QGridLayout;
+class QHBoxLayout;
 class QLabel;
 class QListWidget;
 class QPushButton;
@@ -54,6 +56,15 @@ public:
     bool setAlgo(trakcrate::EditAlgo algo);            // of the selected region; the parameter becomes a legal default
     bool setParam(double value);
 
+    // ---- the studio mix uses the panel as the editor of one track's regions (plan studio-mix, phase 8) ----
+    // External undo: changes are not applied here and not pushed to the undo stack; regionsEdited() is emitted and the owner (which has its own
+    // history) applies them with setRegions(). Existing users of the panel never call these.
+    void setExternalUndo(bool on) { external_ = on; }
+    // Hides the Preview, Render and Export loop buttons: they need a track of their own.
+    void setMixMode(bool on);
+    // Loads a list without creating history.
+    void setRegions(const std::vector<trakcrate::EditRegion>& regions, int selected) { applyRegions(regions, selected); }
+
     QString readout() const;                           // "Edit: 5:42 -> 4:51", or why the regions cannot be rendered
     QString problem() const;                           // "" when the regions are valid
 
@@ -80,6 +91,7 @@ signals:
     void previewRequested(double startMs, double stopMs);   // "Preview...": play the edit from startMs of the original (-1: the start) to stopMs (-1: the end)
     void loopExportRequested(int startBeat, int lenBeats);   // "Export loop...": a sample for Acid
     void renderRequested();                            // "Render...": save it
+    void regionsEdited(const std::vector<trakcrate::EditRegion>& before, const std::vector<trakcrate::EditRegion>& after, int selectedAfter, const QString& text, bool mergeable);   // external undo only
     void rangeConsumed();                              // the dragged range became a region (the waveform stops drawing it)
     void status(const QString& message);
 
@@ -102,6 +114,7 @@ private:
     double rangeA_ = 0, rangeB_ = 0;
     double previewStartMs_ = -1;
     bool updating_ = false;
+    bool external_ = false;
 
     QLabel* rangeLabel_;
     QPushButton* cutButton_;
@@ -116,6 +129,10 @@ private:
     QLabel* timesLabel_;
     QSpinBox* timesSpin_;
     QWidget* earlyRow_;
+    QGridLayout* paramsGrid_ = nullptr;
+    QHBoxLayout* earlyLayout_ = nullptr;
+    QLabel* algoLabel_ = nullptr;
+    void layoutParams(bool narrow);
     QComboBox* shiftBox_;
     QComboBox* dirBox_;
     QComboBox* joinBox_;

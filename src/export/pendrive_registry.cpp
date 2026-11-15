@@ -1,4 +1,5 @@
 #include "pendrive_registry.h"
+#include "trakcrate/real_home.h"
 
 #include "config/config_manager.h"
 
@@ -51,9 +52,10 @@ QList<PhysicalPendrive> PendriveRegistry::scanPhysicalIn(const QString& root)
 
 QList<PhysicalPendrive> PendriveRegistry::scanPhysical()
 {
-    const QString user = QString::fromLocal8Bit(qgetenv("USER"));
-    QString name = user.isEmpty() ? QString::fromLocal8Bit(qgetenv("LOGNAME")) : user;
-    if (name.isEmpty()) name = QDir::home().dirName();
+    // From the account, not $USER or the home folder name: in a Snap the home folder is ~/snap/<name>/<revision>.
+    QString name = QString::fromStdString(trakcrate::realUserName());
+    if (name.isEmpty()) name = QString::fromLocal8Bit(qgetenv("USER"));
+    if (name.isEmpty()) name = QString::fromLocal8Bit(qgetenv("LOGNAME"));
     QList<PhysicalPendrive> out = scanPhysicalIn(QStringLiteral("/media/") + name);
     out += scanPhysicalIn(QStringLiteral("/run/media/") + name);
     return out;

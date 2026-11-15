@@ -56,4 +56,4 @@ which is the master with follow-master on); with no sync deck we are the referen
 - Waits use a precise `QTimer` (~1 ms jitter); the other decks' phase is extrapolated from their last beat packet (arrival time from `beatTimed`), a few ms.
 - Joysticks (`JoystickSeqBridge`, event map in `joystick_map.*`) have never been tried on hardware; only the pure event -> action map is tested. The numpad
   bridge (`numpad_seq_bridge.*`) is dead code against a non-existent `AlsaSequencer` and is not built.
-- The existing "<< Beat" button (send this deck's BPM and bar position on the link) is now "Send Beat" so it cannot be confused with ⏪.
+- The old "Send Beat" button is gone: beat packets for the real decks are sent automatically on the ALSA clock's beat, and the "As master" spinner (`as_master_difflock`) sets how far from that beat they go.

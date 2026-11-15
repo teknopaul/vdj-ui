@@ -23,6 +23,7 @@
 #include "ui/trakcrate_preview_player.h"
 #include "audio/audio_player.h"
 #include "trakcrate/exporter.h"
+#include "trakcrate/real_home.h"
 #include "trakcrate/ext_pdb.h"
 #include "trakcrate/pdb_writer.h"
 #include "trakcrate/settings_files.h"
@@ -83,6 +84,7 @@ private:
     tc::fs::path tmp_;
 
 private slots:
+    void realHomeHonoursSnapRealHome();
     void init() { tmp_ = tc::makeTempDir("trakcrate-panel"); QVERIFY(!tmp_.empty()); }
     void cleanup() { std::error_code ec; tc::fs::remove_all(tmp_, ec); }
 
@@ -1070,7 +1072,7 @@ void TestTrakcratePanel::trakcrateOnlyWindow()
         QStringList& into = a->text() == QLatin1String("&File") ? file : config;
         for (QAction* x : a->menu()->actions()) if (!x->isSeparator()) into << x->text();
     }
-    QCOMPARE(file, (QStringList{QStringLiteral("&Clone Pendrive..."), QStringLiteral("&Quit")}));
+    QCOMPARE(file, (QStringList{QStringLiteral("&Clone Pendrive..."), QStringLiteral("Studio &mix..."), QStringLiteral("&Quit")}));
     QCOMPARE(config, (QStringList{QStringLiteral("&Quantize"), QStringLiteral("&Quit")}));
     QVERIFY(w.panel());
     QCOMPARE(w.centralWidget(), static_cast<QWidget*>(w.panel()));
@@ -1523,6 +1525,19 @@ void TestTrakcratePanel::panelDetectsBpmAndAsks()
     QVERIFY(tc::loadTrack(dir.toStdString(), &t));
     QVERIFY(t.hasGrid);
     QVERIFY(std::fabs(tc::beatGridFrom(t.grid).bpm - offered * 2) < 0.01);
+}
+
+void TestTrakcratePanel::realHomeHonoursSnapRealHome()
+{
+    const QByteArray old = qgetenv("SNAP_REAL_HOME");
+    qputenv("SNAP_REAL_HOME", "/tmp/snap-real-home");
+    QCOMPARE(QString::fromStdString(trakcrate::realHome().string()), QStringLiteral("/tmp/snap-real-home"));
+    QCOMPARE(QString::fromStdString(trakcrate::defaultLibraryDir().string()), QStringLiteral("/tmp/snap-real-home/trakcrate"));
+    qunsetenv("SNAP_REAL_HOME");
+    QVERIFY(!trakcrate::realHome().empty());
+    QVERIFY(trakcrate::realHome().is_absolute());
+    QVERIFY(!trakcrate::realUserName().empty());
+    if (!old.isEmpty()) qputenv("SNAP_REAL_HOME", old);
 }
 
 QTEST_MAIN(TestTrakcratePanel)

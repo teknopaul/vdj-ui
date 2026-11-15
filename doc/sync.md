@@ -34,6 +34,10 @@ offset has settled for 5 beats. `SyncAligner::kStepMs` is the step size.
 
 - **Target (difflock)**: ms between the deck's beat and the sequencer's, set in the spinner, by Capture, or by the nudge buttons.
   This is where kick-drum attack versus sample start is compensated by ear. It moves the MIDI clock and the DJ Tools together.
+- **As master (`as_master_difflock`)**: the other direction, for real decks that follow the VDJ. ms between our MIDI clock beat and the beat packet we
+  send on the link; positive = the packet after the MIDI beat. Spinner in the VDJ deck's controls, `dj/as_master_difflock_ms`, saved. The packets are sent by
+  `AlsaClock` from ALSA echo events (a tick-scheduled echo half a beat early, then a real-time echo at beat + offset), whenever the sequencer runs.
+  The debug overlay of the VDJ row shows the number sent and the last send error (arrival of the echo minus the time asked for).
 - **Audio latency** (DJ Tools panel, `dj/djtoolz_latency_ms`, saved): the audio stack's delay. Positive = slow, the sounds are played
   earlier. Only the DJ Tools sound moves; the MIDI clock does not.
 

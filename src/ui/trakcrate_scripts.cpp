@@ -387,6 +387,10 @@ void populateScriptsMenu(QMenu* menu, ScriptManager* m, trakcrate::ScriptKind ki
     menu->clear();
     const bool track = kind == trakcrate::ScriptKind::Track;
     const auto scripts = m->scripts(kind);
+    if (qEnvironmentVariableIsSet("SNAP")) {            // strict confinement: a script only sees the Snap's own programs, and the library
+        menu->addAction(QStringLiteral("Snap: scripts cannot use programs installed on the host"))->setEnabled(false);
+        menu->addSeparator();
+    }
     for (const trakcrate::ScriptInfo& s : scripts) {
         QString title = QString::fromStdString(s.name);
         if (!s.runnable()) title += QStringLiteral("  [%1]").arg(QString::fromLatin1(trakcrate::scriptStateName(s.state)));

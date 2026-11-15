@@ -30,6 +30,10 @@ public:
     void setPlaying(bool playing);
     void setBarPos(int barPos);
     int barPos() const;
+    // as_master_difflock: positive = the beat packets we send are that many ms after our MIDI clock beat, negative = before. Does not emit.
+    int asMasterDifflockMs() const;
+    void setAsMasterDifflockMs(int ms);
+    QSpinBox* asMasterDifflockSpin() const { return asMasterDiff_; }
     // Remote (non-local) decks are display-only: they cannot be controlled
     // over the link, so they expose no editable fields and only the Copy BPM
     // action (which adopts that deck's tempo into the local VDJ).
@@ -65,7 +69,7 @@ signals:
     void setBpmClicked(int playerId, double bpm);
     void becomeMasterClicked(int playerId);
     void bpmFromMasterClicked(int playerId);
-    void broadcastBeatClicked(int playerId, double bpm, int barPos);
+    void asMasterDifflockChanged(int ms);   // the VDJ row: ms between our MIDI clock beat and the beat packets for the real decks
 
 private:
     int playerId_;
@@ -79,7 +83,8 @@ private:
     QPushButton* sync_;
     QPushButton* becomeMaster_;
     QPushButton* copyBpm_;
-    QPushButton* broadcastBeat_;
+    QLabel* asMasterLabel_;
+    QSpinBox* asMasterDiff_;
     QDoubleSpinBox* bpmSpin_;
     QSpinBox* barPosSpin_;
     QLabel* bpmValueLabel_;

@@ -58,6 +58,8 @@ N.B. while you can play music off the PC on physical decks, VDJ does not have a 
 This software is a companion to real CDJ/XDJ decks, not an alternative.  
 For Linux DJ software for mixing audio see [Mixxx](https://github.com/mixxxdj/mixxx)
 
+- **Snap**: the trakcrate library window is also packaged as a Snap, see [doc/trakcrate/snap.md](doc/trakcrate/snap.md). It shares the `~/trakcrate` library with the deb.
+
 ## Building
 
 ```sh
@@ -113,6 +115,12 @@ spinner (default 0 ms). Same idea as `adj`'s difflock.
 - **-10 -1 +1 +10** nudge the sequencer: the next beat is that many ms longer (+) or shorter (-). While locked the
   target moves with the nudge so the lock keeps the new alignment
 - Keys (as in adj): `Shift+U I O P` lock to deck 1-4, `Esc Esc` off, `Shift+M` follow master, `<` `>` change the offset
+
+**As master** is the mirror: while the VDJ's sequencer runs, a beat packet is sent on the link on every beat, driven by ALSA
+echo events on the sequencer's own queue, so real decks can follow the VDJ. The **As master** spinner in the VDJ deck's controls
+(`as_master_difflock`, -500..500 ms, saved as `dj/as_master_difflock_ms`) sets how far the packet is from the MIDI clock beat:
+positive = the packet comes after the MIDI beat (the sequencer is early), negative = before, the same sign as the difflock target.
+The clock limits it to 0.45 of a beat at the current BPM.
 
 Sync is a mode: it stays on across master changes and follows the next master; the details, button states and options are in `doc/sync.md`.
 

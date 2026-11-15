@@ -5,11 +5,14 @@
 #include <QStringList>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
+#include <functional>
 #include <mutex>
 #include <thread>
 #include "seq_phase_model.h"
 
 typedef struct _snd_seq snd_seq_t;
+typedef struct snd_seq_event snd_seq_event_t;
 
 namespace vdj {
 
@@ -84,6 +87,16 @@ public:
     bool sendDjtoolzMidi(int kind, int channel, int note, int velocity, qint64 tick, int destClient, int destPort);
     int djtoolzPortId() const { return djtoolzPort_; }
 
+    // Beat packets for the real decks, driven by ALSA echo events: a tick-scheduled echo reaches our own port half a beat before each beat,
+    // and schedules a real-time echo at the beat plus the as_master_difflock offset; that one calls the callback (from the clock thread,
+    // never with the internal mutex held). Positive offset = the callback comes AFTER the MIDI clock beat. barPos is 1..4 (bar label incl. shiftBeats).
+    using BeatCallback = std::function<void(double bpm, int barPos)>;
+    void setBeatCallback(BeatCallback cb);
+    void setAsMasterOffsetMs(int ms) { asMasterOffsetMs_ = ms; }
+    int asMasterOffsetMs() const { return asMasterOffsetMs_; }
+    uint64_t beatsSent() const { return beatsSent_; }
+    int64_t lastSendErrorNs() const { return lastSendErrorNs_; }   // when the last send echo arrived minus when it was due
+
     int clientId() const { return client_; }
     int portId() const { return port_; }
 
@@ -93,11 +106,15 @@ private:
     int64_t queueRealNs() const;                                  // caller holds mutex_; -1 when unreadable
     void anchorModel();                                           // caller holds mutex_; the queue has just been (re)started at tick 0
     void stopLocked();
+    double positionBeatsExactLocked(int64_t* steadyNs, int64_t* realNs) const;   // caller holds mutex_
+    void queueBeatEchoes(unsigned int horizon, int64_t* nextBeat);       // caller holds mutex_
+    void handleEcho(const snd_seq_event_t& ev);                                  // clock thread; takes and drops mutex_
 
     snd_seq_t* seq_ = nullptr;
     int client_ = -1;
     int port_ = -1;
     int djtoolzPort_ = -1;
+    int beatPort_ = -1;                           // private input port: the echo events come back here
     int queue_ = -1;
     std::atomic<double> bpm_{ 120.0 };
     std::atomic<bool> running_{ false };
@@ -110,6 +127,12 @@ private:
     mutable SeqPhaseModel model_;                 // guarded by mutex_
     double lastMicros_ = 500000.0;                // the microseconds per beat last given to the queue
     mutable std::atomic<int> resyncs_{ 0 };
+    std::atomic<int> asMasterOffsetMs_{ 0 };
+    std::atomic<uint32_t> echoGeneration_{ 0 };   // bumped by start() / restart(): an echo from an older timeline is ignored
+    std::atomic<uint64_t> beatsSent_{ 0 };
+    std::atomic<int64_t> lastSendErrorNs_{ 0 };
+    std::mutex beatCbMutex_;
+    BeatCallback beatCb_;
 };
 
 } // namespace vdj

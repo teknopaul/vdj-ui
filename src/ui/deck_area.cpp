@@ -38,7 +38,7 @@ DeckWidget* DeckArea::addDeck(int playerId)
     connect(deck, &DeckWidget::setBpmClicked, this, &DeckArea::setBpmClicked);
     connect(deck, &DeckWidget::becomeMasterClicked, this, &DeckArea::becomeMasterClicked);
     connect(deck, &DeckWidget::bpmFromMasterClicked, this, &DeckArea::bpmFromMasterClicked);
-    connect(deck, &DeckWidget::broadcastBeatClicked, this, &DeckArea::broadcastBeatClicked);
+    connect(deck, &DeckWidget::asMasterDifflockChanged, this, &DeckArea::asMasterDifflockChanged);
     connect(deck, &DeckWidget::pitchChanged, this, &DeckArea::pitchChanged);
     return deck;
 }

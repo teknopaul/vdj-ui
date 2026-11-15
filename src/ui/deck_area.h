@@ -30,7 +30,7 @@ signals:
     void setBpmClicked(int playerId, double bpm);
     void becomeMasterClicked(int playerId);
     void bpmFromMasterClicked(int playerId);
-    void broadcastBeatClicked(int playerId, double bpm, int barPos);
+    void asMasterDifflockChanged(int ms);
     void pitchChanged(int playerId, double percentage);
 
 private:

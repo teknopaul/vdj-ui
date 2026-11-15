@@ -192,6 +192,10 @@ bool NetworkManager::connectToLink(const QString& iface, uint32_t flags)
         teardown();
         return false;
     }
+    {
+        QMutexLocker lock(&beatSendMutex_);
+        beatSendReady_ = true;
+    }
 
     vdj_init_managed_discovery_thread(v_, onDiscovery);
     vdj_init_managed_update_thread(v_, onUpdate);
@@ -241,9 +245,13 @@ void NetworkManager::teardown()
         vdj_stop_managed_beat_unicast_thread(v_);
         vdj_stop_threads(v_);
         v_->client = nullptr;
-        vdj_close_sockets(v_);
-        vdj_destroy(v_);
-        v_ = nullptr;
+        {
+            QMutexLocker lock(&beatSendMutex_);
+            beatSendReady_ = false;
+            vdj_close_sockets(v_);
+            vdj_destroy(v_);
+            v_ = nullptr;
+        }
         knownMembers_.clear();
         joining_ = false;
         statusStarted_ = true;   // nothing to start until the next connect
@@ -305,11 +313,9 @@ void NetworkManager::setLocalPlaying(bool playing)
 
 void NetworkManager::broadcastBeat(double bpm, int barPos)
 {
-    if (v_) {
+    QMutexLocker lock(&beatSendMutex_);
+    if (v_ && beatSendReady_)
         vdj_broadcast_beat(v_, static_cast<float>(bpm), static_cast<uint8_t>(barPos));
-        PacketLogger::instance().log(QStringLiteral("USER"),
-            QStringLiteral("broadcast beat bpm=%1 bar=%2").arg(bpm, 0, 'f', 2).arg(barPos));
-    }
 }
 
 void NetworkManager::requestMaster()

@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 #include <QPushButton>
+#include <QSpinBox>
 #include "ui/deck_controls.h"
 #include "ui/deck_widget.h"
 #include "ui/pitch_slider.h"
@@ -16,6 +17,7 @@ private slots:
     void deckWidgetRemoteMode();
     void quantizeAndJumpButtons();
     void playGlyphToggles();
+    void asMasterDifflockSpinner();
 };
 
 void TestControls::pitchSliderSignals()
@@ -173,6 +175,38 @@ void TestControls::deckWidgetRemoteMode()
     QVERIFY(pitch->isHidden());
     QVERIFY(!deck.controls()->playVisible());
     QVERIFY(deck.controls()->copyBpmVisible());
+}
+
+void TestControls::asMasterDifflockSpinner()
+{
+    vdj::DeckControls c(5);
+    c.show();
+    QSpinBox* spin = c.asMasterDifflockSpin();
+    QVERIFY(spin);
+    QCOMPARE(c.asMasterDifflockMs(), 0);
+    QCOMPARE(spin->minimum(), -500);
+    QCOMPARE(spin->maximum(), 500);
+    QVERIFY(spin->isVisible());
+    // the "Send Beat" button is gone: beats are sent by the ALSA clock
+    for (QPushButton* b : c.findChildren<QPushButton*>())
+        QVERIFY(b->text() != QLatin1String("Send Beat"));
+
+    QList<int> got;
+    QObject::connect(&c, &vdj::DeckControls::asMasterDifflockChanged, [&](int ms) { got << ms; });
+    spin->setValue(-35);
+    QCOMPARE(c.asMasterDifflockMs(), -35);
+    spin->setValue(40);
+    QCOMPARE(got, (QList<int>{ -35, 40 }));
+    c.setAsMasterDifflockMs(-120);               // programmatic: no signal
+    QCOMPARE(c.asMasterDifflockMs(), -120);
+    QCOMPARE(got.size(), 2);
+    spin->setValue(9999);                        // clamped to the range
+    QCOMPARE(c.asMasterDifflockMs(), 500);
+
+    c.setRemote(true);
+    QVERIFY(!spin->isVisible());
+    c.setRemote(false);
+    QVERIFY(spin->isVisible());
 }
 
 QTEST_MAIN(TestControls)

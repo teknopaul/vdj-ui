@@ -1,6 +1,8 @@
 #include "alsa_clock.h"
 #include "seq_bar.h"
+#include "master_beat_math.h"
 #include <alsa/asoundlib.h>
+#include <poll.h>
 #include <chrono>
 #include <algorithm>
 #include <cmath>
@@ -23,7 +25,7 @@ bool AlsaClock::open(const QString& clientName, QString* error)
         close();
         return false;
     };
-    if (snd_seq_open(&seq_, "default", SND_SEQ_OPEN_OUTPUT, 0) < 0) {
+    if (snd_seq_open(&seq_, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
         seq_ = nullptr;
         return fail(QStringLiteral("cannot open the ALSA sequencer"));
     }
@@ -39,6 +41,11 @@ bool AlsaClock::open(const QString& clientName, QString* error)
         SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
     if (djtoolzPort_ < 0)
         return fail(QStringLiteral("cannot create the ALSA DJ Tools port"));
+    // not exported: only we send to it (the beat echoes of the as_master_difflock packets)
+    beatPort_ = snd_seq_create_simple_port(seq_, "Beat echo",
+        SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_NO_EXPORT, SND_SEQ_PORT_TYPE_APPLICATION);
+    if (beatPort_ < 0)
+        return fail(QStringLiteral("cannot create the ALSA beat echo port"));
     queue_ = snd_seq_alloc_named_queue(seq_, "vdj-ui clock");
     if (queue_ < 0)
         return fail(QStringLiteral("cannot create the ALSA queue"));
@@ -84,7 +91,7 @@ void AlsaClock::close()
         snd_seq_free_queue(seq_, queue_);
     snd_seq_close(seq_);
     seq_ = nullptr;
-    client_ = port_ = djtoolzPort_ = queue_ = -1;
+    client_ = port_ = djtoolzPort_ = beatPort_ = queue_ = -1;
 }
 
 int64_t AlsaClock::queueRealNs() const
@@ -216,6 +223,11 @@ double AlsaClock::positionBeatsExact(int64_t* steadyNs) const
     if (!seq_ || !running_)
         return -1.0;
     std::lock_guard<std::mutex> lock(mutex_);
+    return positionBeatsExactLocked(steadyNs, nullptr);
+}
+
+double AlsaClock::positionBeatsExactLocked(int64_t* steadyNs, int64_t* realNs) const
+{
     snd_seq_queue_status_t* st;
     snd_seq_queue_status_alloca(&st);
     if (snd_seq_get_queue_status(seq_, queue_, st) < 0)
@@ -223,14 +235,16 @@ double AlsaClock::positionBeatsExact(int64_t* steadyNs) const
     if (steadyNs)
         *steadyNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     const snd_seq_real_time_t* rt = snd_seq_queue_status_get_real_time(st);
-    const int64_t realNs = int64_t(rt->tv_sec) * 1000000000LL + int64_t(rt->tv_nsec);
+    const int64_t nowNs = int64_t(rt->tv_sec) * 1000000000LL + int64_t(rt->tv_nsec);
+    if (realNs)
+        *realNs = nowNs;
     const double tickBeats = double(snd_seq_queue_status_get_tick_time(st)) / kPpq;
-    if (!model_.consistentWith(tickBeats, realNs)) {
+    if (!model_.consistentWith(tickBeats, nowNs)) {
         // a tempo change or restart the model did not see: fall back to the middle of the tick, and say so
-        model_.reset(realNs, tickBeats + 0.5 / kPpq, lastMicros_);
+        model_.reset(nowNs, tickBeats + 0.5 / kPpq, lastMicros_);
         ++resyncs_;
     }
-    return model_.beatsAt(realNs);
+    return model_.beatsAt(nowNs);
 }
 
 double AlsaClock::queueBpm() const
@@ -333,6 +347,8 @@ void AlsaClock::start()
         snd_seq_start_queue(seq_, queue_, nullptr);
         snd_seq_drain_output(seq_);
         sendNow(seq_, port_, SND_SEQ_EVENT_START);
+        snd_seq_drop_input(seq_);                    // echoes of the last run
+        ++echoGeneration_;
         anchorModel();
     }
     beatOffset_ = 0;
@@ -373,6 +389,7 @@ void AlsaClock::restart()
     snd_seq_start_queue(seq_, queue_, nullptr);
     snd_seq_drain_output(seq_);
     sendNow(seq_, port_, SND_SEQ_EVENT_START);
+    ++echoGeneration_;                        // echoes already delivered belong to the old timeline
     anchorModel();
     beatOffset_ = 0;
     resetNext_ = true;                        // the loop's `next` tick is from the old timeline; the loop takes mutex_ before using it
@@ -395,21 +412,127 @@ void AlsaClock::stopLocked()
     model_.invalidate();
 }
 
-// Keep MIDI clock pulses queued two beats ahead of the queue's position.
+namespace {
+constexpr uint32_t kEchoBeat = 1;   // word 0 of an echo event: kind in the low 8 bits, the timeline generation above
+constexpr uint32_t kEchoSend = 2;
+}
+
+void AlsaClock::setBeatCallback(BeatCallback cb)
+{
+    std::lock_guard<std::mutex> lock(beatCbMutex_);
+    beatCb_ = std::move(cb);
+}
+
+// One echo per beat, tick-scheduled half a beat before the beat, so it follows tempo changes, nudges and restarts like the clock pulses do.
+void AlsaClock::queueBeatEchoes(unsigned int horizon, int64_t* nextBeat)
+{
+    while (beatEchoTick(*nextBeat) < int64_t(horizon)) {
+        snd_seq_event_t ev;
+        snd_seq_ev_clear(&ev);
+        ev.type = SND_SEQ_EVENT_ECHO;
+        snd_seq_ev_set_source(&ev, beatPort_);
+        snd_seq_ev_set_dest(&ev, static_cast<unsigned char>(client_), static_cast<unsigned char>(beatPort_));
+        snd_seq_ev_schedule_tick(&ev, queue_, 0, static_cast<snd_seq_tick_time_t>(beatEchoTick(*nextBeat)));
+        uint32_t w[2];
+        packBeatEcho(*nextBeat, 1, w);
+        ev.data.raw32.d[0] = kEchoBeat | (echoGeneration_.load() << 8);
+        ev.data.raw32.d[1] = w[0];
+        ev.data.raw32.d[2] = w[1];
+        if (snd_seq_event_output(seq_, &ev) < 0)
+            break;
+        ++*nextBeat;
+    }
+}
+
+void AlsaClock::handleEcho(const snd_seq_event_t& ev)
+{
+    const uint32_t kind = ev.data.raw32.d[0] & 0xff;
+    const uint32_t generation = ev.data.raw32.d[0] >> 8;
+    const uint32_t w[2] = { ev.data.raw32.d[1], ev.data.raw32.d[2] };
+    int64_t beat = 0;
+    int bar = 1;
+    unpackBeatEcho(w, &beat, &bar);
+
+    if (kind == kEchoBeat) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!running_ || generation != (echoGeneration_.load() & 0xffffffu))
+            return;
+        int64_t realNs = 0;
+        const double beatsNow = positionBeatsExactLocked(nullptr, &realNs);
+        if (beatsNow < 0.0)
+            return;
+        int64_t dueNs = 0;
+        // the queue's own tempo (a nudge in progress included) is what the beat is projected with
+        if (!sendEchoRealNs(beatsNow, realNs, 60000000.0 / lastMicros_, asMasterOffsetMs_, beat, &dueNs))
+            return;
+        const int barNow = vdj::barPos(beatsNow + beatOffset_.load() + (double(beat) - beatsNow));
+        snd_seq_event_t out;
+        snd_seq_ev_clear(&out);
+        out.type = SND_SEQ_EVENT_ECHO;
+        snd_seq_ev_set_source(&out, beatPort_);
+        snd_seq_ev_set_dest(&out, static_cast<unsigned char>(client_), static_cast<unsigned char>(beatPort_));
+        snd_seq_real_time_t rt;
+        rt.tv_sec = static_cast<unsigned int>(dueNs / 1000000000LL);
+        rt.tv_nsec = static_cast<unsigned int>(dueNs % 1000000000LL);
+        snd_seq_ev_schedule_real(&out, queue_, 0, &rt);
+        uint32_t o[2];
+        packBeatEcho(beat, barNow, o);
+        out.data.raw32.d[0] = kEchoSend | (generation << 8);
+        out.data.raw32.d[1] = o[0];
+        out.data.raw32.d[2] = o[1];
+        if (snd_seq_event_output(seq_, &out) >= 0)
+            snd_seq_drain_output(seq_);
+        return;
+    }
+    if (kind != kEchoSend)
+        return;
+
+    const double bpmNow = effectiveBpm();
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!running_ || generation != (echoGeneration_.load() & 0xffffffu))
+            return;
+        const int64_t nowNs = queueRealNs();
+        const int64_t dueNs = int64_t(ev.time.time.tv_sec) * 1000000000LL + int64_t(ev.time.time.tv_nsec);
+        if (nowNs >= 0)
+            lastSendErrorNs_ = nowNs - dueNs;
+    }
+    BeatCallback cb;
+    {
+        std::lock_guard<std::mutex> lock(beatCbMutex_);
+        cb = beatCb_;
+    }
+    ++beatsSent_;
+    if (cb)
+        cb(bpmNow, bar);
+}
+
+// Keep MIDI clock pulses (and the beat echoes) queued two beats ahead of the queue's position, and handle the echoes that come back.
 void AlsaClock::loop()
 {
     constexpr snd_seq_tick_time_t kStep = kPpq / kClocksPerBeat;   // ticks between clock pulses
     snd_seq_tick_time_t next = 0;
+    int64_t nextEchoBeat = 1;               // beat 0 has no echo: its echo tick would be before tick 0
     // alloca() is only released when the function returns: allocated inside the loop (every 2 ms) it overflowed the thread's stack after a couple of minutes
     snd_seq_queue_status_t* st;
     snd_seq_queue_status_alloca(&st);
+    struct pollfd pfd[4];
+    int npfd = 0;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!seq_)
+            return;
+        npfd = snd_seq_poll_descriptors(seq_, pfd, 4, POLLIN);
+    }
     while (!quit_) {
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (!seq_)
                 return;
-            if (resetNext_.exchange(false))
+            if (resetNext_.exchange(false)) {
                 next = 0;
+                nextEchoBeat = 1;
+            }
             snd_seq_tick_time_t now = 0;
             if (snd_seq_get_queue_status(seq_, queue_, st) == 0)
                 now = snd_seq_queue_status_get_tick_time(st);
@@ -427,6 +550,11 @@ void AlsaClock::loop()
                 next += kStep;
                 queued = true;
             }
+            if (beatPort_ >= 0) {
+                const int64_t before = nextEchoBeat;
+                queueBeatEchoes(horizon, &nextEchoBeat);
+                queued = queued || nextEchoBeat != before;
+            }
             if (queued)
                 snd_seq_drain_output(seq_);
         }
@@ -437,7 +565,25 @@ void AlsaClock::loop()
                 applyTempo(bpm_);               // the nudged beat is over
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        // wake on an echo instead of at the next 2 ms tick; the timeout is the old cadence for the pulses
+        if (npfd > 0)
+            poll(pfd, npfd, 2);
+        else
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        for (;;) {
+            snd_seq_event_t copy;
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (!seq_ || snd_seq_event_input_pending(seq_, 1) <= 0)
+                    break;
+                snd_seq_event_t* ev = nullptr;
+                if (snd_seq_event_input(seq_, &ev) < 0 || !ev)
+                    break;
+                copy = *ev;
+            }
+            if (copy.type == SND_SEQ_EVENT_ECHO)
+                handleEcho(copy);
+        }
     }
 }
 

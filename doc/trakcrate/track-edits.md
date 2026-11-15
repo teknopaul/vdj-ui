@@ -58,3 +58,5 @@ Variable tempo grids, non 4/4 bars, saving the region list (it can only be rebui
 ## Fade lengths worth knowing
 
 The fades that are not configurable are all 5 ms: the fade in after a `fadeout`, both fades of `tailoverlap` (its fade out only when the tail is 0 beats), and the fallback of `cross` when there is no audio before the join (a loop at the very start). The configurable `cut` fade is applied from the join onwards, so a long one softens the first kick after a cut: use 5 ms there if the weight of that kick matters. Moving the fade so that it ends on the beat is a possible later change.
+
+The studio mix window reuses this panel for cuts and loops inside a mix: see [studio-mix.md](studio-mix.md).

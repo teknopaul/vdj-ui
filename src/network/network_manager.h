@@ -92,6 +92,7 @@ public slots:
     void setLocalBpm(double bpm);
     void setLocalPitch(double percentage);
     void setLocalPlaying(bool playing);
+    // The automatic beat packets (AlsaClock's beat callback): callable from any thread, no log line per beat, a no-op while not connected.
     void broadcastBeat(double bpm, int barPos);
     void requestMaster();
     void sendKeepalive();
@@ -123,6 +124,8 @@ private:
     void stopLinkExport();
 
     vdj_t* v_ = nullptr;
+    QMutex beatSendMutex_;                  // broadcastBeat() runs on the ALSA clock thread: held while sending and while the sockets close
+    bool beatSendReady_ = false;            // sockets open; guarded by beatSendMutex_
     vdj_discovery_ph discoveryPh_ = nullptr;
     vdj_discovery_unicast_ph discoveryUnicastPh_ = nullptr;
     vdj_update_ph updatePh_ = nullptr;

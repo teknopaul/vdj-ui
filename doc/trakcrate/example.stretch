@@ -1,0 +1,16 @@
+# An external time stretch engine for studio mixes. Copy this file to <library>/stretchers/ or ~/.config/vdj-ui/stretchers/ (not installed anywhere).
+# Lines are "key: value". The engine appears in the Stretch dock of the studio mix window when the program is installed.
+id: example-sox
+name: Example: sox tempo (music, extra options)
+description: Runs sox with its tempo effect. Shows every key a *.stretch file may have.
+# The command is split on spaces, double quotes group words, no shell is involved.
+# {in}   a 32 bit float stereo 44.1 kHz WAV to read          {out}  where the program must write a WAV (any format ffmpeg reads)
+# {ratio}    target bpm / source bpm (> 1 = faster), 0.5 .. 2     {bpm_from} {bpm_to}  100 and 100 * ratio (only the ratio is known)
+# {opt:name} the value chosen for option.name
+command: sox "{in}" -e floating-point -b 32 "{out}" tempo {opt:mode} {ratio} {opt:segment}
+# preserved (default) or follows (the pitch moves with the tempo, like varispeed)
+pitch: preserved
+# option.<name>: a|b|c   an enum, the first value is the default
+#                lo..hi=default   a number
+option.mode: -m|-s|-l
+option.segment: 20..200=82

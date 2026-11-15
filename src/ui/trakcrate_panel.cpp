@@ -43,6 +43,7 @@
 
 #include "config/config_manager.h"
 #include "trakcrate/ext_pdb.h"
+#include "trakcrate/real_home.h"
 #include "trakcrate/settings_files.h"
 #include "trakcrate/settings_sets.h"
 #include "trakcrate_settings_dialogs.h"
@@ -127,6 +128,13 @@ constexpr int DriveRole = Qt::UserRole + 3;   // entries: the pendrive they belo
 constexpr int IndexRole = Qt::UserRole + 4;   // entries: position on the pendrive
 }
 
+// ~/trakcrate (the shared default, see trakcrate/real_home.h) if it exists, else the real home folder
+static QString defaultLibraryStart()
+{
+    const QString lib = QString::fromStdString(trakcrate::defaultLibraryDir().string());
+    return QDir(lib).exists() ? lib : QString::fromStdString(trakcrate::realHome().string());
+}
+
 TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget(parent), config_(config)
 {
     jobs_ = new TrakcrateJobRunner(this);
@@ -189,7 +197,10 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     tree_->setDragEnabled(true);                          // only the lists of a virtual pendrive can be dragged (see rebuildTree)
     tree_->setDragDropMode(QAbstractItemView::InternalMove);
     tree_->setDropIndicatorShown(true);
-    tree_->onEntryDropped = [this](const QString& drive, int from, int before) { QString err; if (!moveEntry(drive, from, before, &err) && !err.isEmpty()) emit status(err); };   // the logo above it is 128 px wide
+    tree_->onEntryDropped = [this](const QString& drive, int from, int before) {
+        // deferred: rebuilding the tree inside the drop handler deletes the dragged item while Qt's drag is still running
+        QTimer::singleShot(0, this, [this, drive, from, before] { QString err; if (!moveEntry(drive, from, before, &err) && !err.isEmpty()) emit status(err); refresh(); });
+    };   // the logo above it is 128 px wide
 
     table_ = new TrakcrateTableView;
     table_->setModel(proxy_);
@@ -342,6 +353,10 @@ TrakcratePanel::TrakcratePanel(ConfigManager* config, QWidget* parent) : QWidget
     if (config_) {                                      // reopen the library used last time, silently
         const QString last = config_->loadValue(QStringLiteral("trakcrate"), QStringLiteral("library"));
         if (!last.isEmpty() && QDir(last).exists()) openLibrary(last);
+        else {                                          // nothing remembered: ~/trakcrate, if it is there and is a library
+            const QString def = QString::fromStdString(trakcrate::defaultLibraryDir().string());
+            if (QDir(def).exists()) openLibrary(def);
+        }
     }
 }
 
@@ -423,7 +438,7 @@ bool TrakcratePanel::createLibrary(const QString& path, QString* err)
 
 void TrakcratePanel::chooseLibrary()
 {
-    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Open a trakcrate library"), QDir::homePath());
+    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Open a trakcrate library"), defaultLibraryStart());
     if (dir.isEmpty()) return;
     QString err;
     if (!openLibrary(dir, &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
@@ -431,7 +446,7 @@ void TrakcratePanel::chooseLibrary()
 
 void TrakcratePanel::newLibrary()
 {
-    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Folder for the new trakcrate library"), QDir::homePath());
+    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Folder for the new trakcrate library"), defaultLibraryStart());
     if (dir.isEmpty()) return;
     QString err;
     if (!createLibrary(dir, &err)) QMessageBox::warning(this, QStringLiteral("trakcrate"), err);
@@ -1469,8 +1484,10 @@ void TrakcratePanel::tableContextMenu(const QPoint& pos)
     }
     analyse->setEnabled(!dirs.isEmpty() && !anyBusy());
     force->setEnabled(analyse->isEnabled());
+    QAction* refreshAct = menu.addAction(QStringLiteral("Refresh"));
     QAction* chosen = menu.exec(table_->viewport()->mapToGlobal(pos));
-    if (chosen == analyse) analyseTracks(dirs, false);
+    if (chosen == refreshAct) refresh();
+    else if (chosen == analyse) analyseTracks(dirs, false);
     else if (chosen == force) analyseTracks(dirs, true);
     else if (chosen == load) { preview_->stop(); emit loadRequested(dirs.first()); }
     else if (chosen == playHere) { QString err; startPreview(under.isValid() ? under.row() : -1, &err); }
@@ -1976,7 +1993,7 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
                 rbMenu->clear();
                 rbSticks.clear();
                 for (const RekordboxStick& s : listRekordboxSticks(volumes_)) rbSticks[rbMenu->addAction(s.label)] = s.root;
-                if (rbMenu->isEmpty()) rbMenu->addAction(QStringLiteral("(no rekordbox pendrive mounted)"))->setEnabled(false);
+                if (rbMenu->isEmpty()) rbMenu->addAction(qEnvironmentVariableIsSet("SNAP") ? QStringLiteral("(no rekordbox pendrive mounted; Snap: snap connect trakcrate-ui:removable-media)") : QStringLiteral("(no rekordbox pendrive mounted)"))->setEnabled(false);
             };
             fill();
             connect(rbMenu, &QMenu::aboutToShow, rbMenu, fill);
@@ -2014,10 +2031,14 @@ void TrakcratePanel::treeContextMenu(const QPoint& pos)
         down = menu.addAction(QStringLiteral("Move down"));
         removeEntry = menu.addAction(QStringLiteral("Remove from pendrive"));
     }
+    menu.addSeparator();
+    QAction* refreshAct = menu.addAction(QStringLiteral("Refresh"));
+    refreshAct->setToolTip(QStringLiteral("Re-read the library from disk"));
     QAction* chosen = menu.exec(tree_->viewport()->mapToGlobal(pos));
     if (!chosen) return;
     QString err;
-    if (chosen == newDrive) newPendriveDialog();
+    if (chosen == refreshAct) refresh();
+    else if (chosen == newDrive) newPendriveDialog();
     else if (chosen == newList) newPlaylistDialog();
     else if (searchArtist && chosen == searchArtist) searchDialog(true);
     else if (searchTrack && chosen == searchTrack) searchDialog(false);

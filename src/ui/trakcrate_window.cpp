@@ -1,5 +1,7 @@
 #include "trakcrate_window.h"
 
+#include "studio_mix_window.h"
+
 #include <QActionGroup>
 #include <QDockWidget>
 #include <QMenu>
@@ -58,6 +60,24 @@ void TrakcrateWindow::setupMenus()
         PendriveCloneDialog dlg(this);
         dlg.exec();
     });
+    QAction* studio = file->addAction(QStringLiteral("Studio &mix..."));
+    studio->setToolTip(QStringLiteral("Prepare a whole playlist as one mixed mp3"));
+    connect(file, &QMenu::aboutToShow, this, [this, studio] {
+        const bool ok = panel_->hasLibrary();
+        studio->setEnabled(ok);
+        studio->setToolTip(ok ? QStringLiteral("Prepare a whole playlist as one mixed mp3") : QStringLiteral("Open a trakcrate library first"));
+    });
+    connect(studio, &QAction::triggered, this, [this] {
+        if (!mixWindow_)
+            mixWindow_ = new StudioMixWindow([this]() -> const trakcrate::Library* { return panel_->hasLibrary() ? &panel_->library() : nullptr; }, config_, this);
+        mixWindow_->setWindowFlag(Qt::Window, true);
+        mixWindow_->show();
+        mixWindow_->raise();
+        mixWindow_->activateWindow();
+    });
+    QAction* refreshAct = file->addAction(QStringLiteral("&Refresh"));       // picks up changes made to the library on disk
+    refreshAct->setShortcut(QKeySequence::Refresh);
+    connect(refreshAct, &QAction::triggered, panel_, &TrakcratePanel::refresh);
     file->addSeparator();
     QAction* quit = file->addAction(QStringLiteral("&Quit"));
     quit->setShortcut(QKeySequence::Quit);

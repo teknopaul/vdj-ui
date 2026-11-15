@@ -42,6 +42,7 @@ add_library(vdj-cdj STATIC
     audio/fx_rack.cpp
     audio/audio_output.cpp
     audio/audio_player.cpp
+    audio/stream_player.cpp
     audio/beat_clock.cpp
     audio/quantize_settings.cpp
     audio/deck_phase.cpp
@@ -60,6 +61,7 @@ add_library(vdj-cdj STATIC
     audio/time_stretcher.cpp
     midi/alsa_clock.cpp
     midi/seq_bar.cpp
+    midi/master_beat_math.cpp
     midi/joystick_map.cpp
     midi/joystick_seq_bridge.cpp
     midi/diff_lock.cpp
@@ -133,6 +135,15 @@ add_library(vdj-cdj STATIC
     ui/trakcrate_track_editor.cpp
     ui/edit_prefs.cpp
     ui/trakcrate_edit_panel.cpp
+    ui/mix_filters.cpp
+    ui/mix_waveform.cpp
+    ui/mix_canvas.cpp
+    ui/mix_previewer.cpp
+    ui/mix_render_dialog.cpp
+    ui/mix_stretch_dock.cpp
+    ui/mix_tree_dock.cpp
+    ui/mix_filters_dialog.cpp
+    ui/studio_mix_window.cpp
     ui/trakcrate_edit_previewer.cpp
     ui/trakcrate_edit_render_dialog.cpp
     ui/trakcrate_edit_loop_dialog.cpp
@@ -224,8 +235,21 @@ add_library(vdj-trakcrate STATIC
     trakcrate/cuemark_edit.cpp
     trakcrate/grid_edit.cpp
     trakcrate/edit_plan.cpp
+    trakcrate/mix_model.cpp
+    trakcrate/xml_lite.cpp
+    trakcrate/mix_file.cpp
+    trakcrate/mix_eq.cpp
+    trakcrate/mix_compressor.cpp
+    trakcrate/mix_engine.cpp
+    trakcrate/mix_render.cpp
+    trakcrate/stretch_engine.cpp
+    trakcrate/stretch_engines.cpp
+    trakcrate/stretch_external.cpp
+    trakcrate/stretch_cache.cpp
+    trakcrate/stretch_probe.cpp
     trakcrate/edit_render.cpp
     trakcrate/edit_output.cpp
+    trakcrate/mp3_writer.cpp
     trakcrate/edit_library.cpp
     trakcrate/edit_job.cpp
     trakcrate/artwork_edit.cpp
@@ -264,6 +288,23 @@ if(TC_AUBIO_FOUND)
     target_compile_definitions(vdj-trakcrate PUBLIC TC_HAVE_AUBIO=1)
 else()
     message(WARNING "libaubio not found: trakcrate BPM detection disabled (apt install libaubio-dev)")
+endif()
+# time stretching for studio mixes: libsamplerate is required; rubberband and soundtouch libraries are used when their dev packages are found
+pkg_check_modules(TC_SAMPLERATE REQUIRED IMPORTED_TARGET samplerate)
+pkg_check_modules(TC_RUBBERBAND IMPORTED_TARGET rubberband)
+pkg_check_modules(TC_SOUNDTOUCH IMPORTED_TARGET soundtouch)
+target_link_libraries(vdj-trakcrate PUBLIC PkgConfig::TC_SAMPLERATE)
+if(TC_RUBBERBAND_FOUND)
+    target_link_libraries(vdj-trakcrate PUBLIC PkgConfig::TC_RUBBERBAND)
+    target_compile_definitions(vdj-trakcrate PUBLIC TC_HAVE_RUBBERBAND=1)
+else()
+    message(STATUS "librubberband-dev not found: the in-process Rubber Band engines are left out (the rubberband program is still used when installed)")
+endif()
+if(TC_SOUNDTOUCH_FOUND)
+    target_link_libraries(vdj-trakcrate PUBLIC PkgConfig::TC_SOUNDTOUCH)
+    target_compile_definitions(vdj-trakcrate PUBLIC TC_HAVE_SOUNDTOUCH=1)
+else()
+    message(STATUS "libsoundtouch-dev not found: the SoundTouch engine is left out")
 endif()
 target_link_libraries(vdj-trakcrate PUBLIC PkgConfig::TC_FFMPEG cdj_imported)     # cdj: the pdb readers verifyPdb checks against
 target_link_libraries(vdj-cdj PUBLIC vdj-trakcrate)

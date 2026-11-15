@@ -264,6 +264,16 @@ add_executable(vdj-ui-seqbar-test test_seq_bar.cpp)
 target_link_libraries(vdj-ui-seqbar-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-seqbar-test COMMAND vdj-ui-seqbar-test)
 
+add_executable(vdj-ui-master-beat-math-test test_master_beat_math.cpp)
+target_link_libraries(vdj-ui-master-beat-math-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-master-beat-math-test COMMAND vdj-ui-master-beat-math-test)
+
+add_executable(vdj-ui-alsa-clock-beats-test test_alsa_clock_beats.cpp)
+target_link_libraries(vdj-ui-alsa-clock-beats-test PRIVATE ${QT_TEST} vdj-cdj)
+add_test(NAME vdj-ui-alsa-clock-beats-test COMMAND vdj-ui-alsa-clock-beats-test)
+set_tests_properties(vdj-ui-alsa-clock-beats-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_tests_properties(vdj-ui-master-beat-math-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(vdj-ui-deckphase-test test_deck_phase.cpp)
 target_link_libraries(vdj-ui-deckphase-test PRIVATE ${QT_TEST} vdj-cdj)
 add_test(NAME vdj-ui-deckphase-test COMMAND vdj-ui-deckphase-test)
@@ -397,6 +407,41 @@ target_compile_definitions(vdj-ui-trakcrate-deckedits-test PRIVATE DECK_FIXTURE=
 target_link_libraries(vdj-ui-trakcrate-deckedits-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-deckedits-test COMMAND vdj-ui-trakcrate-deckedits-test)
 
+add_executable(vdj-ui-trakcrate-mix-model-test test_trakcrate_mix_model.cpp)
+target_link_libraries(vdj-ui-trakcrate-mix-model-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-mix-model-test COMMAND vdj-ui-trakcrate-mix-model-test)
+
+add_executable(vdj-ui-trakcrate-xml-lite-test test_trakcrate_xml_lite.cpp)
+target_link_libraries(vdj-ui-trakcrate-xml-lite-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-xml-lite-test COMMAND vdj-ui-trakcrate-xml-lite-test)
+
+add_executable(vdj-ui-trakcrate-mix-file-test test_trakcrate_mix_file.cpp)
+target_link_libraries(vdj-ui-trakcrate-mix-file-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-mix-file-test COMMAND vdj-ui-trakcrate-mix-file-test)
+
+add_executable(vdj-ui-trakcrate-stretch-test test_trakcrate_stretch.cpp)
+target_link_libraries(vdj-ui-trakcrate-stretch-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-stretch-test COMMAND vdj-ui-trakcrate-stretch-test)
+
+add_executable(vdj-ui-trakcrate-mix-engine-test test_trakcrate_mix_engine.cpp)
+target_link_libraries(vdj-ui-trakcrate-mix-engine-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-mix-engine-test COMMAND vdj-ui-trakcrate-mix-engine-test)
+
+add_executable(vdj-ui-trakcrate-mix-render-test test_trakcrate_mix_render.cpp)
+target_link_libraries(vdj-ui-trakcrate-mix-render-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-mix-render-test COMMAND vdj-ui-trakcrate-mix-render-test)
+set_tests_properties(vdj-ui-trakcrate-mix-render-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-mix-ui-test test_trakcrate_mix_ui.cpp)
+target_link_libraries(vdj-ui-trakcrate-mix-ui-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-mix-ui-test COMMAND vdj-ui-trakcrate-mix-ui-test)
+set_tests_properties(vdj-ui-trakcrate-mix-ui-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-mix-edit-test test_trakcrate_mix_edit.cpp)
+target_link_libraries(vdj-ui-trakcrate-mix-edit-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-mix-edit-test COMMAND vdj-ui-trakcrate-mix-edit-test)
+set_tests_properties(vdj-ui-trakcrate-mix-edit-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(vdj-ui-trakcrate-edit-plan-test test_trakcrate_edit_plan.cpp)
 target_link_libraries(vdj-ui-trakcrate-edit-plan-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-edit-plan-test COMMAND vdj-ui-trakcrate-edit-plan-test)
@@ -419,3 +464,8 @@ add_executable(vdj-ui-trakcrate-edit-dialogs-test test_trakcrate_edit_dialogs.cp
 target_link_libraries(vdj-ui-trakcrate-edit-dialogs-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
 add_test(NAME vdj-ui-trakcrate-edit-dialogs-test COMMAND vdj-ui-trakcrate-edit-dialogs-test)
 set_tests_properties(vdj-ui-trakcrate-edit-dialogs-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(vdj-ui-trakcrate-mix-preview-test test_trakcrate_mix_preview.cpp)
+target_link_libraries(vdj-ui-trakcrate-mix-preview-test PRIVATE ${QT_TEST} vdj-trakcrate vdj-cdj)
+add_test(NAME vdj-ui-trakcrate-mix-preview-test COMMAND vdj-ui-trakcrate-mix-preview-test)
+set_tests_properties(vdj-ui-trakcrate-mix-preview-test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

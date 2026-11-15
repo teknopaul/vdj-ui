@@ -24,8 +24,12 @@ endif()
 add_subdirectory(src)
 add_subdirectory(plugins/xone-ladspa)
 
-enable_testing()
-add_subdirectory(tests)
+# Off for packaging builds that only need the binaries (the Snap): the tests are not installed.
+option(VDJ_BUILD_TESTS "build the unit tests" ON)
+if(VDJ_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 # ---------------------------------------------------------------------------
 # Man page

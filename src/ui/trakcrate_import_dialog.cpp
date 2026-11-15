@@ -1,4 +1,5 @@
 #include "trakcrate_import_dialog.h"
+#include "trakcrate/real_home.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -78,7 +79,7 @@ QString TrakcrateImportDialog::folder() const { return folder_->text().trimmed()
 
 void TrakcrateImportDialog::browse()
 {
-    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Folder of audio files"), folder().isEmpty() ? QDir::homePath() : folder());
+    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("Folder of audio files"), folder().isEmpty() ? QString::fromStdString(trakcrate::realHome().string()) : folder());
     if (!dir.isEmpty()) setFolder(dir);
 }
 
