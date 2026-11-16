@@ -35,6 +35,10 @@ public:
     bool openRemoteDeck(int playerId, const QString& ip, QString* error = nullptr);
     // Fetch the database and the analysis files of the shown deck again and rebuild the tree (remote only).
     bool refreshFromDeck(QString* error = nullptr);
+    // The empty view: no database, no tree (nothing is selected in the pendrive list). Used when the shown pendrive is unmounted or "(no pendrive)" is chosen.
+    void clearView();
+    // The folder of the local database shown now ("" when empty or a deck's).
+    QString shownFolder() const { return remote_ ? QString() : exportRoot_; }
     bool isRemote() const { return remote_ != nullptr; }
     int remotePlayerId() const { return remote_ ? playerId_ : 0; }         // the deck whose database is shown, 0 for a local one
     // Tracks (in playlist order) of a playlist item, empty for any other item.
@@ -59,6 +63,7 @@ signals:
                        const QString& bpm, const QString& key);
     // Double click on a track: load it in the preview player.
     void previewRequested(const TrackInfo& info);
+    void viewCleared();
     void databaseLoaded(const QString& exportRoot);       // a local rekordbox folder with a database was loaded
 
 private:

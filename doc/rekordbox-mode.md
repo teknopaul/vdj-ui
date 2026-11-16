@@ -57,7 +57,8 @@ told stays valid when the mode is restarted.
 | File                       | Content                                                                           |
 |----------------------------|-----------------------------------------------------------------------------------|
 | `dbserver-<ip>-<time>.log` | every connection: decoded requests and replies, raw hex of what was received      |
-| `dbserver-<ip>-<time>.bin` | the exact inbound byte stream (ground truth for offline analysis)                 |
+| `dbserver-<ip>-<time>.rx.bin` / `.tx.bin` | the exact inbound / outbound byte stream (ground truth for offline analysis) |
+| `dbserver-<ip>-<time>.raw.log` | only with View > Log Raw TCP of the dbserver (`--link-tcp-raw`): every socket event with ms times, RX/TX in full hex, `PARSE` lines, `CLOSE by peer\|by us`, `UNFRAMED n bytes` (the port query gets `dbquery-<ip>-<ms>.raw.log`) |
 | `unknown-requests.log`     | one entry per request of unknown type: the answer to "what did the deck ask for?" |
 | `nfs-observer.log`         | NFS observer events                                                               |
 

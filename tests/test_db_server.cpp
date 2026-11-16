@@ -164,7 +164,7 @@ private slots:
         c.sock.disconnectFromHost();
         QVERIFY(waitFor([&] { return s->clientCount() == 0; }));
 
-        const QStringList bins = QDir(dir.path()).entryList({"dbserver-127.0.0.1-*.bin"});
+        const QStringList bins = QDir(dir.path()).entryList({"dbserver-127.0.0.1-*.rx.bin"});
         const QStringList logs = QDir(dir.path()).entryList({"dbserver-127.0.0.1-*.log"});
         QCOMPARE(bins.size(), 1);
         QCOMPARE(logs.size(), 1);
@@ -231,6 +231,82 @@ private slots:
         QCOMPARE(server->clientCount(), 1);
         b.sock.disconnectFromHost();
         QVERIFY(waitFor([&] { return server->clientCount() == 0; }));
+    }
+
+    void rawTcpLogHasBothDirectionsTheParserViewAndTheClose()
+    {
+        QTemporaryDir dir;
+        std::unique_ptr<DbServer> s(new DbServer(&lib_));
+        DbServer::Config cfg;
+        cfg.queryPort = 0; cfg.dbPort = 0; cfg.bindAddress = QHostAddress::LocalHost; cfg.logDir = dir.path();
+        cfg.rawTcpLog = true;
+        QVERIFY(s->start(cfg));
+        QStringList lines;
+        connect(s.get(), &DbServer::logLine, this, [&](const QString& l) { lines << l; });
+
+        TestClient c;
+        QVERIFY(c.connectTo(s->dbPort()));
+        QVERIFY(waitFor([&] { return c.greetings == 1; }));
+        c.send(QByteArray::fromHex("1100000001"));
+        c.send(req(0x7777, {Arg::number(0x04010301), Arg::number(7)}, 5));
+        QVERIFY(waitFor([&] { return !c.messages.empty(); }));
+        const auto half = encode(req(ReqRootMenu, {Arg::number(0x04010301), Arg::number(0), Arg::number(0xffffff)}, 6));
+        c.send(QByteArray(reinterpret_cast<const char*>(half.data()), int(half.size() / 2)));
+        QTest::qWait(100);
+        c.sock.disconnectFromHost();
+        QVERIFY(waitFor([&] { return s->clientCount() == 0; }));
+
+        const QStringList raws = QDir(dir.path()).entryList({"dbserver-127.0.0.1-*.raw.log"});
+        QCOMPARE(raws.size(), 1);
+        QFile f(dir.filePath(raws[0]));
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QString text = QString::fromUtf8(f.readAll());
+        QVERIFY(text.contains(QRegularExpression("\\+[0-9.]+ RX ")));
+        QVERIFY(text.contains(QRegularExpression("\\+[0-9.]+ TX ")));
+        // the exact bytes of our reply are in the TX hex
+        const QByteArray replyBytes = c.received.mid(c.received.size() - 8);
+        QVERIFY(text.contains(QString::fromLatin1(replyBytes.toHex(' '))));
+        QVERIFY(text.contains("PARSE consumed="));
+        QVERIFY(text.contains("pending=") && text.contains("state=need-more"));
+        QVERIFY(text.contains("CLOSE by peer"));
+        QVERIFY(text.contains("UNFRAMED"));
+        QVERIFY(!QDir(dir.path()).entryList({"dbserver-127.0.0.1-*.tx.bin"}).isEmpty());
+        QVERIFY(std::any_of(lines.begin(), lines.end(), [](const QString& l) { return l.startsWith("DB-TCP: 127.0.0.1 RX"); }));
+        QVERIFY(std::any_of(lines.begin(), lines.end(), [](const QString& l) { return l.contains("REQ  [unknown]"); }));
+    }
+
+    void rawTcpLogIsOffByDefaultAndPortQueryHasItsOwn()
+    {
+        QTemporaryDir dir;
+        {
+            std::unique_ptr<DbServer> s(new DbServer(&lib_));
+            DbServer::Config cfg;
+            cfg.queryPort = 0; cfg.dbPort = 0; cfg.bindAddress = QHostAddress::LocalHost; cfg.logDir = dir.path();
+            QVERIFY(s->start(cfg));
+            TestClient c;
+            QVERIFY(c.connectTo(s->dbPort()));
+            QVERIFY(waitFor([&] { return c.greetings == 1; }));
+            c.sock.disconnectFromHost();
+            QVERIFY(waitFor([&] { return s->clientCount() == 0; }));
+            QVERIFY(QDir(dir.path()).entryList({"*.raw.log"}).isEmpty());
+        }
+        std::unique_ptr<DbServer> s(new DbServer(&lib_));
+        DbServer::Config cfg;
+        cfg.queryPort = 0; cfg.dbPort = 0; cfg.bindAddress = QHostAddress::LocalHost; cfg.logDir = dir.path();
+        cfg.rawTcpLog = true;
+        QVERIFY(s->start(cfg));
+        QTcpSocket q;
+        q.connectToHost(QHostAddress::LocalHost, s->queryPort());
+        QVERIFY(waitFor([&] { return q.state() == QAbstractSocket::ConnectedState; }));
+        const auto pq = portQueryRequest();
+        q.write(reinterpret_cast<const char*>(pq.data()), qint64(pq.size()));
+        QVERIFY(waitFor([&] { return q.state() == QAbstractSocket::UnconnectedState; }));       // the server is on this thread: spin, do not block
+        QTest::qWait(100);
+        const QStringList raws = QDir(dir.path()).entryList({"dbquery-127.0.0.1-*.raw.log"});
+        QFile f(dir.filePath(raws[0]));
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QString text = QString::fromUtf8(f.readAll());
+        QVERIFY(text.contains(" RX ") && text.contains(" TX ") && text.contains("CLOSE by us"));
     }
 
     void halfMessageThenCloseDoesNotCrash()

@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QEventLoop>
+#include <QHostAddress>
 #include <QDir>
 #include <QStandardPaths>
 #include <QThread>
@@ -137,21 +138,31 @@ void onDiscovery(vdj_t* v, cdj_discovery_packet_t* d_pkt)
         return;
 
     QString ip;
+    bool known = false;
     if (v->backline && pid <= VDJ_MAX_BACKLINE) {
         vdj_link_member_t* m = v->backline->link_members[pid];
+        known = m != nullptr;
         if (m && m->ip_addr) {
             char buf[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &m->ip_addr->sin_addr, buf, sizeof(buf));
             ip = QString::fromLatin1(buf);
         }
     }
+    // the member table has no entry for ID requests and for devices above the backline size: the packet carries the address itself
+    // (not cdj_ip_decode: it callocs a pointer's size, not a sockaddr_in's)
+    if (ip.isEmpty() && d_pkt->ip != 0) ip = QHostAddress(quint32(d_pkt->ip)).toString();
 
     QString model = QString::fromUtf8(cdj_discovery_model(d_pkt));
-    if (PacketLogger::instance().packetLevel())
-        PacketLogger::instance().log(QStringLiteral("DISCOVERY"), QStringLiteral("p%1 model=%2 ip=%3")
-            .arg(pid)
-            .arg(model)
-            .arg(ip.isEmpty() ? QStringLiteral("?") : ip));
+    if (PacketLogger::instance().packetLevel()) {
+        int suppressed = 0;
+        bool log;
+        {
+            QMutexLocker lk(&nm->discoveryLogMutex_);
+            log = nm->discoveryLimiter_.allow(pid, d_pkt->type, QDateTime::currentMSecsSinceEpoch(), &suppressed);
+        }
+        if (log)
+            PacketLogger::instance().log(QStringLiteral("DISCOVERY"), formatDiscoveryLine(d_pkt->type, pid, known, ip, model, suppressed));
+    }
 
     // Not while we join: the GUI only sets its deck rows up in the connected() handler, which would throw these away. The next
     // keepalive of the deck (2 s) announces it.
@@ -341,6 +352,12 @@ void NetworkManager::sendKeepalive()
 
 namespace vdj {
 
+void NetworkManager::setRawTcpLog(bool on)
+{
+    rawTcpLog_ = on;
+    if (linkExport_) linkExport_->setRawTcpLog(on);
+}
+
 void NetworkManager::setLinkExportFolder(const QString& folder)
 {
     linkExportFolder_ = folder;
@@ -432,6 +449,7 @@ void NetworkManager::startLinkExport()
     c.modelName = QString::fromLatin1(v_->model == CDJ_XDJ ? "XDJ-1000" : v_->model == CDJ_VDJ ? "VDJ-1000" : "CDJ-1000");
     c.logDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/linkexport");
     QDir().mkpath(c.logDir);
+    c.rawTcpLog = rawTcpLog_;
     QString err;
     if (!le->start(c, &err)) {
         emit linkExportLog(QStringLiteral("LINK export did not start: %1").arg(err));

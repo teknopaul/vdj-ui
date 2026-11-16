@@ -24,6 +24,18 @@ class TestPendriveRegistry : public QObject {
     Q_OBJECT
 
 private slots:
+    void foldersOnRemovableMountsAreRecognised()
+    {
+        QString user = QString::fromLocal8Bit(qgetenv("USER"));
+        if (PendriveRegistry::isOnPhysicalMount(QStringLiteral("/media/nobody-at-all/KIOXIA"))) QSKIP("unexpected user name");
+        QVERIFY(!PendriveRegistry::isOnPhysicalMount(QStringLiteral("/home/x/pendrives/KIOXIA")));
+        QVERIFY(!PendriveRegistry::isOnPhysicalMount(QString()));
+        if (!user.isEmpty()) {
+            QVERIFY(PendriveRegistry::isOnPhysicalMount(QStringLiteral("/media/%1/KIOXIA").arg(user)));
+            QVERIFY(PendriveRegistry::isOnPhysicalMount(QStringLiteral("/run/media/%1/KIOXIA/").arg(user)));
+        }
+    }
+
     void addRenameRemoveAndValidate()
     {
         QTemporaryDir t;

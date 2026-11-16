@@ -2165,6 +2165,30 @@ network/beat_tempo.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/beat_tempo.cpp.s
 .PHONY : network/beat_tempo.cpp.s
 
+network/discovery_line.o: network/discovery_line.cpp.o
+.PHONY : network/discovery_line.o
+
+# target to build an object file
+network/discovery_line.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/discovery_line.cpp.o
+.PHONY : network/discovery_line.cpp.o
+
+network/discovery_line.i: network/discovery_line.cpp.i
+.PHONY : network/discovery_line.i
+
+# target to preprocess a source file
+network/discovery_line.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/discovery_line.cpp.i
+.PHONY : network/discovery_line.cpp.i
+
+network/discovery_line.s: network/discovery_line.cpp.s
+.PHONY : network/discovery_line.s
+
+# target to generate assembly for a file
+network/discovery_line.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/vdj-cdj.dir/build.make src/CMakeFiles/vdj-cdj.dir/network/discovery_line.cpp.s
+.PHONY : network/discovery_line.cpp.s
+
 network/link_export.o: network/link_export.cpp.o
 .PHONY : network/link_export.o
 
@@ -6035,6 +6059,9 @@ help:
 	@echo "... network/beat_tempo.o"
 	@echo "... network/beat_tempo.i"
 	@echo "... network/beat_tempo.s"
+	@echo "... network/discovery_line.o"
+	@echo "... network/discovery_line.i"
+	@echo "... network/discovery_line.s"
 	@echo "... network/link_export.o"
 	@echo "... network/link_export.i"
 	@echo "... network/link_export.s"

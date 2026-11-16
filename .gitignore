@@ -1,4 +1,6 @@
 target/
+parts/
+stage/
 build/
 build-debug/
 build-asan/

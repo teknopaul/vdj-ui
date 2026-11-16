@@ -29,6 +29,7 @@ public:
     explicit PendriveToolBar(PendriveRegistry* registry, QWidget* parent = nullptr);
 
     // The pendrive the viewer shows now (selects it in the list when it is one of them, else nothing is selected).
+    // An empty folder (the viewer is empty) selects "(no pendrive)".
     void setViewed(const QString& folder);
     // The pendrive the decks see now (marked in the list); empty = nothing.
     void setExported(const QString& folder);
@@ -48,6 +49,7 @@ public:
 
 signals:
     void openRequested(const QString& folder);
+    void clearRequested();                               // "(no pendrive)" chosen: show nothing in the viewer
     void insertRequested(const QString& folder, const QString& name);
     void stopRequested();
     void deckRequested(int playerId, const QString& ip);

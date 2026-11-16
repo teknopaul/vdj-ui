@@ -23,6 +23,9 @@ public:
 
     // Linear 0..1 levels of one block of audio per channel (peak = largest sample, rms = root mean square).
     void setLevels(float peakL, float peakR, float rmsL, float rmsR);
+    // One thin line pair for the recording bar: two 8 px bars and the clip light, no figures or scale (the tooltip has the advice).
+    void setCompact(bool on);
+    bool compact() const { return compact_; }
     // Back to silence (e.g. when the input is closed); also clears the clip light and the holds.
     void reset();
     void clearClip();
@@ -36,8 +39,8 @@ public:
     // "low", "good", "hot" or "clip": where the louder channel's peak is, which is the advice shown under the bars
     QString zone() const;
 
-    QSize sizeHint() const override { return QSize(260, 64); }
-    QSize minimumSizeHint() const override { return QSize(160, 56); }
+    QSize sizeHint() const override { return compact_ ? QSize(220, 24) : QSize(260, 64); }
+    QSize minimumSizeHint() const override { return compact_ ? QSize(60, 22) : QSize(160, 56); }
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -52,6 +55,7 @@ private:
     QElapsedTimer holdAge_[2];
     bool signal_ = false;
     bool clip_ = false;
+    bool compact_ = false;
 };
 
 } // namespace vdj

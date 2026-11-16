@@ -50,6 +50,17 @@ QList<PhysicalPendrive> PendriveRegistry::scanPhysicalIn(const QString& root)
     return out;
 }
 
+bool PendriveRegistry::isOnPhysicalMount(const QString& folder)
+{
+    QString name = QString::fromStdString(trakcrate::realUserName());
+    if (name.isEmpty()) name = QString::fromLocal8Bit(qgetenv("USER"));
+    if (name.isEmpty()) name = QString::fromLocal8Bit(qgetenv("LOGNAME"));
+    const QString f = QDir::cleanPath(folder);
+    for (const QString& root : {QStringLiteral("/media/") + name + QLatin1Char('/'), QStringLiteral("/run/media/") + name + QLatin1Char('/')})
+        if (f.startsWith(root)) return true;
+    return false;
+}
+
 QList<PhysicalPendrive> PendriveRegistry::scanPhysical()
 {
     // From the account, not $USER or the home folder name: in a Snap the home folder is ~/snap/<name>/<revision>.

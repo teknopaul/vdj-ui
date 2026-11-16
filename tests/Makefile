@@ -1438,6 +1438,34 @@ vdj-ui-trakcrate-mix-preview-test/fast:
 .PHONY : vdj-ui-trakcrate-mix-preview-test/fast
 
 # Convenience name for target.
+tests/CMakeFiles/vdj-ui-discovery-line-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-discovery-line-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-discovery-line-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-discovery-line-test: tests/CMakeFiles/vdj-ui-discovery-line-test.dir/rule
+.PHONY : vdj-ui-discovery-line-test
+
+# fast build rule for target.
+vdj-ui-discovery-line-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build
+.PHONY : vdj-ui-discovery-line-test/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/rule
+
+# Convenience name for target.
+vdj-ui-audio-recorder-test: tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/rule
+.PHONY : vdj-ui-audio-recorder-test
+
+# fast build rule for target.
+vdj-ui-audio-recorder-test/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build
+.PHONY : vdj-ui-audio-recorder-test/fast
+
+# Convenience name for target.
 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
 .PHONY : tests/CMakeFiles/vdj-ui-test_autogen_timestamp_deps.dir/rule
@@ -3929,6 +3957,62 @@ vdj-ui-trakcrate-mix-preview-test_autogen/fast:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-mix-preview-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-mix-preview-test_autogen.dir/build
 .PHONY : vdj-ui-trakcrate-mix-preview-test_autogen/fast
 
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-discovery-line-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-discovery-line-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-discovery-line-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-discovery-line-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-discovery-line-test_autogen: tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/rule
+.PHONY : vdj-ui-discovery-line-test_autogen
+
+# fast build rule for target.
+vdj-ui-discovery-line-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/build
+.PHONY : vdj-ui-discovery-line-test_autogen/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/rule
+
+# Convenience name for target.
+vdj-ui-audio-recorder-test_autogen_timestamp_deps: tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/rule
+.PHONY : vdj-ui-audio-recorder-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-audio-recorder-test_autogen_timestamp_deps/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-audio-recorder-test_autogen_timestamp_deps/fast
+
+# Convenience name for target.
+tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/rule:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/rule
+.PHONY : tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/rule
+
+# Convenience name for target.
+vdj-ui-audio-recorder-test_autogen: tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/rule
+.PHONY : vdj-ui-audio-recorder-test_autogen
+
+# fast build rule for target.
+vdj-ui-audio-recorder-test_autogen/fast:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/build
+.PHONY : vdj-ui-audio-recorder-test_autogen/fast
+
 test_alsa_clock_beats.o: test_alsa_clock_beats.cpp.o
 .PHONY : test_alsa_clock_beats.o
 
@@ -3976,6 +4060,30 @@ test_audio.s: test_audio.cpp.s
 test_audio.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-test.dir/test_audio.cpp.s
 .PHONY : test_audio.cpp.s
+
+test_audio_recorder.o: test_audio_recorder.cpp.o
+.PHONY : test_audio_recorder.o
+
+# target to build an object file
+test_audio_recorder.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/test_audio_recorder.cpp.o
+.PHONY : test_audio_recorder.cpp.o
+
+test_audio_recorder.i: test_audio_recorder.cpp.i
+.PHONY : test_audio_recorder.i
+
+# target to preprocess a source file
+test_audio_recorder.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/test_audio_recorder.cpp.i
+.PHONY : test_audio_recorder.cpp.i
+
+test_audio_recorder.s: test_audio_recorder.cpp.s
+.PHONY : test_audio_recorder.s
+
+# target to generate assembly for a file
+test_audio_recorder.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/test_audio_recorder.cpp.s
+.PHONY : test_audio_recorder.cpp.s
 
 test_autoip_permanent.o: test_autoip_permanent.cpp.o
 .PHONY : test_autoip_permanent.o
@@ -4312,6 +4420,30 @@ test_diff_lock.s: test_diff_lock.cpp.s
 test_diff_lock.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test.dir/test_diff_lock.cpp.s
 .PHONY : test_diff_lock.cpp.s
+
+test_discovery_line.o: test_discovery_line.cpp.o
+.PHONY : test_discovery_line.o
+
+# target to build an object file
+test_discovery_line.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/test_discovery_line.cpp.o
+.PHONY : test_discovery_line.cpp.o
+
+test_discovery_line.i: test_discovery_line.cpp.i
+.PHONY : test_discovery_line.i
+
+# target to preprocess a source file
+test_discovery_line.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/test_discovery_line.cpp.i
+.PHONY : test_discovery_line.cpp.i
+
+test_discovery_line.s: test_discovery_line.cpp.s
+.PHONY : test_discovery_line.s
+
+# target to generate assembly for a file
+test_discovery_line.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/test_discovery_line.cpp.s
+.PHONY : test_discovery_line.cpp.s
 
 test_djtoolz_basics.o: test_djtoolz_basics.cpp.o
 .PHONY : test_djtoolz_basics.o
@@ -6089,6 +6221,30 @@ vdj-ui-alsa-clock-beats-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-alsa-clock-beats-test.dir/build.make tests/CMakeFiles/vdj-ui-alsa-clock-beats-test.dir/vdj-ui-alsa-clock-beats-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-alsa-clock-beats-test_autogen/mocs_compilation.cpp.s
 
+vdj-ui-audio-recorder-test_autogen/mocs_compilation.o: vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-audio-recorder-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-audio-recorder-test_autogen/mocs_compilation.i: vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-audio-recorder-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-audio-recorder-test_autogen/mocs_compilation.s: vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-audio-recorder-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-audio-recorder-test_autogen/mocs_compilation.cpp.s
+
 vdj-ui-audio-test_autogen/mocs_compilation.o: vdj-ui-audio-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-audio-test_autogen/mocs_compilation.o
 
@@ -6448,6 +6604,30 @@ vdj-ui-difflock-test_autogen/mocs_compilation.s: vdj-ui-difflock-test_autogen/mo
 vdj-ui-difflock-test_autogen/mocs_compilation.cpp.s:
 	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-difflock-test.dir/build.make tests/CMakeFiles/vdj-ui-difflock-test.dir/vdj-ui-difflock-test_autogen/mocs_compilation.cpp.s
 .PHONY : vdj-ui-difflock-test_autogen/mocs_compilation.cpp.s
+
+vdj-ui-discovery-line-test_autogen/mocs_compilation.o: vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-discovery-line-test_autogen/mocs_compilation.o
+
+# target to build an object file
+vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.o:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.o
+.PHONY : vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.o
+
+vdj-ui-discovery-line-test_autogen/mocs_compilation.i: vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-discovery-line-test_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.i:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.i
+.PHONY : vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.i
+
+vdj-ui-discovery-line-test_autogen/mocs_compilation.s: vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-discovery-line-test_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.s:
+	cd /home/teknopaul/bzr_workspace/vdj-ui && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.s
+.PHONY : vdj-ui-discovery-line-test_autogen/mocs_compilation.cpp.s
 
 vdj-ui-djtoolz-basics-test_autogen/mocs_compilation.o: vdj-ui-djtoolz-basics-test_autogen/mocs_compilation.cpp.o
 .PHONY : vdj-ui-djtoolz-basics-test_autogen/mocs_compilation.o
@@ -8218,6 +8398,8 @@ help:
 	@echo "... test"
 	@echo "... vdj-ui-alsa-clock-beats-test_autogen"
 	@echo "... vdj-ui-alsa-clock-beats-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-audio-recorder-test_autogen"
+	@echo "... vdj-ui-audio-recorder-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test_autogen"
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-autoip-permanent-test_autogen"
@@ -8248,6 +8430,8 @@ help:
 	@echo "... vdj-ui-deckphase-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-difflock-test_autogen"
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-discovery-line-test_autogen"
+	@echo "... vdj-ui-discovery-line-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-djtoolz-basics-test_autogen"
 	@echo "... vdj-ui-djtoolz-basics-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-djtoolz-controller-test_autogen"
@@ -8395,6 +8579,7 @@ help:
 	@echo "... vdj-ui-wrapper-test_autogen"
 	@echo "... vdj-ui-wrapper-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-alsa-clock-beats-test"
+	@echo "... vdj-ui-audio-recorder-test"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-autoip-permanent-test"
 	@echo "... vdj-ui-beat-phase-test"
@@ -8410,6 +8595,7 @@ help:
 	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-deckphase-test"
 	@echo "... vdj-ui-difflock-test"
+	@echo "... vdj-ui-discovery-line-test"
 	@echo "... vdj-ui-djtoolz-basics-test"
 	@echo "... vdj-ui-djtoolz-controller-test"
 	@echo "... vdj-ui-djtoolz-ctl-map-test"
@@ -8489,6 +8675,9 @@ help:
 	@echo "... test_audio.o"
 	@echo "... test_audio.i"
 	@echo "... test_audio.s"
+	@echo "... test_audio_recorder.o"
+	@echo "... test_audio_recorder.i"
+	@echo "... test_audio_recorder.s"
 	@echo "... test_autoip_permanent.o"
 	@echo "... test_autoip_permanent.i"
 	@echo "... test_autoip_permanent.s"
@@ -8531,6 +8720,9 @@ help:
 	@echo "... test_diff_lock.o"
 	@echo "... test_diff_lock.i"
 	@echo "... test_diff_lock.s"
+	@echo "... test_discovery_line.o"
+	@echo "... test_discovery_line.i"
+	@echo "... test_discovery_line.s"
 	@echo "... test_djtoolz_basics.o"
 	@echo "... test_djtoolz_basics.i"
 	@echo "... test_djtoolz_basics.s"
@@ -8753,6 +8945,9 @@ help:
 	@echo "... vdj-ui-alsa-clock-beats-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-alsa-clock-beats-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-alsa-clock-beats-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-audio-recorder-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-audio-recorder-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-audio-recorder-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-audio-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-audio-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-audio-test_autogen/mocs_compilation.s"
@@ -8798,6 +8993,9 @@ help:
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-difflock-test_autogen/mocs_compilation.s"
+	@echo "... vdj-ui-discovery-line-test_autogen/mocs_compilation.o"
+	@echo "... vdj-ui-discovery-line-test_autogen/mocs_compilation.i"
+	@echo "... vdj-ui-discovery-line-test_autogen/mocs_compilation.s"
 	@echo "... vdj-ui-djtoolz-basics-test_autogen/mocs_compilation.o"
 	@echo "... vdj-ui-djtoolz-basics-test_autogen/mocs_compilation.i"
 	@echo "... vdj-ui-djtoolz-basics-test_autogen/mocs_compilation.s"

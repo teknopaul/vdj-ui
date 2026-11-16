@@ -10,6 +10,9 @@ namespace db {
 namespace {
 
 constexpr uint32_t kTitleFlags = 0x01000000;    // arg 8 of every track title item in the captures
+// bit 0x100 of arg 8 of a track title item: the deck shows the track as played (green). A real deck sets it for the tracks it has played (earlier today too);
+// capture prolink-history-vdj-3.pcap: 0x1000000 -> 0x1000100, after the other deck sent 0x3001 [DMST, track] for it
+constexpr uint32_t kPlayedFlag = 0x100;
 constexpr uint32_t kTitleA11 = 0x100;           // arg 11 of every track title item in the captures
 constexpr char16_t kPlaceholder = 0x0009;       // label of every item when the menu byte of the DMST is 03
 constexpr uint32_t kNoSuchItem = 0xffffffff;
@@ -84,6 +87,22 @@ HandlerResult DbHandler::ok(const Message& req, uint32_t count) const
     return r;
 }
 
+std::vector<DbHandler::CueEntry>& DbHandler::cueEdits(uint32_t track) const
+{
+    auto it = cueEdits_.find(track);
+    if (it != cueEdits_.end()) return it->second;
+    std::vector<CueEntry> entries;
+    if (auto a = lib_.analysis(track)) {
+        std::vector<anlz_cue_t> cues;
+        if (a->cues(ANLZ_CUES_ALL, &cues)) {
+            const auto blob = extendedCuesBlob(cues);
+            for (size_t o = 0; o + kExtendedCueBytes <= blob.size(); o += kExtendedCueBytes)
+                entries.emplace_back(blob.begin() + long(o), blob.begin() + long(o + kExtendedCueBytes));
+        }
+    }
+    return cueEdits_[track] = std::move(entries);
+}
+
 HandlerResult DbHandler::unknown(const Message& req) const
 {
     HandlerResult r;
@@ -99,7 +118,7 @@ HandlerResult DbHandler::unknown(const Message& req) const
 MenuItem DbHandler::titleItem(const RbTrack& t, uint32_t position) const
 {
     MenuItem it = plain(0, t.id, t.title, ItemTitle);
-    it.flags = kTitleFlags;
+    it.flags = kTitleFlags | (played_.count(t.id) ? kPlayedFlag : 0);
     it.artwork = t.artworkId;
     it.position = position;
     it.a11 = kTitleA11;
@@ -149,7 +168,7 @@ std::vector<MenuItem> DbHandler::metadataItems(const RbTrack& t) const
     v.push_back(plain(0, t.bpmX100, "", ItemTempo));
     v.push_back(plain(0, t.id, t.comment, ItemComment));
     v.push_back(plain(1, t.keyId, lib_.keyName(t.keyId), ItemKey));
-    v.push_back(plain(0, t.rating, "", ItemRating));
+    v.push_back(plain(0, ratingOf(t), "", ItemRating));
     v.push_back(plain(0, t.colorId, t.colorId ? lib_.colorName(t.colorId) : "", ItemColorNone + t.colorId));
     v.push_back(plain(0, t.genreId, lib_.genreName(t.genreId), ItemGenre));
     v.push_back(plain(0, t.id, t.dateAdded, ItemDateAdded));
@@ -219,6 +238,21 @@ HandlerResult DbHandler::handle(const Message& req, Session& s) const
         cur = rootItems();
         r = ok(req, 8);         // see rootItems()
         break;
+    case ReqSortMenu: {         // (DMST menu 5, 0, request type the list is for e.g. 0x1202): the sort options, copied from a real deck (prolink-history-vdj-11.pcap)
+        struct Row { uint32_t id; const char* name; uint32_t type; };
+        static const Row rows[] = {{0, "DEFAULT", 0xa1}, {1, "ALPHABET", 0xa2}, {2, "ARTIST", 0x81}, {3, "ALBUM", 0x82},
+                                   {4, "BPM", 0x85}, {5, "RATING", 0x86}, {0xc, "KEY", 0x8b}};
+        cur.clear();
+        for (const Row& row : rows) {
+            MenuItem it;
+            it.a2 = row.id;
+            it.label1 = menuName(row.name);
+            it.type = row.type;
+            cur.push_back(it);
+        }
+        r = ok(req, uint32_t(cur.size()));
+        break;
+    }
     case ReqArtistMenu: {
         cur.clear();
         for (const RbNamed& a : lib_.artists()) cur.push_back(plain(0, a.id, a.name, ItemArtist));
@@ -324,7 +358,10 @@ HandlerResult DbHandler::handle(const Message& req, Session& s) const
             for (const RbPlaylistNode& n : lib_.playlistChildren(id))
                 cur.push_back(plain(id, n.id, n.name, n.isFolder ? ItemFolder : ItemPlaylist));
         } else {
-            cur = trackItems(lib_.playlistTracks(id), true);
+            // sort id from the sort menu (0 default = the playlist order, 0xc key, 4 bpm ...): the deck sends it as arg 2 of 0x1105 (prolink-history-vdj-13.pcap)
+            const int sort = int(num(req, 1));
+            auto ids = lib_.playlistTracks(id);
+            cur = trackItems(sort == 0 ? ids : lib_.sortIds(ids, sort), true);
         }
         r = ok(req, uint32_t(cur.size()));
         break;
@@ -395,10 +432,57 @@ HandlerResult DbHandler::handle(const Message& req, Session& s) const
         r.replies.push_back(binaryReply(req, RepWaveformDetail, blob));
         break;
     }
+    case ReqSaveCue: {          // (DMST, track, 1, 0x4c, blob(76)): the deck saved a cue / loop. A real player stores it and answers with the whole
+                                // updated list, like 0x2b04 (capture prolink-edit-real.pcap); nothing but RepOk made the deck show "USB FULL".
+        const uint32_t track = num(req, 1);
+        auto& list = cueEdits(track);
+        const std::vector<uint8_t>* e = req.args.size() > 4 && req.args[4].kind == Arg::Blob ? &req.args[4].blob : nullptr;
+        if (e && e->size() == kExtendedCueBytes) {
+            const uint8_t hot = (*e)[4];
+            const uint32_t timeMs = uint32_t((*e)[12]) | uint32_t((*e)[13]) << 8 | uint32_t((*e)[14]) << 16 | uint32_t((*e)[15]) << 24;
+            auto timeOf = [](const CueEntry& c) { return uint32_t(c[12]) | uint32_t(c[13]) << 8 | uint32_t(c[14]) << 16 | uint32_t(c[15]) << 24; };
+            // a hot cue is replaced by its number; memory points (0) by their position. GUESS: deleting is not in the capture yet
+            auto same = [&](const CueEntry& c) { return c[4] == hot && (hot != 0 || timeOf(c) == timeMs); };
+            bool replaced = false;
+            for (auto& c : list) if (same(c)) { c = *e; replaced = true; break; }
+            if (!replaced) list.push_back(*e);
+        }
+        std::vector<uint8_t> blob;
+        for (const auto& c : list) blob.insert(blob.end(), c.begin(), c.end());
+        r.replies.push_back(binaryReply(req, RepExtendedCues, blob, {Arg::number(uint32_t(list.size()))}));
+        break;
+    }
+    case ReqSetGridShift:       // (DMST, track, signed value): stored; real player answers RepOk [type, 0]
+        gridShift_[num(req, 1)] = int32_t(num(req, 2));
+        r = ok(req, 0);
+        break;
+    case ReqGridShift:          // right after the above: the real player sends the stored value (16 bit) and then a 0, two RepOk
+        r.replies.push_back(reply(req, RepOk, {Arg::number(req.type), Arg::number(uint32_t(gridShift_[num(req, 1)]) & 0xffff)}));
+        r.replies.push_back(reply(req, RepOk, {Arg::number(req.type), Arg::number(0)}));
+        break;
+    case ReqSetRating:          // (DMST, track, stars 0..5): the deck's star edit. A real deck answers RepOk [0x2107, 1] and then shows the new value in the
+                                // rating item (type 0xa, arg 2) of the next metadata render (prolink-history-vdj-star-edit.pcap). Kept in memory only.
+        ratingEdits_[num(req, 1)] = uint8_t(std::min<uint32_t>(num(req, 2), 5));
+        r = ok(req, 1);
+        break;
+    case ReqPlayed:             // (DMST, track): a deck has played / unloaded the track. Remember it for the played flag
+        played_.insert(num(req, 1));
+        break;                  // NO reply: a real server sends none (prolink-history-vdj-3.pcap: tx 0x580011f unanswered, the next request is 0x5800120);
+                                // our RepOk with the old txid arrived between the deck's next requests and the decks lost their tree view
+    case ReqPlayedAll:          // 0x3002 [DMST, 0xffffffff, 1]: GUESS, the same kind of notification, so also no reply
+        break;
+    case ReqPing:               // 0x0001 has no reply from a real player (capture): a reply with its txid would confuse the next request
+        break;
+    case ReqUnknown3100:        // real player: RepOk [0x3100, 0]
+        r = ok(req, 0);
+        break;
     case ReqExtendedCues: {     // (DMST, track id, 0)
         std::vector<uint8_t> blob;
         uint32_t count = 0;
-        if (auto a = lib_.analysis(num(req, 1))) {
+        if (cueEdits_.count(num(req, 1))) {
+            for (const auto& c : cueEdits_[num(req, 1)]) blob.insert(blob.end(), c.begin(), c.end());
+            count = uint32_t(cueEdits_[num(req, 1)].size());
+        } else if (auto a = lib_.analysis(num(req, 1))) {
             std::vector<anlz_cue_t> cues;
             if (a->cues(ANLZ_CUES_ALL, &cues)) {
                 blob = extendedCuesBlob(cues);

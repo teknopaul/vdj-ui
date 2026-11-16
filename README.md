@@ -378,3 +378,7 @@ Keen to get pcap dumps from other Pioneer hardware interactions. You need a port
 
 Happy to get midi maps for other midi controllers.  and module for other joysticks and gaming controllers
 
+
+## Recording
+
+The recording bar encodes with the `lame` command (the .deb depends on the `lame` package; `sudo apt install lame` otherwise). The optional compressor uses a LADSPA plugin (`caps`, recommended by the .deb).

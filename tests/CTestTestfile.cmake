@@ -182,3 +182,7 @@ add_test(vdj-ui-trakcrate-edit-dialogs-test "/home/teknopaul/bzr_workspace/vdj-u
 set_tests_properties(vdj-ui-trakcrate-edit-dialogs-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;465;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
 add_test(vdj-ui-trakcrate-mix-preview-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-trakcrate-mix-preview-test")
 set_tests_properties(vdj-ui-trakcrate-mix-preview-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;470;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
+add_test(vdj-ui-discovery-line-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-discovery-line-test")
+set_tests_properties(vdj-ui-discovery-line-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;475;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")
+add_test(vdj-ui-audio-recorder-test "/home/teknopaul/bzr_workspace/vdj-ui/target-test/vdj-ui-audio-recorder-test")
+set_tests_properties(vdj-ui-audio-recorder-test PROPERTIES  ENVIRONMENT "QT_QPA_PLATFORM=offscreen" _BACKTRACE_TRIPLES "/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;480;add_test;/home/teknopaul/bzr_workspace/vdj-ui/tests/CMakeLists.txt;0;")

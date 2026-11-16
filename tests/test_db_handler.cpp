@@ -206,6 +206,121 @@ private slots:
         QCOMPARE(p.next(back), StreamParser::MessageReady);
     }
 
+    // Replies of a real XDJ-700 in /var/tmp/prolink-edit-real.pcap: a cue save is answered with the whole updated list (0x4e02), not RepOk
+    void cueSaveReturnsTheUpdatedListLikeARealDeck()
+    {
+        DbHandler h(libBig_, 17);
+        Session s;
+        const uint32_t d = dmst(4, 8, 3, 1);
+        auto entry = [](uint8_t hot, uint8_t kind, uint32_t ms) {
+            std::vector<uint8_t> e(76, 0);
+            e[0] = 0x4c; e[4] = hot; e[6] = kind; e[10] = 0xe8; e[11] = 0x03;
+            for (int i = 0; i < 4; ++i) e[12 + i] = uint8_t(ms >> (8 * i));
+            return e;
+        };
+        const auto before = h.handle(req(ReqExtendedCues, {N(d), N(1935), N(0)}), s).replies[0];
+        const uint32_t n0 = before.args[4].num;
+        auto r = h.handle(req(ReqSaveCue, {N(d), N(1935), N(1), N(0x4c), Arg::blobArg(entry(1, 1, 8057))}, 9), s).replies;
+        QCOMPARE(int(r.size()), 1);
+        QCOMPARE(r[0].type, uint16_t(RepExtendedCues));
+        QCOMPARE(r[0].txid, 9u);
+        QCOMPARE(r[0].args[0].num, uint32_t(ReqSaveCue));
+        QCOMPARE(r[0].args[2].num, r[0].args[4].num * 76);               // size = count * 76
+        QVERIFY(r[0].args[4].num >= n0);
+        const uint32_t n1 = r[0].args[4].num;
+        // saving the same hot cue again replaces it, and a read of the list sees the edit
+        r = h.handle(req(ReqSaveCue, {N(d), N(1935), N(1), N(0x4c), Arg::blobArg(entry(1, 1, 9999))}, 10), s).replies;
+        QCOMPARE(r[0].args[4].num, n1);
+        auto list = h.handle(req(ReqExtendedCues, {N(d), N(1935), N(0)}), s).replies[0];
+        QCOMPARE(list.args[4].num, n1);
+        const auto& blob = list.args[3].blob;
+        bool found = false;
+        for (size_t o = 0; o + 76 <= blob.size(); o += 76)
+            if (blob[o + 4] == 1 && blob[o + 12] == (9999 & 0xff)) found = true;
+        QVERIFY(found);
+    }
+
+    void playedTracksGetThePlayedFlag()
+    {
+        DbHandler h(libBig_, 17);
+        Session s;
+        const uint32_t d = dmst(4, 1, 3, 1);
+        auto flagOf = [&](uint32_t id) {
+            // the title item of a track in a metadata render: find it via a track menu list
+            auto r = h.handle(req(ReqTrackMenu, {N(d), N(0)}), s).replies;
+            Q_UNUSED(r);
+            auto rr = h.handle(req(ReqRender, {N(d), N(0), N(4000), N(0), N(4000), N(0)}), s).replies;
+            for (const auto& m : rr)
+                if (m.type == RepMenuItem && m.args.size() > 7 && m.args[1].num == id && m.args[6].num == 4) return m.args[7].num;
+            return 0xffffffffu;
+        };
+        const uint32_t before = flagOf(1935);
+        QCOMPARE(before & 0x100u, 0u);
+        QVERIFY(!h.wasPlayed(1935));
+        auto r = h.handle(req(ReqPlayed, {N(d), N(1935)}), s).replies;
+        QVERIFY(r.empty());                                      // a real server does not answer 0x3001
+        QVERIFY(h.wasPlayed(1935));
+        QVERIFY(h.handle(req(ReqPlayedAll, {N(d), N(0xffffffff), N(1)}), s).replies.empty());
+        const uint32_t after = flagOf(1935);
+        QCOMPARE(after, before | 0x100u);                       // 0x1000000 -> 0x1000100 as the real deck does
+    }
+
+    void ratingEditIsAcknowledgedAndShownInTheMetadata()
+    {
+        DbHandler h(libBig_, 17);
+        Session s;
+        const uint32_t d = dmst(4, 1, 3, 1);
+        auto rating = [&]() {
+            h.handle(req(ReqMetadata, {N(d), N(1935)}), s);
+            auto rr = h.handle(req(ReqRender, {N(d), N(0), N(11), N(0), N(11), N(0)}), s).replies;
+            for (const auto& m : rr)
+                if (m.type == RepMenuItem && m.args.size() > 7 && m.args[6].num == 0xa) return int(m.args[1].num);
+            return -1;
+        };
+        const int before = rating();
+        QVERIFY(before >= 0);
+        auto r = h.handle(req(ReqSetRating, {N(d), N(1935), N(5)}, 7), s).replies;
+        QCOMPARE(int(r.size()), 1);
+        QCOMPARE(r[0].type, uint16_t(RepOk));
+        QCOMPARE(r[0].args[0].num, uint32_t(ReqSetRating));
+        QCOMPARE(r[0].args[1].num, 1u);                       // as the real deck: RepOk [0x2107, 1]
+        QCOMPARE(rating(), 5);
+        h.handle(req(ReqSetRating, {N(d), N(1935), N(0)}, 8), s);
+        QCOMPARE(rating(), 0);
+    }
+
+    void sortMenuHasTheSevenOptionsOfARealDeck()
+    {
+        DbHandler h(libBig_, 17);
+        Session s;
+        const uint32_t d = dmst(4, 5, 3, 1);
+        auto r = h.handle(req(ReqSortMenu, {N(d), N(0), N(0x1202)}), s).replies;
+        QCOMPARE(r[0].type, uint16_t(RepOk));
+        QCOMPARE(r[0].args[0].num, uint32_t(ReqSortMenu));
+        QCOMPARE(r[0].args[1].num, 7u);
+        auto items = h.handle(req(ReqRender, {N(d), N(0), N(7), N(0), N(7), N(0)}), s).replies;
+        int n = 0;
+        for (const auto& m : items) if (m.type == RepMenuItem) ++n;
+        QCOMPARE(n, 7);
+    }
+
+    void gridShiftIsEchoedAndPingIsSilent()
+    {
+        DbHandler h(libBig_, 17);
+        Session s;
+        const uint32_t d = dmst(4, 1, 3, 1);
+        auto r = h.handle(req(ReqSetGridShift, {N(d), N(0xafb), N(0xfffffefa)}, 3), s).replies;
+        QCOMPARE(int(r.size()), 1);
+        QCOMPARE(r[0].type, uint16_t(RepOk));
+        QCOMPARE(r[0].args[1].num, 0u);
+        r = h.handle(req(ReqGridShift, {N(d), N(0xafb)}, 4), s).replies;
+        QCOMPARE(int(r.size()), 2);                                       // as the real deck: [0x2804, value & 0xffff] then [0x2804, 0]
+        QCOMPARE(r[0].args[0].num, uint32_t(ReqGridShift));
+        QCOMPARE(r[0].args[1].num, 0xfefau);
+        QCOMPARE(r[1].args[1].num, 0u);
+        QVERIFY(h.handle(req(ReqPing, {}, 5), s).replies.empty());
+    }
+
     void artworkReply()
     {
         DbHandler h(libBig_, 17);

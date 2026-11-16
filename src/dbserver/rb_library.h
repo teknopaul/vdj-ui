@@ -137,6 +137,9 @@ public:
     // History playlists are not exported by this model yet.
     std::vector<RbNamed> history() const { return {}; }
 
+    // The ids sorted by a sort id of the deck's sort menu (4 bpm, 0xc key ...), ties by title.
+    std::vector<uint32_t> sortIds(std::vector<uint32_t> ids, int sort) const;
+
     // Analysis files of a track (cached, a few at a time). nullptr when the track has no readable analysis.
     std::shared_ptr<TrackAnalysis> analysis(uint32_t trackId) const;
 
@@ -148,7 +151,6 @@ private:
 
     static std::string nameOf(const NameMap& m, uint32_t id);
     static std::vector<RbNamed> sortedNames(const NameMap& m);
-    std::vector<uint32_t> sortIds(std::vector<uint32_t> ids, int sort) const;
     std::string sortKey(const RbTrack& t, int sort) const;
 
     bool loaded_ = false;

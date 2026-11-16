@@ -1,8 +1,10 @@
 #include "audio_recorder.h"
+#include "ladspa_effect.h"
 
 #include <QAtomicInt>
 #include <QDebug>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QThread>
 
 #include <alsa/asoundlib.h>
@@ -42,39 +44,66 @@ protected:
                     .arg(device_, QString::fromLatin1(snd_strerror(err))));
             return;
         }
+        auto fail = [&](const char* what, int e) {
+            emit errorOccurred(QStringLiteral("%1 failed on '%2': %3").arg(QLatin1String(what), device_, QString::fromLatin1(snd_strerror(e))));
+            snd_pcm_close(pcm);
+        };
 
         snd_pcm_hw_params_t* hwp;
         snd_pcm_hw_params_alloca(&hwp);
-        snd_pcm_hw_params_any(pcm, hwp);
-        snd_pcm_hw_params_set_access(pcm, hwp, SND_PCM_ACCESS_RW_INTERLEAVED);
-        snd_pcm_hw_params_set_format(pcm, hwp, SND_PCM_FORMAT_S16_LE);
-        snd_pcm_hw_params_set_channels(pcm, hwp, 2);
+        if ((err = snd_pcm_hw_params_any(pcm, hwp)) < 0) return fail("hw_params_any", err);
+        if ((err = snd_pcm_hw_params_set_access(pcm, hwp, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) return fail("set_access", err);
+        if ((err = snd_pcm_hw_params_set_format(pcm, hwp, SND_PCM_FORMAT_S16_LE)) < 0) return fail("set_format (16 bit)", err);
+        // a multi-channel interface (a mixer card) offers more than two: ask for two, accept what the device gives and use the first two
+        unsigned int channels = 2;
+        if ((err = snd_pcm_hw_params_set_channels_near(pcm, hwp, &channels)) < 0) return fail("set_channels", err);
         unsigned int rate = 44100;
-        snd_pcm_hw_params_set_rate_near(pcm, hwp, &rate, nullptr);
+        if ((err = snd_pcm_hw_params_set_rate_near(pcm, hwp, &rate, nullptr)) < 0) return fail("set_rate", err);
         snd_pcm_uframes_t period = 1024;
         snd_pcm_hw_params_set_period_size_near(pcm, hwp, &period, nullptr);
-        if ((err = snd_pcm_hw_params(pcm, hwp)) < 0) {
-            emit errorOccurred(
-                QStringLiteral("PCM hw_params failed: %1")
-                    .arg(QString::fromLatin1(snd_strerror(err))));
-            snd_pcm_close(pcm);
-            return;
-        }
+        if ((err = snd_pcm_hw_params(pcm, hwp)) < 0) return fail("hw_params", err);
+        if (rate != 44100) qWarning() << "recording:" << device_ << "runs at" << rate << "Hz, the file will play at the wrong speed";
+        const int ch = int(std::max(1u, channels));
 
-        const int frameBytes = 4;  // 2 channels * 2 bytes / sample
-        QByteArray buf(static_cast<int>(period) * frameBytes, '\0');
+        const int devFrameBytes = 2 * ch;
+        QByteArray buf(static_cast<int>(period) * devFrameBytes, '\0');
+        snd_pcm_prepare(pcm);
+        snd_pcm_start(pcm);
+        int failures = 0;
 
+        // snd_pcm_wait with a timeout: a device that opens but never delivers data (no clock, nothing connected) must not keep the loop
+        // from seeing the stop flag, or stopping would block (and deleting the thread after a timeout aborts the whole program)
         while (!stop_.loadRelaxed()) {
-            snd_pcm_sframes_t n = snd_pcm_readi(
-                pcm, buf.data(), static_cast<snd_pcm_uframes_t>(period));
+            const int w = snd_pcm_wait(pcm, 100);
+            if (stop_.loadRelaxed()) break;
+            if (w == 0) continue;                           // nothing yet
+            if (w < 0) {
+                if (++failures > 5) { emit errorOccurred(QStringLiteral("Capture on '%1' stopped: %2").arg(device_, QString::fromLatin1(snd_strerror(w)))); break; }
+                snd_pcm_recover(pcm, w, 1);
+                snd_pcm_start(pcm);
+                continue;
+            }
+            snd_pcm_sframes_t n = snd_pcm_readi(pcm, buf.data(), static_cast<snd_pcm_uframes_t>(period));
             if (n < 0) {
                 if (stop_.loadRelaxed()) break;
+                if (++failures > 5) { emit errorOccurred(QStringLiteral("Capture on '%1' stopped: %2").arg(device_, QString::fromLatin1(snd_strerror(int(n))))); break; }
                 snd_pcm_recover(pcm, static_cast<int>(n), 1);
                 continue;
             }
             if (n == 0) continue;
+            failures = 0;
 
-            const auto* s = reinterpret_cast<const int16_t*>(buf.constData());
+            // to stereo s16: the first two channels, or the one channel twice
+            QByteArray stereo;
+            const int16_t* src = reinterpret_cast<const int16_t*>(buf.constData());
+            if (ch == 2) stereo = buf.left(static_cast<int>(n) * 4);
+            else {
+                stereo.resize(static_cast<int>(n) * 4);
+                auto* d = reinterpret_cast<int16_t*>(stereo.data());
+                for (int f = 0; f < n; ++f) { d[2 * f] = src[f * ch]; d[2 * f + 1] = src[f * ch + (ch > 1 ? 1 : 0)]; }
+            }
+
+            const auto* s = reinterpret_cast<const int16_t*>(stereo.constData());
             int count = static_cast<int>(n) * 2;
             double sumSq = 0.0, sumCh[2] = {0.0, 0.0};
             float peak[2] = {0.0f, 0.0f};
@@ -87,7 +116,7 @@ protected:
             float rms = static_cast<float>(std::sqrt(sumSq / count));
             const double frames = std::max(1, count / 2);
             emit levels(peak[0], peak[1], static_cast<float>(std::sqrt(sumCh[0] / frames)), static_cast<float>(std::sqrt(sumCh[1] / frames)));
-            if (!meterOnly_) emit chunkReady(buf.left(static_cast<int>(n) * frameBytes), rms);
+            if (!meterOnly_) emit chunkReady(stereo, rms);
         }
 
         snd_pcm_drop(pcm);
@@ -103,6 +132,25 @@ private:
 // -------------------------------------------------------------------------
 // AudioRecorder
 // -------------------------------------------------------------------------
+
+namespace {
+// Stop a capture thread and let go of it. A QThread must never be deleted while it runs (Qt aborts the program): when it does not finish in
+// time it is detached and deletes itself when it does.
+void stopAndRelease(RecordThread*& t)
+{
+    if (!t) return;
+    RecordThread* th = t;
+    t = nullptr;
+    th->disconnect();
+    th->requestStop();
+    if (th->wait(2000)) {
+        delete th;
+        return;
+    }
+    th->setParent(nullptr);
+    QObject::connect(th, &QThread::finished, th, &QObject::deleteLater);
+}
+} // namespace
 
 AudioRecorder::AudioRecorder(QObject* parent) : QObject(parent) {}
 
@@ -128,6 +176,15 @@ QStringList AudioRecorder::availableDevices()
     return result;
 }
 
+bool AudioRecorder::compressorAvailable() { return LadspaEffect::compressorAvailable(); }
+
+bool AudioRecorder::lameAvailable(QString* path)
+{
+    const QString p = QStandardPaths::findExecutable(QStringLiteral("lame"));
+    if (path) *path = p;
+    return !p.isEmpty();
+}
+
 void AudioRecorder::startMonitor(const QString& alsaDevice)
 {
     stopMonitor();
@@ -141,12 +198,7 @@ void AudioRecorder::startMonitor(const QString& alsaDevice)
 
 void AudioRecorder::stopMonitor()
 {
-    if (!monitor_) return;
-    monitor_->disconnect(this);
-    monitor_->requestStop();
-    monitor_->wait(3000);
-    monitor_->deleteLater();
-    monitor_ = nullptr;
+    stopAndRelease(monitor_);
 }
 
 void AudioRecorder::onMonitorLevels(float peakL, float peakR, float rmsL, float rmsR)
@@ -159,6 +211,10 @@ bool AudioRecorder::start(const QString& alsaDevice, const QString& outputPath)
     stopMonitor();                                          // one open of the sound card at a time
     if (recording_) stop();
 
+    if (!lameAvailable()) {
+        emit errorOccurred(QStringLiteral("lame is not installed, so nothing can be recorded to mp3 (sudo apt install lame)"));
+        return false;
+    }
     startLame(outputPath);
     if (!lame_ || lame_->state() != QProcess::Running) {
         emit errorOccurred(
@@ -167,6 +223,12 @@ bool AudioRecorder::start(const QString& alsaDevice, const QString& outputPath)
         return false;
     }
 
+    effect_.reset();
+    if (compressor_) {
+        QString why;
+        effect_ = LadspaEffect::createCompressor(44100, &why);
+        if (!effect_) emit errorOccurred(why + QStringLiteral(" (install the 'caps' package); recording without the compressor"));
+    }
     currentDevice_ = alsaDevice;
     thread_ = new RecordThread(alsaDevice, this);
     connect(thread_, &RecordThread::chunkReady,
@@ -208,8 +270,15 @@ void AudioRecorder::split(const QString& newOutputPath)
 
 void AudioRecorder::onChunkReady(const QByteArray& data, float rms)
 {
-    if (lame_ && lame_->state() == QProcess::Running)
-        lame_->write(data);
+    if (lame_ && lame_->state() == QProcess::Running) {
+        if (effect_ && data.size() >= 4) {
+            QByteArray out(data.size(), '\0');
+            effect_->process(reinterpret_cast<const int16_t*>(data.constData()), reinterpret_cast<int16_t*>(out.data()), size_t(data.size() / 4));
+            lame_->write(out);
+        } else {
+            lame_->write(data);
+        }
+    }
     emit levelChanged(rms);
 }
 
@@ -241,11 +310,7 @@ void AudioRecorder::stopLame()
 
 void AudioRecorder::stopThread()
 {
-    if (!thread_) return;
-    thread_->requestStop();
-    thread_->wait(3000);
-    thread_->deleteLater();
-    thread_ = nullptr;
+    stopAndRelease(thread_);
 }
 
 } // namespace vdj

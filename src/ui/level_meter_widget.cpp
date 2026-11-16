@@ -22,6 +22,15 @@ LevelMeterWidget::LevelMeterWidget(QWidget* parent) : QWidget(parent)
     for (QElapsedTimer& t : holdAge_) t.start();
 }
 
+void LevelMeterWidget::setCompact(bool on)
+{
+    compact_ = on;
+    setMinimumHeight(on ? 22 : 56);
+    setMaximumHeight(on ? 26 : QWIDGETSIZE_MAX);
+    updateGeometry();
+    update();
+}
+
 float LevelMeterWidget::toDb(float linear)
 {
     if (!(linear > 0.0f)) return kFloorDb;
@@ -87,6 +96,33 @@ void LevelMeterWidget::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing, false);
     p.fillRect(rect(), QColor(24, 24, 24));
+    if (compact_) {
+        const int barH = 8, gap = 2, top = (height() - 2 * barH - gap) / 2, clipW = 10;
+        const int x0 = 2, barW = std::max(20, width() - x0 - clipW - 6);
+        for (int c = 0; c < 2; ++c) {
+            const int y = top + c * (barH + gap);
+            struct Zone { float from, to; QColor on, off; };
+            const Zone zones[] = {
+                {kFloorDb, kTargetLowDb, QColor(60, 150, 90), QColor(34, 52, 40)},
+                {kTargetLowDb, kHotDb, QColor(70, 210, 110), QColor(36, 70, 46)},
+                {kHotDb, kRedDb, QColor(240, 200, 40), QColor(78, 68, 24)},
+                {kRedDb, 0.0f, QColor(235, 60, 50), QColor(80, 28, 26)},
+            };
+            for (const Zone& z : zones) {
+                const int xa = x0 + int(xFor(z.from, barW)), xb = x0 + int(xFor(z.to, barW));
+                p.fillRect(xa, y, xb - xa, barH, z.off);
+                const float lit = std::min(z.to, rmsDb_[c]);
+                if (lit > z.from) p.fillRect(xa, y, int(xFor(lit, barW)) + x0 - xa, barH, z.on);
+            }
+            if (hold_[c] > kFloorDb) {
+                p.setPen(QPen(hold_[c] >= kClipDb ? QColor(255, 90, 80) : QColor(230, 230, 230), 2));
+                const int hx = x0 + std::min(barW - 1, int(xFor(hold_[c], barW)));
+                p.drawLine(hx, y, hx, y + barH - 1);
+            }
+        }
+        p.fillRect(width() - clipW - 2, top, clipW, 2 * barH + gap, clip_ ? QColor(235, 40, 30) : QColor(62, 28, 26));
+        return;
+    }
     const int labelW = 14, readW = 62, top = 4, barH = 14, gap = 4;
     const int x0 = labelW, barW = std::max(20, width() - labelW - readW - kClipBox - 8);
     const QFontMetrics fm(font());

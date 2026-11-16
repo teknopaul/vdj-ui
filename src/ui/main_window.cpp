@@ -25,7 +25,8 @@
 #include "bpm_ramp_widget.h"
 #include "hud_window.h"
 #include "djtoolz_panel.h"
-#include "recording_panel.h"
+#include "recording_bar.h"
+#include <QToolBar>
 #include "pendrive_clone_dialog.h"
 #include "virtual_pendrives_dialog.h"
 #include "pendrive_toolbar.h"
@@ -703,7 +704,7 @@ void MainWindow::setupMenus()
         mixWindow_->activateWindow();
     });
 
-    recordAction_ = view->addAction("&Recording Panel");
+    recordAction_ = view->addAction("&Recording Bar");
     recordAction_->setIcon(glyphIcon(QStringLiteral("🔴")));
     recordAction_->setCheckable(true);
 
@@ -725,6 +726,22 @@ void MainWindow::setupMenus()
         PacketLogger::instance().setPacketLevel(on);
         config_->saveValue(QStringLiteral("debug"), QStringLiteral("log_packets"), on ? QStringLiteral("1") : QStringLiteral("0"));
     });
+
+    QAction* rawTcpAction = view->addAction("Log Ra&w TCP of the dbserver");
+    rawTcpAction->setCheckable(true);
+    rawTcpAction->setToolTip("The LINK export writes dbserver-<ip>-<time>.raw.log for every TCP connection of a deck (1051, and the port query 12523): "
+                             "each socket event with a time, and every byte received and sent in hex, whether or not it parses. Off by default; "
+                             "applies to connections made after it is switched on. Files are in ~/.local/share/vdj-ui/linkexport/.");
+    {
+        const bool on = config_->loadValue(QStringLiteral("debug"), QStringLiteral("log_raw_tcp")) == QLatin1String("1");
+        rawTcpAction->setChecked(on);
+        network_->setRawTcpLog(on);
+    }
+    connect(rawTcpAction, &QAction::toggled, this, [this](bool on) {
+        network_->setRawTcpLog(on);
+        config_->saveValue(QStringLiteral("debug"), QStringLiteral("log_raw_tcp"), on ? QStringLiteral("1") : QStringLiteral("0"));
+    });
+    rawTcpAction_ = rawTcpAction;
 
     QAction* syncTelemetryAction = view->addAction("Log &Sync Telemetry (CSV)");
     syncTelemetryAction->setCheckable(true);
@@ -1459,6 +1476,8 @@ void MainWindow::setupDemoDecks()
         vl->addWidget(pendriveBar_);
         vl->addWidget(trackBrowser_, 1);
         connect(pendriveBar_, &PendriveToolBar::openRequested, this, &MainWindow::openPendrive);
+        connect(pendriveBar_, &PendriveToolBar::clearRequested, this, [this]() { trackBrowser_->clearView(); });
+        connect(trackBrowser_, &TrackBrowser::viewCleared, pendriveBar_, [this]() { pendriveBar_->setViewed(QString()); });
         connect(pendriveBar_, &PendriveToolBar::insertRequested, this, &MainWindow::exportPendrive);
         connect(pendriveBar_, &PendriveToolBar::stopRequested, this, &MainWindow::ejectPendrive);
         connect(pendriveBar_, &PendriveToolBar::deckRequested, this, &MainWindow::browseDeck);
@@ -1824,6 +1843,14 @@ PendriveRegistry* MainWindow::pendrives()
         pendrives_->load(config_);
         connect(pendrives_, &PendriveRegistry::changed, this, [this]() { pendrives_->save(config_); });
         connect(pendrives_, &PendriveRegistry::physicalChanged, this, [this]() {
+            // the stick the viewer shows was unmounted: the viewer goes empty instead of showing data that cannot be opened any more
+            if (trackBrowser_ && !trackBrowser_->isRemote()) {
+                const QString shown = trackBrowser_->shownFolder();
+                if (!shown.isEmpty() && !QDir(shown).exists(QStringLiteral("Contents"))) {
+                    trackBrowser_->clearView();
+                    statusBar()->showMessage(QStringLiteral("%1 is no longer there: the viewer is empty").arg(shown), 6000);
+                }
+            }
             // a stick pulled out from under the export: the slot goes empty (the decks notice the same way as for USB STOP)
             LinkExport* le = network_->linkExport();
             if (le && le->running() && le->usbState() == LinkExport::UsbState::Ready && !PendriveRegistry::isRekordboxFolder(le->folder()))
@@ -1976,7 +2003,8 @@ void MainWindow::rebuildExportMenu()
         setLinkExportEnabled(true);
     });
     exportMenu_->addSeparator();
-    for (const auto& p : pendrives()->virtualPendrives()) add(p.name, p.folder, p.name);
+    for (const auto& p : pendrives()->virtualPendrives())
+        if (!PendriveRegistry::isOnPhysicalMount(p.folder)) add(p.name, p.folder, p.name);       // a stick's own entry is the "(plugged in)" one below
     exportMenu_->addSeparator();
     for (const auto& p : PendriveRegistry::scanPhysical()) add(p.name + QStringLiteral(" (plugged in)"), p.mountPoint, p.name);
     exportMenu_->addSeparator();
@@ -2295,8 +2323,25 @@ void MainWindow::setDebugModeFromCli()
     setDebugMode(true);
 }
 
+// A recording is running: quitting stops it. Ask first (the hook is for tests).
+bool MainWindow::confirmQuitWhileRecording()
+{
+    if (!recorder_ || !recorder_->isRecording()) return true;
+    if (quitWhileRecordingHook_) return quitWhileRecordingHook_();
+    QMessageBox box(QMessageBox::Warning, tr("Recording"), tr("A recording is running (%1).\nStop it and quit?").arg(recorder_->currentFile()), QMessageBox::NoButton, this);
+    QPushButton* quit = box.addButton(tr("Stop recording and quit"), QMessageBox::DestructiveRole);
+    QPushButton* keep = box.addButton(tr("Keep recording"), QMessageBox::RejectRole);
+    box.setDefaultButton(keep);
+    box.exec();
+    return box.clickedButton() == quit;
+}
+
 void MainWindow::closeEvent(QCloseEvent* event)
 {
+    if (!confirmQuitWhileRecording()) {
+        event->ignore();
+        return;
+    }
     if (!confirmLeavingLink(tr("Quit"))) {
         event->ignore();
         return;
@@ -2534,15 +2579,18 @@ void MainWindow::startMidiMap(const QString& path)
 void MainWindow::setupRecording()
 {
     recorder_ = new AudioRecorder(this);
-    recordingPanel_ = new RecordingPanel(recorder_);
-    recordDock_ = new QDockWidget(QStringLiteral("Recording"), this);
-    recordDock_->setObjectName(QStringLiteral("recordDock"));
-    recordDock_->setWidget(recordingPanel_);
-    addDockWidget(Qt::RightDockWidgetArea, recordDock_);
-    recordDock_->hide();
-    // the action and the dock's close button stay in step
-    connect(recordAction_, &QAction::toggled, recordDock_, &QDockWidget::setVisible);
-    connect(recordDock_, &QDockWidget::visibilityChanged, recordAction_, &QAction::setChecked);
+    recordingBar_ = new RecordingBar(recorder_, config_);
+    // one line across the bottom, under the other bars
+    recordToolBar_ = new QToolBar(QStringLiteral("Recording"), this);
+    recordToolBar_->setObjectName(QStringLiteral("recordBar"));
+    recordToolBar_->setMovable(false);
+    recordToolBar_->setFloatable(false);
+    recordToolBar_->addWidget(recordingBar_);
+    recordingBar_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    addToolBar(Qt::BottomToolBarArea, recordToolBar_);
+    recordToolBar_->hide();
+    connect(recordAction_, &QAction::toggled, recordToolBar_, &QToolBar::setVisible);
+    connect(recordToolBar_, &QToolBar::visibilityChanged, recordAction_, &QAction::setChecked);
     connect(recorder_, &AudioRecorder::recordingStarted, this,
             [this](const QString& p) { statusBar()->showMessage(QStringLiteral("Recording to %1").arg(p), 5000); });
     connect(recorder_, &AudioRecorder::recordingStopped, this,

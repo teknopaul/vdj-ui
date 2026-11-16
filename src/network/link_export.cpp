@@ -116,6 +116,7 @@ bool LinkExport::start(const Config& cfg, QString* error)
     sc.dbPort = cfg.dbPort;
     sc.deviceNumber = cfg.deviceNumber;
     sc.logDir = cfg.logDir;
+    sc.rawTcpLog = cfg.rawTcpLog;
     QString serr;
     if (!server_->start(sc, &serr)) return fail(serr);
 
@@ -127,6 +128,15 @@ bool LinkExport::start(const Config& cfg, QString* error)
     emit logLine(QStringLiteral("LINK export: %1 tracks from %2 as player %3, USB slot 3")
                      .arg(lib_.trackCount()).arg(cfg.folder).arg(cfg.deviceNumber));
     return true;
+}
+
+QString LinkExport::dbStatusText() const
+{
+    if (!server_) return QStringLiteral("db: not running");
+    const auto& st = server_->stats();
+    QString s = QStringLiteral("db: %1 unknown").arg(st.unknownRequests);
+    if (st.unknownRequests) s += QStringLiteral(" (last 0x%1)").arg(st.lastUnknownType, 4, 16, QLatin1Char('0'));
+    return s;
 }
 
 void LinkExport::stop()

@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 #include "ui/main_window.h"
+#include "audio/audio_recorder.h"
 #include "ui/deck_area.h"
 #include "network/network_manager.h"
 #include "nfs/nfs_mount_manager.h"
@@ -23,6 +24,7 @@ class TestIntegration : public QObject
 private slots:
     void mainWindowConstructs();
     void mainWindowShutdown();
+    void closingWhileRecordingAsksFirst();
     void windowMinimumWidths();
     void networkErrorHandled();
     void nfsFailureHandled();
@@ -55,6 +57,25 @@ void TestIntegration::mainWindowShutdown()
     // Closing the window must not crash and must tear down cleanly
     window.close();
     QVERIFY(window.isHidden() || !window.isVisible());
+}
+
+void TestIntegration::closingWhileRecordingAsksFirst()
+{
+    vdj::MainWindow window;
+    window.show();
+    QTemporaryDir dir;
+    if (!window.recorder()->start(QStringLiteral("null"), dir.filePath("t.mp3"))) QSKIP("cannot record here (no lame or no null capture device)");
+    int asked = 0;
+    bool answer = false;
+    window.setQuitWhileRecordingHook([&]() { ++asked; return answer; });
+    window.close();                                       // "Keep recording"
+    QCOMPARE(asked, 1);
+    QVERIFY(window.isVisible());
+    QVERIFY(window.recorder()->isRecording());
+    answer = true;
+    window.close();                                       // "Stop recording and quit"
+    QCOMPARE(asked, 2);
+    QVERIFY(!window.recorder()->isRecording());
 }
 
 void TestIntegration::windowMinimumWidths()

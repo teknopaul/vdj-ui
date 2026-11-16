@@ -41,6 +41,7 @@ PendriveToolBar::PendriveToolBar(PendriveRegistry* registry, QWidget* parent)
     }
 
     connect(combo_, QOverload<int>::of(&QComboBox::activated), this, [this](int i) {
+        if (i == 0) { viewed_.clear(); remotePid_ = 0; updateButtons(); emit clearRequested(); return; }
         const QVariant deck = combo_->itemData(i, RoleDeck);
         if (deck.isValid()) {
             emit deckRequested(deck.toInt(), combo_->itemData(i, RoleDeckIp).toString());
@@ -70,7 +71,7 @@ void PendriveToolBar::rebuild()
 {
     const bool was = combo_->blockSignals(true);
     combo_->clear();
-    combo_->addItem(QStringLiteral("(choose a pendrive)"), QString());
+    combo_->addItem(QStringLiteral("(no pendrive)"), QString());
     auto add = [this](const QString& label, const QString& folder, const QString& name) {
         const bool isExp = !exported_.isEmpty() && QDir::cleanPath(folder) == QDir::cleanPath(exported_);
         combo_->addItem(isExp ? label + QStringLiteral("  ▶ in the decks") : label, folder);
@@ -78,7 +79,7 @@ void PendriveToolBar::rebuild()
         combo_->setItemData(combo_->count() - 1, folder, Qt::ToolTipRole);
     };
     for (const auto& p : registry_->virtualPendrives())
-        add(p.name, p.folder, p.name);
+        if (!PendriveRegistry::isOnPhysicalMount(p.folder)) add(p.name, p.folder, p.name);      // the "(plugged in)" entry below is the stick itself
     for (const auto& p : PendriveRegistry::scanPhysical())
         if (p.hasRekordbox) add(p.name + QStringLiteral(" (plugged in)"), p.mountPoint, p.name);
     for (const RemoteDeck& d : decks_) {                       // decks on the network, after the pendrives

@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
     if (debug) {
         window.setDebugModeFromCli();
     }
+    if (args.contains(QStringLiteral("--link-tcp-raw"))) window.setLinkTcpRaw(true);      // dbserver byte-exact TCP logs (also View menu)
     // --link-export <folder>: serve that pendrive / export as a LINK player once connected (also in the Network menu)
     {
         const int i = args.indexOf(QStringLiteral("--link-export"));

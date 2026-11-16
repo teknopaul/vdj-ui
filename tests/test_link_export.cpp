@@ -4,6 +4,7 @@
 #include <QTemporaryDir>
 #include <QUdpSocket>
 
+#include "dbserver/db_codec.h"
 #include "network/link_export.h"
 
 extern "C" {
@@ -98,6 +99,35 @@ private slots:
 
         le.stop();
         QVERIFY(!le.running());
+    }
+
+    void dbStatusTextCountsUnknownRequests()
+    {
+        QTemporaryDir logs;
+        LinkExport le;
+        QCOMPARE(le.dbStatusText(), QStringLiteral("db: not running"));
+        LinkExport::Config c;
+        c.folder = QStringLiteral(VDJ_DBSERVER_FIXTURES "/export7");
+        c.deviceNumber = 2;
+        c.logDir = logs.path();
+        c.queryPort = 0; c.dbPort = 0;
+        c.altPortmapPort = 53321; c.portmapPort = 0; c.mountPort = 53322; c.nfsPort = 53359;
+        QString err;
+        QVERIFY2(le.start(c, &err), qPrintable(err));
+        QCOMPARE(le.dbStatusText(), QStringLiteral("db: 0 unknown"));
+        QTcpSocket s;
+        s.connectToHost(QHostAddress::LocalHost, le.server()->dbPort());
+        QVERIFY(s.waitForConnected(2000));
+        s.write(QByteArray::fromHex("1100000001"));              // greeting
+        db::Message m;
+        m.txid = 5;
+        m.type = 0x7777;
+        m.args = {db::Arg::number(0x04010301), db::Arg::number(7)};
+        const auto e = db::encode(m);
+        s.write(reinterpret_cast<const char*>(e.data()), qint64(e.size()));
+        QVERIFY(QTest::qWaitFor([&] { return le.server()->stats().unknownRequests > 0; }, 2000));
+        QVERIFY(le.dbStatusText().startsWith("db: 1 unknown (last 0x7777)"));
+        le.stop();
     }
 
     void refusesWithoutAPlayerNumberOrAFolder()

@@ -6,6 +6,7 @@
 #include <QSet>
 #include <QHash>
 #include <QMutex>
+#include "network/discovery_line.h"
 #include <cstdint>
 #include <cmath>
 #include <functional>
@@ -100,6 +101,7 @@ public slots:
     // LINK export (off by default): serve a pendrive / rekordbox export folder to the other players the way a deck serves its USB stick.
     // An empty folder switches it off. Takes effect at the next connect (or at once when connected).
     void setLinkExportFolder(const QString& folder);
+    void setRawTcpLog(bool on);   // dbserver byte-exact TCP logs
     QString linkExportFolder() const { return linkExportFolder_; }
     bool linkExportRunning() const;
     // Pretend to press USB STOP on the exported pendrive (see LinkExport::requestUnmount): returns why it was refused, or an empty string.
@@ -132,6 +134,8 @@ private:
     vdj_beat_ph beatPh_ = nullptr;
     vdj_beat_unicast_ph beatUnicastPh_ = nullptr;
     QSet<int> knownMembers_;
+    QMutex discoveryLogMutex_;                // onDiscovery runs on the libcdj receive thread
+    DiscoveryLineLimiter discoveryLimiter_;
     std::atomic<bool> statusStarted_{true};
     std::atomic<bool> joining_{false};   // vdj_exec_discovery() is running: deck events wait until connected() has been emitted
     std::function<bool(double*)> beatProbe_;
@@ -139,6 +143,7 @@ private:
     struct RemoteLoad { int from = 0, slot = 0, type = 0; qint64 seenMs = 0; };
     QMutex loadMutex_;
     QHash<int, RemoteLoad> remoteLoads_;
+    bool rawTcpLog_ = false;
     QString linkExportFolder_;
     QString linkExportDisplayName_;
     LinkExport* linkExport_ = nullptr;

@@ -12,6 +12,20 @@ class TestPendriveToolBar : public QObject {
     Q_OBJECT
 
 private slots:
+    void noPendriveEntryClearsTheViewer()
+    {
+        PendriveRegistry registry;
+        PendriveToolBar bar(&registry);
+        QSignalSpy cleared(&bar, &PendriveToolBar::clearRequested);
+        QCOMPARE(bar.combo()->itemText(0), QString("(no pendrive)"));
+        bar.setViewed("/nonexistent/viewed");
+        QMetaObject::invokeMethod(bar.combo(), "activated", Q_ARG(int, 0));
+        QCOMPARE(cleared.count(), 1);
+        QCOMPARE(bar.selectedFolder(), QString());
+        bar.setViewed(QString());                                       // the viewer went empty (unmounted): the list shows "(no pendrive)"
+        QCOMPARE(bar.combo()->currentIndex(), 0);
+    }
+
     void decksAreListedAndHideTheInsertButtons()
     {
         PendriveRegistry registry;

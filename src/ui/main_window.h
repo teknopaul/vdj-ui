@@ -2,6 +2,7 @@
 #define MAIN_WINDOW_H
 
 #include <QMainWindow>
+#include <functional>
 #include "audio/deck_phase.h"
 #include <QFont>
 #include <QVector>
@@ -44,7 +45,7 @@ class AutoipStatusWidget;
 class BpmRampWidget;
 class HudWindow;
 class DjtoolzPanel;
-class RecordingPanel;
+class RecordingBar;
 class AudioRecorder;
 class InstrumentManager;
 class MidiMonitorDialog;
@@ -67,6 +68,11 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
     void setDebugModeFromCli();
+    void setLinkTcpRaw(bool on) { if (rawTcpAction_) rawTcpAction_->setChecked(on); }   // --link-tcp-raw
+    // The question asked when the window is closed during a recording; tests replace it (true = stop and quit).
+    void setQuitWhileRecordingHook(std::function<bool()> hook) { quitWhileRecordingHook_ = std::move(hook); }
+    bool confirmQuitWhileRecording();
+    AudioRecorder* recorder() const { return recorder_; }
     void setLinkExport(const QString& folder);        // --link-export DIR: open that rekordbox folder in the browser and export it
     void setLinkExportEnabled(bool on);               // the Network menu checkbox: export the database the browser shows
     void applyLinkExport();
@@ -222,7 +228,8 @@ private: // adopt the followed deck's BPM (one glide step per beat after a maste
     HudWindow* hud_ = nullptr;
     QAction* hudAction_ = nullptr;
     QAction* recordAction_ = nullptr;
-    QDockWidget* recordDock_ = nullptr;
+    QToolBar* recordToolBar_ = nullptr;
+    std::function<bool()> quitWhileRecordingHook_;
     // rekordbox PC mode: the dock is created on first use
     QDockWidget* rekordboxDock();
     RekordboxModePanel* rbPanel_ = nullptr;
@@ -237,6 +244,7 @@ private: // adopt the followed deck's BPM (one glide step per beat after a maste
     QAction* tcAction_ = nullptr;
     class StudioMixWindow* mixWindow_ = nullptr;
     QAction* linkExportAction_ = nullptr;
+    QAction* rawTcpAction_ = nullptr;
     QMenu* exportMenu_ = nullptr;
     PendriveToolBar* pendriveBar_ = nullptr;
     bool exportNone_ = false;                        // the user chose "No pendrive": nothing is exported, and the browser does not put one back
@@ -248,7 +256,7 @@ private: // adopt the followed deck's BPM (one glide step per beat after a maste
     bool linkExportWanted_ = false;
     QAction* connectAction_ = nullptr;
     AudioRecorder* recorder_ = nullptr;
-    RecordingPanel* recordingPanel_ = nullptr;
+    RecordingBar* recordingBar_ = nullptr;
     MidiRouter* midiRouter_ = nullptr;
     InstrumentManager* instruments_ = nullptr;
     MidiMonitorDialog* midiMonitor_ = nullptr;

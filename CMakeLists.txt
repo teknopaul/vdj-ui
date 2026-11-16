@@ -87,7 +87,9 @@ set(CPACK_PACKAGE_VENDOR "VDJ")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Virtual DJ - for syncing midi drum machines to Pioneer decks")
 set(CPACK_PACKAGE_CONTACT "vdj <vdj@localhost>")
 # libvdj.so is shipped by the libcdj package; there is no separate libvdj package to depend on
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev, libcdj, fonts-liberation, libcap2-bin")
+# lame encodes the recordings (AudioRecorder runs it as a process); caps has the LADSPA compressor of the recording bar
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev, libcdj, fonts-liberation, libcap2-bin, lame")
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "caps")
 # postinst: setcap cap_net_bind_service on the installed binary (UDP port 111)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/data/debian/postinst")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")

@@ -62,7 +62,10 @@ void DbServer::stop()
         s->disconnect(this);
         s->abort();
         auto c = clients_.take(s);
-        if (c) emit clientClosed(c->ip);
+        if (c) {
+            if (c->tcpLog.isOpen()) c->tcpLog.close(QStringLiteral("by us"), QStringLiteral("server stopped"), size_t(c->raw.size()));
+            emit clientClosed(c->ip);
+        }
         s->deleteLater();
     }
 }
@@ -97,14 +100,24 @@ void DbServer::onQueryConnection()
         const QString ip = QHostAddress(s->peerAddress().toIPv4Address()).toString();
         auto buf = std::make_shared<QByteArray>();
         auto done = std::make_shared<bool>(false);
-        connect(s, &QTcpSocket::readyRead, this, [this, s, ip, buf, done]() {
-            buf->append(s->readAll());
+        auto raw = std::make_shared<RawTcpLog>();
+        if (cfg_.rawTcpLog && !cfg_.logDir.isEmpty())
+            raw->open(QStringLiteral("%1/dbquery-%2-%3.raw.log").arg(cfg_.logDir, ip).arg(QDateTime::currentMSecsSinceEpoch()),
+                      QStringLiteral("port query connect from %1:%2 to local port %3").arg(ip).arg(s->peerPort()).arg(s->localPort()));
+        connect(s, &QTcpSocket::stateChanged, this, [raw](QAbstractSocket::SocketState st) { if (raw->isOpen()) raw->event(QStringLiteral("STATE %1").arg(int(st))); });
+        connect(s, &QTcpSocket::errorOccurred, this, [raw](QAbstractSocket::SocketError e) { if (raw->isOpen()) raw->event(QStringLiteral("ERROR %1").arg(int(e))); });
+        connect(s, &QTcpSocket::disconnected, this, [raw, done]() { if (raw->isOpen()) raw->close(*done ? QStringLiteral("by us") : QStringLiteral("by peer"), QStringLiteral("disconnected"), 0); });
+        connect(s, &QTcpSocket::readyRead, this, [this, s, ip, buf, done, raw]() {
+            const QByteArray chunk = s->readAll();
+            if (raw->isOpen()) raw->rx(chunk);
+            buf->append(chunk);
             if (*done || buf->size() < int(portQueryRequest().size())) return;
             *done = true;
             if (isPortQueryRequest(reinterpret_cast<const uint8_t*>(buf->constData()), size_t(buf->size()))) {
                 ++stats_.portQueries;
                 const auto reply = portQueryReply(dbPort());
                 s->write(reinterpret_cast<const char*>(reply.data()), qint64(reply.size()));
+                if (raw->isOpen()) raw->tx(QByteArray(reinterpret_cast<const char*>(reply.data()), int(reply.size())));
                 emitLog(QStringLiteral("port query from %1 -> %2").arg(ip).arg(dbPort()));
                 emit portQueried(ip);
             } else {
@@ -125,8 +138,13 @@ void DbServer::openLogs(Client* c)
     const QString base = QStringLiteral("%1/dbserver-%2-%3").arg(cfg_.logDir, c->ip).arg(QDateTime::currentSecsSinceEpoch());
     c->textLog.reset(new QFile(base + ".log"));
     if (!c->textLog->open(QIODevice::WriteOnly | QIODevice::Append)) c->textLog.reset();
-    c->binLog.reset(new QFile(base + ".bin"));
+    c->binLog.reset(new QFile(base + ".rx.bin"));
     if (!c->binLog->open(QIODevice::WriteOnly)) c->binLog.reset();
+    c->txLog.reset(new QFile(base + ".tx.bin"));
+    if (!c->txLog->open(QIODevice::WriteOnly)) c->txLog.reset();
+    if (cfg_.rawTcpLog)
+        c->tcpLog.open(base + ".raw.log", QStringLiteral("dbserver connect from %1:%2 to local port %3")
+                                              .arg(c->ip).arg(c->sock->peerPort()).arg(c->sock->localPort()));
 }
 
 void DbServer::clientLog(Client* c, const QString& line)
@@ -137,6 +155,28 @@ void DbServer::clientLog(Client* c, const QString& line)
         c->textLog->flush();
     }
     emitLog(QStringLiteral("[%1] %2").arg(c->ip, line));
+}
+
+void DbServer::sendTo(Client* c, const QByteArray& bytes)
+{
+    if (bytes.isEmpty()) return;
+    c->sock->write(bytes);
+    if (c->txLog) { c->txLog->write(bytes); c->txLog->flush(); }
+    if (c->tcpLog.isOpen()) { c->tcpLog.tx(bytes); tcpSummary(c, "TX", bytes); }
+}
+
+void DbServer::closeFrom(Client* c, const QString& why)
+{
+    c->closeBy = QStringLiteral("by us");
+    c->closeWhy = why;
+    c->sock->disconnectFromHost();
+}
+
+// one line per socket event in the debug panel (the full bytes are in the .raw.log)
+void DbServer::tcpSummary(Client* c, const char* dir, const QByteArray& b)
+{
+    emitLog(QStringLiteral("DB-TCP: %1 %2 %3 bytes: %4%5").arg(c->ip, QLatin1String(dir)).arg(b.size())
+                .arg(QString::fromLatin1(b.left(24).toHex(' ')), b.size() > 24 ? QStringLiteral(" ...") : QString()));
 }
 
 void DbServer::onDbConnection()
@@ -152,8 +192,14 @@ void DbServer::onDbConnection()
         clientLog(c.get(), QStringLiteral("connected from %1:%2").arg(c->ip).arg(s->peerPort()));
         emit clientConnected(c->ip);
 
+        if (c->tcpLog.isOpen()) {
+            connect(s, &QTcpSocket::stateChanged, this, [raw = c.get()](QAbstractSocket::SocketState st) { if (raw->tcpLog.isOpen()) raw->tcpLog.event(QStringLiteral("STATE %1").arg(int(st))); });
+            connect(s, &QTcpSocket::errorOccurred, this, [raw = c.get()](QAbstractSocket::SocketError e) {
+                if (raw->tcpLog.isOpen()) raw->tcpLog.event(QStringLiteral("ERROR %1 %2").arg(int(e)).arg(raw->sock->errorString()));
+            });
+        }
         const auto greeting = encodeGreeting();
-        s->write(reinterpret_cast<const char*>(greeting.data()), qint64(greeting.size()));
+        sendTo(c.get(), QByteArray(reinterpret_cast<const char*>(greeting.data()), int(greeting.size())));
         clientLog(c.get(), QStringLiteral("SEND greeting"));
 
         Client* raw = c.get();
@@ -167,6 +213,7 @@ void DbServer::dropClient(QTcpSocket* s)
     auto c = clients_.take(s);
     if (!c) return;
     clientLog(c.get(), QStringLiteral("closed after %1 requests").arg(c->session.requests));
+    if (c->tcpLog.isOpen()) c->tcpLog.close(c->closeBy, c->closeWhy, size_t(c->raw.size()));
     emit clientClosed(c->ip);
     s->deleteLater();
 }
@@ -178,14 +225,15 @@ void DbServer::closeClientsFor(const QHostAddress& addr)
     for (QTcpSocket* s : socks) {
         if (s->peerAddress().toIPv4Address() != want) continue;
         auto c = clients_.value(s);
-        if (c) clientLog(c.get(), QStringLiteral("closing: peer presence lost"));
-        s->disconnectFromHost();
+        if (c) { clientLog(c.get(), QStringLiteral("closing: peer presence lost")); closeFrom(c.get(), QStringLiteral("peer presence lost")); }
+        else s->disconnectFromHost();
     }
 }
 
 void DbServer::logUnknown(Client* c, const Message& m, const QByteArray& raw)
 {
     ++stats_.unknownRequests;
+    stats_.lastUnknownType = m.type;
     const QString desc = QString::fromStdString(describe(m));
     emit unknownRequest(c->ip, m.type, desc, raw);
     if (cfg_.logDir.isEmpty()) return;
@@ -202,9 +250,20 @@ void DbServer::readClient(Client* c)
     const QByteArray in = c->sock->readAll();
     if (in.isEmpty()) return;
     if (c->binLog) { c->binLog->write(in); c->binLog->flush(); }
+    if (c->tcpLog.isOpen()) { c->tcpLog.rx(in); tcpSummary(c, "RX", in); }
     clientLog(c, QStringLiteral("RECV %1 bytes: %2").arg(in.size()).arg(hexLine(in.left(64)) + (in.size() > 64 ? " ..." : "")));
     c->raw.append(in);
     c->parser.feed(reinterpret_cast<const uint8_t*>(in.constData()), size_t(in.size()));
+
+    const size_t consumedAtStart = c->parser.consumed();
+    int msgs = 0;
+    // what the parser made of this chunk, next to the raw view: unparsed bytes stay pending
+    auto parseLine = [&](const char* state) {
+        if (!c->tcpLog.isOpen()) return;
+        c->tcpLog.event(QStringLiteral("PARSE consumed=%1 pending=%2 msgs=%3 state=%4")
+                            .arg(c->parser.consumed() - consumedAtStart).arg(qMax(0, c->raw.size() - int(c->parser.consumed() - c->rawBase)))
+                            .arg(msgs).arg(QLatin1String(state)));
+    };
 
     for (;;) {
         const size_t before = c->parser.consumed();
@@ -215,34 +274,40 @@ void DbServer::readClient(Client* c)
             clientLog(c, QStringLiteral("framing error at stream offset %1; context: %2")
                              .arg(c->parser.errorOffset())
                              .arg(hexLine(c->raw.mid(int(qMax<qint64>(0, qint64(c->parser.errorOffset()) - qint64(c->rawBase) - 8)), 32))));
-            c->sock->disconnectFromHost();
+            parseLine("error");
+            closeFrom(c, QStringLiteral("framing error"));
             return;
         }
         if (st == StreamParser::Greeting) {
             clientLog(c, QStringLiteral("RECV greeting"));
             continue;
         }
+        ++msgs;
         const QByteArray rawMsg = c->raw.mid(int(before - c->rawBase), int(c->parser.consumed() - before));
-        clientLog(c, QStringLiteral("REQ  %1").arg(QString::fromStdString(describe(m))));
 
         ++stats_.requests;
         const HandlerResult hr = handler_->handle(m, c->session);
+        const char* kind = hr.kind == HandlerResult::Unknown ? "unknown" : hr.kind == HandlerResult::Unimplemented ? "unimplemented" : "handled";
+        clientLog(c, QStringLiteral("REQ  [%1] %2").arg(QLatin1String(kind), QString::fromStdString(describe(m))));
         if (hr.kind == HandlerResult::Unknown) logUnknown(c, m, rawMsg);
         if (hr.kind == HandlerResult::Unimplemented) {
             ++stats_.unimplementedRequests;
             clientLog(c, QStringLiteral("(documented but not implemented: type 0x%1)").arg(m.type, 4, 16, QLatin1Char('0')));
         }
+        if (m.type == ReqPlayed && m.args.size() > 1) clientLog(c, QStringLiteral("played: track %1 (%2 played in this session)").arg(m.args[1].num).arg(handler_->playedCount()));
+        if (m.type == ReqSetRating && m.args.size() > 2) clientLog(c, QStringLiteral("rating: track %1 set to %2 stars (not saved: the export is read-only)").arg(m.args[1].num).arg(m.args[2].num));
         emit requestHandled(c->ip, m.type, int(hr.kind));
 
         std::vector<uint8_t> out;
         for (const Message& r : hr.replies) {
             encodeAppend(r, out);
-            if (r.type != RepMenuItem) clientLog(c, QStringLiteral("REP  %1").arg(QString::fromStdString(describe(r))));
+            if (r.type != RepMenuItem) clientLog(c, QStringLiteral("REP  [%1] %2").arg(QLatin1String(kind), QString::fromStdString(describe(r))));
         }
         if (hr.replies.size() > 3) clientLog(c, QStringLiteral("(%1 reply messages)").arg(hr.replies.size()));
-        if (!out.empty()) c->sock->write(reinterpret_cast<const char*>(out.data()), qint64(out.size()));
+        if (!out.empty()) sendTo(c, QByteArray(reinterpret_cast<const char*>(out.data()), int(out.size())));
         if (hr.close) {
-            c->sock->disconnectFromHost();
+            parseLine("ok");
+            closeFrom(c, QStringLiteral("handler asked to close"));
             return;
         }
     }
@@ -250,6 +315,7 @@ void DbServer::readClient(Client* c)
     const size_t used = c->parser.consumed() - c->rawBase;
     c->raw.remove(0, int(used));
     c->rawBase += used;
+    parseLine(c->raw.isEmpty() ? "ok" : "need-more");
 }
 
 } // namespace vdj

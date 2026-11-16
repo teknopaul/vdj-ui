@@ -14,13 +14,15 @@
 
 #include "db_codec.h"
 #include "db_handler.h"
+#include "raw_tcp_log.h"
 #include "rb_library.h"
 
 namespace vdj {
 
 // The TCP side of the pretend-rekordbox mode: the port-query service (12523: "which port is the dbserver on") and the
 // dbserver itself (1051). Every connection is logged to <logDir>/dbserver-<ip>-<unixtime>.log (decoded messages and raw
-// hex) and .bin (the exact inbound byte stream); requests of unknown type also go to <logDir>/unknown-requests.log,
+// hex), .rx.bin / .tx.bin (the exact inbound / outbound byte stream) and, when Config::rawTcpLog is on, .raw.log (every socket event
+// with times and full hex, for both directions, independent of the parser; the port query sockets get one too). Requests of unknown type also go to <logDir>/unknown-requests.log,
 // which is the main output of the experiment.
 class DbServer : public QObject {
     Q_OBJECT
@@ -34,6 +36,7 @@ public:
         QString logDir;                  // empty = no log files
         int keepAliveIdleSecs = 10;      // decks probe after 10 s of silence
         QHostAddress bindAddress = QHostAddress::Any;
+        bool rawTcpLog = false;          // the .raw.log files; checked when a socket connects
     };
 
     struct Stats {
@@ -42,6 +45,7 @@ public:
         quint64 unknownRequests = 0;
         quint64 unimplementedRequests = 0;
         quint64 portQueries = 0;
+        quint16 lastUnknownType = 0;
     };
 
     explicit DbServer(const db::RbLibrary* lib, QObject* parent = nullptr);
@@ -56,6 +60,7 @@ public:
     int clientCount() const { return clients_.size(); }
     const Stats& stats() const { return stats_; }
     void setUnknownPolicy(db::UnknownPolicy p);
+    void setRawTcpLog(bool on) { cfg_.rawTcpLog = on; }
 
     // Close every dbserver connection from this host (a deck whose UDP presence has gone quiet).
     void closeClientsFor(const QHostAddress& addr);
@@ -80,7 +85,10 @@ private:
         db::Session       session;
         QByteArray        raw;            // inbound bytes not yet consumed by the parser
         size_t            rawBase = 0;    // stream offset of raw[0]
-        std::unique_ptr<QFile> textLog, binLog;
+        std::unique_ptr<QFile> textLog, binLog, txLog;
+        RawTcpLog         tcpLog;         // open only with Config::rawTcpLog
+        QString           closeBy = QStringLiteral("by peer");
+        QString           closeWhy = QStringLiteral("disconnected");
         bool              closing = false;
     };
 
@@ -89,6 +97,9 @@ private:
     void tuneKeepAlive(QTcpSocket* s);
     void clientLog(Client* c, const QString& line);
     void openLogs(Client* c);
+    void sendTo(Client* c, const QByteArray& bytes);
+    void closeFrom(Client* c, const QString& why);                 // disconnectFromHost() and note that we did it
+    void tcpSummary(Client* c, const char* dir, const QByteArray& b);
     void logUnknown(Client* c, const db::Message& m, const QByteArray& raw);
     void emitLog(const QString& line);
 

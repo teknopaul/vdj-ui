@@ -1687,6 +1687,32 @@ vdj-ui-trakcrate-mix-preview-test/fast:
 .PHONY : vdj-ui-trakcrate-mix-preview-test/fast
 
 #=============================================================================
+# Target rules for targets named vdj-ui-discovery-line-test
+
+# Build rule for target.
+vdj-ui-discovery-line-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-discovery-line-test
+.PHONY : vdj-ui-discovery-line-test
+
+# fast build rule for target.
+vdj-ui-discovery-line-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test.dir/build
+.PHONY : vdj-ui-discovery-line-test/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-audio-recorder-test
+
+# Build rule for target.
+vdj-ui-audio-recorder-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-audio-recorder-test
+.PHONY : vdj-ui-audio-recorder-test
+
+# fast build rule for target.
+vdj-ui-audio-recorder-test/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test.dir/build
+.PHONY : vdj-ui-audio-recorder-test/fast
+
+#=============================================================================
 # Target rules for targets named vdj-ui-test_autogen_timestamp_deps
 
 # Build rule for target.
@@ -4000,6 +4026,58 @@ vdj-ui-trakcrate-mix-preview-test_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-trakcrate-mix-preview-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-trakcrate-mix-preview-test_autogen.dir/build
 .PHONY : vdj-ui-trakcrate-mix-preview-test_autogen/fast
 
+#=============================================================================
+# Target rules for targets named vdj-ui-discovery-line-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-discovery-line-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-discovery-line-test_autogen_timestamp_deps
+.PHONY : vdj-ui-discovery-line-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-discovery-line-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-discovery-line-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-discovery-line-test_autogen
+
+# Build rule for target.
+vdj-ui-discovery-line-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-discovery-line-test_autogen
+.PHONY : vdj-ui-discovery-line-test_autogen
+
+# fast build rule for target.
+vdj-ui-discovery-line-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-discovery-line-test_autogen.dir/build
+.PHONY : vdj-ui-discovery-line-test_autogen/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-audio-recorder-test_autogen_timestamp_deps
+
+# Build rule for target.
+vdj-ui-audio-recorder-test_autogen_timestamp_deps: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-audio-recorder-test_autogen_timestamp_deps
+.PHONY : vdj-ui-audio-recorder-test_autogen_timestamp_deps
+
+# fast build rule for target.
+vdj-ui-audio-recorder-test_autogen_timestamp_deps/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen_timestamp_deps.dir/build
+.PHONY : vdj-ui-audio-recorder-test_autogen_timestamp_deps/fast
+
+#=============================================================================
+# Target rules for targets named vdj-ui-audio-recorder-test_autogen
+
+# Build rule for target.
+vdj-ui-audio-recorder-test_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vdj-ui-audio-recorder-test_autogen
+.PHONY : vdj-ui-audio-recorder-test_autogen
+
+# fast build rule for target.
+vdj-ui-audio-recorder-test_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/build.make tests/CMakeFiles/vdj-ui-audio-recorder-test_autogen.dir/build
+.PHONY : vdj-ui-audio-recorder-test_autogen/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -4027,6 +4105,8 @@ help:
 	@echo "... vdj-trakcrate_autogen_timestamp_deps"
 	@echo "... vdj-ui-alsa-clock-beats-test_autogen"
 	@echo "... vdj-ui-alsa-clock-beats-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-audio-recorder-test_autogen"
+	@echo "... vdj-ui-audio-recorder-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-audio-test_autogen"
 	@echo "... vdj-ui-audio-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-autoip-permanent-test_autogen"
@@ -4057,6 +4137,8 @@ help:
 	@echo "... vdj-ui-deckphase-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-difflock-test_autogen"
 	@echo "... vdj-ui-difflock-test_autogen_timestamp_deps"
+	@echo "... vdj-ui-discovery-line-test_autogen"
+	@echo "... vdj-ui-discovery-line-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-djtoolz-basics-test_autogen"
 	@echo "... vdj-ui-djtoolz-basics-test_autogen_timestamp_deps"
 	@echo "... vdj-ui-djtoolz-controller-test_autogen"
@@ -4217,6 +4299,7 @@ help:
 	@echo "... vdj-trakcrate"
 	@echo "... vdj-ui"
 	@echo "... vdj-ui-alsa-clock-beats-test"
+	@echo "... vdj-ui-audio-recorder-test"
 	@echo "... vdj-ui-audio-test"
 	@echo "... vdj-ui-autoip-permanent-test"
 	@echo "... vdj-ui-beat-phase-test"
@@ -4232,6 +4315,7 @@ help:
 	@echo "... vdj-ui-dbserver-test"
 	@echo "... vdj-ui-deckphase-test"
 	@echo "... vdj-ui-difflock-test"
+	@echo "... vdj-ui-discovery-line-test"
 	@echo "... vdj-ui-djtoolz-basics-test"
 	@echo "... vdj-ui-djtoolz-controller-test"
 	@echo "... vdj-ui-djtoolz-ctl-map-test"

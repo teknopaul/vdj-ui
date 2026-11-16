@@ -27,14 +27,15 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=6
-FILE_NAME_0=412;C++;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fsrc%2Fvdj%2Fvdj_wrapper.cpp;0;4
-FILE_NAME_1=5573;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Fadj.c;0;4
-FILE_NAME_2=1467;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Fadj_cli.c;0;4
-FILE_NAME_3=4466;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Fadj_tui.c;0;4
-FILE_NAME_4=11187;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fsrc%2Flibadj.c;0;4
-FILE_NAME_5=6908;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Flibcdj%2Fsrc%2Fc%2Fcdj.c;0;4
-FILE_NAME_6=0;C++;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Flibcdj%2Fsrc%2Fc%2Fcdj.h;0;4
+current_page=4
+FILE_NAME_0=27895;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fplans%2Flink-access-error_PLAN.md;0;3
+FILE_NAME_1=2432;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2F.planning%2Fstate%2FLINK_ACCESS_ERROR_PROGRESS.md;0;4
+FILE_NAME_2=17150;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Fadj%2Fdoc%2Flink-media-writes.md;0;2
+FILE_NAME_3=543;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Frecording-panel-ui.prompt.md;0;2
+FILE_NAME_4=124;Markdown;0;EUTF-8;1;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Fai-prompts%2Futf8-icons.md;0;4
+FILE_NAME_5=0;C++;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Flibcdj%2Fsrc%2Fc%2Fcdj.h;0;4
+FILE_NAME_6=3828;C;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2Freferences%2Flibcdj%2Fsrc%2Fc%2Fcdj.c;0;4
+FILE_NAME_7=0;Markdown;0;EUTF-8;0;1;0;%2Fhome%2Fteknopaul%2Fbzr_workspace%2Fvdj-ui%2FREADME.md;0;2
 
 [VTE]
 last_dir=/home/teknopaul

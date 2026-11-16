@@ -49,6 +49,7 @@ public:
         int      swapGapMs = 2000;        // virtual time to "pull the stick and insert the next one"
         int      insertMs = 1100;         // media present (0x77) -> ready (0x6f 00)
         int      busyWindowMs = 3000;     // NFS reads this recent count as "in use"
+        bool     rawTcpLog = false;       // dbserver: byte-exact .raw.log per TCP connection (Debug > Log raw TCP of the dbserver)
     };
 
     // What the USB slot reports in our status packets (byte 0x6f, plus 0x77 = media present).
@@ -67,6 +68,9 @@ public:
     UsbState usbState() const { return usbState_; }
     bool mediaPresent() const { return mediaPresent_; }
     QString folder() const { return cfg_.folder; }
+    void setRawTcpLog(bool on) { cfg_.rawTcpLog = on; if (server_) server_->setRawTcpLog(on); }
+    // "db: 14 unknown (last 0x2705)": what the decks asked that the dbserver does not know
+    QString dbStatusText() const;
     QString displayName() const;
     // Something that says why the pendrive is in use (a remote deck has a track loaded from it), or an empty string; may be called on the GUI thread only.
     void setUsageProbe(std::function<QString()> probe) { usageProbe_ = std::move(probe); }

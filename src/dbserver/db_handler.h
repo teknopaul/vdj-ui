@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -26,9 +27,10 @@ enum RequestType : uint16_t {
     ReqArtistsForGenre = 0x1101, ReqAlbumsForArtist = 0x1102, ReqTracksForAlbum = 0x1103, ReqTracksForRating = 0x1107,
     ReqArtistsForLabel = 0x110a, ReqTracksForColor = 0x110d, ReqTracksForHistory = 0x1112, ReqPlaylist = 0x1105,
     ReqAlbumsForGenreArtist = 0x1201, ReqTracksForArtistAlbum = 0x1202, ReqSearch = 0x1300, ReqFolderMenu = 0x2006,
-    ReqMetadata = 0x2002, ReqTrackInfo = 0x2102,      // 0x2102: undocumented, carries the audio file path
+    ReqMetadata = 0x2002, ReqTrackInfo = 0x2102, ReqSetRating = 0x2107,      // 0x2102: undocumented, carries the audio file path
     ReqRender = 0x3000,
     ReqUnknown3e03 = 0x3e03, ReqUnknown3d03 = 0x3d03, ReqUnknown3100 = 0x3100,
+    ReqSortMenu = 0x1400, ReqPlayed = 0x3001, ReqPlayedAll = 0x3002, ReqPing = 0x0001, ReqSaveCue = 0x2705, ReqSetGridShift = 0x2605, ReqGridShift = 0x2804,
     ReqArt = 0x2003, ReqWaveformPreview = 0x2004, ReqBeatGrid = 0x2204, ReqWaveformDetail = 0x2904,
     ReqAnalysisTag = 0x2c04, ReqBasicCues = 0x2104, ReqExtendedCues = 0x2b04, ReqUnknown2504 = 0x2504
 };
@@ -97,6 +99,22 @@ private:
     std::vector<MenuItem> metadataItems(const RbTrack& t) const;
     std::vector<MenuItem> infoItems(const RbTrack& t) const;
     std::vector<MenuItem> rootItems() const;
+
+    // Edits the decks make to a track (cue / loop saves, grid shift). Kept in memory for the life of the handler and given back to the
+    // deck like a real player does (phase 3 capture): the export itself stays read-only.
+    using CueEntry = std::vector<uint8_t>;                         // one 76-byte extended cue entry
+    std::vector<CueEntry>& cueEdits(uint32_t track) const;         // seeded from the export on first use
+    mutable std::map<uint32_t, std::vector<CueEntry>> cueEdits_;
+    mutable std::map<uint32_t, int32_t> gridShift_;
+    mutable std::map<uint32_t, uint8_t> ratingEdits_;              // stars (0..5) a deck set with 0x2107; in memory only, the export stays read-only
+    mutable std::set<uint32_t> played_;                            // tracks a deck reported with 0x3001: shown with the played flag in the lists
+
+public:
+    // the rating of a track as the decks see it: an edit when there is one, else the export's
+    uint8_t ratingOf(const RbTrack& t) const { auto it = ratingEdits_.find(t.id); return it == ratingEdits_.end() ? t.rating : it->second; }
+    bool wasPlayed(uint32_t track) const { return played_.count(track) != 0; }
+    size_t playedCount() const { return played_.size(); }
+private:
 
     const RbLibrary& lib_;
     uint32_t         device_;

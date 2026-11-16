@@ -82,6 +82,7 @@ parts:
       - librubberband2
       - libsoundtouch1
       - fonts-liberation
+      - lame          # AudioRecorder runs `lame` to encode the recordings
     override-pull: |
       craftctl default
       craftctl set version="$(. ./version; echo "$VERSION")"

@@ -68,7 +68,7 @@ kind of field (`0x0ceea950`, `0x0ceeeab4` seen) and now also carries a non-zero 
 ## Logs and checks
 
 - The Debug panel (category LINK) and `~/.local/share/vdj-ui/linkexport/`: `link-export.log` (what the export did and when, including every USB slot byte it sent: line it up
-  with a capture), `link-nfs.log` (mount, **unmount**, lookups, reads), `dbserver-<ip>-<time>.log/.bin`
+  with a capture), `link-nfs.log` (mount, **unmount**, lookups, reads), `dbserver-<ip>-<time>.log/.rx.bin/.tx.bin` (and `.raw.log` with View > Log Raw TCP of the dbserver)
   (every dbserver request and reply of a session), `unknown-requests.log`.
 - A capture to compare with the references (unfiltered, `tcpdump -i <iface> -w file.pcap`, the browsing deck already running): the media query about a second
   after the mount, then TCP 12523 and 1051, then NFS reads when a track loads. `references/adj/tools/nfs-decode.py <pcap>` prints the NFS conversation and
@@ -94,3 +94,24 @@ complete captures, and is the one that works.
 `src/network/link_export.*` (the media answer, the dbserver, the file service), `NetworkManager::setLinkExportFolder` and the menu in `MainWindow`; the dbserver
 in `src/dbserver/`; the file service in libcdj `src/nfs/` (`nfsd.c`, `nfs_dirfs.c`, `portmap_server.c`; test `make nfsd-test`); libcdj `vdj_t.usb_loaded` (status bytes)
 and `raw_update_h` (media queries). Tests: `vdj-ui-linkexport-test`, `vdj-ui-integration-test`.
+
+## Edits from the decks (cue / loop saves, grid shift)
+
+A deck that edits a track loaded from the exported pendrive sends dbserver requests, not NFS writes. A real player answers them (capture
+`prolink-edit-real.pcap`); answering `RepOk` made the deck show **USB FULL**. Now: `0x2705` (save a cue / loop, 76-byte entry) stores the entry
+**in memory** (replace by hot cue number, memory points by position) and returns the whole updated list as `0x4e02`; `0x2b04` returns that list
+afterwards; `0x2605` stores a signed grid value, `0x2804` answers it back (`RepOk [0x2804, value & 0xffff]` then `RepOk [0x2804, 0]`); `0x3100` is
+`RepOk [0x3100, 0]`; `0x0001`, `0x3001` and `0x3002` get **no reply** (a real server sends none; an unexpected `RepOk` with the old txid made the decks lose their tree view). The edits are **not written to the export** and are lost when vdj-ui stops. GUESS: deleting a cue (no capture),
+`0x3001` and `0x2005` (a real player was not sent them; still answered `RepOk`).
+
+### Played tracks (green in the deck's browser)
+
+Arg 8 of a track title item is `0x01000000`; a real deck sends `0x01000100` for tracks it has played (capture `prolink-history-vdj-3.pcap`: the flag
+appeared after the other deck sent `0x3001 [DMST, track]`, and for tracks played earlier the same day). The export remembers the track ids of `0x3001`
+**in memory** and sets bit `0x100` for them in every title item (`DbHandler::wasPlayed`, log line `played: track N`). The memory is lost when the export restarts.
+GUESS: that the mark is set by `0x3001` and not by the load; that it applies to all decks, not per requester.
+
+### Star ratings
+
+`0x2107 [DMST, track, stars]` (the deck's star edit) is answered `RepOk [0x2107, 1]` like a real player and the stars are kept in memory and shown in the metadata rating item. They are
+**not written to the export** (log line `rating: ...`); copying edits (stars, cues, grid) into the trakcrate database is a later step.

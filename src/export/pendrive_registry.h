@@ -37,6 +37,9 @@ public:
     static QString defaultNameFor(const QString& folder);               // the folder's name, "VDJ-USB" for the root
     // The pendrives mounted under root (one folder per stick, as /media/<user> has them); newest first is not promised, sorted by name.
     static QList<PhysicalPendrive> scanPhysicalIn(const QString& root);
+    // A folder on a removable-media mount (/media/<user>/..., /run/media/<user>/...), plugged in or not. A virtual pendrive that points there is the same stick as the
+    // "(plugged in)" entry while it is in, and a dead entry when it is not: the menus leave it out.
+    static bool isOnPhysicalMount(const QString& folder);
     static QList<PhysicalPendrive> scanPhysical();                      // /media/<username> (and /run/media/<username>)
 
     const QList<VirtualPendrive>& virtualPendrives() const { return list_; }

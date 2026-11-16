@@ -246,6 +246,18 @@ bool TrackBrowser::openRekordboxFolder(const QString& folder, QString* error)
     return openFolder(folder, error);
 }
 
+void TrackBrowser::clearView()
+{
+    remote_.reset();
+    hasPdb_ = false;
+    exportRoot_.clear();
+    mountPoint_.clear();
+    miniDelegate_->setRoot(QString());
+    tree_->clear();
+    details_->setVisible(false);
+    emit viewCleared();
+}
+
 bool TrackBrowser::openRemoteDeck(int playerId, const QString& ip, QString* error)
 {
     auto deck = std::make_shared<RemoteDeck>(playerId, ip);

@@ -62,6 +62,7 @@ add_library(vdj-cdj STATIC
     midi/alsa_clock.cpp
     midi/seq_bar.cpp
     midi/master_beat_math.cpp
+    network/discovery_line.cpp
     midi/joystick_map.cpp
     midi/joystick_seq_bridge.cpp
     midi/diff_lock.cpp
@@ -76,6 +77,7 @@ add_library(vdj-cdj STATIC
     midi/midi_out.cpp
     midi/instrument_manager.cpp
     audio/audio_recorder.cpp
+    audio/ladspa_effect.cpp
     nfs/id3_tags.cpp
     nfs/remote_deck.cpp
     nfs/nfs_mount_manager.cpp
@@ -118,7 +120,7 @@ add_library(vdj-cdj STATIC
     ui/pendrive_clone_dialog.cpp
     ui/virtual_pendrives_dialog.cpp
     ui/pendrive_toolbar.cpp
-    ui/recording_panel.cpp
+    ui/recording_bar.cpp
     ui/rekordbox_mode_panel.cpp
     ui/trakcrate_job.cpp
     ui/trakcrate_jobs_strip.cpp
